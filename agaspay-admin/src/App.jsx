@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-function WaterDropIcon({ className = "w-6 h-6" }) {
+function WaterDropIcon({ className = "w-4 h-4" }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -27,18 +27,18 @@ function Sidebar({ open, onClose, onNavigate }) {
         aria-label="Sidebar"
       >
         <div className="h-full flex flex-col">
-          <div className="flex items-center gap-2 px-4 h-16 border-b border-slate-200">
-            <div className="p-2 rounded-lg bg-blue-600 text-white">
-              <WaterDropIcon className="w-5 h-5" />
+          <div className="flex items-center gap-2 px-4 h-14 border-b border-slate-200">
+            <div className="p-1.5 rounded-lg bg-blue-600 text-white">
+              <WaterDropIcon className="w-4 h-4" />
             </div>
-            <div className="font-semibold tracking-wide">Agaspay Admin</div>
+            <div className="font-semibold tracking-wide text-sm">Agaspay Admin</div>
           </div>
           <nav className="flex-1 p-3 space-y-1">
             <NavItem label="Dashboard" onClick={() => onNavigate('dashboard')} />
             <NavItem label="Create Personnel" onClick={() => onNavigate('create')} />
             <NavItem label="Accounts" onClick={() => onNavigate('accounts')} />
           </nav>
-          <div className="p-4 border-t border-slate-200 text-xs text-slate-500">
+          <div className="p-3 border-t border-slate-200 text-xs text-slate-500">
             © {new Date().getFullYear()} Agaspay
           </div>
         </div>
@@ -62,30 +62,30 @@ function NavItem({ label, onClick }) {
 function Topbar({ onMenuClick }) {
   return (
     <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
-      <div className="h-16 px-4 flex items-center justify-between">
+      <div className="h-14 px-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
-            className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-md text-slate-600 hover:bg-slate-100"
+            className="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-md text-slate-600 hover:bg-slate-100"
             onClick={onMenuClick}
             aria-label="Open sidebar"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
             </svg>
           </button>
           <div className="hidden lg:flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-blue-600 text-white">
-              <WaterDropIcon className="w-5 h-5" />
+            <div className="p-1.5 rounded-lg bg-blue-600 text-white">
+              <WaterDropIcon className="w-4 h-4" />
             </div>
-            <span className="font-semibold">Agaspay</span>
+            <span className="font-semibold text-sm">Agaspay</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600">
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-            <span>Online</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            <span className="text-xs">Online</span>
           </div>
-          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">A</div>
+          <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold">A</div>
         </div>
       </div>
     </header>
@@ -94,13 +94,13 @@ function Topbar({ onMenuClick }) {
 
 function StatCard({ label, value, icon }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-      <div className="p-3 rounded-lg bg-blue-50 text-blue-700">
+    <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
+      <div className="p-2 rounded-lg bg-blue-50 text-blue-700">
         {icon}
       </div>
       <div>
-        <div className="text-sm text-slate-500">{label}</div>
-        <div className="text-xl font-semibold text-slate-900">{value}</div>
+        <div className="text-xs text-slate-500">{label}</div>
+        <div className="text-lg font-semibold text-slate-900">{value}</div>
       </div>
     </div>
   )
@@ -134,33 +134,33 @@ function CreatePersonnelForm({ onCreate }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
-      <h2 className="text-lg font-semibold mb-4 text-slate-900">Create Barangay Personnel Account</h2>
+    <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 className="text-base font-semibold mb-4 text-slate-900">Create Barangay Personnel Account</h2>
       <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleSubmit}>
         <div className="col-span-1 md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+          <label className="block text-xs font-medium text-slate-700 mb-1">Full Name</label>
           <input
             type="text"
-            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm"
             placeholder="e.g., Juan Dela Cruz"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+          <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
           <input
             type="email"
-            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm"
             placeholder="name@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+          <label className="block text-xs font-medium text-slate-700 mb-1">Role</label>
           <select
-            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm"
             value={role}
             onChange={(e) => setRole(e.target.value)}
           >
@@ -171,27 +171,27 @@ function CreatePersonnelForm({ onCreate }) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+          <label className="block text-xs font-medium text-slate-700 mb-1">Username</label>
           <input
             type="text"
-            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm"
             placeholder="unique username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Temporary Password</label>
+          <label className="block text-xs font-medium text-slate-700 mb-1">Temporary Password</label>
           <input
             type="password"
-            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+            className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm"
             placeholder="temporary password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
         <div className="md:col-span-2 flex items-center gap-3">
-          <button type="submit" className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+          <button type="submit" className="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm">
             Create Account
           </button>
           {error && <span className="text-sm text-red-600">{error}</span>}
@@ -208,24 +208,24 @@ function AccountsTable({ accounts }) {
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-slate-700">
             <tr>
-              <th className="text-left font-medium px-4 py-3">Name</th>
-              <th className="text-left font-medium px-4 py-3">Email</th>
-              <th className="text-left font-medium px-4 py-3">Role</th>
-              <th className="text-left font-medium px-4 py-3">Username</th>
+              <th className="text-left font-medium px-3 py-2 text-xs">Name</th>
+              <th className="text-left font-medium px-3 py-2 text-xs">Email</th>
+              <th className="text-left font-medium px-3 py-2 text-xs">Role</th>
+              <th className="text-left font-medium px-3 py-2 text-xs">Username</th>
             </tr>
           </thead>
           <tbody>
             {accounts.length === 0 ? (
               <tr>
-                <td className="px-4 py-6 text-slate-500" colSpan={4}>No accounts yet.</td>
+                <td className="px-3 py-5 text-slate-500 text-sm" colSpan={4}>No accounts yet.</td>
               </tr>
             ) : (
               accounts.map((a) => (
                 <tr key={a.id} className="border-t border-slate-100">
-                  <td className="px-4 py-3">{a.fullName}</td>
-                  <td className="px-4 py-3">{a.email}</td>
-                  <td className="px-4 py-3">{a.role}</td>
-                  <td className="px-4 py-3">{a.username}</td>
+                  <td className="px-3 py-2 text-sm">{a.fullName}</td>
+                  <td className="px-3 py-2 text-sm">{a.email}</td>
+                  <td className="px-3 py-2 text-sm">{a.role}</td>
+                  <td className="px-3 py-2 text-sm">{a.username}</td>
                 </tr>
               ))
             )}
@@ -247,42 +247,40 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[18rem_1fr]">
+    <div className="min-h-screen lg:pl-72">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNavigate={(r) => { setRoute(r); setSidebarOpen(false) }} />
 
-      <div className="lg:ml-72">
-        <Topbar onMenuClick={() => setSidebarOpen(true)} />
+      <Topbar onMenuClick={() => setSidebarOpen(true)} />
 
-        <main className="px-4 py-6 max-w-7xl mx-auto">
-          <section className="mb-6">
-            <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6">
-              <h1 className="text-2xl font-semibold">Agaspay Admin Dashboard</h1>
-              <p className="text-blue-50 mt-1">Barangay Waterworks Operation System</p>
-            </div>
-          </section>
+      <main className="px-3 sm:px-4 py-5 max-w-7xl mx-auto">
+        <section className="mb-5">
+          <div className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white p-5">
+            <h1 className="text-xl font-semibold">Agaspay Admin Dashboard</h1>
+            <p className="text-blue-50 mt-1 text-sm">Barangay Waterworks Operation System</p>
+          </div>
+        </section>
 
-          {route === 'dashboard' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Active Connections" value="1,248" icon={<WaterDropIcon className="w-6 h-6" />} />
-              <StatCard label="Barangays" value="23" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M3 6a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v12H6a3 3 0 0 1-3-3V6z"/><path d="M13 9h5a3 3 0 0 1 3 3v6h-8V9z"/></svg>} />
-              <StatCard label="Outstanding Bills" value="312" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M6 2h9a3 3 0 0 1 3 3v14l-4-2-4 2-4-2-4 2V5a3 3 0 0 1 3-3z"/></svg>} />
-              <StatCard label="This Month's Revenue" value="₱ 482k" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0zm9-6v12m-4-4h8"/></svg>} />
-            </div>
-          )}
+        {route === 'dashboard' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard label="Active Connections" value="1,248" icon={<WaterDropIcon className="w-5 h-5" />} />
+            <StatCard label="Barangays" value="23" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M3 6a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v12H6a3 3 0 0 1-3-3V6z"/><path d="M13 9h5a3 3 0 0 1 3 3v6h-8V9z"/></svg>} />
+            <StatCard label="Outstanding Bills" value="312" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M6 2h9a3 3 0 0 1 3 3v14l-4-2-4 2-4-2-4 2V5a3 3 0 0 1 3-3z"/></svg>} />
+            <StatCard label="This Month's Revenue" value="₱ 482k" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0zm9-6v12m-4-4h8"/></svg>} />
+          </div>
+        )}
 
-          {route === 'create' && (
-            <div className="grid grid-cols-1 gap-6">
-              <CreatePersonnelForm onCreate={handleCreate} />
-            </div>
-          )}
+        {route === 'create' && (
+          <div className="grid grid-cols-1 gap-5">
+            <CreatePersonnelForm onCreate={handleCreate} />
+          </div>
+        )}
 
-          {route === 'accounts' && (
-            <div className="grid grid-cols-1 gap-6">
-              <AccountsTable accounts={accounts} />
-            </div>
-          )}
-        </main>
-      </div>
+        {route === 'accounts' && (
+          <div className="grid grid-cols-1 gap-5">
+            <AccountsTable accounts={accounts} />
+          </div>
+        )}
+      </main>
     </div>
   )
 }
