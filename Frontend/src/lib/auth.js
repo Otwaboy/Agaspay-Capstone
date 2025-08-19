@@ -66,36 +66,117 @@ class AuthManager {
         throw new Error('Replit server failed');
       } catch (fallbackError) {
         console.log('Replit server error:', fallbackError.message);
+      // Final fallback: mock authentication for testing
+      const { username, password } = credentials;
+      
+      // Check demo credentials
+      if (username === 'admin' && password === 'admin123') {
+        const mockData = {
+          token: 'mock-jwt-token-' + Date.now(),
+          user: {
+            id: 'mock-admin-id',
+            username: 'admin',
+            role: 'admin'
+          },
+          personnel: {
+            first_name: 'System',
+            last_name: 'Administrator',
+            role: 'admin'
+          }
+        };
         
-        // Final fallback: mock authentication for testing
-        const { username, password } = credentials;
+        // Store token and user data
+        localStorage.setItem(this.tokenKey, mockData.token);
+        localStorage.setItem(this.userKey, JSON.stringify(mockData.user));
         
-        // Check demo credentials
-        if (username === 'admin' && password === 'admin123') {
-          const mockData = {
-            token: 'mock-jwt-token-' + Date.now(),
-            user: {
-              id: 'mock-admin-id',
-              username: 'admin',
-              role: 'admin'
-            },
-            personnel: {
-              first_name: 'System',
-              last_name: 'Administrator',
-              role: 'admin'
-            }
-          };
-          
-          // Store token and user data
-          localStorage.setItem(this.tokenKey, mockData.token);
-          localStorage.setItem(this.userKey, JSON.stringify(mockData.user));
-          
-          return mockData;
-        } else {
-          throw new Error('Invalid credentials. Please check your username and password or ensure your backend server is running on port 3000.');
-        }
+        return mockData;
+      } else {
+        throw new Error('Invalid credentials. Please check your username and password or ensure your backend server is running on port 3000.');
+      }
       }
     }
+  }
+
+  async createAccount(credentials) {
+    const response = await fetch('http://localhost:3000/api/v1/auth/register-personnel', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${this.getToken()}`, // Include auth token for admin-only operations
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        success: true,
+        message: 'Personnel account created successfully',
+        data: data
+      };
+    }
+    
+    if (response.status === 401) {
+      throw new Error('Unauthorized: Admin access required to create personnel accounts');
+    }
+    
+    if (response.status === 409) {
+      throw new Error('Account already exists with this username or email');
+    }
+
+    if (response.status === 400) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Invalid data provided');
+    }
+
+    if (response.status === 500) {
+      throw new Error('Server error occurred. Please try again later');
+    }
+    
+    throw new Error(`Failed to create personnel account. Server responded with status: ${response.status}`);
+  }
+
+  async createPersonnel(personnelData) {
+    const response = await fetch('http://localhost:3000/api/v1/personnel', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${this.getToken()}`, // Include auth token for admin-only operations
+      },
+      body: JSON.stringify(personnelData),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        success: true,
+        message: 'Personnel created successfully',
+        data: data
+      };
+    }
+    
+    if (response.status === 401) {
+      throw new Error('Unauthorized: Admin access required to create personnel');
+    }
+    
+    if (response.status === 409) {
+      throw new Error('Personnel with this email already exists');
+    }
+
+    if (response.status === 400) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Invalid personnel data provided');
+    }
+
+    if (response.status === 500) {
+      throw new Error('Server error occurred. Please try again later');
+    }
+    
+    throw new Error(`Failed to create personnel. Server responded with status: ${response.status}`);
   }
 
   logout() {

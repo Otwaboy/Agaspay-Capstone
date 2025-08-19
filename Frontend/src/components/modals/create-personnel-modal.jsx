@@ -1,4 +1,20 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "../ui/dialog";
+
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Checkbox } from "../ui/checkbox";
+import { useToast } from "../../hooks/use-toast";
+import { authManager } from "../../lib/auth";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function CreatePersonnelModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
@@ -7,19 +23,67 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
     email: "",
     phone: "",
     role: "",
-    department: ""
+    department: "",
+    username: "",
+    password: "",
+    createAccount: false
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Mock API call
+      // If create account is checked, validate account fields and create account first
+      if (formData.createAccount) {
+        if (!formData.username || !formData.password) {
+          toast({
+            title: "Validation Error",
+            description: "Username and password are required when creating an account",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (formData.password.length < 6) {
+          toast({
+            title: "Validation Error", 
+            description: "Password must be at least 6 characters long",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Create account using authManager
+        const accountData = {
+          username: formData.username,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          department: formData.department
+        };
+
+        await authManager.createAccount(accountData);
+      }
+
+      // Simulate personnel creation (this would normally be a separate API call)
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      alert(`Personnel Created: ${formData.firstName} ${formData.lastName} has been added as ${formData.role}`);
+      const successMessage = formData.createAccount 
+        ? `${formData.firstName} ${formData.lastName} has been added as ${formData.role} with login account created`
+        : `${formData.firstName} ${formData.lastName} has been added as ${formData.role}`;
+
+      toast({
+        title: "Personnel Created Successfully",
+        description: successMessage,
+        variant: "default"
+      });
 
       // Reset form
       setFormData({
@@ -28,151 +92,203 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         email: "",
         phone: "",
         role: "",
-        department: ""
+        department: "",
+        username: "",
+        password: "",
+        createAccount: false
       });
       
       onClose();
     } catch (error) {
-      alert("Error: Failed to create personnel. Please try again.", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create personnel. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (field, value) => {
+  const handleChange = (field) => (value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div 
-        className="fixed inset-0 bg-black/50" 
-        onClick={onClose}
-      />
-      <div className="relative bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Create New Personnel</h2>
-          <p className="text-sm text-gray-600 mt-1">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-white sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Personnel</DialogTitle>
+          <DialogDescription>
             Add a new staff member to the AGASPAY system.
-          </p>
-        </div>
+          </DialogDescription>
+        </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name
-              </label>
-              <input
-                type="text"
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
                 value={formData.firstName}
-                onChange={(e) => handleChange("firstName", e.target.value)}
+                onChange={(e) => handleChange("firstName")(e.target.value)}
                 placeholder="Enter first name"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                data-testid="input-first-name"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name
-              </label>
-              <input
-                type="text"
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
                 value={formData.lastName}
-                onChange={(e) => handleChange("lastName", e.target.value)}
+                onChange={(e) => handleChange("lastName")(e.target.value)}
                 placeholder="Enter last name"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                data-testid="input-last-name"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => handleChange("email", e.target.value)}
+              onChange={(e) => handleChange("email")(e.target.value)}
               placeholder="Enter email address"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              data-testid="input-email"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number
-            </label>
-            <input
-              type="tel"
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
               value={formData.phone}
-              onChange={(e) => handleChange("phone", e.target.value)}
+              onChange={(e) => handleChange("phone")(e.target.value)}
               placeholder="Enter phone number"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              data-testid="input-phone"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => handleChange("role", e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select role</option>
-              <option value="meter_reader">Meter Reader</option>
-              <option value="maintenance">Maintenance Staff</option>
-              <option value="treasurer">Treasurer</option>
-              <option value="secretary">Barangay Secretary</option>
-              <option value="admin">Administrator</option>
-            </select>
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select onValueChange={handleChange("role")} required>
+              <SelectTrigger data-testid="select-role">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="meter_reader">Meter Reader</SelectItem>
+                <SelectItem value="maintenance">Maintenance Staff</SelectItem>
+                <SelectItem value="treasurer">Treasurer</SelectItem>
+                <SelectItem value="secretary">Barangay Secretary</SelectItem>
+                <SelectItem value="admin">Administrator</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Department
-            </label>
-            <select
-              value={formData.department}
-              onChange={(e) => handleChange("department", e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select department</option>
-              <option value="operations">Operations</option>
-              <option value="finance">Finance</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="administration">Administration</option>
-            </select>
+          <div className="space-y-2">
+            <Label htmlFor="department">Department</Label>
+            <Select onValueChange={handleChange("department")} required>
+              <SelectTrigger data-testid="select-department">
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="operations">Operations</SelectItem>
+                <SelectItem value="finance">Finance</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="administration">Administration</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
+          {/* Account Creation Section */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox
+                id="createAccount"
+                checked={formData.createAccount}
+                onCheckedChange={(checked) => handleChange("createAccount")(checked)}
+                data-testid="checkbox-create-account"
+              />
+              <Label htmlFor="createAccount" className="text-sm font-medium">
+                Create login account for this personnel
+              </Label>
+            </div>
+
+            {formData.createAccount && (
+              <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={formData.username}
+                    onChange={(e) => handleChange("username")(e.target.value)}
+                    placeholder="Enter username for login"
+                    required={formData.createAccount}
+                    data-testid="input-username"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => handleChange("password")(e.target.value)}
+                      placeholder="Enter password (min 6 characters)"
+                      required={formData.createAccount}
+                      data-testid="input-password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      data-testid="button-toggle-password"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    This account will allow the personnel to log into the system
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              data-testid="button-cancel"
             >
               Cancel
-            </button>
-            <button
-              type="submit"
+            </Button>
+            <Button 
+              type="submit" 
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              data-testid="button-create"
             >
               {isLoading ? "Creating..." : "Create Personnel"}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

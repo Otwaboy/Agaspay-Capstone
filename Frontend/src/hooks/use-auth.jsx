@@ -24,6 +24,10 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const createAccount = async (credentials) => {
+    return await authManager.createAccount(credentials);
+  };
+
   const logout = () => {
     // Clear localStorage first
     authManager.logout();
@@ -44,6 +48,7 @@ export function AuthProvider({ children }) {
     isLoading,
     login,
     logout,
+    createAccount,
   };
 
   return (
