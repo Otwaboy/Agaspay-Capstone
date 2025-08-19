@@ -37,7 +37,7 @@ const registerResident = async (req, res) => {
 
 
 }
-
+ 
 const registerPersonnel = async (req, res) => {
     const { 
            username, 
@@ -78,6 +78,8 @@ const registerPersonnel = async (req, res) => {
 
 }
 
+
+//login field
 const login = async (req, res) => {
     const {username, password} = req.body
 
@@ -100,7 +102,7 @@ const login = async (req, res) => {
 
     const token = user.createJWT();
 
-    res.status(StatusCodes.ACCEPTED).json({userForm: {msg: 'congratulations youre succesfully login', username: user.username, role: user.role, token}})
+    res.status(StatusCodes.ACCEPTED).json({userForm: {msg: 'congratulations youre succesfully loginss', username: user.username, role: user.role, token}})
 }
 
 module.exports = { registerResident, login, registerPersonnel }; 
