@@ -38,6 +38,7 @@ const registerResident = async (req, res) => {
 
 }
  
+// e register and mga brgy personnel ani
 const registerPersonnel = async (req, res) => {
     const { 
            username, 
@@ -59,7 +60,7 @@ const registerPersonnel = async (req, res) => {
         last_name,
         contact_no,
         assigned_zone,
-    )
+    ) 
 
      const token = user.createJWT();
 
@@ -71,6 +72,7 @@ const registerPersonnel = async (req, res) => {
       username: user.username,
       personnel_id: personnel._id,
       role: personnel.role,
+      assigned_zone: personnel.assigned_zone,
       token
         }
     });

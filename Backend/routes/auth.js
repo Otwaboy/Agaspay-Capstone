@@ -7,4 +7,4 @@ router.route('/register-resident').post(registerResident)
 router.route('/register-personnel').post(registerPersonnel)
 router.route('/login').post(login)
 
-module.exports = router
+module.exports = router 

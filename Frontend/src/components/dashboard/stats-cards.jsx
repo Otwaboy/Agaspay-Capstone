@@ -1,8 +1,8 @@
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { Users, Droplets, DollarSign, AlertTriangle } from "lucide-react";
+
 
 export default function StatsCards() {
   const { data: stats, isLoading } = useQuery({

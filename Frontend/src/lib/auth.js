@@ -97,8 +97,13 @@ class AuthManager {
     }
   }
 
+
+
   async createAccount(credentials) {
-    const response = await fetch('http://localhost:3000/api/v1/auth/register-personnel', {
+
+    console.log('Creating account with data:', credentials);
+
+    const response = await fetch('http://localhost:3000/api/v1/auth/register-personnel',{
       method: 'POST',
       mode: 'cors',
       headers: {
@@ -108,6 +113,9 @@ class AuthManager {
       },
       body: JSON.stringify(credentials),
     });
+
+     console.log('Account creation response status:', response.status);
+
 
     if (response.ok) {
       const data = await response.json();
@@ -138,46 +146,6 @@ class AuthManager {
     throw new Error(`Failed to create personnel account. Server responded with status: ${response.status}`);
   }
 
-  async createPersonnel(personnelData) {
-    const response = await fetch('http://localhost:3000/api/v1/personnel', {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${this.getToken()}`, // Include auth token for admin-only operations
-      },
-      body: JSON.stringify(personnelData),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        success: true,
-        message: 'Personnel created successfully',
-        data: data
-      };
-    }
-    
-    if (response.status === 401) {
-      throw new Error('Unauthorized: Admin access required to create personnel');
-    }
-    
-    if (response.status === 409) {
-      throw new Error('Personnel with this email already exists');
-    }
-
-    if (response.status === 400) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Invalid personnel data provided');
-    }
-
-    if (response.status === 500) {
-      throw new Error('Server error occurred. Please try again later');
-    }
-    
-    throw new Error(`Failed to create personnel. Server responded with status: ${response.status}`);
-  }
 
   logout() {
     localStorage.removeItem(this.tokenKey);

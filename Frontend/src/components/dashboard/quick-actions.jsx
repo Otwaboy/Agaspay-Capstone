@@ -7,9 +7,12 @@ import {
   Settings,
   Bell,
   Users
-} from "lucide-react";
+} from "lucide-react"; 
+
 
 export default function QuickActions() {
+
+
   
   const actions = [
     {

@@ -47,7 +47,7 @@ app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/meter-reader', meterReadingRoutes)
 app.use('/api/v1/rate', rateRoutes)
 app.use('/api/v1/billing', billingRoutes)
-app.use('/api/v1/payment', paymentRoutes)
+app.use('/api/v1/payment', paymentRoutes) 
 
 
 

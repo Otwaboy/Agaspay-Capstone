@@ -13,6 +13,7 @@ import ScheduleTaskModal from "../components/modals/schedule-task-modal";
 import { Loader2 } from "lucide-react";
 
 
+
 export default function Dashboard() {
 
     // Added state for modals
@@ -32,6 +33,8 @@ const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     window.removeEventListener("openTaskModal", handleOpenTaskModal);
   };
 }, []);
+
+
 
 
 

@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema
     role:
      {
         type: String,
-        enum: ['resident', 'admin', 'secretary', 'treasurer', 'maintenance', 'meter reader'],
+        enum: ['resident', 'admin', 'secretary', 'treasurer', 'maintenance', 'meter_reader'],
         required:[true, 'Must choose your role']
   }
     }

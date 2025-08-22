@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
     email: "",
     phone: "",
     role: "",
-    department: "",
+    assignedZone: "",
     username: "",
     password: "",
     createAccount: false
@@ -32,6 +32,8 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
+
+  // functions when submmiting the button
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -57,23 +59,23 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           return;
         }
 
-        // Create account using authManager
+
+  // Create account using authManager which is masave sya sa database
         const accountData = {
           username: formData.username,
           password: formData.password,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
           email: formData.email,
-          phone: formData.phone,
+          contact_no: formData.phone,
           role: formData.role,
-          department: formData.department
+          assigned_zone: formData.assignedZone
         };
-
         await authManager.createAccount(accountData);
       }
 
       // Simulate personnel creation (this would normally be a separate API call)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await new Promise(resolve => setTimeout(resolve, 1000));
       
       const successMessage = formData.createAccount 
         ? `${formData.firstName} ${formData.lastName} has been added as ${formData.role} with login account created`
@@ -92,13 +94,14 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         email: "",
         phone: "",
         role: "",
-        department: "",
+        assignedZone: "",
         username: "",
         password: "",
         createAccount: false
       });
       
       onClose();
+
     } catch (error) {
       toast({
         title: "Error",
@@ -114,7 +117,10 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+
+
   return (
+
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -175,6 +181,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
             />
           </div>
 
+{/* Selecting role para sa mga barangay personnel */}
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
             <Select onValueChange={handleChange("role")} required>
@@ -191,22 +198,26 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
             </Select>
           </div>
 
+
+{/* assigning  zone if the role is meter reader */}
+      {formData.role === 'meter_reader' && (
           <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
-            <Select onValueChange={handleChange("department")} required>
-              <SelectTrigger data-testid="select-department">
-                <SelectValue placeholder="Select department" />
+            <Label htmlFor="assignedZone">Assigned Zone</Label>
+            <Select onValueChange={handleChange("assignedZone")} required>
+              <SelectTrigger data-testid="select-zone">
+                <SelectValue placeholder="Select zone" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="operations">Operations</SelectItem>
-                <SelectItem value="finance">Finance</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
-                <SelectItem value="administration">Administration</SelectItem>
+                <SelectItem value="1">Biking 1</SelectItem>
+                <SelectItem value="2">Biking 2</SelectItem>
+                <SelectItem value="3">Biking 3</SelectItem>
               </SelectContent>
             </Select>
           </div>
+      )}
 
-          {/* Account Creation Section */}
+
+  {/* Account Creation Section */}
           <div className="border-t pt-4 mt-4">
             <div className="flex items-center space-x-2 mb-4">
               <Checkbox
@@ -219,7 +230,9 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
                 Create login account for this personnel
               </Label>
             </div>
+           
 
+      {/* this line of code mo render sya if formData.createAccount is true */}
             {formData.createAccount && (
               <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
                 <div className="space-y-2">
