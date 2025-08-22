@@ -28,6 +28,10 @@ export function AuthProvider({ children }) {
     return await authManager.createAccount(credentials);
   };
 
+  const createPersonnel = async (personnelData) => {
+    return await authManager.createPersonnel(personnelData);
+  };
+
   const logout = () => {
     // Clear localStorage first
     authManager.logout();
@@ -38,17 +42,30 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = authManager.isAuthenticated() && !!user;
   const isAdmin = authManager.isAdmin();
+  const isSecretary = authManager.isSecretary();
+  const isResident = authManager.isResident();
   const canAccessAdminDashboard = authManager.canAccessAdminDashboard();
+  const canAccessSecretaryDashboard = authManager.canAccessSecretaryDashboard();
+  const canAccessResidentDashboard = authManager.canAccessResidentDashboard();
+  const canAccessDashboard = authManager.canAccessDashboard();
+  const canAccessAnyDashboard = authManager.canAccessAnyDashboard();
 
   const value = {
     user,
     isAuthenticated,
-    isAdmin,
+    isAdmin, 
+    isSecretary,
+    isResident,
     canAccessAdminDashboard,
+    canAccessSecretaryDashboard,
+    canAccessResidentDashboard,
+    canAccessDashboard,
+    canAccessAnyDashboard,
     isLoading,
     login,
     logout,
     createAccount,
+    createPersonnel,
   };
 
   return (

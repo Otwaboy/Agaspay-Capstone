@@ -2,9 +2,9 @@ import React, { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
 
-// Protected Route component for admin-only access
-export function ProtectedRoute({ children, requireAdmin = false }) {
-  const { isAuthenticated, canAccessAdminDashboard, isLoading } = useAuth();
+// Protected Route component for role-based access
+export function ProtectedRoute({ children, requireAdmin = false, requireSecretary = false, requireResident = false, allowBoth = false, allowAll = false }) {
+  const { isAuthenticated, canAccessAdminDashboard, canAccessSecretaryDashboard, canAccessResidentDashboard, canAccessDashboard, canAccessAnyDashboard, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   // Use effect to handle redirects
@@ -24,7 +24,7 @@ export function ProtectedRoute({ children, requireAdmin = false }) {
         </div>
       </div>
     );
-  }
+  } 
 
   // If not authenticated at all, show loading while redirecting
   if (!isAuthenticated) {
@@ -38,8 +38,31 @@ export function ProtectedRoute({ children, requireAdmin = false }) {
     );
   }
 
-  // If admin access required but user is not admin, show access denied
-  if (requireAdmin && !canAccessAdminDashboard) {
+  // Check role-based access
+  let hasAccess = false;
+  let accessMessage = "";
+
+  if (requireAdmin) {
+    hasAccess = canAccessAdminDashboard;
+    accessMessage = "You don't have permission to access the admin dashboard. Only administrators can access this area.";
+  } else if (requireSecretary) {
+    hasAccess = canAccessSecretaryDashboard;
+    accessMessage = "You don't have permission to access the secretary dashboard. Only secretaries can access this area.";
+  } else if (requireResident) {
+    hasAccess = canAccessResidentDashboard;
+    accessMessage = "You don't have permission to access the Resident dashboard. Only Resident can access this area.";
+  } else if (allowBoth) {
+    hasAccess = canAccessDashboard;
+    accessMessage = "You don't have permission to access this dashboard. Only administrators and secretaries can access this area.";
+  } else if (allowAll) {
+    hasAccess = canAccessAnyDashboard;
+    accessMessage = "You don't have permission to access this dashboard. Only administrators and secretaries can access this area.";
+  } else {
+    hasAccess = true; // No specific role requirement
+  }
+
+  // If specific role access required but user doesn't have access, show access denied
+  if (!hasAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 text-center">
@@ -54,7 +77,7 @@ export function ProtectedRoute({ children, requireAdmin = false }) {
             Access Denied
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            You don't have permission to access the admin dashboard. Only administrators can access this area.
+            {accessMessage}
           </p>
           <button
             onClick={() => {
@@ -82,6 +105,41 @@ export function ProtectedRoute({ children, requireAdmin = false }) {
 export function AdminRoute({ children }) {
   return (
     <ProtectedRoute requireAdmin={true}>
+      {children}
+    </ProtectedRoute>
+  );
+}
+
+// Secretary-only route wrapper
+export function SecretaryRoute({ children }) {
+  return (
+    <ProtectedRoute requireSecretary={true}>
+      {children}
+    </ProtectedRoute>
+  );
+}
+
+// Resident-only route wrapper
+export function ResidentRoute({ children }) {
+  return (
+    <ProtectedRoute requireResident={true}>
+      {children}
+    </ProtectedRoute>
+  );
+}
+
+// Route for both admin and secretary access
+export function DashboardRoute({ children }) {
+  return (
+    <ProtectedRoute allowBoth={true}>
+      {children}
+    </ProtectedRoute>
+  );
+}
+
+export function AnyDashboardRoute({ children }) {
+  return (
+    <ProtectedRoute allowAll={true}>
       {children}
     </ProtectedRoute>
   );

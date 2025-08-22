@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { useAuth } from "../hooks/use-auth";
 import { Loader2, Droplets } from "lucide-react";
 
+
+
 export default function Login() {
   const [, setLocation] = useLocation();
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -23,7 +25,7 @@ export default function Login() {
       setLocation("/");
     }
   }, [isAuthenticated, setLocation]);
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -63,7 +65,7 @@ export default function Login() {
               <Droplets className="h-8 w-8 text-white" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">AGASPAY Admin</h2>
+          <h2 className="text-3xl font-bold text-gray-900">AGASPAY</h2>
           <p className="mt-2 text-sm text-gray-600">
             Barangay Waterworks Management System
           </p>
@@ -73,7 +75,7 @@ export default function Login() {
           <CardHeader>
             <CardTitle>Sign in to your account</CardTitle>
             <CardDescription>
-              Enter your credentials to access the admin dashboard
+              Enter your credentials to access the system
             </CardDescription>
           </CardHeader>
           <CardContent>
