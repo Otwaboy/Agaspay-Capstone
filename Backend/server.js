@@ -33,6 +33,7 @@ const meterReadingRoutes = require('./routes/meter-reading')
 const rateRoutes = require('./routes/rate')
 const billingRoutes = require('./routes/billing') 
 const paymentRoutes = require('./routes/payment')
+const manageUserRoutes = require('./routes/manage-user')
 
 
 //cors
@@ -48,6 +49,7 @@ app.use('/api/v1/meter-reader', meterReadingRoutes)
 app.use('/api/v1/rate', rateRoutes)
 app.use('/api/v1/billing', billingRoutes)
 app.use('/api/v1/payment', paymentRoutes) 
+app.use('/api/v1/user', manageUserRoutes)
 
 
 

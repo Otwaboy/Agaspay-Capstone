@@ -4,15 +4,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
-import { CreditCard, Clock, AlertTriangle, CheckCircle } from "lucide-react";
+import { CreditCard, Clock, AlertTriangle, CheckCircle, WifiOff } from "lucide-react";
+import {apiClient} from "../../lib/api";
+  
 
 export default function ResidentBillingSummary() {
+  
+   
   const { data: billingData, isLoading } = useQuery({
-    queryKey: ['/api/resident/billing'],
+    queryKey: ['/api/v1/billin'],
     initialData: {
       currentBill: {
         amount: 450.00,
-        dueDate: "2024-08-25",
+        dueDate: "2024-08-25",  
         status: "pending",
         period: "July 2024"
       },

@@ -9,7 +9,7 @@ import ResidentBillingSummary from "../components/dashboard/resident-billing-sum
 import ResidentQuickActions from "../components/dashboard/resident-quick-actions";
 import ResidentRecentTransactions from "../components/dashboard/resident-recent-transactions";
 import ResidentServiceRequests from "../components/dashboard/resident-service-requests";
-import ResidentAnnouncements from "../components/dashboard/resident-announcements";
+import ResidentAnnouncements from "../components/dashboard/resident-annoucements";
 import PayBillModal from "../components/modals/pay-bill-modal";
 import ReportIssueModal from "../components/modals/report-issue-modal";
 import { Loader2 } from "lucide-react";

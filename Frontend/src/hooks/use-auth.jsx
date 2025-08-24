@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { authManager } from "../lib/auth";
 
 const AuthContext = createContext(undefined);
@@ -10,10 +10,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Initialize auth state from stored data
     const currentUser = authManager.getUser();
+
     setUser(currentUser);
     setIsLoading(false);
   }, []);
 
+
+  //login form function
   const login = async (credentials) => {
     setIsLoading(true);
     try {
@@ -31,6 +34,8 @@ export function AuthProvider({ children }) {
   const createPersonnel = async (personnelData) => {
     return await authManager.createPersonnel(personnelData);
   };
+
+
 
   const logout = () => {
     // Clear localStorage first

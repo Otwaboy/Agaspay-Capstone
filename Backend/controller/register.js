@@ -4,6 +4,9 @@ const {createUser, createResident, createWaterConnection, createPesonnel} = requ
 const { StatusCodes } = require('http-status-codes')
 const { BadRequestError, UnauthorizedError } = require('../errors')
 const User = require('../model/User')
+const Resident = require('../model/Resident')
+const Personnel = require('../model/Personnel')
+const WaterConnection = require('../model/WaterConnection')
 const bcrypt = require('bcrypt')
 
 const registerResident = async (req, res) => {
@@ -102,9 +105,26 @@ const login = async (req, res) => {
         throw new UnauthorizedError('password is incorrect')
     }
 
+  let fullname = "";
+
+  if (user.role === "resident") {
+    const resident = await Resident.findOne({ user_id: user._id });
+    if (resident) fullname = `${resident.first_name} ${resident.last_name}`;
+  } else {
+    const personnel = await Personnel.findOne({ user_id: user._id });
+    if (personnel) fullname = `${personnel.first_name} ${personnel.last_name}`;
+  }
+
+  
+
     const token = user.createJWT();
 
-    res.status(StatusCodes.ACCEPTED).json({userForm: {msg: 'congratulations youre succesfully loginss', username: user.username, role: user.role, token}})
+    res.status(StatusCodes.ACCEPTED).json({userForm: {msg: 'congratulations youre succesfully loginss',  
+        username: user.username,
+        fullname: fullname  ,
+        role: user.role, 
+        token
+    }})
 }
 
 module.exports = { registerResident, login, registerPersonnel }; 

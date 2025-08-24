@@ -26,12 +26,18 @@ class AuthManager {
           token: data.userForm?.token || data.token,
           user: {
             id: data.userForm?.user_id || data.user_id,
+            fullname: data.userForm?.fullname || data.fullname,
             username: data.userForm?.username || data.username,
+            meter_no: data.userForm?.meter_no || data.meter_no,
+            status: data.userForm?.status || data.status,
+            purok: data.userForm?.purok || data.purok,
+            type: data.userForm?.type || data.type,
             role: data.userForm?.role || data.role
           }
         };
         
         // Store token and user data
+        //key ug value pair this tokenkey is equal sa userdata.token
         localStorage.setItem(this.tokenKey, userData.token);
         localStorage.setItem(this.userKey, JSON.stringify(userData.user));
         
@@ -256,6 +262,7 @@ class AuthManager {
     return localStorage.getItem(this.tokenKey);
   }
 
+  //in JavaScript parse means convert a JSON string back into a real JavaScript object.
   getUser() {
     const user = localStorage.getItem(this.userKey);
     return user ? JSON.parse(user) : null;

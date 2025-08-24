@@ -26,7 +26,9 @@ const getAllConnectionIDs = async (req, res) => {
     const previous_reading = reading ? `${reading.previous_reading}` : 'not here purok';
     const present_reading = reading ? `${reading.present_reading}` : 'not here purok';
     const calculated = reading ? `${reading.calculated}` : 'not here purok';
+    const reading_id = reading? `${reading._id}` : 'not here purok';
     return {
+      reading_id: reading_id,
       connection_id: connection?._id,
       inclusive_date: inclusive_date,
       full_name: fullName,
@@ -48,7 +50,7 @@ const getAllConnectionIDs = async (req, res) => {
 
 
 const inputReading = async (req, res) => {
-  const { connection_id, previous_reading, present_reading, inclusive_date, remarks} = req.body;
+  const { connection_id, present_reading, inclusive_date, remarks} = req.body;
   const user = req.user;
 
   // Validate role
@@ -57,16 +59,12 @@ const inputReading = async (req, res) => {
   }
 
   // Validate input
-  if (!connection_id || previous_reading === undefined || present_reading === undefined) {
+  if (!connection_id || present_reading === undefined|| !inclusive_date ) {
     throw new BadRequestError('All fields are required.');
   }
 
-  if (present_reading < previous_reading) {
-    throw new BadRequestError('Present reading must be greater than or equal to previous.');
-  }
-
-   if (!inclusive_date) {
-    throw new BadRequestError('Please porvice inclusive date');
+   if (!inclusive_date.start || !inclusive_date.end) {
+    throw new BadRequestError('Please porvice inclusive start date and end date');
   }
 
   // Optional: Validate if connection exists
@@ -74,6 +72,19 @@ const inputReading = async (req, res) => {
   if (!connection) {
     throw new BadRequestError('Water connection not found.');
   }
+
+
+
+ // Find the last reading for this connection
+  const lastReading = await MeterReading.findOne({connection_id}).sort({created_at: -1});
+
+ // If there's a last reading, use its present as new previous
+  const previous_reading = lastReading ? lastReading.present_reading : 0;
+
+ // ✅ Validate present >= previous
+    if (present_reading < previous_reading) {
+     throw new BadRequestError('Present reading cannot be less than previous reading')
+    }
 
   // Create meter reading
   const reading = await MeterReading.create({
@@ -88,7 +99,7 @@ const inputReading = async (req, res) => {
 
   res.status(StatusCodes.CREATED).json({
     message: 'Meter reading successfully recorded',
-    reading
+    data: reading
   });
 };
 

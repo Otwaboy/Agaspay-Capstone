@@ -88,7 +88,7 @@ function ResidentSidebarContent() {
   return (
     <div className="flex flex-col h-full bg-white shadow-lg">
       {/* Logo Section */}
-      <div className="flex items-center px-6 py-6 border-b border-gray-200">
+      <div className="flex items-center px-6 py-5.5 border-b border-gray-200">
         <div className="flex items-center">
           <div className="bg-blue-600 p-2 rounded-lg">
             <Droplets className="h-6 w-6 text-white" />
@@ -133,12 +133,9 @@ function ResidentSidebarContent() {
           </div>
           <div className="ml-3 min-w-0 flex-1">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.firstName && user?.lastName 
-                ? `${user.firstName} ${user.lastName}` 
-                : user?.username || 'Resident'
-              }
+             {user?.fullname || user?.username || "Resident"}
             </p>
-            <p className="text-xs text-gray-500 truncate">Water Service Customer</p>
+            <p className="text-xs text-gray-500 truncate">{user?.role.charAt(0)?.toUpperCase()+ user.role.slice(1) || 'Water Service Customer'}</p>
           </div>
         </div>
         <Button

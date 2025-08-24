@@ -1,4 +1,5 @@
 // API utility functions for PayMongo integration
+
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://your-backend-domain.com' 
   : 'http://localhost:3000';
@@ -24,6 +25,7 @@ class ApiClient {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    //wrapper
     try {
       const response = await fetch(url, config);
       const data = await response.json();
@@ -38,6 +40,7 @@ class ApiClient {
       throw error;
     }
   }
+ 
 
   // Payment related API calls
   async getCurrentBill() {
@@ -49,6 +52,11 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(paymentData),
     });
+  }
+
+  
+async getCurrentReading() {
+    return await this.request(`/api/v1/meter-reader}`);
   }
 
   async getPaymentStatus(paymentIntentId) {
@@ -64,8 +72,8 @@ class ApiClient {
   }
 
   // Resident account related API calls
-  async getResidentAccount() {
-    return await this.request('/api/v1/residents/account');
+  async getUserAccount() {
+    return await this.request('/api/v1/user');
   }
 
   async getWaterUsage() {
@@ -87,6 +95,8 @@ class ApiClient {
     return await this.request('/api/v1/announcements/resident');
   }
 }
+
+
 
 export const apiClient = new ApiClient();
 export default apiClient;

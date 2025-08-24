@@ -1,57 +1,45 @@
 const mongoose = require('mongoose');
 
 const MeterReadingSchema = new mongoose.Schema({
-  connection_id: 
-  {
+  connection_id: {
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'WaterConnection',
     required: true
   },
   inclusive_date: {
-    type: String,
-    required: [true, 'Inclusive date (billing period) is required']
-
+    start: { type: Date, required: true },
+    end: { type: Date, required: true }
   },
-  
-  previous_reading: 
-  {
+  previous_reading: {
     type: Number,
-    required: [true, 'Previous reading is required'],
     min: [0, 'Previous reading cannot be negative']
   },
-  present_reading: 
-  {
+  present_reading: {
     type: Number,
     required: [true, 'Present reading is required'],
     min: [0, 'Present reading cannot be negative'],
     validate: {
       validator: function (value) {
+        // prevent present < previous
         return value >= this.previous_reading;
       },
       message: 'Present reading must be greater than or equal to previous reading'
     }
   },
-  calculated: 
-  {
+  calculated: {
     type: Number,
-    required: true,
-    default: function () {
-      return this.present_reading - this.previous_reading;
-    }
+    default: 0
   },
-  remarks: 
-  {
+  remarks: {
     type: String, 
     default: "Normal Reading"
   },
-  reading_status: 
-  {
+  reading_status: {
     type: String,
     enum: ['inprogress', 'submitted', 'approved'],
     default: 'inprogress'
   },
-  recorded_by: 
-  {
+  recorded_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Personnel',
   },
@@ -59,6 +47,12 @@ const MeterReadingSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// 🔹 Always recalc "calculated" before saving
+MeterReadingSchema.pre("save", function (next) {
+  this.calculated = this.present_reading - this.previous_reading;
+  next();
 });
 
 module.exports = mongoose.model('MeterReading', MeterReadingSchema);

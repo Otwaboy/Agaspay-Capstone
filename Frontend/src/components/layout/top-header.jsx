@@ -29,7 +29,7 @@ export default function TopHeader() {
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    logout();
+    logout(); 
   };
 
   return (

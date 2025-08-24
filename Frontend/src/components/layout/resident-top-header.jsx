@@ -1,8 +1,7 @@
 // client/src/components/layout/resident-top-header.jsx
-import React from "react";
+
 import { useLocation } from "wouter";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import {
   DropdownMenu,
@@ -12,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+
 import {
   Bell,
   Search,
@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from "lucide-react";
+
 import { useAuth } from "../../hooks/use-auth";
 
 export default function ResidentTopHeader() {
@@ -35,17 +36,17 @@ export default function ResidentTopHeader() {
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-6 py-6">
         {/* Search Bar */}
         <div className="flex-1 max-w-lg">
-          <div className="relative">
+          {/* <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search bills, transactions, announcements..."
               className="pl-10 pr-4 w-full"
               data-testid="input-search"
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Right Side Actions */}
@@ -130,10 +131,7 @@ export default function ResidentTopHeader() {
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-gray-900">
-                    {user?.firstName && user?.lastName 
-                      ? `${user.firstName} ${user.lastName}` 
-                      : user?.username || 'Resident'
-                    }
+                    {user?.fullname || user?.username || "Resident"}
                   </p>
                   <p className="text-xs text-gray-500">Account: WS-2024-001</p>
                 </div>
