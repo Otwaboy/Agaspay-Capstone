@@ -19,110 +19,109 @@ import { useQuery } from "@tanstack/react-query";
 
 
 // PayMongo test environment function
-const createPayMongoTestCheckout = async (paymentData, formData) => {
-  try {
-    // PayMongo public test key (safe to use in frontend for testing)
-    const PAYMONGO_PUBLIC_KEY = 'pk_test_2GpBbJLfHbFdLDKO4dWddPhc';
+// const createPayMongoTestCheckout = async (paymentData, billingData) => {
+//   try {
+//     // PayMongo public test key (safe to use in frontend for testing)
+//     const PAYMONGO_PUBLIC_KEY = 'pk_test_2GpBbJLfHbFdLDKO4dWddPhc';
     
-    console.log('Creating PayMongo test checkout session...');
+//     console.log('Creating PayMongo test checkout session...');
     
-    // Step 1: Create Payment Intent using PayMongo test API
-    const paymentIntentResponse = await fetch('https://api.paymongo.com/v1/payment_intents', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(PAYMONGO_PUBLIC_KEY + ':')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        data: {
-          attributes: {
-            amount: Math.round(paymentData.amount * 100), // Convert to cents
-            currency: 'PHP',
-            payment_method_allowed: ['gcash', 'paymaya'],
-            capture_type: 'automatic',
-            description: `AGASPAY Water Bill Payment - ${formData.accountNumber}`
-          }
-        }
-      })
-    });
+//     // Step 1: Create Payment Intent using PayMongo test API
+//     const paymentIntentResponse = await fetch('https://api.paymongo.com/v1/payment_intents', {
+//       method: 'POST',
+//       headers: {
+//         'Authorization': `Basic ${btoa(PAYMONGO_PUBLIC_KEY + ':')}`,
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({
+//         data: {
+//           attributes: {
+//             amount: Math.round(paymentData.amount * 100), // Convert to cents
+//             currency: 'PHP',
+//             payment_method_allowed: ['gcash', 'paymaya'],
+//             capture_type: 'automatic',
+//             description: `AGASPAY Water Bill Payment - ${billingData.accountNumber}`
+//           }
+//         }
+//       })
+//     });
 
-    if (!paymentIntentResponse.ok) {
-      throw new Error('Failed to create PayMongo payment intent');
-    }
+//     if (!paymentIntentResponse.ok) {
+//       throw new Error('Failed to create PayMongo payment intent');
+//     }
 
-    const paymentIntentData = await paymentIntentResponse.json();
-    const paymentIntentId = paymentIntentData.data.id;
+//     const paymentIntentData = await paymentIntentResponse.json();
+//     const paymentIntentId = paymentIntentData.data.id;
     
-    console.log('PayMongo Payment Intent created:', paymentIntentId);
+//     console.log('PayMongo Payment Intent created:', paymentIntentId);
 
-    // Step 2: Create Checkout Session
-    const checkoutResponse = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(PAYMONGO_PUBLIC_KEY + ':')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        data: {
-          attributes: {
-            line_items: [
-              {
-                name: `Water Bill Payment - ${formData.accountNumber}`,
-                amount: Math.round(paymentData.amount * 100),
-                currency: 'PHP',
-                quantity: 1
-              }
-            ],
-            payment_intent_id: paymentIntentId,
-            payment_method_types: [paymentData.payment_method],
-            success_url: `${window.location.origin}/payment/success?payment_intent_id=${paymentIntentId}&status=succeeded`,
-            cancel_url: `${window.location.origin}/payment/cancel?payment_intent_id=${paymentIntentId}&status=failed`,
-            description: 'AGASPAY Water Bill Payment'
-          }
-        }
-      })
-    });
+//     // Step 2: Create Checkout Session
+//     const checkoutResponse = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
+//       method: 'POST',
+//       headers: {
+//         'Authorization': `Basic ${btoa(PAYMONGO_PUBLIC_KEY + ':')}`,
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({
+//         data: {
+//           attributes: {
+//             line_items: [
+//               {
+//                 name: `Water Bill Payment - ${billingData.accountNumber}`,
+//                 amount: Math.round(paymentData.amount * 100),
+//                 currency: 'PHP',
+//                 quantity: 1
+//               }
+//             ],
+//             payment_intent_id: paymentIntentId,
+//             payment_method_types: [paymentData.payment_method],
+//             success_url: `${window.location.origin}/payment/success?payment_intent_id=${paymentIntentId}&status=succeeded`,
+//             cancel_url: `${window.location.origin}/payment/cancel?payment_intent_id=${paymentIntentId}&status=failed`,
+//             description: 'AGASPAY Water Bill Payment'
+//           }
+//         }
+//       })
+//     });
 
-    if (!checkoutResponse.ok) {
-      throw new Error('Failed to create PayMongo checkout session');
-    }
+//     if (!checkoutResponse.ok) {
+//       throw new Error('Failed to create PayMongo checkout session');
+//     }
 
-    const checkoutData = await checkoutResponse.json();
-    const checkoutUrl = checkoutData.data.attributes.checkout_url;
+//     const checkoutData = await checkoutResponse.json();
+//     const checkoutUrl = checkoutData.data.attributes.checkout_url;
     
-    console.log('PayMongo Test Checkout URL created:', checkoutUrl);
+//     console.log('PayMongo Test Checkout URL created:', checkoutUrl);
 
-    return {
-      msg: "PayMongo test payment initialized",
-      paymentId: 'test-payment-' + Date.now(),
-      payment_intent_id: paymentIntentId,
-      payment_method: paymentData.payment_method,
-      payment_type: 'pending',
-      checkoutUrl: checkoutUrl
-    };
+//     return {
+//       msg: "PayMongo test payment initialized",
+//       paymentId: 'test-payment-' + Date.now(),
+//       payment_intent_id: paymentIntentId,
+//       payment_method: paymentData.payment_method,
+//       payment_type: 'pending',
+//       checkoutUrl: checkoutUrl
+//     };
 
-  } catch (error) {
-    console.error('PayMongo test checkout error:', error);
+//   } catch (error) {
+//     console.error('PayMongo test checkout error:', error);
     
-    // Fallback to local demo if PayMongo API fails
-    const baseUrl = window.location.origin;
-    return {
-      msg: "Local demo payment initialized",
-      paymentId: 'demo-payment-' + Date.now(),
-      payment_method: paymentData.payment_method,
-      payment_type: 'pending',
-      checkoutUrl: `${baseUrl}/payment/demo-checkout?amount=${paymentData.amount}&method=${paymentData.payment_method}&account=${formData.accountNumber}`
-    };
-  }
-};
+//     // Fallback to local demo if PayMongo API fails
+//     const baseUrl = window.location.origin;
+//     return {
+//       msg: "Local demo payment initialized",
+//       paymentId: 'demo-payment-' + Date.now(),
+//       payment_method: paymentData.payment_method,
+//       payment_type: 'pending',
+//       checkoutUrl: `${baseUrl}/payment/demo-checkout?amount=${paymentData.amount}&method=${paymentData.payment_method}&account=${billingData.accountNumber}`
+//     };
+//   }
+// };
 
 
 
 
 export default function PayBillModal({ isOpen, onClose }) {
-  const [formData, setFormData] = useState({
-    meterNumber: "MTR-000125",
-    amount: 450.00,
+
+  const [formData, setbillingData] = useState({
     paymentMethod: "",
     referenceNumber: "",
     phoneNumber: "",
@@ -146,7 +145,7 @@ export default function PayBillModal({ isOpen, onClose }) {
 
             return{
               billDetails: {
-                  id: billToPay._id,
+                  id: billToPay.bill_id,
                   accountName: billToPay.full_name,
                   billPeriod: billToPay.due_date,
                   meter_no: billToPay.meter_no,
@@ -154,7 +153,8 @@ export default function PayBillModal({ isOpen, onClose }) {
                   currentReading: billToPay.present_reading,
                   previousReading: billToPay.previous_reading,
                   consumption: billToPay.calculated,
-                  totalAmount: billToPay.total_amount
+                  totalAmount: billToPay.total_amount,
+                  
               }
             }
         }
@@ -217,170 +217,66 @@ export default function PayBillModal({ isOpen, onClose }) {
     }
   ];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
 
-
-      // For demo purposes, create mock bill data since backend isn't available
-      // In production, this would fetch from your MongoDB backend
-    
-      // const billData = {
-      //   _id: 'mock-bill-id-' + Date.now(),
-      //   bill_id: 'BILL-2024-001247',
-      //   total_amount: formData.amount,
-      //   status: 'unpaid',
-      //   billing_period: 'July 2024'
-      // };
-
-      // Get real bill data using API client
-      try {
-          if (!billingData?.billDetails?.id )  { 
-            throw new Error("No bill found. Please refresh.");
-          }
-
-          const currentBill = billingData.billDetails.totalAmount;
-          billData._id =  billingData.billDetails.connection_id;
-          billData.total_amount = billingData.billDetails.totalAmount;
-          billData.full_name = currentBill.full_name;
-          billData.purok_no = currentBill.purok_no;
-          console.log('Real bill data loaded:', billData);
-        
-      } catch (billError) {
-        console.log('Using mock bill data - API client error:', billError.message);
-      }
-
-
-      // Prepare payment data for PayMongo (matching your backend controller)
-      // const paymentData = {
-      //   bill_id: billData._id || billData.bill_id,
-      //   payment_method: formData.paymentMethod,
-      //   amount: formData.amount
-      // };
-
-      // Use API client for PayMongo payment
-      let result;
-      try {
-        console.log('🔄 Creating payment using API client');
-        console.log('📦 Payment data being sent:', paymentData);
-        console.log('🔑 Auth token:', localStorage.getItem('agaspay_token') ? 'Present' : 'Missing');
-        
-        result = await apiClient.createPayment(paymentData);
-        console.log('✅ Payment created successfully:', result);
-        
-        // API client handles errors automatically, if we reach here, payment was successful
-      } catch (backendError) {
-        console.error('❌ API client error:', backendError);
-        
-        // Handle different types of backend errors using the API client's enhanced error handling
-        if (backendError.message.includes('Failed to fetch') || backendError.message.includes('fetch')) {
-          toast({
-            title: "Backend Server Offline",
-            description: "Your MongoDB backend server is not running on port 3000. Please start it first.",
-            variant: "destructive"
-          });
-        } else if (backendError.message.includes('404') || backendError.message.includes('not found')) {
-          toast({
-            title: "Payment Route Missing", 
-            description: "Backend is running but /api/v1/payment route is missing or not configured properly.",
-            variant: "destructive"
-          });
-        } else if (backendError.message.includes('401') || backendError.message.includes('Unauthorized')) {
-          toast({
-            title: "Authentication Error",
-            description: "JWT token is invalid or missing. Try logging in again.",
-            variant: "destructive"
-          });
-        } else if (backendError.message.includes('403') || backendError.message.includes('Forbidden')) {
-          toast({
-            title: "Access Denied",
-            description: "You don't have resident role permissions for payments.",
-            variant: "destructive"
-          });
-        } else if (backendError.message.includes('500')) {
-          toast({
-            title: "Backend Server Error",
-            description: "Internal server error. Check your PayMongo configuration and server logs.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Payment Error",
-            description: backendError.message || "Payment processing failed. Please try again.",
-            variant: "destructive"
-          });
-        }
-        
-        // Switch to demo mode when backend has issues
-        const isRealPayMongoMode = false; // Use demo mode until backend is properly running
-        
-        if (isRealPayMongoMode) {
-          throw new Error("MongoDB backend required for PayMongo payments");
-        } else {
-          // Use PayMongo's real demo/test API for realistic testing
-          result = await createPayMongoTestCheckout(paymentData, formData);
-          
-          toast({
-            title: "Demo Mode",
-            description: "Using PayMongo test environment. MongoDB backend not running on port 3000.",
-            variant: "default"
-          });
-        }
-      }
-
-      // Check if we got a checkout URL from PayMongo
-      if (result.checkoutUrl) {
-        // Store payment details for when user returns
-        localStorage.setItem('pending_payment', JSON.stringify({
-          paymentId: result.paymentId,
-          amount: formData.amount,
-          method: formData.paymentMethod,
-          accountNumber: formData.accountNumber
-        }));
-
-        // Redirect to PayMongo checkout in the same window for better UX
-        window.location.href = result.checkoutUrl;
-        
-        toast({
-          title: "Redirecting to Payment",
-          description: "You will be redirected to complete your payment with PayMongo",
-          variant: "default"
-        });
-
-        // Set a pending state instead of success
-        setStep(3);
-        
-      } else {
-        // Handle direct payment success (if any)
-        toast({
-          title: "Payment Successful",
-          description: `Payment of ₱${formData.amount.toFixed(2)} has been processed successfully`,
-          variant: "default"
-        });
-        setStep(3);
-      }
-
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast({
-        title: "Payment Failed",
-        description: error.message || "Payment processing failed. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+  try {
+    if (!billingData?.billDetails?.id) {
+      throw new Error("No bill found. Please refresh.");
     }
-  };
+
+    const paymentData = {
+      bill_id: billingData.billDetails.id,   // ✅ real bill id from backend
+      payment_method: formData.paymentMethod,
+      amount: billingData.billDetails.totalAmount
+    };
+
+    console.log('📦 Payment data being sent:', paymentData);
+
+    const result = await apiClient.createPayment(paymentData);
+    console.log('✅ Payment created successfully:', result);
+
+    if (result.checkoutUrl) {
+      localStorage.setItem('pending_payment', JSON.stringify({
+        paymentId: result.paymentId,
+        amount: billingData.amount,
+        method: formData.paymentMethod,
+        accountNumber: billingData.accountNumber
+      }));
+
+      window.location.href = result.checkoutUrl;
+      setStep(3);
+    } else {
+      toast({
+        title: "Payment Successful",
+        description: `Payment of ₱${paymentData.amount.toFixed(2)} processed successfully`,
+        variant: "default"
+      });
+      setStep(3);
+    }
+
+  } catch (error) {
+    console.error('Payment error:', error);
+    toast({
+      title: "Payment Failed",
+      description: error.message || "Payment processing failed. Please try again.",
+      variant: "destructive"
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
 
 
   const handleChange = (field) => (value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setbillingData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleClose = () => {
     setStep(1);
-    setFormData({
+    setbillingData({
       accountNumber: "WS-2024-001247",
       amount: 450.00,
       paymentMethod: "",
@@ -504,7 +400,7 @@ export default function PayBillModal({ isOpen, onClose }) {
                     <p className="font-medium text-gray-900">{method.name}</p>
                     <p className="text-sm text-gray-500">{method.description}</p>
                   </div>
-                  {formData.paymentMethod === method.id && (
+                  {billingData.paymentMethod === method.id && (
                     <CheckCircle className="h-5 w-5 text-blue-600" />
                   )}
                 </div>
@@ -555,7 +451,7 @@ export default function PayBillModal({ isOpen, onClose }) {
         <CardContent className="pt-4">
           <div className="flex justify-between items-center">
             <span className="text-lg font-medium">Amount to Pay:</span>
-            <span className="text-2xl font-bold text-blue-600">₱{formData.amount.toFixed(2)}</span>
+            <span className="text-2xl font-bold text-blue-600">₱{billingData.billDetails.totalAmount.toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>
@@ -567,10 +463,10 @@ export default function PayBillModal({ isOpen, onClose }) {
 
         <Button 
           onClick={handleSubmit}
-          disabled={!formData.paymentMethod || isLoading}
+          disabled={!formData.paymentMethod|| isLoading}
           data-testid="button-pay-now"
         >
-          {isLoading ? "Processing..." : `Pay ₱${formData.amount.toFixed(2)}`}
+          {isLoading ? "Processing..." : `Pay ₱${billingData.billDetails.totalAmount.toFixed(2)}`}
         </Button>
       </div>
     </div>
@@ -625,11 +521,11 @@ export default function PayBillModal({ isOpen, onClose }) {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Account Number:</span>
-                <span className="font-medium">{formData.accountNumber}</span>
+                <span className="font-medium">{billingData.billDetails.accountName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount:</span>
-                <span className="font-medium">₱{formData.amount.toFixed(2)}</span>
+                <span className="font-medium">₱{billingData.billDetails.totalAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Payment Method:</span>
