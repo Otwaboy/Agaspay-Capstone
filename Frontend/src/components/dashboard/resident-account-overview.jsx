@@ -34,9 +34,8 @@ export default function ResidentAccountOverview() {
 
 
   // getting billing datail
-
   const {data: billingData, isBillLoading} = useQuery({
-    queryKey: ["/api/v1/billing"],
+    queryKey: ["billing-summary"],
     queryFn: async () => {
       const res = await apiClient.getCurrentBill(); 
 
@@ -45,12 +44,13 @@ export default function ResidentAccountOverview() {
         return null; // no bills
       }
       const latestBill = bill[bill.length - 2];
+      const currentBill = bill[bill.length - 1];
 
       return {
-      lastReading: latestBill.previous_reading,
+      lastReading: latestBill.present_reading,
       presentReading: latestBill.present_reading,
       consumption: latestBill.calculated,
-      totalAmount: latestBill.total_amount,
+      totalAmount: currentBill.total_amount,
       readAt: latestBill.created_at
       };
     },
@@ -174,7 +174,10 @@ export default function ResidentAccountOverview() {
             </div>
           </div>
 
-          {/* Meter Information */}
+
+
+
+          {/* Meter Information ug previous reading info */}
           <div className="space-y-4">
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="text-sm font-medium text-blue-900 mb-3">Meter Information</h4>
@@ -186,20 +189,28 @@ export default function ResidentAccountOverview() {
                 <div className="flex justify-between">
                   <span className="text-sm text-blue-700">Last Reading:</span>
                   <span className="text-sm font-medium text-blue-900">
-                    {billingData?.lastReading ?? "Loading..."} cubic meters
+                    {isBillLoading 
+                      ? "Loading..." 
+                      : billingData?.lastReading 
+                        ? billingData.lastReading 
+                        : "No record found"} cubic meters
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-blue-700">Reading Date:</span>
                   <span className="text-sm font-medium text-blue-900">
-                    {billingData?.readAt ? new Date(billingData.readAt).toLocaleDateString() : "Loading..."}
-
+                    {isBillLoading
+                    ? "Loading..."
+                    : (billingData?.readAt && new Date(billingData.readAt).toLocaleDateString()) || "No record found"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-blue-700">Monthly Usage:</span>
                   <span className="text-sm font-medium text-blue-900">
-                    {billingData?.consumption ?? "Loading..."} cubic meters
+                   {isBillLoading
+                    ? "Loading..."
+                    : billingData?.consumption ?? "No record found"}
+                  cubic meters
                   </span>
                 </div>
               </div>
@@ -212,7 +223,10 @@ export default function ResidentAccountOverview() {
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <span className="text-sm font-medium text-gray-900">Current Balance</span>
                 </div>
-                <span className="text-lg font-bold text-gray-900">₱{billingData?.totalAmount.toFixed(2) ?? "Loading..."}</span>
+                <span className="text-lg font-bold text-gray-900">
+                  ₱{billingData?.totalAmount != null
+                  ? billingData.totalAmount.toFixed(2)
+                  : "0.00"}</span>
               </div>
 
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -221,7 +235,9 @@ export default function ResidentAccountOverview() {
                   <span className="text-sm font-medium text-gray-900">Next Bill Date</span>
                 </div>
                 <span className="text-sm font-medium text-gray-700">
-                  {new Date(accountData.nextBillDate).toLocaleDateString()}
+                  {accountData?.nextBillDate 
+                  ? new Date(accountData.nextBillDate).toLocaleDateString() 
+                  : "Loading..."}
                 </span>
               </div>
             </div>

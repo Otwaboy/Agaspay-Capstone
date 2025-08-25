@@ -27,7 +27,7 @@ const BillingSchema = new mongoose.Schema({
   },
   due_date: {
     type: Date,
-    // required: true
+    required: true
   },
   // Optional: Can be removed since rate_id already holds the cubic rate
   generated_at: {

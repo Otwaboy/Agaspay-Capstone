@@ -3,8 +3,9 @@ import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
 
 // Protected Route component for role-based access
-export function ProtectedRoute({ children, requireAdmin = false, requireSecretary = false, requireResident = false, allowBoth = false, allowAll = false }) {
-  const { isAuthenticated, canAccessAdminDashboard, canAccessSecretaryDashboard, canAccessResidentDashboard, canAccessDashboard, canAccessAnyDashboard, isLoading } = useAuth();
+export function ProtectedRoute({ children, requireAdmin = false, requireSecretary = false, requireTreasurer = false, requireResident = false, allowBoth = false, allowAll = false }) {
+  const { isAuthenticated, canAccessAdminDashboard, canAccessSecretaryDashboard,  canAccessTreasurerDashboard,
+    canAccessResidentDashboard, canAccessDashboard, canAccessAnyDashboard, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   // Use effect to handle redirects
@@ -51,7 +52,10 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSecretar
   } else if (requireResident) {
     hasAccess = canAccessResidentDashboard;
     accessMessage = "You don't have permission to access the Resident dashboard. Only Resident can access this area.";
-  } else if (allowBoth) {
+  } else if (requireTreasurer) {
+    hasAccess = canAccessTreasurerDashboard;
+    accessMessage = "You don't have permission to access the treasurer dashboard. Only Resident can access this area.";
+  }else if (allowBoth) {
     hasAccess = canAccessDashboard;
     accessMessage = "You don't have permission to access this dashboard. Only administrators and secretaries can access this area.";
   } else if (allowAll) {
@@ -114,6 +118,15 @@ export function AdminRoute({ children }) {
 export function SecretaryRoute({ children }) {
   return (
     <ProtectedRoute requireSecretary={true}>
+      {children}
+    </ProtectedRoute>
+  );
+}
+
+// treasurer-only route wrapper
+export function TreasurerRoute({ children }) {
+  return (
+    <ProtectedRoute requireTreasurer={true}>
       {children}
     </ProtectedRoute>
   );

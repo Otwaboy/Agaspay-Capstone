@@ -47,6 +47,14 @@ class ApiClient {
     return await this.request('/api/v1/billing');
   }
 
+    async getPayment() {
+    return await this.request('/api/v1/payment');
+  }
+
+  
+
+
+
   async createPayment(paymentData) {
     return await this.request('/api/v1/payment', {
       method: 'POST',

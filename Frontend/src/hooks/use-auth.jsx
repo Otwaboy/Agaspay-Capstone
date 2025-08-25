@@ -48,9 +48,11 @@ export function AuthProvider({ children }) {
   const isAuthenticated = authManager.isAuthenticated() && !!user;
   const isAdmin = authManager.isAdmin();
   const isSecretary = authManager.isSecretary();
+  const isTreasurer = authManager.isTreasurer();
   const isResident = authManager.isResident();
   const canAccessAdminDashboard = authManager.canAccessAdminDashboard();
   const canAccessSecretaryDashboard = authManager.canAccessSecretaryDashboard();
+  const canAccessTreasurerDashboard = authManager.canAccessTreasurerDashboard();
   const canAccessResidentDashboard = authManager.canAccessResidentDashboard();
   const canAccessDashboard = authManager.canAccessDashboard();
   const canAccessAnyDashboard = authManager.canAccessAnyDashboard();
@@ -60,9 +62,11 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     isAdmin, 
     isSecretary,
+    isTreasurer,
     isResident,
     canAccessAdminDashboard,
     canAccessSecretaryDashboard,
+    canAccessTreasurerDashboard,
     canAccessResidentDashboard,
     canAccessDashboard,
     canAccessAnyDashboard,

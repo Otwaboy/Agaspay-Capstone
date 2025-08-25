@@ -284,6 +284,11 @@ class AuthManager {
     return user && user.role === 'secretary';
   }
 
+   isTreasurer() {
+    const user = this.getUser();
+    return user && user.role === 'treasurer';
+  }
+
   isResident() {
     const user = this.getUser();
     return user && user.role === 'resident';
@@ -299,6 +304,11 @@ class AuthManager {
     return this.isAuthenticated() && this.isSecretary();
   }
 
+   // Check if user can access treasurer dashboard
+  canAccessTreasurerDashboard() {
+    return this.isAuthenticated() && this.isTreasurer();
+  }
+
    // Check if user can access secretary dashboard
   canAccessResidentDashboard() {
     return this.isAuthenticated() && this.isResident();
@@ -306,11 +316,11 @@ class AuthManager {
 
   // Check if user can access any dashboard (admin or secretary)
   canAccessDashboard() {
-    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard;
+    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard;
   }
   
    canAccessAnyDashboard() {
-    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard;
+    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard;
   }
 }
 

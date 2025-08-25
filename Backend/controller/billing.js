@@ -58,15 +58,19 @@ const getBilling = async (req, res) => {
      const reading = await MeterReading.findById(billing.reading_id);
 
       return {
+        bill_id: billing?._id ?? 'unknown',
         connection_id: connection?._id,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : 'unknown',
+        meter_no: connection?.meter_no,
         purok_no: connection?.purok ?? 'unknown',
         total_amount: billing?.total_amount ?? 'unknown',
+        status: billing?.status ?? 'unknown',
 
         // ✅ Add these fields
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
+        due_date: billing?.due_date ?? 0,
         created_at: reading?.created_at
       };
     })
@@ -77,6 +81,8 @@ const getBilling = async (req, res) => {
     data: billingDetails
   });
 };
+
+
  
 
 
@@ -84,7 +90,7 @@ const getBilling = async (req, res) => {
 
 const createBilling = async (req, res) => {
 
-        const {reading_id, rate_id } = req.body
+        const {reading_id, rate_id, due_date } = req.body
         const user = req.user
 
          if (user.role !== 'treasurer') {
@@ -101,6 +107,7 @@ const createBilling = async (req, res) => {
             connection_id: reading.connection_id,
             reading_id,
             rate_id,
+            due_date,
             generated_by: user.userId
         })
 

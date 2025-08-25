@@ -15,6 +15,8 @@ import { Badge } from "../ui/badge";
 import { useToast } from "../../hooks/use-toast";
 import { CreditCard, Smartphone, Building, Wallet, CheckCircle, Clock } from "lucide-react";
 import { apiClient } from "../../lib/api";
+import { useQuery } from "@tanstack/react-query";
+
 
 // PayMongo test environment function
 const createPayMongoTestCheckout = async (paymentData, formData) => {
@@ -130,18 +132,73 @@ export default function PayBillModal({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Bill Details, 2: Payment Method, 3: Confirmation
   const { toast } = useToast();
+  
+  const {data: billingData, isLoadingBilling} = useQuery({
+        queryKey:['Amount-to-pay'],
+        queryFn: async () => {
+            const res = await apiClient.getCurrentBill()
+            const data = res.data
 
-  const billDetails = {
-    billPeriod: "July 2024",
-    dueDate: "2024-08-25",
-    currentReading: 1245,
-    previousReading: 1230,
-    consumption: 15,
-    waterCharge: 375.00,
-    sewerageCharge: 50.00,
-    environmentalFee: 25.00,
-    totalAmount: 450.00
-  };
+             if(!data || data.length === 0){
+             return null
+              }
+            const billToPay = data[data.length - 1]
+
+            return{
+              billDetails: {
+                  id: billToPay._id,
+                  accountName: billToPay.full_name,
+                  billPeriod: billToPay.due_date,
+                  meter_no: billToPay.meter_no,
+                  dueDate: billToPay.due_date,
+                  currentReading: billToPay.present_reading,
+                  previousReading: billToPay.previous_reading,
+                  consumption: billToPay.calculated,
+                  totalAmount: billToPay.total_amount
+              }
+            }
+        }
+  })
+
+
+  
+   if (isLoadingBilling) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Skeleton className="h-5 w-5 mr-2" />
+              <Skeleton className="h-6 w-40" />
+            </CardTitle>
+            <CardDescription>
+              <Skeleton className="h-4 w-60" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex justify-between items-center">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+  // const billDetails = {
+  //   billPeriod: "July 2024",
+  //   dueDate: "2024-08-25",
+  //   currentReading: 1245,
+  //   previousReading: 1230,
+  //   consumption: 15,
+  //   waterCharge: 375.00,
+  //   sewerageCharge: 50.00,
+  //   environmentalFee: 25.00,
+  //   totalAmount: 450.00
+  // };
 
   const paymentMethods = [
     {
@@ -164,40 +221,42 @@ export default function PayBillModal({ isOpen, onClose }) {
     e.preventDefault();
     setIsLoading(true);
 
-    try {
+
       // For demo purposes, create mock bill data since backend isn't available
       // In production, this would fetch from your MongoDB backend
-      const billData = {
-        _id: 'mock-bill-id-' + Date.now(),
-        bill_id: 'BILL-2024-001247',
-        total_amount: formData.amount,
-        status: 'unpaid',
-        billing_period: 'July 2024'
-      };
+    
+      // const billData = {
+      //   _id: 'mock-bill-id-' + Date.now(),
+      //   bill_id: 'BILL-2024-001247',
+      //   total_amount: formData.amount,
+      //   status: 'unpaid',
+      //   billing_period: 'July 2024'
+      // };
 
       // Get real bill data using API client
       try {
-        const response = await apiClient.getCurrentBill();
-        console.log('✅ Bill response from API client:', response);
-        
-        if (response.billingDetails && response.billingDetails.length > 0) {
-          const currentBill = response.billingDetails[0];
-          billData._id = currentBill.connection_id;
-          billData.total_amount = currentBill.total_amount;
+          if (!billingData?.billDetails?.id )  { 
+            throw new Error("No bill found. Please refresh.");
+          }
+
+          const currentBill = billingData.billDetails.totalAmount;
+          billData._id =  billingData.billDetails.connection_id;
+          billData.total_amount = billingData.billDetails.totalAmount;
           billData.full_name = currentBill.full_name;
           billData.purok_no = currentBill.purok_no;
           console.log('Real bill data loaded:', billData);
-        }
+        
       } catch (billError) {
         console.log('Using mock bill data - API client error:', billError.message);
       }
 
+
       // Prepare payment data for PayMongo (matching your backend controller)
-      const paymentData = {
-        bill_id: billData._id || billData.bill_id,
-        payment_method: formData.paymentMethod,
-        amount: formData.amount
-      };
+      // const paymentData = {
+      //   bill_id: billData._id || billData.bill_id,
+      //   payment_method: formData.paymentMethod,
+      //   amount: formData.amount
+      // };
 
       // Use API client for PayMongo payment
       let result;
@@ -313,6 +372,8 @@ export default function PayBillModal({ isOpen, onClose }) {
     }
   };
 
+
+
   const handleChange = (field) => (value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -330,62 +391,96 @@ export default function PayBillModal({ isOpen, onClose }) {
     onClose();
   };
 
+
+
+  // step 1
   const renderBillDetails = () => (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Current Bill Details</CardTitle>
-          <CardDescription>Billing period: {billDetails.billPeriod}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+  <div className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Current Bill Details</CardTitle>
+        <CardDescription>
+          Billing period: {billingData?.billDetails?.billPeriod ?? "Loading..."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Account Name:</span>
+            <span className="font-medium">
+              {billingData?.billDetails?.accountName ?? "Loading..."}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Meter Number:</span>
+            <span className="font-medium">
+              {billingData?.billDetails?.meter_no ?? "Loading..."}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Due Date:</span>
+            <span className="font-medium">
+              {billingData?.billDetails?.dueDate
+                ? new Date(billingData.billDetails.dueDate).toLocaleDateString()
+                : "Loading..."}
+            </span>
+          </div>
+          <hr className="my-3" />
+          <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-gray-600">Account Number:</span>
-              <span className="font-medium">{formData.accountNumber}</span>
+              <span className="text-gray-600">Previous Reading:</span>
+              <span>
+                {billingData?.billDetails?.previousReading !== undefined
+                  ? `${billingData.billDetails.previousReading} cubic meters`
+                  : "Loading..."}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Due Date:</span>
-              <span className="font-medium">{new Date(billDetails.dueDate).toLocaleDateString()}</span>
+              <span className="text-gray-600">Present Reading:</span>
+              <span>
+                {billingData?.billDetails?.currentReading !== undefined
+                  ? `${billingData.billDetails.currentReading} cubic meters`
+                  : "Loading..."}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Water Consumption:</span>
-              <span className="font-medium">{billDetails.consumption} cubic meters</span>
-            </div>
-            <hr className="my-3" />
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Water Charge:</span>
-                <span>₱{billDetails.waterCharge.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Sewerage Charge:</span>
-                <span>₱{billDetails.sewerageCharge.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Environmental Fee:</span>
-                <span>₱{billDetails.environmentalFee.toFixed(2)}</span>
-              </div>
-            </div>
-            <hr className="my-3" />
-            <div className="flex justify-between text-lg font-bold">
-              <span>Total Amount Due:</span>
-              <span>₱{billDetails.totalAmount.toFixed(2)}</span>
+              <span className="text-gray-600">Consumption:</span>
+              <span>
+                {billingData?.billDetails?.consumption !== undefined
+                  ? `${billingData.billDetails.consumption} cubic meters`
+                  : "Loading..."}
+              </span>
             </div>
           </div>
-        </CardContent>
-      </Card>
-      
-      <div className="flex justify-end space-x-3">
-        <Button variant="outline" onClick={handleClose}>
-          Cancel
-        </Button>
-        <Button onClick={() => setStep(2)} data-testid="button-proceed-payment">
-          Proceed to Payment
-        </Button>
-      </div>
-    </div>
-  );
+          <hr className="my-3" />
+          <div className="flex justify-between text-lg font-bold">
+            <span>Total Amount Due:</span>
+            <span>
+              ₱{billingData?.billDetails?.totalAmount !== undefined
+                ? billingData.billDetails.totalAmount.toFixed(2)
+                : "Loading..."}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
 
+    <div className="flex justify-end space-x-3">
+      <Button variant="outline" onClick={handleClose}>
+        Cancel
+      </Button>
+      <Button
+        onClick={() => setStep(2)}
+        data-testid="button-proceed-payment"
+      >
+        Proceed to Payment
+      </Button>
+    </div>
+  </div>
+);
+
+
+// step 2
   const renderPaymentMethod = () => (
     <div className="space-y-6">
       <div>
@@ -398,7 +493,7 @@ export default function PayBillModal({ isOpen, onClose }) {
                 key={method.id}
                 className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   formData.paymentMethod === method.id
-                    ? "border-blue-500 bg-blue-50"
+                    ? "border-blue-500 bg-blue-50"  
                     : "border-gray-200 hover:border-gray-300"
                 }`}
                 onClick={() => handleChange("paymentMethod")(method.id)}
@@ -469,6 +564,7 @@ export default function PayBillModal({ isOpen, onClose }) {
         <Button variant="outline" onClick={() => setStep(1)}>
           Back to Bill Details
         </Button>
+
         <Button 
           onClick={handleSubmit}
           disabled={!formData.paymentMethod || isLoading}
@@ -480,6 +576,8 @@ export default function PayBillModal({ isOpen, onClose }) {
     </div>
   );
 
+
+  // step 3
   const renderConfirmation = () => {
     const pendingPayment = localStorage.getItem('pending_payment');
     const isPending = !!pendingPayment;
