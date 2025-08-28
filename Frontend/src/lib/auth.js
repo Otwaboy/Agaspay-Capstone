@@ -188,70 +188,10 @@ class AuthManager {
     }
   }
 
-  // async createPersonnel(personnelData) {
-  //   console.log('Creating personnel with data:', personnelData);
-    
-  //   try {
-  //     const response = await fetch('http://localhost:3000/api/v1/personnel', {
-  //       method: 'POST',
-  //       mode: 'cors',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Accept': 'application/json',
-  //         'Authorization': `Bearer ${this.getToken()}`, // Include auth token for admin-only operations
-  //       },
-  //       body: JSON.stringify(personnelData),
-  //     });
 
-  //     console.log('Personnel creation response status:', response.status);
 
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       console.log('Personnel created successfully:', data);
-  //       return {
-  //         success: true,
-  //         message: 'Personnel created successfully',
-  //         data: data
-  //       };
-  //     }
-      
-  //     // Get error details from backend for all error statuses
-  //     let errorMessage = 'Unknown error occurred';
-  //     try {
-  //       const errorData = await response.json();
-  //       errorMessage = errorData.message || errorData.error || `Server error (${response.status})`;
-  //       console.error('Backend error details:', errorData);
-  //     } catch (e) {
-  //       console.error('Could not parse error response:', e);
-  //       errorMessage = `Server error (${response.status})`;
-  //     }
-      
-  //     if (response.status === 401) {
-  //       throw new Error('Unauthorized: Admin access required to create personnel');
-  //     }
-      
-  //     if (response.status === 409) {
-  //       throw new Error('Personnel with this email already exists');
-  //     }
-
-  //     if (response.status === 400) {
-  //       throw new Error(errorMessage);
-  //     }
-
-  //     if (response.status === 500) {
-  //       throw new Error(`Backend server error: ${errorMessage}`);
-  //     }
-      
-  //     throw new Error(`Failed to create personnel: ${errorMessage}`);
-      
-  //   } catch (error) {
-  //     // Network error - backend server not running
-  //     if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-  //       throw new Error('Cannot connect to MongoDB backend server on port 3000. Please ensure your backend server is running.');
-  //     }
-  //     throw error;
-  //   }
-  // }
+  
+  // for getting the item in the localstorge
 
   logout() {
     localStorage.removeItem(this.tokenKey);

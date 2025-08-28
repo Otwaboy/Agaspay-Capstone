@@ -46,12 +46,14 @@ const createWaterConnection = async (resident_id, meter_no, purok, type) => {
   return connection;
 };
 
-const createPesonnel = async (user_id, role, first_name, last_name, contact_no, assigned_zone ) => {
+const createPesonnel = async (user_id, role, first_name, last_name, email, contact_no, purok, assigned_zone ) => {
   const personnel = await Personnel.create({
     user_id,
     role,
     first_name,
     last_name,
+    email,
+    purok,
     contact_no,
     assigned_zone,
   });

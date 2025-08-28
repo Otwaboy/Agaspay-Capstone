@@ -17,12 +17,14 @@ import { authManager } from "../../lib/auth";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function CreatePersonnelModal({ isOpen, onClose }) {
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     role: "",
+    purok: "",
     assignedZone: "",
     username: "",
     password: "",
@@ -67,9 +69,9 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           first_name: formData.firstName,
           last_name: formData.lastName,
           email: formData.email,
+          purok: formData.purok,
           contact_no: formData.phone,
-          role: formData.role,
-          assigned_zone: formData.assignedZone
+          role: formData.role, ...(formData.role === 'meter_reader' && {assignedZone : formData.role})
         };
         await authManager.createAccount(accountData);
       }
@@ -94,6 +96,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         email: "",
         phone: "",
         role: "",
+        purok: "",
         assignedZone: "",
         username: "",
         password: "",
@@ -112,6 +115,14 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       setIsLoading(false);
     }
   };
+
+
+  // handleChange takes a parameter field (the name of the form field you want to update).
+  //It returns another function that takes value (the new value for that field).
+  //handleChange("firstName")("Joshua");
+  //setFormData(prev => ({ ...prev, firstName: "Joshua" }));
+
+  //This code is a reusable state updater for multiple input fields.
 
   const handleChange = (field) => (value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -155,6 +166,26 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
               />
             </div>
           </div>
+
+        {/* selecting purok para sa personnel*/}
+          <div className="space-y-2">
+            <Label htmlFor="purok">Purok</Label>
+            <Select  onValueChange={handleChange("purok")} required>
+              <SelectTrigger data-testid="select-purok">
+                <SelectValue placeholder="Select Purok" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Purok 1</SelectItem>
+                <SelectItem value="2">Purok 2</SelectItem>
+                <SelectItem value="3">Purok 3</SelectItem>
+                <SelectItem value="4">Purok 4</SelectItem>
+                <SelectItem value="5">Purok 5</SelectItem>
+                <SelectItem value="6">Purok 6</SelectItem>
+                <SelectItem value="7">Purok 7</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+  
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -304,4 +335,4 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       </DialogContent>
     </Dialog>
   );
-}
+}   

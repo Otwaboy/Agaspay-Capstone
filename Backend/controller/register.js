@@ -50,9 +50,13 @@ const registerPersonnel = async (req, res) => {
            first_name, 
            last_name, 
            contact_no,
+           purok,
+           email,
            assigned_zone, 
 
         } = req.body;
+
+
 
     const user = await createUser(username, password, role);
     const personnel = await createPesonnel
@@ -61,7 +65,9 @@ const registerPersonnel = async (req, res) => {
         role,
         first_name,
         last_name,
+        email,
         contact_no,
+        purok,
         assigned_zone,
     ) 
 
@@ -75,7 +81,11 @@ const registerPersonnel = async (req, res) => {
       username: user.username,
       personnel_id: personnel._id,
       role: personnel.role,
+      contact_no: personnel.contact_no,
+      email: personnel.email,
+      purok: personnel.purok,
       assigned_zone: personnel.assigned_zone,
+
       token
         }
     });
