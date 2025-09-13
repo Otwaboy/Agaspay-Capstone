@@ -22,7 +22,7 @@ const BillingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['unpaid', 'partial', 'overdue'],
+    enum: ['unpaid', 'paid', 'partial', 'overdue'],
     default: 'unpaid'
   },
   due_date: {

@@ -14,11 +14,10 @@ const notFoundErrorMiddleware = require('./middleware/not-found')
 const errorHandlerMiddleware = require('./middleware/error-handler')
 
 
-//cors
+//cors allowing cross origin request
 const corsOptions = {
   origin: [
-    'http://localhost:5173', // Vite dev server
-    'http://localhost:5000', // Replit server
+    'http://localhost:5173', // Vite dev server or ag frontend react server
     'http://localhost:3000'  // Your backend
   ],
   credentials: true,
@@ -34,6 +33,7 @@ const rateRoutes = require('./routes/rate')
 const billingRoutes = require('./routes/billing') 
 const paymentRoutes = require('./routes/payment')
 const manageUserRoutes = require('./routes/manage-user')
+const waterConnectionRoutes = require('./routes/water-connection')
 
 
 //cors
@@ -50,6 +50,7 @@ app.use('/api/v1/rate', rateRoutes)
 app.use('/api/v1/billing', billingRoutes)
 app.use('/api/v1/payment', paymentRoutes) 
 app.use('/api/v1/user', manageUserRoutes)
+app.use('/api/v1/water-connection', waterConnectionRoutes)
 
 
 

@@ -72,64 +72,19 @@ class AuthManager {
         throw new Error('Replit server failed');
       } catch (fallbackError) {
         console.log('Replit server error:', fallbackError.message);
-      // Final fallback: mock authentication for testing
-      const { username, password } = credentials;
-      
-      // Check demo credentials
-      if (username === 'admin' && password === 'admin123') {
-        const mockData = {
-          token: 'mock-jwt-token-' + Date.now(),
-          user: {
-            id: 'mock-admin-id',
-            username: 'admin',
-            role: 'admin'
-          },
-          personnel: {
-            first_name: 'System',
-            last_name: 'Administrator',
-            role: 'admin'
-          }
-        };
-        
-        // Store token and user data
-        localStorage.setItem(this.tokenKey, mockData.token);
-        localStorage.setItem(this.userKey, JSON.stringify(mockData.user));
-        
-        return mockData;
-      } else if (username === 'secretary' && password === 'secretary123') {
-        const mockData = {
-          token: 'mock-jwt-token-' + Date.now(),
-          user: {
-            id: 'mock-secretary-id',
-            username: 'secretary',
-            role: 'secretary'
-          },
-          personnel: {
-            first_name: 'Barangay',
-            last_name: 'Secretary',
-            role: 'secretary'
-          }
-        };
-        
-        // Store token and user data
-        localStorage.setItem(this.tokenKey, mockData.token);
-        localStorage.setItem(this.userKey, JSON.stringify(mockData.user));
-        
-        return mockData;
-      } else {
-        throw new Error('Invalid credentials. Please check your username and password or ensure your backend server is running on port 3000.');
-      }
+     
       }
     }
   }
 
+  //credentials is the data you want to send (e.g., { username, password, role }).
   async createAccount(credentials) {
     console.log('Creating account with data:', credentials);
     
     try {
       const response = await fetch('http://localhost:3000/api/v1/auth/register-personnel', {
         method: 'POST',
-        mode: 'cors',
+        mode: 'cors', // since ag backend run on port 3000 so i added a cors mode to allow cross origin request
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -190,7 +145,73 @@ class AuthManager {
 
 
 
-  
+  async createResidentAccount(credentials) {
+    console.log('Creating account with data:', credentials);
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/auth/register-resident', {
+        method: 'POST',
+        mode: 'cors', // since ag backend run on port 3000 so i added a cors mode to allow cross origin request
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${this.getToken()}`, // Include auth token for admin-only operations
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      console.log('Account creation response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Account created successfully:', data);
+        return {
+          success: true,
+          message: 'Personnel account created successfully',
+          data: data
+        };
+      }
+      
+      // Get error details from backend for all error statuses
+      let errorMessage = 'Unknown error occurred';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || `Server error (${response.status})`;
+        console.error('Backend error details:', errorData);
+      } catch (e) {
+        console.error('Could not parse error response:', e);
+        errorMessage = `Server error (${response.status})`;
+      }
+      
+      if (response.status === 401) {
+        throw new Error('Unauthorized: Admin access required to create personnel accounts');
+      }
+      
+      if (response.status === 409) {
+        throw new Error('Account already exists with this username or email');
+      }
+
+      if (response.status === 400) {
+        throw new Error(errorMessage);
+      }
+
+      if (response.status === 500) {
+        throw new Error(`Backend server error: ${errorMessage}`);
+      }
+      
+      throw new Error(`Failed to create personnel account: ${errorMessage}`);
+      
+    } catch (error) {
+      // Network error - backend server not running
+      if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+        throw new Error('Cannot connect to MongoDB backend server on port 3000. Please ensure your backend server is running.');
+      }
+      throw error;
+    }
+  }
+
+
+ 
   // for getting the item in the localstorge
 
   logout() {
@@ -229,6 +250,11 @@ class AuthManager {
     return user && user.role === 'treasurer';
   }
 
+    isMeterReader() {
+    const user = this.getUser();
+    return user && user.role === 'meter_reader';
+  }
+
   isResident() {
     const user = this.getUser();
     return user && user.role === 'resident';
@@ -249,6 +275,10 @@ class AuthManager {
     return this.isAuthenticated() && this.isTreasurer();
   }
 
+   // Check if user can access treasurer dashboard
+  canAccessMeterReaderDashboard() {
+    return this.isAuthenticated() && this.isMeterReader();
+  }
    // Check if user can access secretary dashboard
   canAccessResidentDashboard() {
     return this.isAuthenticated() && this.isResident();
@@ -256,11 +286,11 @@ class AuthManager {
 
   // Check if user can access any dashboard (admin or secretary)
   canAccessDashboard() {
-    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard;
+    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard || this.canAccessMeterReaderDashboard;
   }
   
    canAccessAnyDashboard() {
-    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard;
+    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard || this.canAccessMeterReaderDashboard;;
   }
 }
 

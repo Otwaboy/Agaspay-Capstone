@@ -20,16 +20,25 @@ const ResidentSchema = new mongoose.Schema(
     },
     zone: 
     {
-      type: Number,
-      enum: [1, 2, 3],
+      type: String,
+      enum: ["1", "2", "3"],
       required: [true, 'Zone is required']
     },
     purok: 
     {
-      type: Number,
-      enum: [1, 2, 3, 4, 5, 6, 7],
+      type: String,
+      enum: ["1", "2", "3", "4", "5", "6", "7"],
       required: [true, 'Purok is required']
     },
+    email: {
+    type: String,
+    required: [true, 'Please provide email'],
+    match: [
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+      'Please provide a valid email',
+    ],
+    unique: true,
+  },
     contact_no: 
     {
       type: String,
@@ -40,7 +49,7 @@ const ResidentSchema = new mongoose.Schema(
     {
       type: String,
       enum: ['active', 'inactive'],
-      required: [true, 'Status of water connection is required'],
+      // required: [true, 'Status of water connection is required'],
       default: 'active'
     },
     created_at: {

@@ -11,63 +11,112 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Textarea } from "../ui/textarea";
+import { Checkbox } from "../ui/checkbox";
 import { useToast } from "../../hooks/use-toast";
+import { authManager } from "../../lib/auth";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function CreateResidentModal({ isOpen, onClose }) {
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    middleName: "",
+    meterNo: "",
+    purok: "",
     email: "",
     phone: "",
-    address: "",
     zone: "",
-    dateOfBirth: "",
-    civilStatus: "",
-    occupation: "",
-    emergencyContact: "",
-    emergencyPhone: ""
+    type: "",
+    username: "",
+    password: "",
+    status: "",
+    createAccount: false
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
+
+  // functions when submmiting the button
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // If create account is checked, validate account fields and create account first
+      if (formData.createAccount) {
+        if (!formData.username || !formData.password) {
+          toast({
+            title: "Validation Error",
+            description: "Username and password are required when creating an account",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (formData.password.length < 6) {
+          toast({
+            title: "Validation Error", 
+            description: "Password must be at least 6 characters long",
+            variant: "destructive"
+          });
+          return;
+        }
+
+
+  // Create account using authManager which is masave sya sa database
+        const accountData = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          meter_no: formData.meterNo,
+          purok: formData.purok,
+          email: formData.email,
+          contact_no: formData.phone,
+          zone: formData.zone,
+          type: formData.type,
+          username: formData.username,
+          password: formData.password,
+          status: formData.status,
+          
+        };
+        await authManager.createResidentAccount(accountData);
+      }
+
+      // Simulate personnel creation (this would normally be a separate API call)
+      // await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const successMessage = formData.createAccount 
+        ? `${formData.firstName} ${formData.lastName} has been added as ${formData.role} with login account created`
+        : `${formData.firstName} ${formData.lastName} has been added as ${formData.role}`;
 
       toast({
-        title: "Resident Registered Successfully",
-        description: `${formData.firstName} ${formData.lastName} has been added to the system`,
+        title: "Personnel Created Successfully",
+        description: successMessage,
         variant: "default"
       });
 
       // Reset form
       setFormData({
-        firstName: "",
+        irstName: "",
         lastName: "",
-        middleName: "",
+        meterNo: "",
+        purok: "",
         email: "",
         phone: "",
-        address: "",
         zone: "",
-        dateOfBirth: "",
-        civilStatus: "",
-        occupation: "",
-        emergencyContact: "",
-        emergencyPhone: ""
+        type: "",
+        username: "",
+        password: "",
+        status: "",
+        createAccount: false
       });
       
       onClose();
+
     } catch (error) {
-      console.error('Resident registration error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to register resident. Please try again.",
+        description: error.message || "Failed to create personnel. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -75,23 +124,34 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     }
   };
 
+
+  // handleChange takes a parameter field (the name of the form field you want to update).
+  //It returns another function that takes value (the new value for that field).
+  //handleChange("firstName")("Joshua");
+  //setFormData(prev => ({ ...prev, firstName: "Joshua" }));
+
+  //This code is a reusable state updater for multiple input fields.
+
   const handleChange = (field) => (value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+
+
   return (
+
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-white sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Register New Resident</DialogTitle>
+          <DialogTitle>Create New Resident</DialogTitle>
           <DialogDescription>
-            Add a new resident to the Barangay Biking database.
+            Add a new resident water connection to the AGASPAY system.
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Personal Information */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
+
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
               <Input
@@ -103,16 +163,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 data-testid="input-first-name"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="middleName">Middle Name</Label>
-              <Input
-                id="middleName"
-                value={formData.middleName}
-                onChange={(e) => handleChange("middleName")(e.target.value)}
-                placeholder="Enter middle name"
-                data-testid="input-middle-name"
-              />
-            </div>
+
             <div className="space-y-2">
               <Label htmlFor="lastName">Last Name</Label>
               <Input
@@ -126,44 +177,64 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Contact Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+           <div className="space-y-2">
+              <Label htmlFor="meterNo">Meter Number</Label>
               <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange("email")(e.target.value)}
-                placeholder="Enter email address"
-                data-testid="input-email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleChange("phone")(e.target.value)}
-                placeholder="Enter phone number"
+                id="meterNo"
+                value={formData.meterNo}
+                onChange={(e) => handleChange("meterNo")(e.target.value)}
+                placeholder="Enter Meter Number"
                 required
-                data-testid="input-phone"
+                data-testid="input-meter-no"
               />
             </div>
-          </div>
 
-          {/* Address Information */}
+        {/* selecting purok para sa resident*/}
           <div className="space-y-2">
-            <Label htmlFor="address">Complete Address</Label>
-            <Textarea
-              id="address"
-              value={formData.address}
-              onChange={(e) => handleChange("address")(e.target.value)}
-              placeholder="Enter complete address"
+            <Label htmlFor="purok">Purok</Label>
+            <Select  onValueChange={handleChange("purok")} required>
+              <SelectTrigger data-testid="select-purok">
+                <SelectValue placeholder="Select Purok" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Purok 1</SelectItem>
+                <SelectItem value="2">Purok 2</SelectItem>
+                <SelectItem value="3">Purok 3</SelectItem>
+                <SelectItem value="4">Purok 4</SelectItem>
+                <SelectItem value="5">Purok 5</SelectItem>
+                <SelectItem value="6">Purok 6</SelectItem>
+                <SelectItem value="7">Purok 7</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+  
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleChange("email")(e.target.value)}
+              placeholder="Enter email address"
               required
-              data-testid="textarea-address"
+              data-testid="input-email"
             />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => handleChange("phone")(e.target.value)}
+              placeholder="Enter phone number"
+              required
+              data-testid="input-phone"
+            />
+          </div>
+
+{/* assigning  zone */}
 
           <div className="space-y-2">
             <Label htmlFor="zone">Zone</Label>
@@ -172,78 +243,92 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 <SelectValue placeholder="Select zone" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="biking_1">Biking 1</SelectItem>
-                <SelectItem value="biking_2">Biking 2</SelectItem>
-                <SelectItem value="biking_3">Biking 3</SelectItem>
+                <SelectItem value="1">Biking 1</SelectItem>
+                <SelectItem value="2">Biking 2</SelectItem>
+                <SelectItem value="3">Biking 3</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Personal Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of Birth</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => handleChange("dateOfBirth")(e.target.value)}
-                required
-                data-testid="input-date-birth"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="civilStatus">Civil Status</Label>
-              <Select onValueChange={handleChange("civilStatus")} required>
-                <SelectTrigger data-testid="select-civil-status">
-                  <SelectValue placeholder="Select civil status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="single">Single</SelectItem>
-                  <SelectItem value="married">Married</SelectItem>
-                  <SelectItem value="divorced">Divorced</SelectItem>
-                  <SelectItem value="widowed">Widowed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <div className="space-y-2">
-            <Label htmlFor="occupation">Occupation</Label>
-            <Input
-              id="occupation"
-              value={formData.occupation}
-              onChange={(e) => handleChange("occupation")(e.target.value)}
-              placeholder="Enter occupation"
-              data-testid="input-occupation"
-            />
+            <Label htmlFor="type">Type</Label>
+            <Select onValueChange={handleChange("type")} required>
+              <SelectTrigger data-testid="select-type">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="household">Household</SelectItem>
+                <SelectItem value="restaurant">Restaurant</SelectItem>
+                <SelectItem value="establishment">Establishment</SelectItem>
+                 <SelectItem value="others">Others</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Emergency Contact */}
+
+  {/* Account Creation Section */}
           <div className="border-t pt-4 mt-4">
-            <h4 className="font-medium text-gray-900 mb-4">Emergency Contact Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="emergencyContact">Emergency Contact Name</Label>
-                <Input
-                  id="emergencyContact"
-                  value={formData.emergencyContact}
-                  onChange={(e) => handleChange("emergencyContact")(e.target.value)}
-                  placeholder="Enter emergency contact name"
-                  data-testid="input-emergency-contact"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="emergencyPhone">Emergency Contact Phone</Label>
-                <Input
-                  id="emergencyPhone"
-                  value={formData.emergencyPhone}
-                  onChange={(e) => handleChange("emergencyPhone")(e.target.value)}
-                  placeholder="Enter emergency contact phone"
-                  data-testid="input-emergency-phone"
-                />
-              </div>
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox
+                id="createAccount"
+                checked={formData.createAccount}
+                onCheckedChange={(checked) => handleChange("createAccount")(checked)}
+                data-testid="checkbox-create-account"
+              />
+              <Label htmlFor="createAccount" className="text-sm font-medium">
+                Create login account for this personnel
+              </Label>
             </div>
+           
+
+      {/* this line of code mo render sya if formData.createAccount is true */}
+            {formData.createAccount && (
+              <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={formData.username}
+                    onChange={(e) => handleChange("username")(e.target.value)}
+                    placeholder="Enter username for login"
+                    required={formData.createAccount}
+                    data-testid="input-username"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => handleChange("password")(e.target.value)}
+                      placeholder="Enter password (min 6 characters)"
+                      required={formData.createAccount}
+                      data-testid="input-password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      data-testid="button-toggle-password"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    This account will allow the personnel to log into the system
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
@@ -259,13 +344,13 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             <Button 
               type="submit" 
               disabled={isLoading}
-              data-testid="button-register"
+              data-testid="button-create"
             >
-              {isLoading ? "Registering..." : "Register Resident"}
+              {isLoading ? "Creating..." : "Create Personnel"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
+}   

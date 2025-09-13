@@ -16,7 +16,8 @@ const registerResident = async (req, res) => {
            password, 
            first_name, 
            last_name, 
-           zone, 
+           zone,
+           email, 
            purok, 
            contact_no, 
            meter_no, 
@@ -24,8 +25,8 @@ const registerResident = async (req, res) => {
         } = req.body;
 
     const user = await createUser(username, password, 'resident');
-    const resident = await createResident(user._id, first_name, last_name, zone, purok, contact_no);
-    const waterConnection = await createWaterConnection(resident._id, meter_no, purok, type);
+    const resident = await createResident(user._id, first_name, last_name, email, zone, purok, contact_no, );
+    const waterConnection = await createWaterConnection(resident._id, meter_no, type);
 
     const token = user.createJWT();
 

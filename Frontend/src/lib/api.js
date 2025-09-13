@@ -38,7 +38,7 @@ class ApiClient {
     } catch (error) {
       console.error('API Request failed:', error);
       throw error;
-    }
+    } 
   }
  
 
@@ -50,9 +50,18 @@ class ApiClient {
     async getPayment() {
     return await this.request('/api/v1/payment');
   }
+//getwaterconnecitons
+     async getWaterConnections() {
+    return await this.request('/api/v1/water-connection');
+  }
 
+  async inputReading(requestData) {
+     return await this.request('/api/v1/meter-reader', {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+  }
   
-
 
 
   async createPayment(paymentData) {
@@ -67,41 +76,41 @@ async getCurrentReading() {
     return await this.request(`/api/v1/meter-reader}`);
   }
 
-  async getPaymentStatus(paymentIntentId) {
-    return await this.request(`/api/v1/payment/status/${paymentIntentId}`);
-  }
+  // async getPaymentStatus(paymentIntentId) {
+  //   return await this.request(`/api/v1/payment/status/${paymentIntentId}`);
+  // }
 
-  async getTransactionHistory() {
-    return await this.request('/api/v1/payments/history');
-  }
+  // async getTransactionHistory() {
+  //   return await this.request('/api/v1/payments/history');
+  // }
 
-  async getBillingHistory() {
-    return await this.request('/api/v1/billing/history');
-  }
+  // async getBillingHistory() {
+  //   return await this.request('/api/v1/billing/history');
+  // }
 
-  // Resident account related API calls
-  async getUserAccount() {
-    return await this.request('/api/v1/user');
-  }
+  // // Resident account related API calls
+  // async getUserAccount() {
+  //   return await this.request('/api/v1/user');
+  // }
 
-  async getWaterUsage() {
-    return await this.request('/api/v1/residents/usage');
-  }
+  // async getWaterUsage() {
+  //   return await this.request('/api/v1/residents/usage');
+  // }
 
-  async submitServiceRequest(requestData) {
-    return await this.request('/api/v1/service-requests', {
-      method: 'POST',
-      body: JSON.stringify(requestData),
-    });
-  }
+  // async submitServiceRequest(requestData) {
+  //   return await this.request('/api/v1/service-requests', {
+  //     method: 'POST',
+  //     body: JSON.stringify(requestData),
+  //   });
+  // }
 
-  async getServiceRequests() {
-    return await this.request('/api/v1/service-requests');
-  }
+  // async getServiceRequests() {
+  //   return await this.request('/api/v1/service-requests');
+  // }
 
-  async getAnnouncements() {
-    return await this.request('/api/v1/announcements/resident');
-  }
+  // async getAnnouncements() {
+  //   return await this.request('/api/v1/announcements/resident');
+  // }
 }
 
 

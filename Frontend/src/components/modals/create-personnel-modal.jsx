@@ -71,7 +71,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           email: formData.email,
           purok: formData.purok,
           contact_no: formData.phone,
-          role: formData.role, ...(formData.role === 'meter_reader' && {assignedZone : formData.role})
+          role: formData.role, ...(formData.role === 'meter_reader' && {assigned_zone : formData.assignedZone})
         };
         await authManager.createAccount(accountData);
       }
@@ -230,7 +230,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           </div>
 
 
-{/* assigning  zone if the role is meter reader */}
+{/* assigning  zone if the role is meter reader */} 
       {formData.role === 'meter_reader' && (
           <div className="space-y-2">
             <Label htmlFor="assignedZone">Assigned Zone</Label>

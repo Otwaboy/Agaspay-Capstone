@@ -42,6 +42,10 @@ const PaymentSchema = new mongoose.Schema({
     default: 'temporary_receipt'
   },
 
+  payment_reference: {
+  type: String, // from PayMongo API response
+  },
+
   confirmed_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User', // assuming treasurer accounts are in User collection

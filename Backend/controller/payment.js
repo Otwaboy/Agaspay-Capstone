@@ -13,128 +13,169 @@ const stripe = require("stripe")(process.env.PAYMONGO_SECRET_KEY);
 
 
 const payPayment = async (req, res) => {
+
   try {
     const user = req.user;
-    const { bill_id, payment_method, amount } = req.body; 
+    const { bill_id, payment_method, amount } = req.body;
 
-    // Validate required fields
+      //getting tyhe fullname
+     const info = await Payment.find({}).populate({
+        path: "bill_id",
+        populate: {
+            path: "connection_id",
+            populate: {
+                path: "resident_id",
+                select: "first_name last_name email contact_no"
+            }
+        }
+    });
+
+        const connection = info.bill_id?.connection_id;
+        const resident = connection?.resident_id;
+        const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
+        const email = resident?.email || null;
+        const phone = resident?.contact_no || null;
+    
+
+    // 🔹 Validate required fields
     if (!bill_id || !payment_method) {
       return res.status(400).json({
         success: false,
-        message: "bill_id and payment_method are required"
+        message: "bill_id and payment_method are required",
       });
     }
 
-    // Validate PayMongo secret key
+    // 🔹 Validate PayMongo secret key
     if (!process.env.PAYMONGO_SECRET_KEY) {
       return res.status(500).json({
         success: false,
-        message: "PAYMONGO_SECRET_KEY not found in environment variables"
+        message: "PAYMONGO_SECRET_KEY not found in environment variables",
       });
     }
 
+    
 
-    const billing = await Billing.findById(bill_id); 
+    // 🔹 Find billing record
+    const billing = await Billing.findById(bill_id);
     if (!billing) {
       return res.status(404).json({
         success: false,
-        message: "Billing record not found"
+        message: "Billing record not found",
       });
     }
 
-    const amountToPay = amount ?? billing.total_amount;
+    const amountToPay = amount?? billing.total_amount;
 
+    // 🔹 Create local Payment record (reference will be added after PayMongo response)
     const payment = await Payment.create({
       bill_id,
       amount_paid: amountToPay,
       payment_method,
-      payment_type: amountToPay < billing.total_amount ? 'partial' : 'full',
-      payment_status: 'pending'
+      payment_type: amountToPay < billing.total_amount ? "partial" : "full",
+      payment_status: "pending",
+      payment_reference: null, // will be updated later
     });
 
-    // ✅ CORRECT PayMongo Authorization
+    // 🔹 Prepare PayMongo request
+    //a safely way to verify paymongo that my api is legit
     const paymongoAuth = Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64");
+   
     const headers = {
       Authorization: `Basic ${paymongoAuth}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     };
 
-    // Create payment intent
+    // 🔹 Create Payment Intent
     const paymentIntentResponse = await axios.post(
       "https://api.paymongo.com/v1/payment_intents",
       {
         data: {
           attributes: {
-            amount: Math.round(amountToPay * 100),
+            amount: Math.round(amountToPay * 100), //JavaScript function that rounds a number to the nearest integer. ex (4.2) = (4.5) = 5
             currency: "PHP",
             payment_method_allowed: ["gcash", "paymaya"],
-            capture_type: "automatic"
-          }
-        }
+            capture_type: "automatic",
+          },
+        },
       },
-      { headers }
+      { headers } // so these part i called headers authorization para ma verify sa paymongo api
+                  // basically to post these api request we need a legit nga aunthentication
     );
 
     const paymentIntent = paymentIntentResponse.data.data;
 
-    // ✅ CORRECT URLs for your frontend
-    const baseUrl = req.headers.origin || 'http://localhost:5173';
+    // Save PayMongo Payment Intent ID as reference 
+    payment.payment_reference = paymentIntent.id; // so it get the paymentIntent.id id the paymongo response ex: "id": "pi_uG7v8DQadFuSHhDxkHon2sqz",
+    await payment.save(); 
 
-    // Create checkout session
+
+    // 🔹 Build frontend URLs
+    const baseUrl = req.headers.origin || "http://localhost:5173";
+
+
+
+    //  Create Checkout Session
     const checkoutResponse = await axios.post(
       "https://api.paymongo.com/v1/checkout_sessions",
       {
         data: {
           attributes: {
+              billing: {
+                  name: `${user.username}`,
+                 
+                  phone: `${phone}`
+              },
             line_items: [
               {
-                name: `Water Bill - ${user.username}`,
+                name: `AGASPAY WATER BILL - ${user.username}`,
                 amount: Math.round(amountToPay * 100),
                 currency: "PHP",
                 quantity: 1
-              }
+              },
             ],
             payment_intent_id: paymentIntent.id,
             payment_method_types: [payment_method],
             success_url: `${baseUrl}/payment/success?payment_intent_id=${paymentIntent.id}&status=succeeded`,
-            cancel_url: `${baseUrl}/payment/cancel?payment_intent_id=${paymentIntent.id}&status=failed`
-          }
-        }
+            cancel_url: `${baseUrl}/payment/cancel?payment_intent_id=${paymentIntent.id}&status=failed`,
+          },
+        },
       },
       { headers }
     );
 
     const checkoutUrl = checkoutResponse.data.data.attributes.checkout_url;
 
+    // 🔹 Respond to frontend
     res.status(200).json({
       success: true,
       msg: "Payment initialized",
       paymentId: payment._id,
-      payment_intent_id: paymentIntent.id,
+      payment_reference: payment.payment_reference, // PayMongo intent ID
       payment_method: payment.payment_method,
       payment_type: payment.payment_type,
-      checkoutUrl
+      checkoutUrl,
     });
-
   } catch (error) {
-    console.error('PayMongo Error:', error.response?.data || error.message);
-    
-    // Handle PayMongo API errors
+    console.error("PayMongo Error:", error.response?.data || error.message);
+
     if (error.response?.data) {
       return res.status(400).json({
         success: false,
         message: "PayMongo API Error",
-        error: error.response.data
+        error: error.response.data,
       });
     }
 
     res.status(500).json({
       success: false,
       message: "Payment processing failed",
-      error: error.message
+      error: error.message,
     });
   }
 };
+
+module.exports = { payPayment };
+
 
 
 // mo return ug daghan
@@ -171,6 +212,9 @@ const payPayment = async (req, res) => {
 
 //     res.status(StatusCodes.OK).json(result);
 // };
+
+
+
 
 const getPayment = async (req, res) => {
     const user = req.user;

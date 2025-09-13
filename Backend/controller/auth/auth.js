@@ -21,25 +21,25 @@ const createUser = async (username, password, role = 'resident') => {
 };
 
 
-const createResident = async (user_id, first_name, last_name, zone, purok, contact_no) => {
+const createResident = async (user_id, first_name, last_name, email, zone, purok, contact_no, status ) => {
   const resident = await Resident.create({
     user_id,
     first_name,
     last_name,
     zone,
     purok,
+    email,
     contact_no,
-    status: 'active'
+    status
   });
   return resident;
 };
 
 
-const createWaterConnection = async (resident_id, meter_no, purok, type) => {
+const createWaterConnection = async (resident_id, meter_no, type ) => {
   const connection = await WaterConnection.create({
     resident_id,
     meter_no,
-    purok,
     type,
     connection_status: 'pending'
   });

@@ -7,6 +7,8 @@ const {UnauthorizedError, BadRequestError} = require('../errors')
 
 const getAllConnectionIDs = async (req, res) => {
 
+    const user = req.user
+
   const readings = await MeterReading.find({})
     .populate({
       path: 'connection_id',
@@ -48,13 +50,12 @@ const getAllConnectionIDs = async (req, res) => {
 
 
 
-
 const inputReading = async (req, res) => {
   const { connection_id, present_reading, inclusive_date, remarks} = req.body;
   const user = req.user;
 
   // Validate role
-  if (user.role !== 'meter reader') {
+  if (user.role !== 'meter_reader') {
     throw new UnauthorizedError('Only meter readers can input readings.');
   }
 
@@ -84,7 +85,7 @@ const inputReading = async (req, res) => {
  // ✅ Validate present >= previous
     if (present_reading < previous_reading) {
      throw new BadRequestError('Present reading cannot be less than previous reading')
-    }
+    } 
 
   // Create meter reading
   const reading = await MeterReading.create({
@@ -103,4 +104,57 @@ const inputReading = async (req, res) => {
   });
 };
 
-module.exports = { getAllConnectionIDs, inputReading };
+
+
+//fetch
+
+// ✅ Get latest reading per water connection
+const getLatestReadings = async (req, res) => {
+  try {
+    const readings = await MeterReading.aggregate([
+      { $sort: { created_at: -1 } }, // newest first
+      {
+        $group: {
+          _id: "$connection_id",
+          latest: { $first: "$$ROOT" }
+        }
+      }
+    ]);
+
+    // Populate after aggregation
+    const populated = await WaterConnection.populate(readings, {
+      path: "latest.connection_id",
+      populate: { path: "resident_id", select: "first_name last_name purok" }
+    });
+
+    const connectionDetails = populated.map(item => {
+      const reading = item.latest;
+      const connection = reading.connection_id;
+      const resident = connection?.resident_id;
+
+      return {
+        reading_id: reading._id,
+        connection_id: connection?._id,
+        inclusive_date: reading.inclusive_date,
+        full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
+        purok_no: connection?.purok || "not here purok",
+        previous_reading: reading.previous_reading,
+        present_reading: reading.present_reading,
+        calculated: reading.calculated
+      };
+    });
+
+    res.status(StatusCodes.OK).json({
+      message: "Latest reading per connection fetched",
+      connection_details: connectionDetails,
+      total: connectionDetails.length
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to fetch latest readings",
+      error: error.message
+    });
+  }
+};
+
+module.exports = { getAllConnectionIDs, inputReading, getLatestReadings };

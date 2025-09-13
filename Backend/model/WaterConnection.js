@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const WaterConnectionSchema = new mongoose.Schema({
-    
+     
   resident_id: 
   {
     type: mongoose.Schema.Types.ObjectId,
@@ -17,15 +17,15 @@ const WaterConnectionSchema = new mongoose.Schema({
   connection_status: 
   {
     type: String,
-    enum: ['pending', 'active', 'disconnected', 'reconnection'],
+    enum: ['pending', 'active', 'disconnected', 'reconnected'],
     default: 'pending'
   },
-  purok: 
-  {
-    type: Number, 
-    enum: [1, 2, 3, 4, 5, 6, 7],
-    required: [true, 'Purok is required']
-  },
+  // purok: 
+  // {
+  //   type: String, 
+  //   enum: ["1", "2", "3", "4", "5", "6", "7"],
+  //   // required: [true, 'Purok is required']
+  // },
   type: 
   {
     type: String,
