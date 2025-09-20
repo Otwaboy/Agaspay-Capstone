@@ -104,7 +104,7 @@ const inputReading = async (req, res) => {
   });
 };
 
-
+ 
 
 //fetch
 
@@ -137,7 +137,7 @@ const getLatestReadings = async (req, res) => {
         connection_id: connection?._id,
         inclusive_date: reading.inclusive_date,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
-        purok_no: connection?.purok || "not here purok",
+        purok_no: resident?.purok || "not here purok",
         previous_reading: reading.previous_reading,
         present_reading: reading.present_reading,
         calculated: reading.calculated

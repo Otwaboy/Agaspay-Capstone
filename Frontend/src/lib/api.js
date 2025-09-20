@@ -64,6 +64,11 @@ async createBilling(billData) {
     return await this.request('/api/v1/water-connection');
   }
 
+  //getlatestReading
+    async getLatestReadings() {
+    return await this.request('/api/v1/meter-reader/latest-readings');
+  }
+
   async inputReading(requestData) {
      return await this.request('/api/v1/meter-reader', {
       method: 'POST',

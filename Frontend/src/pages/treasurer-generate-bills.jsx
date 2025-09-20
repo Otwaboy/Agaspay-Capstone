@@ -41,8 +41,8 @@ export default function TreasurerGenerateBills() {
   const [formData, setFormData] = useState({
     connection_id: "",
     reading_id: "",
-    rate_per_cubic: 25,
-    fixed_charge: 50,
+    rate_per_cubic: 12,
+    fixed_charge: 0,
     due_date: "",
     billing_period: {
       start_date: "",
@@ -75,7 +75,7 @@ export default function TreasurerGenerateBills() {
   const fetchConnections = async () => {
     try {
       setReadingsLoading(true);
-      const data = await apiClient.getWaterConnections();
+      const data = await apiClient.getLatestReadings();
       //data sa waterconnections will be pass sa setreadingsresponse na updater functiobn
       setReadingsResponse(data);
 
@@ -120,7 +120,7 @@ export default function TreasurerGenerateBills() {
       setBillsLoading(false);
     }
   };
-
+  
 // assigning reasdingsResponse nga data sa connection list
   const connectionList = readingsResponse?.connection_details || [];
 
@@ -137,12 +137,11 @@ export default function TreasurerGenerateBills() {
 
   // Filter out ratung mga nanay bill or ag previous reading is dako sa zero
   const availableConnections = connectionList.filter(conn => 
-    existingBillIds.includes(conn.connection_id) &&
-    conn.previous_reading < 0 // Only show connections with readings
+    // ani exclude tung already generated na nga bill so ag mo show ra katung wapa na generate ag bills
+    !existingBillIds.includes(conn.connection_id) &&
+    conn.present_reading > 0 // Only show connections with readings
   );
   
-  console.log('available connections:');
-  console.log(availableConnections)
  
 
   //SEARCH PURPOSES
@@ -153,19 +152,18 @@ export default function TreasurerGenerateBills() {
     connection.connection_id.includes(searchTerm)
   );
 
-  // console.log('filteredConnections:');
-  // console.log(filteredConnections)
+  console.log('filteredConnections:');
+  console.log(filteredConnections)
 
   // Get selected connection details
   const selectedConnectionData = availableConnections.find(conn => conn.connection_id === formData.connection_id);
 
   // Calculate bill amount
   const calculateBillAmount = (connection) => {
-
-    if (!connection) return 0;
-
-    const consumption = connection.present_reading - connection.previous_reading;
-    const waterCharge = consumption * formData.rate_per_cubic;
+  if (!connection) return 0;
+  
+    const calculated = connection.present_reading - connection.previous_reading;
+    const waterCharge = calculated * formData.rate_per_cubic;
 
     return waterCharge + formData.fixed_charge;
   };
@@ -223,6 +221,8 @@ export default function TreasurerGenerateBills() {
   // State for bulk generation
   const [isGeneratingBulkBills, setIsGeneratingBulkBills] = useState(false);
 
+
+  
   // Generate bulk bills
   const generateBulkBills = async (billsData) => {
     try {
@@ -603,7 +603,7 @@ export default function TreasurerGenerateBills() {
                               <p className="font-medium">{selectedConnectionData.full_name}</p>
                             </div>
                             <div>
-                              <span className="text-blue-700">Location:</span>
+                              <span className="text-blue-700">Purok:</span>
                               <p className="font-medium">{selectedConnectionData.purok_no}</p>
                             </div>
                             <div>
@@ -685,7 +685,7 @@ export default function TreasurerGenerateBills() {
                                   Customer
                                 </th>
                                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                                  Location
+                                  Purok
                                 </th>
                                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
                                   Reading
@@ -725,24 +725,24 @@ export default function TreasurerGenerateBills() {
                                 //if successfullly na fetch or naay data
                               ) : (
                                 filteredConnections.map((connection) => (
-                                  <tr key={connection.connection.connection_id} data-testid={`row-connection-${connection.connection.connection_id}`}>
+                                  <tr key={connection.connection_id} data-testid={`row-connection-${connection.connection_id}`}>
                                     <td className="py-4 px-4">
                                       <Checkbox
-                                        checked={selectedConnections.includes(connection.connection.connection_id)}
-                                        onCheckedChange={(checked) => handleConnectionCheck(connection.connection.connection_id, checked)}
-                                        data-testid={`checkbox-connection-${connection.connection.connection_id}`}
+                                        checked={selectedConnections.includes(connection.connection_id)}
+                                        onCheckedChange={(checked) => handleConnectionCheck(connection.connection_id, checked)}
+                                        data-testid={`checkbox-connection-${connection.connection_id}`}
                                       />
                                     </td>
                                     <td className="py-4 px-4">
-                                      <div className="text-sm font-medium text-gray-900">{connection.connection.full_name}</div>
-                                      <div className="text-sm text-gray-500">ID: {connection.connection.connection_id}</div>
+                                      <div className="text-sm font-medium text-gray-900">{connection.full_name}</div>
+                                      <div className="text-sm text-gray-500">ID: {connection.connection_id}</div>
                                     </td>
-                                    <td className="py-4 px-4 text-sm text-gray-900">{connection.connection.purok_no}</td>
+                                    <td className="py-4 px-4 text-sm text-gray-900">{connection.purok_no}</td>
                                     <td className="py-4 px-4 text-sm text-gray-900">
-                                      {connection.connection.previous_reading} → {connection.present_reading}
+                                      {connection.previous_reading} → {connection.present_reading}
                                     </td>
                                     <td className="py-4 px-4 text-sm text-gray-900">
-                                      {connection.connection.present_reading - connection.connection.previous_reading} m³
+                                      {connection.calculated} m³
                                     </td>
                                     <td className="py-4 px-4 text-sm font-medium text-gray-900">
                                       ₱{calculateBillAmount(connection).toFixed(2)}
@@ -754,6 +754,7 @@ export default function TreasurerGenerateBills() {
                           </table>
                         </div>
                       </div>
+
 
                       {/* Bulk Summary */}
                       {selectedConnections.length > 0 && (
