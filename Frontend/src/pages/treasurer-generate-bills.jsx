@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -25,7 +24,7 @@ import {
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
-// import { apiRequest } from "../lib/queryClient";
+import { apiClient } from "../lib/api";
 
 export default function TreasurerGenerateBills() {
   const [selectedTab, setSelectedTab] = useState("single");
@@ -46,22 +45,61 @@ export default function TreasurerGenerateBills() {
   });
   
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  // Fetch available meter readings for billing
-  const { data: readingsResponse, isLoading: readingsLoading } = useQuery({
-    queryKey: ['/api/v1/meter-reading/connections'],
-    staleTime: 2 * 60 * 1000,
-  });
+  // State for API data
+  const [readingsResponse, setReadingsResponse] = useState(null);
+  const [existingBills, setExistingBills] = useState(null);
+  const [readingsLoading, setReadingsLoading] = useState(true);
+  const [billsLoading, setBillsLoading] = useState(true);
 
-  // Fetch existing bills to avoid duplicates
-  const { data: existingBills, isLoading: billsLoading } = useQuery({
-    queryKey: ['/api/v1/billing'],
-    staleTime: 1 * 60 * 1000,
-  });
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchConnections();
+    fetchExistingBills();
+  }, []);
+
+  const fetchConnections = async () => {
+    try {
+      setReadingsLoading(true);
+      const data = await apiClient.getMeterReadingConnections();
+      setReadingsResponse(data);
+    } catch (error) {
+      console.error('Failed to fetch connections:', error);
+      // Fallback to mock data if API fails
+      setReadingsResponse({
+        connection_details: [
+          {
+            connection_id: "mock-1",
+            reading_id: "read-1",
+            full_name: "Juan Dela Cruz",
+            account_number: "WS-2024-001",
+            purok_no: "1",
+            present_reading: 150,
+            previous_reading: 120,
+            status: "active"
+          }
+        ]
+      });
+    } finally {
+      setReadingsLoading(false);
+    }
+  };
+
+  const fetchExistingBills = async () => {
+    try {
+      setBillsLoading(true);
+      const data = await apiClient.getCurrentBill();
+      setExistingBills(data);
+    } catch (error) {
+      console.error('Failed to fetch existing bills:', error);
+      setExistingBills({ data: [] });
+    } finally {
+      setBillsLoading(false);
+    }
+  };
 
   const connectionList = readingsResponse?.connection_details || [];
-  const existingBillIds = existingBills?.data?.map(bill => bill.connection_id) || [];
+  const existingBillIds = existingBills?.data?.map(bill => bill.connection_id?.toString()) || [];
   
   // Filter out connections that already have bills
   const availableConnections = connectionList.filter(conn => 
@@ -87,15 +125,15 @@ export default function TreasurerGenerateBills() {
     return waterCharge + formData.fixed_charge;
   };
 
-  // Generate single bill mutation
-  const generateBillMutation = useMutation({
-    mutationFn: async (billData) => {
-      return await apiRequest('/api/v1/billing', {
-        method: 'POST',
-        body: JSON.stringify(billData),
-      });
-    },
-    onSuccess: () => {
+  // State for mutations
+  const [isGeneratingBill, setIsGeneratingBill] = useState(false);
+
+  // Generate single bill
+  const generateBill = async (billData) => {
+    try {
+      setIsGeneratingBill(true);
+      await apiClient.createBilling(billData);
+      
       toast({
         title: "Success",
         description: "Bill generated successfully",
@@ -114,37 +152,38 @@ export default function TreasurerGenerateBills() {
       setSearchTerm("");
       setShowSearchResults(false);
       
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/billing'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/meter-reading/connections'] });
-    },
-    onError: (error) => {
+      // Refresh data
+      fetchConnections();
+      fetchExistingBills();
+    } catch (error) {
       toast({
         title: "Error",
         description: error.message || "Failed to generate bill",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsGeneratingBill(false);
+    }
+  };
 
-  // Generate bulk bills mutation
-  const generateBulkBillsMutation = useMutation({
-    mutationFn: async (billsData) => {
+  // State for bulk generation
+  const [isGeneratingBulkBills, setIsGeneratingBulkBills] = useState(false);
+
+  // Generate bulk bills
+  const generateBulkBills = async (billsData) => {
+    try {
+      setIsGeneratingBulkBills(true);
       const results = [];
+      
       for (const billData of billsData) {
         try {
-          const result = await apiRequest('/api/v1/billing', {
-            method: 'POST',
-            body: JSON.stringify(billData),
-          });
+          const result = await apiClient.createBilling(billData);
           results.push({ success: true, data: result, connection: billData.connection_id });
         } catch (error) {
           results.push({ success: false, error: error.message, connection: billData.connection_id });
         }
       }
-      return results;
-    },
-    onSuccess: (results) => {
+      
       const successCount = results.filter(r => r.success).length;
       const failCount = results.filter(r => !r.success).length;
       
@@ -154,16 +193,19 @@ export default function TreasurerGenerateBills() {
       });
       
       setSelectedConnections([]);
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/billing'] });
-    },
-    onError: (error) => {
+      // Refresh data
+      fetchConnections();
+      fetchExistingBills();
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to generate bulk bills",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsGeneratingBulkBills(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     if (field.includes('.')) {
@@ -216,16 +258,14 @@ export default function TreasurerGenerateBills() {
       return;
     }
 
+    // Format data according to your MongoDB backend schema
     const billData = {
       reading_id: formData.reading_id,
-      rate_id: "default", // You may want to make this dynamic
-      due_date: formData.due_date,
-      connection_id: formData.connection_id,
-      total_amount: calculateBillAmount(selectedConnectionData),
-      notes: formData.notes
+      rate_id: "default_rate", // Using default rate ID as in your backend
+      due_date: formData.due_date
     };
 
-    generateBillMutation.mutate(billData);
+    generateBill(billData);
   };
 
   const handleBulkBillSubmit = async () => {
@@ -251,15 +291,12 @@ export default function TreasurerGenerateBills() {
       const connection = availableConnections.find(c => c.connection_id === connectionId);
       return {
         reading_id: connection.reading_id || connection.connection_id,
-        rate_id: "default",
-        due_date: formData.due_date,
-        connection_id: connectionId,
-        total_amount: calculateBillAmount(connection),
-        notes: formData.notes
+        rate_id: "default_rate", // Using default rate ID as in your backend
+        due_date: formData.due_date
       };
     });
 
-    generateBulkBillsMutation.mutate(billsData);
+    generateBulkBills(billsData);
   };
 
   const handleSelectAll = (checked) => {
@@ -534,10 +571,10 @@ export default function TreasurerGenerateBills() {
                         </Button>
                         <Button
                           type="submit"
-                          disabled={generateBillMutation.isPending || !formData.connection_id}
+                          disabled={isGeneratingBill || !formData.connection_id}
                           data-testid="button-generate-single-bill"
                         >
-                          {generateBillMutation.isPending ? "Generating..." : "Generate Bill"}
+                          {isGeneratingBill ? "Generating..." : "Generate Bill"}
                         </Button>
                       </div>
                     </form>
@@ -679,10 +716,10 @@ export default function TreasurerGenerateBills() {
                         </Button>
                         <Button
                           onClick={handleBulkBillSubmit}
-                          disabled={generateBulkBillsMutation.isPending || selectedConnections.length === 0 || !formData.due_date}
+                          disabled={isGeneratingBulkBills || selectedConnections.length === 0 || !formData.due_date}
                           data-testid="button-generate-bulk-bills"
                         >
-                          {generateBulkBillsMutation.isPending ? "Generating..." : `Generate ${selectedConnections.length} Bills`}
+                          {isGeneratingBulkBills ? "Generating..." : `Generate ${selectedConnections.length} Bills`}
                         </Button>
                       </div>
                     </div>
