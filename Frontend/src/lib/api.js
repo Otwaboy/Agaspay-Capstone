@@ -42,6 +42,15 @@ class ApiClient {
   }
  
 
+  //create billing api
+  //send this api to the backend
+async createBilling(billData) {
+  return await this.request('/api/v1/billing', {
+      method: 'POST',
+      body: JSON.stringify(billData),
+    });
+}
+
   // Payment related API calls
   async getCurrentBill() {
     return await this.request('/api/v1/billing');
@@ -60,7 +69,7 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(requestData),
     });
-  }
+  } 
   
 
 
@@ -70,6 +79,8 @@ class ApiClient {
       body: JSON.stringify(paymentData),
     });
   }
+
+
 
   
 async getCurrentReading() {

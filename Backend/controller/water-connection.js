@@ -9,6 +9,7 @@ const getAllConnections = async (req, res) => {
     const connections = await WaterConnection.find({ connection_status: "pending" })
       .populate("resident_id"); // get resident details
 
+
     // Map each connection with extra details
     const connectionDetails = await Promise.all(
       connections.map(async (conn) => {

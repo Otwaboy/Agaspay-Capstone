@@ -24,13 +24,20 @@ import {
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
+
 import { apiClient } from "../lib/api";
 
+
+
+//useStates 
 export default function TreasurerGenerateBills() {
   const [selectedTab, setSelectedTab] = useState("single");
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedConnections, setSelectedConnections] = useState([]);
+
+
+  //bill generation data object
   const [formData, setFormData] = useState({
     connection_id: "",
     reading_id: "",
@@ -43,14 +50,19 @@ export default function TreasurerGenerateBills() {
     },
     notes: ""
   });
+
   
+  //handling error notification
   const { toast } = useToast();
 
-  // State for API data
+
+  // useState para sa mga  API data
   const [readingsResponse, setReadingsResponse] = useState(null);
   const [existingBills, setExistingBills] = useState(null);
   const [readingsLoading, setReadingsLoading] = useState(true);
   const [billsLoading, setBillsLoading] = useState(true);
+
+
 
   // Fetch data on component mount
   useEffect(() => {
@@ -58,38 +70,49 @@ export default function TreasurerGenerateBills() {
     fetchExistingBills();
   }, []);
 
+
+  //fetching waterconnections sa backend api
   const fetchConnections = async () => {
     try {
       setReadingsLoading(true);
-      const data = await apiClient.getMeterReadingConnections();
+      const data = await apiClient.getWaterConnections();
+      //data sa waterconnections will be pass sa setreadingsresponse na updater functiobn
       setReadingsResponse(data);
+
     } catch (error) {
+
       console.error('Failed to fetch connections:', error);
       // Fallback to mock data if API fails
-      setReadingsResponse({
-        connection_details: [
-          {
-            connection_id: "mock-1",
-            reading_id: "read-1",
-            full_name: "Juan Dela Cruz",
-            account_number: "WS-2024-001",
-            purok_no: "1",
-            present_reading: 150,
-            previous_reading: 120,
-            status: "active"
-          }
-        ]
-      });
+
+      //mock data if api is error fetching
+      // setReadingsResponse({
+      //   connection_details: [
+      //     {
+      //       connection_id: "mock-1",
+      //       reading_id: "read-1",
+      //       full_name: "Juan Dela Cruz",
+      //       account_number: "WS-2024-001",
+      //       purok_no: "1",
+      //       present_reading: 150,
+      //       previous_reading: 120,
+      //       status: "active"
+      //     }
+      //   ]
+      // });
+
     } finally {
       setReadingsLoading(false);
     }
   };
 
+
+  //get or fetching the currentbill api
   const fetchExistingBills = async () => {
     try {
       setBillsLoading(true);
       const data = await apiClient.getCurrentBill();
       setExistingBills(data);
+
     } catch (error) {
       console.error('Failed to fetch existing bills:', error);
       setExistingBills({ data: [] });
@@ -98,15 +121,31 @@ export default function TreasurerGenerateBills() {
     }
   };
 
+// assigning reasdingsResponse nga data sa connection list
   const connectionList = readingsResponse?.connection_details || [];
-  const existingBillIds = existingBills?.data?.map(bill => bill.connection_id?.toString()) || [];
-  
-  // Filter out connections that already have bills
-  const availableConnections = connectionList.filter(conn => 
-    !existingBillIds.includes(conn.connection_id) &&
-    conn.present_reading > 0 // Only show connections with readings
-  );
 
+ //loggin para mahibaw an if na fetch ba jud ag data
+  console.log('connection list');
+  console.log(connectionList)
+
+  const existingBillIds = existingBills?.data?.map(bill => bill.connection_id?.toString()) || [];
+
+  console.log('exisiting bills');
+  console.log(existingBillIds)
+  
+ 
+
+  // Filter out ratung mga nanay bill or ag previous reading is dako sa zero
+  const availableConnections = connectionList.filter(conn => 
+    existingBillIds.includes(conn.connection_id) &&
+    conn.previous_reading < 0 // Only show connections with readings
+  );
+  
+  console.log('available connections:');
+  console.log(availableConnections)
+ 
+
+  //SEARCH PURPOSES
   // Filter connections based on search term
   const filteredConnections = availableConnections.filter(connection => 
     connection.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,18 +153,29 @@ export default function TreasurerGenerateBills() {
     connection.connection_id.includes(searchTerm)
   );
 
+  // console.log('filteredConnections:');
+  // console.log(filteredConnections)
+
   // Get selected connection details
   const selectedConnectionData = availableConnections.find(conn => conn.connection_id === formData.connection_id);
 
   // Calculate bill amount
   const calculateBillAmount = (connection) => {
+
     if (!connection) return 0;
+
     const consumption = connection.present_reading - connection.previous_reading;
     const waterCharge = consumption * formData.rate_per_cubic;
+
     return waterCharge + formData.fixed_charge;
   };
 
-  // State for mutations
+
+ 
+    // A query = get data (e.g., fetch users).
+    //A mutation = change data (e.g., add a user, update profile, delete post).
+
+ // State for mutations
   const [isGeneratingBill, setIsGeneratingBill] = useState(false);
 
   // Generate single bill
@@ -155,6 +205,7 @@ export default function TreasurerGenerateBills() {
       // Refresh data
       fetchConnections();
       fetchExistingBills();
+
     } catch (error) {
       toast({
         title: "Error",
@@ -166,6 +217,9 @@ export default function TreasurerGenerateBills() {
     }
   };
 
+
+
+  // para sa tanan nga generation of bills
   // State for bulk generation
   const [isGeneratingBulkBills, setIsGeneratingBulkBills] = useState(false);
 
@@ -173,14 +227,24 @@ export default function TreasurerGenerateBills() {
   const generateBulkBills = async (billsData) => {
     try {
       setIsGeneratingBulkBills(true);
+      //An empty array to store the outcome (success or failure) for each bill.
       const results = [];
-      
+  
       for (const billData of billsData) {
         try {
+          
           const result = await apiClient.createBilling(billData);
-          results.push({ success: true, data: result, connection: billData.connection_id });
+          results.push({ 
+            success: true, 
+            data: result, 
+            connection: billData.connection_id 
+          });
+
         } catch (error) {
-          results.push({ success: false, error: error.message, connection: billData.connection_id });
+          results.push({ 
+            success: false, 
+            error: error.message, 
+            connection: billData.connection_id });
         }
       }
       
@@ -207,6 +271,9 @@ export default function TreasurerGenerateBills() {
     }
   };
 
+
+
+  
   const handleInputChange = (field, value) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
@@ -264,6 +331,7 @@ export default function TreasurerGenerateBills() {
       rate_id: "default_rate", // Using default rate ID as in your backend
       due_date: formData.due_date
     };
+
 
     generateBill(billData);
   };
@@ -355,6 +423,7 @@ export default function TreasurerGenerateBills() {
                 </CardContent>
               </Card>
 
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -398,7 +467,11 @@ export default function TreasurerGenerateBills() {
               </Card>
             </div>
 
-            {/* Main Content */}
+
+
+
+
+            {/* Main Content BIll GENERATION */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -598,6 +671,7 @@ export default function TreasurerGenerateBills() {
                         </div>
                       </div>
 
+                      
                       {/* Connections Table */}
                       <div className="border rounded-lg overflow-hidden">
                         <div className="overflow-x-auto max-h-96">
@@ -624,7 +698,10 @@ export default function TreasurerGenerateBills() {
                                 </th>
                               </tr>
                             </thead>
+                            
                             <tbody className="bg-white divide-y divide-gray-200">
+                              {/* so ag data aning readinsloading kay get from the getwaterconnection na api */}
+
                               {readingsLoading ? (
                                 Array.from({ length: 5 }).map((_, index) => (
                                   <tr key={index}>
@@ -636,32 +713,36 @@ export default function TreasurerGenerateBills() {
                                     <td className="py-4 px-4"><Skeleton className="h-4 w-16" /></td>
                                   </tr>
                                 ))
+
+                                // if the length is zero 
                               ) : filteredConnections.length === 0 ? (
                                 <tr>
                                   <td colSpan="6" className="py-8 px-4 text-center text-gray-500">
                                     No unbilled connections available
                                   </td>
                                 </tr>
+
+                                //if successfullly na fetch or naay data
                               ) : (
                                 filteredConnections.map((connection) => (
-                                  <tr key={connection.connection_id} data-testid={`row-connection-${connection.connection_id}`}>
+                                  <tr key={connection.connection.connection_id} data-testid={`row-connection-${connection.connection.connection_id}`}>
                                     <td className="py-4 px-4">
                                       <Checkbox
-                                        checked={selectedConnections.includes(connection.connection_id)}
-                                        onCheckedChange={(checked) => handleConnectionCheck(connection.connection_id, checked)}
-                                        data-testid={`checkbox-connection-${connection.connection_id}`}
+                                        checked={selectedConnections.includes(connection.connection.connection_id)}
+                                        onCheckedChange={(checked) => handleConnectionCheck(connection.connection.connection_id, checked)}
+                                        data-testid={`checkbox-connection-${connection.connection.connection_id}`}
                                       />
                                     </td>
                                     <td className="py-4 px-4">
-                                      <div className="text-sm font-medium text-gray-900">{connection.full_name}</div>
-                                      <div className="text-sm text-gray-500">ID: {connection.connection_id}</div>
+                                      <div className="text-sm font-medium text-gray-900">{connection.connection.full_name}</div>
+                                      <div className="text-sm text-gray-500">ID: {connection.connection.connection_id}</div>
                                     </td>
-                                    <td className="py-4 px-4 text-sm text-gray-900">{connection.purok_no}</td>
+                                    <td className="py-4 px-4 text-sm text-gray-900">{connection.connection.purok_no}</td>
                                     <td className="py-4 px-4 text-sm text-gray-900">
-                                      {connection.previous_reading} → {connection.present_reading}
+                                      {connection.connection.previous_reading} → {connection.present_reading}
                                     </td>
                                     <td className="py-4 px-4 text-sm text-gray-900">
-                                      {connection.present_reading - connection.previous_reading} m³
+                                      {connection.connection.present_reading - connection.connection.previous_reading} m³
                                     </td>
                                     <td className="py-4 px-4 text-sm font-medium text-gray-900">
                                       ₱{calculateBillAmount(connection).toFixed(2)}
