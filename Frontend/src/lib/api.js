@@ -45,10 +45,41 @@ class ApiClient {
   //create billing api
   //send this api to the backend
 async createBilling(billData) {
-  return await this.request('/api/v1/billing', {
+  try {
+    return await this.request('/api/v1/billing', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(billData),
     });
+  } catch (error) {
+    console.error("YAWA RA Billing creation failed:", error);
+    throw error;
+  }
+}
+
+
+
+async getRate() {
+  try {
+    return await this.request('/api/v1/rate');
+  } catch (error) {
+    console.error("Fetching rate failed:", error);
+    throw error;
+  }
+}
+
+
+async addRatingAmount(rateAmount) {
+  try {
+    return await this.request('/api/v1/rate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rateAmount),
+    });
+  } catch (error) {
+    console.error("Billing creation failed:", error);
+    throw error;
+  }
 }
 
   // Payment related API calls

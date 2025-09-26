@@ -106,7 +106,7 @@ const createBilling = async (req, res) => {
         ({
             connection_id: reading.connection_id,
             reading_id,
-            rate_id,
+            rate_id, 
             due_date,
             generated_by: user.userId
         })

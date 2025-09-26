@@ -41,15 +41,15 @@ export default function TreasurerGenerateBills() {
   const [formData, setFormData] = useState({
     connection_id: "",
     reading_id: "",
-    rate_per_cubic: 12,
+    rate_per_cubic: "",
     fixed_charge: 0,
     due_date: "",
-    billing_period: {
-      start_date: "",
-      end_date: ""
-    },
+    // billing_period: {
+    //   start_date: "",
+    //   end_date: ""
+    // },
     notes: ""
-  });
+  });  
 
   
   //handling error notification
@@ -79,26 +79,20 @@ export default function TreasurerGenerateBills() {
       //data sa waterconnections will be pass sa setreadingsresponse na updater functiobn
       setReadingsResponse(data);
 
+      //getting rate api
+      const rateResponse = await apiClient.getRate()
+      if(rateResponse?.rate_id && rateResponse?.amount) {
+        setFormData(prev => ({
+            ...prev,
+            rate_id: rateResponse.rate_id, // ma store ag rate_id
+            rate_per_cubic: rateResponse.amount //store the amount of rate
+        }))
+      }
+
     } catch (error) {
 
       console.error('Failed to fetch connections:', error);
-      // Fallback to mock data if API fails
-
-      //mock data if api is error fetching
-      // setReadingsResponse({
-      //   connection_details: [
-      //     {
-      //       connection_id: "mock-1",
-      //       reading_id: "read-1",
-      //       full_name: "Juan Dela Cruz",
-      //       account_number: "WS-2024-001",
-      //       purok_no: "1",
-      //       present_reading: 150,
-      //       previous_reading: 120,
-      //       status: "active"
-      //     }
-      //   ]
-      // });
+      
 
     } finally {
       setReadingsLoading(false);
@@ -124,7 +118,7 @@ export default function TreasurerGenerateBills() {
 // assigning reasdingsResponse nga data sa connection list
   const connectionList = readingsResponse?.connection_details || [];
 
- //loggin para mahibaw an if na fetch ba jud ag data
+ //logging para mahibaw an if na fetch ba jud ag data
   console.log('connection list');
   console.log(connectionList)
 
@@ -134,7 +128,6 @@ export default function TreasurerGenerateBills() {
   console.log(existingBillIds)
   
  
-
   // Filter out ratung mga nanay bill or ag previous reading is dako sa zero
   const availableConnections = connectionList.filter(conn => 
     // ani exclude tung already generated na nga bill so ag mo show ra katung wapa na generate ag bills
@@ -143,7 +136,6 @@ export default function TreasurerGenerateBills() {
   );
   
  
-
   //SEARCH PURPOSES
   // Filter connections based on search term
   const filteredConnections = availableConnections.filter(connection => 
@@ -178,7 +170,9 @@ export default function TreasurerGenerateBills() {
 
   // Generate single bill
   const generateBill = async (billData) => {
+
     try {
+
       setIsGeneratingBill(true);
       await apiClient.createBilling(billData);
       
@@ -191,10 +185,10 @@ export default function TreasurerGenerateBills() {
       setFormData({
         connection_id: "",
         reading_id: "",
-        rate_per_cubic: 25,
-        fixed_charge: 50,
+        rate_per_cubic: "",
+        fixed_charge: "",
         due_date: "",
-        billing_period: { start_date: "", end_date: "" },
+        // billing_period: { start_date: "", end_date: "" },
         notes: ""
       });
       setSearchTerm("");
@@ -222,7 +216,7 @@ export default function TreasurerGenerateBills() {
   const [isGeneratingBulkBills, setIsGeneratingBulkBills] = useState(false);
 
 
-  
+
   // Generate bulk bills
   const generateBulkBills = async (billsData) => {
     try {
@@ -232,8 +226,13 @@ export default function TreasurerGenerateBills() {
   
       for (const billData of billsData) {
         try {
+
+          console.log(`📤 Generating bill for connection: ${billData.connection_id}`);
           
           const result = await apiClient.createBilling(billData);
+
+           console.log(`✅ Success: Bill generated for ${billData.connection_id}`, result);
+
           results.push({ 
             success: true, 
             data: result, 
@@ -241,6 +240,9 @@ export default function TreasurerGenerateBills() {
           });
 
         } catch (error) {
+
+            console.error(`❌ Failed: Bill NOT generated for ${billData.connection_id}`, error);
+
           results.push({ 
             success: false, 
             error: error.message, 
@@ -250,6 +252,8 @@ export default function TreasurerGenerateBills() {
       
       const successCount = results.filter(r => r.success).length;
       const failCount = results.filter(r => !r.success).length;
+
+      console.log(`📊 Bulk Result → Success: ${successCount}, Failed: ${failCount}`, results);
       
       toast({
         title: "Bulk Generation Complete",
@@ -261,6 +265,9 @@ export default function TreasurerGenerateBills() {
       fetchConnections();
       fetchExistingBills();
     } catch (error) {
+
+       console.error("🔥 Error in bulk generation:", error);
+       
       toast({
         title: "Error",
         description: "Failed to generate bulk bills",
@@ -304,6 +311,7 @@ export default function TreasurerGenerateBills() {
     setShowSearchResults(false);
   };
 
+  
   const handleSingleBillSubmit = async (e) => {
     e.preventDefault();
     
@@ -328,7 +336,7 @@ export default function TreasurerGenerateBills() {
     // Format data according to your MongoDB backend schema
     const billData = {
       reading_id: formData.reading_id,
-      rate_id: "default_rate", // Using default rate ID as in your backend
+      rate_id: formData.rate_id, 
       due_date: formData.due_date
     };
 
@@ -359,7 +367,7 @@ export default function TreasurerGenerateBills() {
       const connection = availableConnections.find(c => c.connection_id === connectionId);
       return {
         reading_id: connection.reading_id || connection.connection_id,
-        rate_id: "default_rate", // Using default rate ID as in your backend
+        rate_id: connection.rate_id,
         due_date: formData.due_date
       };
     });
@@ -633,7 +641,7 @@ export default function TreasurerGenerateBills() {
                               rate_per_cubic: 25,
                               fixed_charge: 50,
                               due_date: "",
-                              billing_period: { start_date: "", end_date: "" },
+                              // billing_period: { start_date: "", end_date: "" },
                               notes: ""
                             });
                             setSearchTerm("");

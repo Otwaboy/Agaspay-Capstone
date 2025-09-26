@@ -17,4 +17,20 @@ const createRate = async (req, res) => {
     
 }
 
-module.exports = {createRate}
+// GET /api/v1/rate
+const getRate = async (req, res) => {
+  // get only the active/latest rate
+        const rate = await Rate.findOne({ rate_status: 'active' }).sort({ effective_date: -1 });
+
+        if (!rate) {
+            return res.status(StatusCodes.NOT_FOUND).json({ message: 'No active rate found' });
+        }
+            res.status(StatusCodes.OK).json({
+                rate_id: rate._id,
+                amount: rate.amount,
+                effective_date: rate.effective_date,
+                status: rate.rate_status,
+            });
+            };      
+
+module.exports = {createRate, getRate}
