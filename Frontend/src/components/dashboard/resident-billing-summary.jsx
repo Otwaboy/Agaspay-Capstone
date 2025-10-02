@@ -32,7 +32,7 @@ export default function ResidentBillingSummary() {
       previousBilling: {
         amount: previousBill.total_amount,
         paidDate: previousBill.due_date,
-        status: previousBill.status,
+        status: previousBill.status, 
         period: "June 2024"
       },
       outstandingBalance: 0,
@@ -221,12 +221,6 @@ export default function ResidentBillingSummary() {
             </div>
           )}
 
-          <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-600">Average Monthly Bill</span>
-            <span className="text-sm font-medium text-gray-900">
-              ₱{billingData?.currentBilling.amount ? billingData?.currentBilling.amount.toFixed(2) : "0.00"}
-            </span>
-          </div>
         </div>
 
         {/* Action Button */}

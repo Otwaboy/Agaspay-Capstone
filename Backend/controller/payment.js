@@ -13,29 +13,27 @@ const stripe = require("stripe")(process.env.PAYMONGO_SECRET_KEY);
 
 
 const payPayment = async (req, res) => {
-
   try {
     const user = req.user;
     const { bill_id, payment_method, amount } = req.body;
 
-      //getting tyhe fullname
-     const info = await Payment.find({}).populate({
-        path: "bill_id",
+    //getting the fullname
+    const info = await Payment.find({}).populate({
+      path: "bill_id",
+      populate: {
+        path: "connection_id",
         populate: {
-            path: "connection_id",
-            populate: {
-                path: "resident_id",
-                select: "first_name last_name email contact_no"
-            }
+          path: "resident_id",
+          select: "first_name last_name email contact_no"
         }
+      }
     });
 
-        const connection = info.bill_id?.connection_id;
-        const resident = connection?.resident_id;
-        const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
-        const email = resident?.email || null;
-        const phone = resident?.contact_no || null;
-    
+    const connection = info.bill_id?.connection_id;
+    const resident = connection?.resident_id;
+    const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
+    const email = resident?.email || null;
+    const phone = resident?.contact_no || null;
 
     // 🔹 Validate required fields
     if (!bill_id || !payment_method) {
@@ -53,8 +51,6 @@ const payPayment = async (req, res) => {
       });
     }
 
-    
-
     // 🔹 Find billing record
     const billing = await Billing.findById(bill_id);
     if (!billing) {
@@ -64,7 +60,7 @@ const payPayment = async (req, res) => {
       });
     }
 
-    const amountToPay = amount?? billing.total_amount;
+    const amountToPay = amount ?? billing.total_amount;
 
     // 🔹 Create local Payment record (reference will be added after PayMongo response)
     const payment = await Payment.create({
@@ -99,20 +95,13 @@ const payPayment = async (req, res) => {
         },
       },
       { headers } // so these part i called headers authorization para ma verify sa paymongo api
-                  // basically to post these api request we need a legit nga aunthentication
+                  // basically to post these api request we need a legit nga authentication
     );
 
     const paymentIntent = paymentIntentResponse.data.data;
 
-    // Save PayMongo Payment Intent ID as reference 
-    payment.payment_reference = paymentIntent.id; // so it get the paymentIntent.id id the paymongo response ex: "id": "pi_uG7v8DQadFuSHhDxkHon2sqz",
-    await payment.save(); 
-
-
     // 🔹 Build frontend URLs
     const baseUrl = req.headers.origin || "http://localhost:5173";
-
-
 
     //  Create Checkout Session
     const checkoutResponse = await axios.post(
@@ -120,11 +109,10 @@ const payPayment = async (req, res) => {
       {
         data: {
           attributes: {
-              billing: {
-                  name: `${user.username}`,
-                 
-                  phone: `${phone}`
-              },
+            billing: {
+              name: `${user.username}`,
+              phone: `${phone}`
+            },
             line_items: [
               {
                 name: `AGASPAY WATER BILL - ${user.username}`,
@@ -143,7 +131,11 @@ const payPayment = async (req, res) => {
       { headers }
     );
 
-    const checkoutUrl = checkoutResponse.data.data.attributes.checkout_url;
+    const checkoutSession = checkoutResponse.data.data;
+
+    // 🔹 Save PayMongo Payment Intent ID as reference (from Checkout Session)
+    payment.payment_reference = checkoutSession.attributes.payment_intent.id; // so it get the paymentIntent.id used in checkout
+    await payment.save(); 
 
     // 🔹 Respond to frontend
     res.status(200).json({
@@ -153,7 +145,7 @@ const payPayment = async (req, res) => {
       payment_reference: payment.payment_reference, // PayMongo intent ID
       payment_method: payment.payment_method,
       payment_type: payment.payment_type,
-      checkoutUrl,
+      checkoutUrl: checkoutSession.attributes.checkout_url,
     });
   } catch (error) {
     console.error("PayMongo Error:", error.response?.data || error.message);
@@ -173,8 +165,6 @@ const payPayment = async (req, res) => {
     });
   }
 };
-
-module.exports = { payPayment };
 
 
 
@@ -242,7 +232,7 @@ const getPayment = async (req, res) => {
         const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
 
         return {
-            paymnent_id: payment._id,
+            payment_id: payment._id,
             amount_paid: payment.amount_paid,
             payment_method: payment.payment_method,
             payment_type: payment.payment_type,

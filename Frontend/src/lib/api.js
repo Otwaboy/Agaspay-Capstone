@@ -57,6 +57,19 @@ async createBilling(billData) {
   }
 }
 
+async inputReading(requestData) {
+  try {
+    return await this.request('/api/v1/meter-reader', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestData),
+    });
+  } catch (error) {
+    console.error("YAWA RA inputing reading is failed failed:", error);
+    throw error;
+  }
+}
+
 
 
 async getRate() {
@@ -100,12 +113,12 @@ async addRatingAmount(rateAmount) {
     return await this.request('/api/v1/meter-reader/latest-readings');
   }
 
-  async inputReading(requestData) {
-     return await this.request('/api/v1/meter-reader', {
-      method: 'POST',
-      body: JSON.stringify(requestData),
-    });
-  } 
+  // async inputReading(requestData) {
+  //    return await this.request('/api/v1/meter-reader', {
+  //     method: 'POST',
+  //     body: JSON.stringify(requestData),
+  //   });
+  // } 
   
 
 
@@ -117,7 +130,9 @@ async addRatingAmount(rateAmount) {
   }
 
 
-
+ async getUserAccount() {
+    return await this.request('/api/v1/user');
+  }
   
 async getCurrentReading() {
     return await this.request(`/api/v1/meter-reader}`);
@@ -135,10 +150,8 @@ async getCurrentReading() {
   //   return await this.request('/api/v1/billing/history');
   // }
 
-  // // Resident account related API calls
-  // async getUserAccount() {
-  //   return await this.request('/api/v1/user');
-  // }
+  // Resident account related API calls
+ 
 
   // async getWaterUsage() {
   //   return await this.request('/api/v1/residents/usage');

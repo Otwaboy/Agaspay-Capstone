@@ -28,7 +28,7 @@ const getUserAccount = async (req, res) => {
       role: resident.role,
       meter_no: connection?.meter_no || null,
       status: connection?.connection_status || null,
-      purok: connection?.purok || null,
+      purok: resident?.purok || null,
       zone: resident?.zone || null,
       type: connection?.type || null,
     }

@@ -16,7 +16,7 @@ export default function ResidentAccountOverview() {
     queryFn: async () => {
       const res = await apiClient.getUserAccount(); 
       const user = res.user; // backend returns { success, user }
-      
+       
       return {
         accountName: user.fullname,
         serviceAddress: `Purok ${user.purok}, Biking ${user.zone} Dauis, Bohol`,

@@ -17,13 +17,12 @@ export default function MeterReaderReadings() {
     connection_id: "",
     present_reading: "",
     inclusive_date: {
-      start_date: "",
-      end_date: ""
+      start: "",
+      end:""
     },
     remarks: ""
 
   });
-
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -31,25 +30,26 @@ export default function MeterReaderReadings() {
   const { data: connectionsResponse, isLoading: connectionsLoading } = useQuery({
     queryKey: ["connections"],
     queryFn: async () => {
-      return await apiClient.getWaterConnections(); 
+      return await apiClient.getLatestReadings(); 
       // returns { message, connection_details: [...] }
     }
   });
 
   const connectionList = connectionsResponse?.connection_details || [];
 
-
   // Find selected connection
 const selectedConnectionData = connectionList.find(
   (conn) => String(conn.connection_id) === String(formData.connection_id) // id form mongodb
 );
+
 
 // ✅ Debug logs (plain JS, not JSX)
 console.log("connection list ni", connectionList);
   console.log("connection_id ni ha", formData.connection_id);
   console.log("selectedConnectionData", selectedConnectionData);
 
-  const previousReading = selectedConnectionData?.previous_reading || 0;
+  // getting the present reading of the latest reading and make it previous reading in a new reading
+  const previousReading = selectedConnectionData?.present_reading || 0;
 
   // Consumption 
   const presentReading = parseFloat(formData.present_reading) || 0;
@@ -61,6 +61,7 @@ console.log("connection list ni", connectionList);
     mutationFn: async (readingData) => {
       return await apiClient.inputReading(readingData);
     },
+
     onSuccess: () => {
       toast({
         title: "Success",
@@ -70,7 +71,7 @@ console.log("connection list ni", connectionList);
       setFormData({
         connection_id: "",
         present_reading: "",
-        inclusive_date: { start_date: "", end_date: "" },
+        inclusive_date: { start: "", end: "" },
         remarks: ""
       });
 
@@ -104,7 +105,7 @@ console.log("connection list ni", connectionList);
     }
   };
 
-  // Submit handler
+  //Handle submit reading to treasurer
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -132,7 +133,7 @@ console.log("connection list ni", connectionList);
       });
     }
 
-    if (!formData.inclusive_date.start_date || !formData.inclusive_date.end_date) {
+    if (!formData.inclusive_date.start || !formData.inclusive_date.end) {
       return toast({
         title: "Validation Error",
         description: "Please enter both start and end dates",
@@ -140,18 +141,23 @@ console.log("connection list ni", connectionList);
       });
     }
 
+    // this payload will be passed on the backend
     const payload = {
       connection_id: formData.connection_id,
       present_reading: Number(formData.present_reading),
       inclusive_date: {
-        start: formData.inclusive_date.start_date,
-        end: formData.inclusive_date.end_date
+        start: formData.inclusive_date.start,
+        end: formData.inclusive_date.end
       },
       remarks: formData.remarks
     };
 
     recordReadingMutation.mutate(payload);
   };
+
+
+
+
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -291,29 +297,29 @@ console.log("connection list ni", connectionList);
                     </Label>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="start_date" className="text-sm">
+                        <Label htmlFor="start" className="text-sm">
                           Start Date
                         </Label>
                         <Input
-                          id="start_date"
+                          id="start"
                           type="date"
-                          value={formData.inclusive_date.start_date}
+                          value={formData.inclusive_date.start}
                           onChange={(e) =>
-                            handleInputChange("inclusive_date.start_date", e.target.value)
+                            handleInputChange("inclusive_date.start", e.target.value)
                           }
                           data-testid="input-start-date"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="end_date" className="text-sm">
+                        <Label htmlFor="end" className="text-sm">
                           End Date
                         </Label>
                         <Input
-                          id="end_date"
+                          id="end"
                           type="date"
-                          value={formData.inclusive_date.end_date}
+                          value={formData.inclusive_date.end}
                           onChange={(e) =>
-                            handleInputChange("inclusive_date.end_date", e.target.value)
+                            handleInputChange("inclusive_date.end", e.target.value)
                           }
                           data-testid="input-end-date"
                         />
@@ -345,7 +351,7 @@ console.log("connection list ni", connectionList);
                         setFormData({
                           connection_id: "",
                           present_reading: "",
-                          inclusive_date: { start_date: "", end_date: "" },
+                          inclusive_date: { start: "", end: "" },
                           remarks: ""
                         })
                       }

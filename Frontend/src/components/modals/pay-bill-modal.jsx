@@ -118,7 +118,6 @@ import { useQuery } from "@tanstack/react-query";
 
 
 
-
 export default function PayBillModal({ isOpen, onClose }) {
 
   const [formData, setbillingData] = useState({
@@ -222,7 +221,7 @@ export default function PayBillModal({ isOpen, onClose }) {
   setIsLoading(true);
 
   try {
-    if (!billingData?.billDetails?.id) {
+    if (!billingData?.billDetails?.id) { 
       throw new Error("No bill found. Please refresh.");
     }
 

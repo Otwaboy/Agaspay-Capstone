@@ -20,7 +20,7 @@ const PaymentSchema = new mongoose.Schema({
 
   payment_method: {
     type: String,
-    enum: ['gcash', 'maya'],
+    enum: ['gcash', 'paymaya'],
     required: true
   },
 

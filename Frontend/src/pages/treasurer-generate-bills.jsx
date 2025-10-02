@@ -76,7 +76,7 @@ export default function TreasurerGenerateBills() {
     try {
       setReadingsLoading(true);
       const data = await apiClient.getLatestReadings();
-      //data sa waterconnections will be pass sa setreadingsresponse na updater functiobn
+      //data sa latest readings will be pass sa setreadingsresponse na updater functiobn
       setReadingsResponse(data);
 
       //getting rate api

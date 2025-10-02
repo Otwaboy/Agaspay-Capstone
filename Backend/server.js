@@ -39,13 +39,16 @@ const waterConnectionRoutes = require('./routes/water-connection')
 //cors
 app.use(cors(corsOptions));
 
+
+
+
 //extra packages 
 app.use(express.json())
 
 
 //routes
 app.use('/api/v1/auth', authRoutes)
-app.use('/api/v1/meter-reader', meterReadingRoutes)
+app.use('/api/v1/meter-reader', meterReadingRoutes) 
 app.use('/api/v1/rate', rateRoutes)
 app.use('/api/v1/billing', billingRoutes)
 app.use('/api/v1/payment', paymentRoutes) 
@@ -53,7 +56,8 @@ app.use('/api/v1/user', manageUserRoutes)
 app.use('/api/v1/water-connection', waterConnectionRoutes)
 
 
-
+//webhooks
+app.use("/paymongo/webhook",require("./routes/webhook"));
 
 //error handler
 app.use(notFoundErrorMiddleware)

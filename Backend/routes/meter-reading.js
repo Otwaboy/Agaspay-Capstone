@@ -10,6 +10,6 @@ router.route('/')
 .get(authMiddleware, roleMiddleware('meter_reader'), getAllConnectionIDs)
 .post(authMiddleware, roleMiddleware('meter_reader'), inputReading)
 
-router.route('/latest-readings').get(authMiddleware, getLatestReadings); // only latest per connection
+router.route('/latest-readings').get(authMiddleware, roleMiddleware('meter_reader', 'treasurer'), getLatestReadings); // only latest per connection
 
 module.exports = router   
