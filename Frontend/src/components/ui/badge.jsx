@@ -1,7 +1,7 @@
-import { cn } from "../../lib/utils";
+import { cn } from "../../lib/utils"; 
 
 const badgeVariants = {
-  default: "bg-gray-900 text-white hover:bg-gray-900/80",
+  default: "bg-gray-900 text-white hover:bg-blue-500/80",
   secondary: "bg-gray-100 text-gray-900 hover:bg-gray-100/80",
   destructive: "bg-red-500 text-white hover:bg-red-500/80",
   outline: "text-gray-950 border border-gray-200 hover:bg-gray-100",

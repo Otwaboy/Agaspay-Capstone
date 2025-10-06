@@ -88,32 +88,79 @@ const getBilling = async (req, res) => {
 
 
 
+/**
+ * Controller: createBilling
+ *
+ * What it does:
+ *  - Only the treasurer can generate a bill
+ *  - Ensures the reading exists
+ *  - Prevents duplicate bills for the same reading
+ *  - Always saves reading_id as an ObjectId (not a raw string)
+ *  - Logs and verifies the save so we know DB is consistent
+ */
 const createBilling = async (req, res) => {
+  try {
+    const { reading_id, rate_id, due_date } = req.body;
+    const user = req.user;
 
-        const {reading_id, rate_id, due_date } = req.body
-        const user = req.user
+    // ✅ Only treasurer can generate bills
+    if (user.role !== 'treasurer') {
+      throw new UnauthorizedError('Only treasurer can generate a bill.');
+    }
 
-         if (user.role !== 'treasurer') {
-            throw new UnauthorizedError('Only treasurer can generate a bill.');
-          }
+    // ✅ Make sure the reading exists
+    const reading = await MeterReading.findById(reading_id);
+    if (!reading) {
+      throw new BadRequestError('Meter reading not found.');
+    }
 
-          const reading = await Reading.findById(reading_id)
-          if(!reading){
-            throw new BadRequestError('Meter reading not found.');
-          }
+    // ✅ Prevent duplicates (check if a bill already exists for this reading)
+    // Using $or lets us match whether reading_id is stored as ObjectId or as string
+    const existingBill = await Billing.findOne({
+      $or: [
+        { reading_id: reading._id },
+        { reading_id: reading._id.toString() }
+      ]
+    });
 
-        const billing = await Billing.create
-        ({
-            connection_id: reading.connection_id,
-            reading_id,
-            rate_id, 
-            due_date,
-            generated_by: user.userId
-        })
+    if (existingBill) {
+      return res.status(StatusCodes.CONFLICT).json({
+        message: 'A bill already exists for this reading.',
+        billing: existingBill
+      });
+    }
 
-        res.status(StatusCodes.CREATED).json({billing})
+    // ✅ Create billing, saving reading_id as ObjectId (not raw req.body string)
+    const billing = await Billing.create({
+      connection_id: reading.connection_id,
+      reading_id: reading._id,  // always ObjectId
+      rate_id,
+      due_date,
+      generated_by: user.userId
+    });
 
-}
+    // 🪵 Debug logs so we can see exactly what was saved
+    console.log('🧾 Billing created:');
+    console.log('- reading._id:', reading._id);
+    console.log('- saved billing._id:', billing._id);
+    console.log('- saved billing.reading_id (raw):', billing.reading_id);
+
+    // Extra verification to confirm DB consistency
+    const verify1 = await Billing.findOne({ reading_id: billing.reading_id });
+    const verify2 = await Billing.findOne({ reading_id: billing.reading_id.toString() });
+    console.log('🔎 Verify billing find by ObjectId:', !!verify1, ' by string:', !!verify2);
+
+    return res.status(StatusCodes.CREATED).json({ billing });
+  } catch (error) {
+    console.error('🔥 createBilling error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: 'Failed to create billing',
+      error: error.message
+    });
+  }
+};
+
+
 
 
 module.exports = {createBilling, getBilling} 

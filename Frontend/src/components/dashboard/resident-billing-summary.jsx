@@ -78,7 +78,7 @@ export default function ResidentBillingSummary() {
       default: return "bg-gray-100 text-gray-800";
     }
   };
-
+ 
   // const getDaysUntilDue = (dueDate) => {
   //   const today = new Date();
   //   const due = new Date(dueDate);
@@ -100,6 +100,7 @@ export default function ResidentBillingSummary() {
       <CardDescription>Current and recent billing information</CardDescription>
     </CardHeader>
     <CardContent>
+
       <div className="space-y-6">
         {/* Current Bill */}
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">

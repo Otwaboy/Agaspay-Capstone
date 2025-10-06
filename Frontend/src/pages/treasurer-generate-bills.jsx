@@ -128,12 +128,17 @@ export default function TreasurerGenerateBills() {
   console.log(existingBillIds)
   
  
-  // Filter out ratung mga nanay bill or ag previous reading is dako sa zero
-  const availableConnections = connectionList.filter(conn => 
-    // ani exclude tung already generated na nga bill so ag mo show ra katung wapa na generate ag bills
-    !existingBillIds.includes(conn.connection_id) &&
-    conn.present_reading > 0 // Only show connections with readings
-  );
+  // // Filter out ratung mga nanay bill or ag previous reading is dako sa zero
+  // const availableConnections = connectionList.filter(conn => 
+  //   // ani exclude tung already generated na nga bill so ag mo show ra katung wapa na generate ag bills
+  //   !existingBillIds.includes(conn.connection_id) &&
+  //   conn.present_reading > 0 // Only show connections with readings
+  // );
+
+
+  const availableConnections = connectionList.filter(conn =>
+  !conn.is_billed && conn.present_reading > 0  // ani exclude tung already generated na nga bill so ag mo show ra katung wapa na generate ag bills
+);
   
  
   //SEARCH PURPOSES

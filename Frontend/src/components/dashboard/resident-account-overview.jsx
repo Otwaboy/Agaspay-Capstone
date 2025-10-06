@@ -8,7 +8,7 @@ import {apiClient} from "../../lib/api"
 
 
 export default function ResidentAccountOverview() {
-
+ 
 
    // use query lets you fetch, cache, and update data in your frontend app.
  const { data: accountData, isLoading } = useQuery({

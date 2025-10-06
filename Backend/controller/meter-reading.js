@@ -109,52 +109,144 @@ const inputReading = async (req, res) => {
 //fetch
 
 // ✅ Get latest reading per water connection
+/**
+ * Controller: getLatestReadings
+ *
+ * What it does:
+ *  - For each connection, fetch the latest meter reading
+ *  - Join resident info
+ *  - Check if that reading already has a billing record
+ *  - Uses $toString on both sides to avoid ObjectId vs string mismatch
+ *  - Tries both "Billing" and "billings" collection names (Mongoose sometimes pluralizes)
+ *  - Returns clean JSON with `is_billed: true/false`
+ */
 const getLatestReadings = async (req, res) => {
   try {
-    const readings = await MeterReading.aggregate([
-      { $sort: { created_at: -1 } }, // newest first
+    const readings = await WaterConnection.aggregate([
+      // 1️⃣ Get the latest meterreading for each connection
       {
-        $group: {
-          _id: "$connection_id",
-          latest: { $first: "$$ROOT" }
+        $lookup: {
+          from: "meterreadings",
+          let: { connId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$connection_id", "$$connId"] } } },
+            { $sort: { created_at: -1 } },
+            { $limit: 1 }
+          ],
+          as: "latestReading"
+        }
+      },
+      { $unwind: { path: "$latestReading", preserveNullAndEmptyArrays: true } },
+
+      // 2️⃣ Attach resident info
+      {
+        $lookup: {
+          from: "residents",
+          localField: "resident_id",
+          foreignField: "_id",
+          as: "resident"
+        }
+      },
+      { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
+
+      // 3️⃣ Check if billing exists for that reading
+      //    We do two lookups because collection might be named "Billing" or "billings"
+      {
+        $lookup: {
+          from: "Billing",
+          let: { readingId: "$latestReading._id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: [
+                    { $toString: "$reading_id" }, // convert both sides to string
+                    { $toString: "$$readingId" }
+                  ]
+                }
+              }
+            },
+            { $limit: 1 }
+          ],
+          as: "billingA"
+        }
+      },
+      {
+        $lookup: {
+          from: "billings",
+          let: { readingId: "$latestReading._id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: [
+                    { $toString: "$reading_id" },
+                    { $toString: "$$readingId" }
+                  ]
+                }
+              }
+            },
+            { $limit: 1 }
+          ],
+          as: "billingB"
+        }
+      },
+
+      // 4️⃣ Add a flag (true if billing found in either collection)
+      {
+        $addFields: {
+          is_billed: {
+            $gt: [
+              { $add: [ { $size: "$billingA" }, { $size: "$billingB" } ] },
+              0
+            ]
+          }
         }
       }
     ]);
 
-    // Populate after aggregation
-    const populated = await WaterConnection.populate(readings, {
-      path: "latest.connection_id",
-      populate: { path: "resident_id", select: "first_name last_name purok" }
-    });
-
-    const connectionDetails = populated.map(item => {
-      const reading = item.latest;
-      const connection = reading.connection_id;
-      const resident = connection?.resident_id;
+    // 5️⃣ Format the response to make it frontend-friendly
+    const connectionDetails = readings.map(item => {
+      const reading = item.latestReading;
+      const resident = item.resident;
 
       return {
-        reading_id: reading._id,
-        connection_id: connection?._id,
-        inclusive_date: reading.inclusive_date,
+        reading_id: reading?._id ? reading._id.toString() : null,
+        connection_id: item._id ? item._id.toString() : null,
+        inclusive_date: reading?.inclusive_date || null,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
         purok_no: resident?.purok || "not here purok",
-        previous_reading: reading.previous_reading,
-        present_reading: reading.present_reading,
-        calculated: reading.calculated
+        previous_reading: reading?.previous_reading ?? 0,
+        present_reading: reading?.present_reading ?? 0,
+        calculated: reading?.calculated ?? 0,
+        is_billed: !!item.is_billed
       };
     });
 
-    res.status(StatusCodes.OK).json({
+    // 🪵 Debug log of billed connections
+    const billedSamples = connectionDetails.filter(c => c.is_billed).slice(0, 10);
+    console.log('🔎 getLatestReadings - billed samples (up to 10):', billedSamples.map(b => ({
+      connection_id: b.connection_id,
+      reading_id: b.reading_id
+    })));
+
+    return res.status(StatusCodes.OK).json({
       message: "Latest reading per connection fetched",
       connection_details: connectionDetails,
       total: connectionDetails.length
     });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    console.error('🔥 getLatestReadings error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: "Failed to fetch latest readings",
       error: error.message
     });
   }
 };
+
+
+
+
+
 
 module.exports = { getAllConnectionIDs, inputReading, getLatestReadings };
