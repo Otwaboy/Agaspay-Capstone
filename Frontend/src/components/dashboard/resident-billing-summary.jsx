@@ -26,7 +26,7 @@ export default function ResidentBillingSummary() {
        currentBilling: {
         amount: currentBill.total_amount,
         dueDate: currentBill.due_date,  
-        status: currentBill.status,
+        status: currentBill.status || currentBill.payment_status || "unpaid",
         period: "July 2024"
       },
       previousBilling: {

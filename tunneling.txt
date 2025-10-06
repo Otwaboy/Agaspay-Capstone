@@ -1,0 +1,9 @@
+to run tunneling or the webhook
+and to use paymongo webhook
+
+need install ngrok for tunneling
+ngrok http 3000 once ngrok is installed 
+and then copy paste the forwarding link  ex: https://unreturnable-bandoleered-miller.ngrok-free.dev/api/v1/payments/webhook
+and then run in the backend
+npm run dev
+

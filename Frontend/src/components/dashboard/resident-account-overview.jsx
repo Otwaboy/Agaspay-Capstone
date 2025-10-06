@@ -39,19 +39,20 @@ export default function ResidentAccountOverview() {
     queryFn: async () => {
       const res = await apiClient.getCurrentBill(); 
 
-      const bill = res.data; 
-      if (!bill || bill.length === 0) {
+      const bills = res.data;
+      if (!bills || bills.length === 0) {
         return null; // no bills
       }
-      const latestBill = bill[bill.length - 2];
-      const currentBill = bill[bill.length - 1];
+
+      const currentBill = bills[bills.length - 1];
+      const latestBill = bills.length > 1 ? bills[bills.length - 2] : null;
 
       return {
-      lastReading: latestBill.present_reading,
-      presentReading: latestBill.present_reading,
-      consumption: latestBill.calculated,
-      totalAmount: currentBill.total_amount,
-      readAt: latestBill.created_at
+        lastReading: latestBill?.present_reading ?? "N/A",
+        presentReading: currentBill.present_reading,
+        consumption: currentBill.calculated,
+        totalAmount: currentBill.total_amount,
+        readAt: currentBill.created_at
       };
     },
    
