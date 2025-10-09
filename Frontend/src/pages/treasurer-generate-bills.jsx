@@ -44,10 +44,6 @@ export default function TreasurerGenerateBills() {
     rate_per_cubic: "",
     fixed_charge: 0,
     due_date: "",
-    // billing_period: {
-    //   start_date: "",
-    //   end_date: ""
-    // },
     notes: ""
   });  
 
@@ -60,7 +56,7 @@ export default function TreasurerGenerateBills() {
   const [readingsResponse, setReadingsResponse] = useState(null);
   const [existingBills, setExistingBills] = useState(null);
   const [readingsLoading, setReadingsLoading] = useState(true);
-  const [billsLoading, setBillsLoading] = useState(true);
+  const [billsLoading, setBillsLoading] = useState(true); // idk nganu ni
 
 
 
@@ -71,7 +67,7 @@ export default function TreasurerGenerateBills() {
   }, []);
 
 
-  //fetching waterconnections sa backend api
+  //fetching latest readings sa backend api
   const fetchConnections = async () => {
     try {
       setReadingsLoading(true);
@@ -93,7 +89,6 @@ export default function TreasurerGenerateBills() {
 
       console.error('Failed to fetch connections:', error);
       
-
     } finally {
       setReadingsLoading(false);
     }
@@ -127,20 +122,11 @@ export default function TreasurerGenerateBills() {
   console.log('exisiting bills');
   console.log(existingBillIds)
   
- 
-  // // Filter out ratung mga nanay bill or ag previous reading is dako sa zero
-  // const availableConnections = connectionList.filter(conn => 
-  //   // ani exclude tung already generated na nga bill so ag mo show ra katung wapa na generate ag bills
-  //   !existingBillIds.includes(conn.connection_id) &&
-  //   conn.present_reading > 0 // Only show connections with readings
-  // );
-
-
   const availableConnections = connectionList.filter(conn =>
   !conn.is_billed && conn.present_reading > 0  // ani exclude tung already generated na nga bill so ag mo show ra katung wapa na generate ag bills
 );
   
- 
+
   //SEARCH PURPOSES
   // Filter connections based on search term
   const filteredConnections = availableConnections.filter(connection => 
@@ -154,6 +140,7 @@ export default function TreasurerGenerateBills() {
 
   // Get selected connection details
   const selectedConnectionData = availableConnections.find(conn => conn.connection_id === formData.connection_id);
+
 
   // Calculate bill amount
   const calculateBillAmount = (connection) => {
@@ -177,7 +164,6 @@ export default function TreasurerGenerateBills() {
   const generateBill = async (billData) => {
 
     try {
-
       setIsGeneratingBill(true);
       await apiClient.createBilling(billData);
       
@@ -193,7 +179,6 @@ export default function TreasurerGenerateBills() {
         rate_per_cubic: "",
         fixed_charge: "",
         due_date: "",
-        // billing_period: { start_date: "", end_date: "" },
         notes: ""
       });
       setSearchTerm("");
@@ -213,6 +198,8 @@ export default function TreasurerGenerateBills() {
       setIsGeneratingBill(false);
     }
   };
+
+  
 
 
 
@@ -250,7 +237,7 @@ export default function TreasurerGenerateBills() {
 
           results.push({ 
             success: false, 
-            error: error.message, 
+             error: error.response?.data || error.message, 
             connection: billData.connection_id });
         }
       }
@@ -317,6 +304,7 @@ export default function TreasurerGenerateBills() {
   };
 
   
+  // generate 1 resident bill only
   const handleSingleBillSubmit = async (e) => {
     e.preventDefault();
     
@@ -349,6 +337,8 @@ export default function TreasurerGenerateBills() {
     generateBill(billData);
   };
 
+
+  // can generate all and select bill 
   const handleBulkBillSubmit = async () => {
     if (selectedConnections.length === 0) {
       toast({
@@ -371,9 +361,10 @@ export default function TreasurerGenerateBills() {
     const billsData = selectedConnections.map(connectionId => {
       const connection = availableConnections.find(c => c.connection_id === connectionId);
       return {
-        reading_id: connection.reading_id || connection.connection_id,
-        rate_id: connection.rate_id,
-        due_date: formData.due_date
+        reading_id: connection.reading_id,   // ✅ correct
+        rate_id: formData.rate_id,           // ✅ take from treasurer’s selected rate
+        due_date: formData.due_date          // ✅ required
+        // ❌ no total_amount, backend computes
       };
     });
 

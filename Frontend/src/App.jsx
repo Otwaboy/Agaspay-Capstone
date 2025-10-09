@@ -2,12 +2,29 @@ import { Router, Route, Switch } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
 import { AdminRoute, SecretaryRoute, ResidentRoute, TreasurerRoute, MeterReaderRoute,DashboardRoute, AnyDashboardRoute } from "./components/ProtectedRoute";
+//admin
 import Dashboard from "./pages/dashboard";
+import AdminUsers from "./pages/admin-users";
+import AdminPersonnel from "./pages/admin-personnel";
+import AdminConnections from "./pages/admin-connections";
+import AdminBilling from "./pages/admin-billing";
+import AdminReports from "./pages/admin-reports";
+import AdminScheduling from "./pages/admin-scheduling";
+import AdminIncidents from "./pages/admin-incidents";
+import AdminSettings from "./pages/admin-settings";
+
+//secretary
 import SecretaryDashboard from "./pages/secretaryDashboard";
+
+//meter- reader
 import MeterReaderDashboard from "./pages/meter-reader-dashboard";
 import MeterReaderReadings from "./pages/meter-reader-readings";
+
+//treasurer
 import TreasurerDashboard from "./pages/treasurerDashboard";
 import TreasurerGenerateBills from "./pages/treasurer-generate-bills";
+
+//residents
 import ResidentDashboard from "./pages/residentDashboard";
 import PaymentSuccess from "./components/payment-success";
 import DemoCheckout from "./components/demo-checkout";
@@ -51,6 +68,8 @@ function App() {
                 </AnyDashboardRoute>
               )}
             </Route>
+
+            
             <Route path="/admin">
               {() => (
                 <AdminRoute>
@@ -58,6 +77,64 @@ function App() {
                 </AdminRoute>
               )}
             </Route>
+            <Route path="/admin-dashboard/users">
+              {() => (
+                <AdminRoute>
+                  <AdminUsers />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/personnel">
+              {() => (
+                <AdminRoute>
+                  <AdminPersonnel />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/connections">
+              {() => (
+                <AdminRoute>
+                  <AdminConnections />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/billing">
+              {() => (
+                <AdminRoute>
+                  <AdminBilling />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/reports">
+              {() => (
+                <AdminRoute>
+                  <AdminReports />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/scheduling">
+              {() => (
+                <AdminRoute>
+                  <AdminScheduling />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/incidents">
+              {() => (
+                <AdminRoute>
+                  <AdminIncidents />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/settings">
+              {() => (
+                <AdminRoute>
+                  <AdminSettings />
+                </AdminRoute>
+              )}
+            </Route>
+
+
             <Route path="/secretary">
               {() => (
                 <SecretaryRoute>

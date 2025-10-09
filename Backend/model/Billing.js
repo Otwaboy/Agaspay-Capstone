@@ -18,6 +18,7 @@ const BillingSchema = new mongoose.Schema({
   },
   total_amount: {
     type: Number,
+     required: true
   },
   status: {
     type: String,
@@ -32,7 +33,7 @@ const BillingSchema = new mongoose.Schema({
   generated_at: {
     type: Date,
     default: Date.now
-  },
+  }, 
   generated_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Personnel', // assuming your personnel collection/model name
@@ -52,7 +53,7 @@ BillingSchema.pre('save', async function(next) {
     this.total_amount = reading.calculated * rate.amount;
   }
   next();
-});
+})
 
 
 

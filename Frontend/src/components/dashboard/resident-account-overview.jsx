@@ -49,10 +49,10 @@ export default function ResidentAccountOverview() {
 
       return {
         lastReading: latestBill?.present_reading ?? "N/A",
-        presentReading: currentBill.present_reading,
-        consumption: currentBill.calculated,
-        totalAmount: currentBill.total_amount,
-        readAt: currentBill.created_at
+        presentReading: currentBill.present_reading ?? "N/A",
+        consumption: currentBill.calculated ?? "N/A",
+        totalAmount: currentBill.total_amount ?? "N/A",
+        readAt: currentBill.created_at ?? "N/A"
       };
     },
    

@@ -6,6 +6,7 @@ const Reading = require('../model/Meter-reading')
 const WaterConnection = require('../model/WaterConnection')
 const Resident = require('../model/Resident')
 const MeterReading = require('../model/Meter-reading')
+const Rate = require("../model/Rate")
 
 
 
@@ -63,7 +64,7 @@ const getBilling = async (req, res) => {
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : 'unknown',
         meter_no: connection?.meter_no,
         purok_no: connection?.purok ?? 'unknown',
-        total_amount: billing?.total_amount ?? 'unknown',
+        total_amount: billing?.total_amount,  // ✅ fixed
         status: billing?.status ?? 'unknown',
 
         // ✅ Add these fields
@@ -104,61 +105,68 @@ const createBilling = async (req, res) => {
     const user = req.user;
 
     // ✅ Only treasurer can generate bills
-    if (user.role !== 'treasurer') {
-      throw new UnauthorizedError('Only treasurer can generate a bill.');
+    if (user.role !== "treasurer") {
+      throw new UnauthorizedError("Only treasurer can generate a bill.");
     }
 
     // ✅ Make sure the reading exists
     const reading = await MeterReading.findById(reading_id);
     if (!reading) {
-      throw new BadRequestError('Meter reading not found.');
+      throw new BadRequestError("Meter reading not found.");
+    }
+
+    // ✅ Make sure the rate exists
+    const rate = await Rate.findById(rate_id);
+    if (!rate) {
+      throw new BadRequestError("Rate not found.");
     }
 
     // ✅ Prevent duplicates (check if a bill already exists for this reading)
-    // Using $or lets us match whether reading_id is stored as ObjectId or as string
     const existingBill = await Billing.findOne({
       $or: [
         { reading_id: reading._id },
         { reading_id: reading._id.toString() }
-      ]
+      ],
     });
 
     if (existingBill) {
       return res.status(StatusCodes.CONFLICT).json({
-        message: 'A bill already exists for this reading.',
-        billing: existingBill
+        message: "A bill already exists for this reading.",
+        billing: existingBill,
       });
     }
 
-    // ✅ Create billing, saving reading_id as ObjectId (not raw req.body string)
+    // ✅ Compute total amount
+    const total_amount = reading.calculated * rate.amount;
+
+    // ✅ Create billing and save directly with computed total_amount
     const billing = await Billing.create({
       connection_id: reading.connection_id,
-      reading_id: reading._id,  // always ObjectId
-      rate_id,
+      reading_id: reading._id,
+      rate_id: rate._id,
       due_date,
-      generated_by: user.userId
+      generated_by: user.userId,
+      total_amount, // <-- now saved
     });
 
-    // 🪵 Debug logs so we can see exactly what was saved
-    console.log('🧾 Billing created:');
-    console.log('- reading._id:', reading._id);
-    console.log('- saved billing._id:', billing._id);
-    console.log('- saved billing.reading_id (raw):', billing.reading_id);
-
-    // Extra verification to confirm DB consistency
-    const verify1 = await Billing.findOne({ reading_id: billing.reading_id });
-    const verify2 = await Billing.findOne({ reading_id: billing.reading_id.toString() });
-    console.log('🔎 Verify billing find by ObjectId:', !!verify1, ' by string:', !!verify2);
+    console.log("🧾 Billing created successfully:");
+    console.log("- reading_id:", reading._id.toString());
+    console.log("- rate_id:", rate._id.toString());
+    console.log("- consumption:", reading.calculated);
+    console.log("- rate amount:", rate.amount);
+    console.log("- total_amount:", total_amount);
 
     return res.status(StatusCodes.CREATED).json({ billing });
+
   } catch (error) {
-    console.error('🔥 createBilling error:', error);
+    console.error("🔥 createBilling error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: 'Failed to create billing',
-      error: error.message
+      message: "Failed to create billing",
+      error: error.message,
     });
   }
 };
+
 
 
 
