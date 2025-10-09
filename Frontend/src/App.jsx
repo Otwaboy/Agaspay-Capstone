@@ -68,8 +68,6 @@ function App() {
                 </AnyDashboardRoute>
               )}
             </Route>
-
-            
             <Route path="/admin">
               {() => (
                 <AdminRoute>
@@ -77,6 +75,49 @@ function App() {
                 </AdminRoute>
               )}
             </Route>
+            <Route path="/secretary">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryDashboard />
+                </SecretaryRoute>
+              )}
+            </Route>
+             <Route path="/treasurer">
+              {() => (
+                  <TreasurerRoute>
+                      <TreasurerDashboard/>
+                  </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/billing/generate">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerGenerateBills />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/meter-reader">
+              {() => (
+                  <MeterReaderRoute>
+                      <MeterReaderDashboard/>
+                  </MeterReaderRoute>
+              )}
+            </Route>
+            <Route path="/meter-reader-dashboard/readings">
+                {() => (
+                  <MeterReaderRoute>
+                    <MeterReaderReadings />
+                  </MeterReaderRoute>
+                )}
+              </Route>
+            <Route path="/resident">
+              {() => (
+                <ResidentRoute>
+                  <ResidentDashboard />
+                </ResidentRoute>
+              )}
+            </Route>
+            
             <Route path="/admin-dashboard/users">
               {() => (
                 <AdminRoute>
@@ -131,50 +172,6 @@ function App() {
                 <AdminRoute>
                   <AdminSettings />
                 </AdminRoute>
-              )}
-            </Route>
-
-
-            <Route path="/secretary">
-              {() => (
-                <SecretaryRoute>
-                  <SecretaryDashboard />
-                </SecretaryRoute>
-              )}
-            </Route>
-             <Route path="/treasurer">
-              {() => (
-                  <TreasurerRoute>
-                      <TreasurerDashboard/>
-                  </TreasurerRoute>
-              )}
-            </Route>
-            <Route path="/treasurer-dashboard/billing/generate">
-              {() => (
-                <TreasurerRoute>
-                  <TreasurerGenerateBills />
-                </TreasurerRoute>
-              )}
-            </Route>
-            <Route path="/meter-reader">
-              {() => (
-                  <MeterReaderRoute>
-                      <MeterReaderDashboard/>
-                  </MeterReaderRoute>
-              )}
-            </Route>
-            <Route path="/meter-reader-dashboard/readings">
-                {() => (
-                  <MeterReaderRoute>
-                    <MeterReaderReadings />
-                  </MeterReaderRoute>
-                )}
-              </Route>
-            <Route path="/resident">
-              {() => (
-                <ResidentRoute>
-                  <ResidentDashboard />
-                </ResidentRoute>
               )}
             </Route>
             

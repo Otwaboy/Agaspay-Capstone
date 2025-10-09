@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { Bell, Search, User, ChevronDown, MapPin, Clock } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 import {
@@ -13,18 +12,17 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
+import { useLocation } from "wouter";
 
 export default function MeterReaderTopHeader() {
-  
+  const { user, logout} = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+ const [, setLocation] = useLocation();
 
- const { user, logout } = useAuth();
-   const [, setLocation] = useLocation();
- 
-   const handleLogout = () => {
-     logout();
-     setLocation("/login");
-   };
+  const handleLogout = () => {
+    logout();
+    setLocation("/login");
+  };
 
   // Mock zone assignment - would come from user data
   const assignedZone = user?.assignedZone || 2;
@@ -34,11 +32,11 @@ export default function MeterReaderTopHeader() {
   });
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-4">
       <div className="flex items-center justify-between">
         {/* Search Bar */}
-        <div className="flex-1 max-w-md">
-          <div className="relative">
+        <div className="hidden md:flex flex-1 max-w-md">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
@@ -52,7 +50,7 @@ export default function MeterReaderTopHeader() {
         </div>
 
         {/* Right Side Actions */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4 ml-auto md:ml-0">
           {/* Zone and Time Indicator */}
           <div className="hidden md:flex items-center space-x-4">
             <div className="flex items-center space-x-2 px-3 py-1 bg-green-50 rounded-full">

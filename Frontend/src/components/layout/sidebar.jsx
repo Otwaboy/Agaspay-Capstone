@@ -27,49 +27,49 @@ const menuItems = [
   {
     icon: Users,
     label: "User Management",
-    href: "/users",
+    href: "/admin-dashboard/users",
     color: "text-green-600"
   },
   {
     icon: UserPlus,
     label: "Personnel",
-    href: "/personnel",
+    href: "/admin-dashboard/personnel",
     color: "text-purple-600"
   },
   {
     icon: Droplets,
     label: "Water Connections",
-    href: "/connections",
+    href: "/admin-dashboard/connections",
     color: "text-cyan-600"
   },
   {
     icon: FileText,
     label: "Billing & Payments",
-    href: "/billing",
+    href: "/admin-dashboard/billing",
     color: "text-orange-600"
   },
   {
     icon: BarChart3,
     label: "Reports",
-    href: "/reports",
+    href: "/admin-dashboard/reports",
     color: "text-indigo-600"
   },
   {
     icon: Calendar,
     label: "Scheduling",
-    href: "/scheduling",
+    href: "/admin-dashboard/scheduling",
     color: "text-teal-600"
   },
   {
     icon: AlertTriangle,
     label: "Incidents",
-    href: "/incidents",
+    href: "/admin-dashboard/incidents",
     color: "text-red-600"
   },
   {
     icon: Settings,
     label: "Settings",
-    href: "/settings",
+    href: "/admin-dashboard/settings",
     color: "text-gray-600"
   }
 ];

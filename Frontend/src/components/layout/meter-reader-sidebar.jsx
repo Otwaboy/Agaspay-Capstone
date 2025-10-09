@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
@@ -11,8 +12,11 @@ import {
   Settings,
   LogOut,
   Navigation,
-  Clock
+  Clock,
+  Menu
 } from "lucide-react";
+import { Button } from "../ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 
 const menuItems = [
   {
@@ -67,7 +71,7 @@ const menuItems = [
   }
 ];
 
-export default function MeterReaderSidebar() {
+function MeterReaderSidebarContent() {
   const [location] = useLocation();
 
   const isActive = (href) => {
@@ -75,13 +79,12 @@ export default function MeterReaderSidebar() {
   };
 
   const handleLogout = () => {
-    // Clear auth state and redirect
     localStorage.removeItem('token');
     window.location.href = '/api/logout';
   };
 
   return (
-    <div className="bg-white w-64 min-h-screen shadow-lg flex flex-col">
+    <div className="flex flex-col h-full bg-white shadow-lg">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
@@ -142,5 +145,37 @@ export default function MeterReaderSidebar() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function MeterReaderSidebar() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <>
+      {/* Mobile sidebar */}
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="lg:hidden fixed top-4 left-4 z-40"
+            data-testid="button-mobile-menu"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-72">
+          <MeterReaderSidebarContent />
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex lg:flex-shrink-0">
+        <div className="flex flex-col w-64">
+          <MeterReaderSidebarContent />
+        </div>
+      </div>
+    </>
   );
 }

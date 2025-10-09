@@ -1,4 +1,3 @@
-// client/src/pages/resident-dashboard.jsx
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
@@ -13,7 +12,6 @@ import ResidentAnnouncements from "../components/dashboard/resident-annoucements
 import PayBillModal from "../components/modals/pay-bill-modal";
 import ReportIssueModal from "../components/modals/report-issue-modal";
 import { Loader2 } from "lucide-react";
-
 
 export default function ResidentDashboard() {
   const [isPayBillModalOpen, setIsPayBillModalOpen] = useState(false);
@@ -60,7 +58,7 @@ export default function ResidentDashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <ResidentTopHeader />
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+        <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900" data-testid="text-dashboard-title">
@@ -110,4 +108,4 @@ export default function ResidentDashboard() {
       />
     </div>
   );
-} 
+}

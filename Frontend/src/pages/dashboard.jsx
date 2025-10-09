@@ -69,10 +69,11 @@ const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
         <TopHeader />
 
         {/* this is the body part or the content inside */}
-        <main className="border border-black flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+        <main className="flex-1 overflow-auto p-6">
           
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
+              
               <h1 className="text-3xl font-bold text-gray-900" data-testid="text-dashboard-title">
                 Dashboard Overview
               </h1>
@@ -82,7 +83,7 @@ const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
             </div>
 
             {/*Statscard ug quick aciton container lg: min-width: 1024px */}
-            <div className="border border-black grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
               <div className="lg:col-span-8">
                 <StatsCards />
               </div>
@@ -93,7 +94,7 @@ const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
 
             {/*recent act ug system alert na container  */}
-            <div className="border border-black grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               <div className="lg:col-span-2">
                 <RecentActivities />
               </div>

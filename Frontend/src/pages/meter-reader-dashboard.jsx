@@ -1,4 +1,4 @@
-import {useEffect } from "react";
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../hooks/use-auth";
@@ -39,7 +39,7 @@ export default function MeterReaderDashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <MeterReaderTopHeader />
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+        <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900" data-testid="text-dashboard-title">
