@@ -99,7 +99,7 @@ export default function TreasurerSidebar() {
   return (
     <div className="bg-white w-64 min-h-screen shadow-lg flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
             <DollarSign className="h-6 w-6 text-white" />

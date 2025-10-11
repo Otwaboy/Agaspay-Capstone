@@ -169,6 +169,17 @@ const createBilling = async (req, res) => {
 
 
 
+const getOverdueBilling = async (req ,res) => {
+    const user = req.user
+
+    if (user.role !== 'treasurer'){
+     return res.status(StatusCodes.BAD_REQUEST).json({`Hello dile ka si`})
+    }
+
+}
 
 
-module.exports = {createBilling, getBilling} 
+
+
+
+module.exports = {createBilling, getBilling, getOverdueBilling} 

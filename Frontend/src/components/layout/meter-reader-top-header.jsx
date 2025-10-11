@@ -32,8 +32,8 @@ export default function MeterReaderTopHeader() {
   });
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-4">
-      <div className="flex items-center justify-between">
+     <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
+       <div className="flex items-center justify-between px-6 py-6">
         {/* Search Bar */}
         <div className="hidden md:flex flex-1 max-w-md">
           <div className="relative w-full">

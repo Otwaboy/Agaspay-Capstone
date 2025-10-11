@@ -32,7 +32,7 @@ export default function SecretaryTopHeader() {
   };
  
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
+     <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
       <div className="flex items-center justify-between px-6 py-6">
         {/* Search Bar */}
         <div className="flex-1 max-w-lg">

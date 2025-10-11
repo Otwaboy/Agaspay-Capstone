@@ -86,7 +86,7 @@ function MeterReaderSidebarContent() {
   return (
     <div className="flex flex-col h-full bg-white shadow-lg">
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
+     <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
             <Gauge className="h-6 w-6 text-white" />

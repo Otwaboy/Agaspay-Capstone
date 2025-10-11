@@ -87,7 +87,7 @@ function ResidentSidebarContent() {
   return (
     <div className="flex flex-col h-full bg-white shadow-lg">
       {/* Logo Section */}
-      <div className="flex items-center px-6 py-6 border-b border-gray-200">
+      <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
         <div className="flex items-center">
           <div className="bg-blue-600 p-2 rounded-lg">
             <Droplets className="h-6 w-6 text-white" />

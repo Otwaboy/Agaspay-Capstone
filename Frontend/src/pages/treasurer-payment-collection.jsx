@@ -71,13 +71,16 @@ export default function TreasurerPaymentCollection() {
   const paymentData = collections || [];
   console.log('this is the data', paymentData);
 
-  const filteredData = paymentData.filter(payment => {
-    const matchesSearch = payment.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.purok.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.referenceNo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === "all" || payment.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  // FIX: Filter data and sort by date (newest first) - shows recent payments at the top of the table
+  const filteredData = paymentData
+    .filter(payment => {
+      const matchesSearch = payment.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           payment.purok.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           payment.referenceNo.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = filterStatus === "all" || payment.status === filterStatus;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending (newest first)
 
   const totalCollected = filteredData
     .filter(p => p.status === "confirmed")
