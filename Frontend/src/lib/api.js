@@ -45,7 +45,7 @@ class ApiClient {
 
 async updatePaymentStatus(paymentId) {
   try {
-    return await this.request(`/api/v1/payments/${paymentId}`, {
+    return await this.request(`/api/v1/payment/${paymentId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       // no body needed unless you want to send extra data

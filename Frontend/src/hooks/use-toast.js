@@ -41,6 +41,7 @@ export function useToast() {
     };
 
     globalToasts.push(newToast);
+    console.log("🔔 Toast added:", { title, description, totalToasts: globalToasts.length }); // FIX: Added debug log to track toast creation
     notifyListeners();
 
     // Auto remove after 5 seconds

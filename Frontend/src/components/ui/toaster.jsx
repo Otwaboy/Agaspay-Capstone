@@ -1,4 +1,3 @@
-import React from "react";
 import { useToast } from "../../hooks/use-toast";
 import { cn } from "../../lib/utils";
 
@@ -6,28 +5,32 @@ export function Toaster() {
   const { toasts } = useToast();
 
   return (
-    <div className="fixed top-0 right-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:top-auto sm:right-0 sm:flex-col md:max-w-[420px]">
+    // FIX: Changed position from "top-4 right-4" to "top-4 left-1/2 -translate-x-1/2" - centers toast notifications at top of screen
+    // FIX: z-index set to z-[9999] - ensures toasts appear above dialogs/modals
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 w-full max-w-md pointer-events-none">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className={cn(
-            "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border border-gray-200 p-6 pr-8 shadow-lg transition-all",
+            // FIX: Added "animate-in slide-in-from-top-5" for smooth slide animation when toast appears
+            "pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-lg border p-4 pr-10 shadow-lg transition-all animate-in slide-in-from-top-5",
             {
-              "bg-white": toast.variant === "default",
+              "bg-white border-gray-200": toast.variant === "default",
               "bg-red-50 border-red-200": toast.variant === "destructive",
             }
           )}
         >
-          <div className="grid gap-1">
+          {/* FIX: Added flex-1 to allow text to take remaining space */}
+          <div className="grid gap-1 flex-1">
             {toast.title && (
-              <div className="text-sm font-semibold">{toast.title}</div>
+              <div className="text-sm font-semibold text-gray-900">{toast.title}</div>
             )}
             {toast.description && (
-              <div className="text-sm opacity-90">{toast.description}</div>
+              <div className="text-sm text-gray-600">{toast.description}</div>
             )}
           </div>
           <button
-            className="absolute right-2 top-2 rounded-md p-1 text-gray-500 hover:text-gray-900"
+            className="absolute right-2 top-2 rounded-md p-1 text-gray-400 hover:text-gray-900 transition-colors"
             onClick={() => toast.dismiss?.()}
           >
             <svg

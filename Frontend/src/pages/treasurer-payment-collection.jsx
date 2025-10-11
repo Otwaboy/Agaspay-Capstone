@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -38,15 +38,14 @@ import TreasurerTopHeader from "../components/layout/treasurer-top-header";
 import apiClient from "../lib/api";
 import { useToast } from "../hooks/use-toast";
 
-
 export default function TreasurerPaymentCollection() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingPayment, setEditingPayment] = useState(null);
-  const [newStatus, setNewStatus] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
-  const { data: collections, isLoading } = useQuery({
+  const { data: collections, isLoading, refetch } = useQuery({
     queryKey: ['/api/v1/treasurer/collections', filterStatus],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
@@ -67,29 +66,6 @@ export default function TreasurerPaymentCollection() {
         billPeriod: "August 2024"
       }));
     }
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ paymentId, status }) => {
-      const response = await apiClient.updatePaymentStatus(paymentId, status);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/treasurer/collections'] });
-      toast({
-        title: "Status Updated",
-        description: "Payment status has been successfully updated.",
-      });
-      setEditingPayment(null);
-      setNewStatus("");
-    },
-    onError: (error) => {
-      toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update payment status. Please try again.",
-        variant: "destructive",
-      });
-    },
   });
 
   const paymentData = collections || [];
@@ -160,16 +136,31 @@ export default function TreasurerPaymentCollection() {
 
   const handleEditStatus = (payment) => {
     setEditingPayment(payment);
-    setNewStatus(payment.status);
   };
 
-  const handleUpdateStatus = () => {
-    if (!editingPayment || !newStatus) return;
+  const handleUpdateStatus = async () => {
+    if (!editingPayment) return;
     
-    updateStatusMutation.mutate({
-      paymentId: editingPayment.id,
-      status: newStatus
-    });
+    setIsUpdating(true);
+    try {
+      await apiClient.updatePaymentStatus(editingPayment.id);
+      
+      toast({
+        title: "Status Updated",
+        description: "Payment status has been successfully confirmed.",
+      });
+      
+      await refetch();
+      setEditingPayment(null);
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update payment status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -258,7 +249,7 @@ export default function TreasurerPaymentCollection() {
                       />
                     </div>
                   </div>
-                  <div className=" flex gap-2">
+                  <div className="flex gap-2">
                     <Button
                       variant={filterStatus === "all" ? "default" : "outline"}
                       onClick={() => setFilterStatus("all")}
@@ -359,15 +350,17 @@ export default function TreasurerPaymentCollection() {
                                   <StatusIcon className="w-3 h-3 mr-1" />
                                   {statusConfig.label}
                                 </Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditStatus(payment)}
-                                  data-testid={`button-edit-status-${payment.id}`}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Edit className="h-4 w-4 text-gray-500 hover:text-gray-700" />
-                                </Button>
+                                {payment.status === "pending" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditStatus(payment)}
+                                    data-testid={`button-edit-status-${payment.id}`}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                  </Button>
+                                )}
                               </div>
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-600">
@@ -398,41 +391,18 @@ export default function TreasurerPaymentCollection() {
       <Dialog open={!!editingPayment} onOpenChange={(open) => !open && setEditingPayment(null)}>
         <DialogContent data-testid="dialog-edit-status">
           <DialogHeader>
-            <DialogTitle>Update Payment Status</DialogTitle>
+            <DialogTitle>Confirm Payment</DialogTitle>
             <DialogDescription>
-              Change the status of payment {editingPayment?.id} from {editingPayment?.residentName}
+              Are you sure you want to confirm payment {editingPayment?.id} from {editingPayment?.residentName}?
             </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
-              Select New Status
-            </label>
-            <Select value={newStatus} onValueChange={setNewStatus}>
-              <SelectTrigger data-testid="select-new-status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2 text-yellow-600" />
-                    Pending
-                  </div>
-                </SelectItem>
-                <SelectItem value="confirmed">
-                  <div className="flex items-center">
-                    <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                    Confirmed
-                  </div>
-                </SelectItem>
-                <SelectItem value="failed">
-                  <div className="flex items-center">
-                    <XCircle className="h-4 w-4 mr-2 text-red-600" />
-                    Failed
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                This will change the payment status from <span className="font-semibold">Pending</span> to <span className="font-semibold">Confirmed</span>.
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -440,15 +410,16 @@ export default function TreasurerPaymentCollection() {
               variant="outline"
               onClick={() => setEditingPayment(null)}
               data-testid="button-cancel-edit"
+              disabled={isUpdating}
             >
               Cancel
             </Button>
             <Button
               onClick={handleUpdateStatus}
-              disabled={updateStatusMutation.isPending || !newStatus}
+              disabled={isUpdating}
               data-testid="button-confirm-update"
             >
-              {updateStatusMutation.isPending ? "Updating..." : "Update Status"}
+              {isUpdating ? "Confirming..." : "Confirm Payment"}
             </Button>
           </DialogFooter>
         </DialogContent>
