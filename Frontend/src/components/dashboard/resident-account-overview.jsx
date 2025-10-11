@@ -7,7 +7,7 @@ import { Droplets, MapPin, Calendar, CreditCard, CheckCircle, AlertTriangle } fr
 import {apiClient} from "../../lib/api"
 
 
-export default function ResidentAccountOverview() {
+export default function ResidentAccountOverview() { 
  
 
    // use query lets you fetch, cache, and update data in your frontend app.

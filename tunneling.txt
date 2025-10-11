@@ -7,3 +7,5 @@ and then copy paste the forwarding link  ex: https://unreturnable-bandoleered-mi
 and then run in the backend
 npm run dev
 
+unreturnable-bandoleered-miller.ngrok-free.dev/api/v1/payments/webhook
+

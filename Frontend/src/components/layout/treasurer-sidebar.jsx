@@ -21,14 +21,14 @@ const menuItems = [
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/treasurer-dashboard",
-  },
+  }, 
   {
     title: "Revenue Management",
     icon: DollarSign,
     subItems: [
-      { title: "Payment Collection", href: "/treasurer-dashboard/payments" },
-      { title: "Revenue Reports", href: "/treasurer-dashboard/revenue" },
-      { title: "Outstanding Balances", href: "/treasurer-dashboard/balances" },
+      { title: "Payment Collection", href: "/treasurer-dashboard/revenue/payment-collection" },
+      { title: "Revenue Reports", href: "/treasurer-dashboard/revenue/revenue-reports" },
+      { title: "Outstanding Balances", href: "/treasurer-dashboard/revenue/outstanding-balances" },
     ]
   },
   {

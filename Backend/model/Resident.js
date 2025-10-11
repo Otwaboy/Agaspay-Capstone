@@ -29,7 +29,7 @@ const ResidentSchema = new mongoose.Schema(
       type: String,
       enum: ["1", "2", "3", "4", "5", "6", "7"],
       required: [true, 'Purok is required']
-    },
+    }, 
     email: {
     type: String,
     required: [true, 'Please provide email'],

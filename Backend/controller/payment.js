@@ -127,7 +127,7 @@ const payPayment = async (req, res) => {
             cancel_url: `${baseUrl}/payment/cancel?payment_intent_id=${paymentIntent.id}&status=failed`,
           },
         },
-      },
+      }, 
       { headers }
     );
 
@@ -220,16 +220,17 @@ const getPayment = async (req, res) => {
             path: "connection_id",
             populate: {
                 path: "resident_id",
-                select: "first_name last_name"
+                select: "first_name last_name purok"
             }
         }
     });
 
     // Map payments to include only the desired fields
-    const data = payments.map(payment => {
+    const result = payments.map(payment => {
         const connection = payment.bill_id?.connection_id;
         const resident = connection?.resident_id;
         const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
+        const purok = resident?.purok
 
         return {
             payment_id: payment._id,
@@ -238,14 +239,16 @@ const getPayment = async (req, res) => {
             payment_type: payment.payment_type,
             payment_status: payment.payment_status,
             official_receipt_status: payment.official_receipt_status,
+            payment_reference: payment.payment_reference,
             payment_date: payment.payment_date,
             createdAt: payment.createdAt,
             updatedAt: payment.updatedAt,
-            residentFullName: fullName
+            residentFullName: fullName,
+            purok: purok
         };
     });
 
-    res.status(StatusCodes.OK).json(data);
+    res.status(StatusCodes.OK).json({data: result});
 };
  
 
@@ -307,4 +310,6 @@ const updatePaymentStatus = async (req, res) => {
         }
     });
 };
+
+
 module.exports = { payPayment, getPayment, updatePaymentStatus };

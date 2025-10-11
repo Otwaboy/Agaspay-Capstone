@@ -42,6 +42,21 @@ class ApiClient {
   }
  
 
+
+async updatePaymentStatus(paymentId) {
+  try {
+    return await this.request(`/api/v1/payments/${paymentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      // no body needed unless you want to send extra data
+    });
+  } catch (error) {
+    console.error("❌ Payment status update failed:", error);
+    throw error;
+  }
+}
+
+
   //create billing api
   //send this api to the backend
 async createBilling(billData) {
@@ -100,9 +115,17 @@ async addRatingAmount(rateAmount) {
     return await this.request('/api/v1/billing');
   }
 
-    async getPayment() {
+  async getRecentPayment() {
+   try {
     return await this.request('/api/v1/payment');
+   } catch (error) {
+    console.log("fetching getrecentpayment:", error);
+    throw error;
+   }
   }
+
+
+
 //getwaterconnecitons
      async getWaterConnections() {
     return await this.request('/api/v1/water-connection');

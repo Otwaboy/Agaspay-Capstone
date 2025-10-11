@@ -23,6 +23,18 @@ import MeterReaderReadings from "./pages/meter-reader-readings";
 //treasurer
 import TreasurerDashboard from "./pages/treasurerDashboard";
 import TreasurerGenerateBills from "./pages/treasurer-generate-bills";
+import TreasurerPaymentCollection from "./pages/treasurer-payment-collection";
+import TreasurerRevenueReports from "./pages/treasurer-revenue-reports";
+import TreasurerOutstandingBalances from "./pages/treasurer-outstanding-balances";
+import TreasurerMonthlyReports from "./pages/treasurer-monthly-reports";
+import TreasurerAnnualReports from "./pages/treasurer-annual-reports";
+import TreasurerCustomReports from "./pages/treasurer-custom-reports";
+import TreasurerBillHistory from "./pages/treasurer-bill-history";
+import TreasurerBillingSettings from "./pages/treasurer-billing-settings";
+import TreasurerAnalytics from "./pages/treasurer-analytics";
+import TreasurerPaymentMethods from "./pages/treasurer-payment-methods";
+import TreasurerCustomerAccounts from "./pages/treasurer-customer-accounts";
+import TreasurerFinancialAlerts from "./pages/treasurer-financial-alerts";
 
 //residents
 import ResidentDashboard from "./pages/residentDashboard";
@@ -82,17 +94,102 @@ function App() {
                 </SecretaryRoute>
               )}
             </Route>
-             <Route path="/treasurer">
+             <Route path="/treasurer-dashboard">
               {() => (
                   <TreasurerRoute>
                       <TreasurerDashboard/>
                   </TreasurerRoute>
               )}
             </Route>
+            
             <Route path="/treasurer-dashboard/billing/generate">
               {() => (
                 <TreasurerRoute>
                   <TreasurerGenerateBills />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/revenue/payment-collection">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerPaymentCollection />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/revenue/revenue-reports">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerRevenueReports />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/revenue/outstanding-balances">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerOutstandingBalances />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/reports/monthly">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerMonthlyReports />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/reports/annual">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerAnnualReports />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/reports/custom">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerCustomReports />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/billing/history">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerBillHistory />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/billing/settings">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerBillingSettings />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/analytics">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerAnalytics />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/payment-methods">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerPaymentMethods />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/customer-accounts">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerCustomerAccounts />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/financial-alerts">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerFinancialAlerts />
                 </TreasurerRoute>
               )}
             </Route>

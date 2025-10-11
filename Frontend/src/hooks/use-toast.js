@@ -1,10 +1,30 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
-const toasts = [];
+// Global toast state with subscribers
 let toastId = 0;
+const toastListeners = new Set();
+let globalToasts = [];
+
+function notifyListeners() {
+  toastListeners.forEach(listener => listener());
+}
 
 export function useToast() {
-  const [, forceUpdate] = useState(0);
+  const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    // Subscribe to toast updates
+    const listener = () => {
+      setToasts([...globalToasts]);
+    };
+    
+    toastListeners.add(listener);
+    setToasts([...globalToasts]);
+    
+    return () => {
+      toastListeners.delete(listener);
+    };
+  }, []);
 
   const toast = useCallback(({ title, description, variant = "default" }) => {
     const id = toastId++;
@@ -14,30 +34,22 @@ export function useToast() {
       description,
       variant,
       timestamp: Date.now(),
+      dismiss: () => {
+        globalToasts = globalToasts.filter(t => t.id !== id);
+        notifyListeners();
+      }
     };
 
-    toasts.push(newToast);
-    forceUpdate(prev => prev + 1);
+    globalToasts.push(newToast);
+    notifyListeners();
 
     // Auto remove after 5 seconds
     setTimeout(() => {
-      const index = toasts.findIndex(t => t.id === id);
-      if (index > -1) {
-        toasts.splice(index, 1);
-        forceUpdate(prev => prev + 1);
-      }
+      globalToasts = globalToasts.filter(t => t.id !== id);
+      notifyListeners();
     }, 5000);
 
-    return {
-      id,
-      dismiss: () => {
-        const index = toasts.findIndex(t => t.id === id);
-        if (index > -1) {
-          toasts.splice(index, 1);
-          forceUpdate(prev => prev + 1);
-        }
-      },
-    };
+    return newToast;
   }, []);
 
   return { toast, toasts };
