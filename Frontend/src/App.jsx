@@ -40,6 +40,10 @@ import TreasurerFinancialAlerts from "./pages/treasurer-financial-alerts";
 import ResidentDashboard from "./pages/residentDashboard";
 import PaymentSuccess from "./components/payment-success";
 import DemoCheckout from "./components/demo-checkout";
+import ResidentPaymentHistory from "./pages/resident-payment-history";
+
+
+
 import Login from "./pages/login";
 import NotFound from "./pages/not-found";
 import { Toaster } from "./components/ui/toaster";
@@ -207,10 +211,17 @@ function App() {
                   </MeterReaderRoute>
                 )}
               </Route>
-            <Route path="/resident">
+            <Route path="/resident-dashboard">
               {() => (
                 <ResidentRoute>
                   <ResidentDashboard />
+                </ResidentRoute>
+              )}
+            </Route>
+            <Route path="/resident-dashboard/payment-history">
+              {() => (
+                <ResidentRoute>
+                  <ResidentPaymentHistory />
                 </ResidentRoute>
               )}
             </Route>

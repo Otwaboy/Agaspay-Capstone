@@ -9,7 +9,7 @@ const MeterReading = require('../model/Meter-reading')
 const Rate = require("../model/Rate")
 const Payment = require("../model/Payment")
 
-
+ 
 const getBilling = async (req, res) => {
   const user = req.user;
   let filter = {};

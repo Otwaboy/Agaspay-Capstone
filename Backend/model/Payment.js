@@ -15,7 +15,7 @@ const PaymentSchema = new mongoose.Schema({
   amount_paid: {
     type: Number,
     required: true,
-    min: 0
+    min: 0 
   },
 
   payment_method: {

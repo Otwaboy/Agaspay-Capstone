@@ -5,72 +5,40 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { CreditCard, Download, Eye } from "lucide-react";
+import apiClient from "../../lib/api";
 
 export default function ResidentRecentTransactions() {
+
+
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['/api/resident/transactions'],
-    initialData: [
-      {
-        id: "TXN-2024-007",
-        date: "2024-08-20",
-        amount: 450.00,
-        type: "Water Bill Payment",
-        status: "completed",
-        paymentMethod: "GCash",
-        billPeriod: "July 2024",
-        reference: "GC123456789"
-      },
-      {
-        id: "TXN-2024-006",
-        date: "2024-07-22",
-        amount: 420.00,
-        type: "Water Bill Payment",
-        status: "completed",
-        paymentMethod: "Bank Transfer",
-        billPeriod: "June 2024",
-        reference: "BT987654321"
-      },
-      {
-        id: "TXN-2024-005",
-        date: "2024-07-15",
-        amount: 50.00,
-        type: "Late Fee",
-        status: "completed",
-        paymentMethod: "Cash",
-        billPeriod: "June 2024",
-        reference: "CASH001"
-      },
-      {
-        id: "TXN-2024-004",
-        date: "2024-06-25",
-        amount: 380.00,
-        type: "Water Bill Payment",
-        status: "completed",
-        paymentMethod: "GCash",
-        billPeriod: "May 2024",
-        reference: "GC112233445"
-      },
-      {
-        id: "TXN-2024-003",
-        date: "2024-05-28",
-        amount: 390.00,
-        type: "Water Bill Payment",
-        status: "completed",
-        paymentMethod: "Paymaya",
-        billPeriod: "April 2024",
-        reference: "PM556677889"
-      }
-    ]
+    queryFn: async ()=>   {
+      const res = await apiClient.getRecentPayment()
+      const paymentHistory  = res.data
+
+        return paymentHistory.map((ph) => ({
+          
+        id: ph.payment_id,
+        date: ph.payment_date,
+        amount: ph.amount_paid,
+        type: ph.payment_type,
+        status: ph.payment_status,
+        paymentMethod: ph.payment_method,
+        billPeriod: ph.billPeriod,
+        reference: ph.payment_reference
+        }))
+    },
+   
   });
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case "completed": return "bg-green-100 text-green-800";
+      case "confirmed": return "bg-green-100 text-green-800";
       case "pending": return "bg-yellow-100 text-yellow-800";
       case "failed": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
-  };
+  }; 
 
   const getTypeColor = (type) => {
     switch (type.toLowerCase()) {
@@ -137,12 +105,23 @@ export default function ResidentRecentTransactions() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className={`text-sm font-medium truncate ${getTypeColor(transaction.type)}`}>
-                      {transaction.type}
+                      {
+                        (transaction?.type || 'Water Bill Payment')
+                          .toLowerCase()
+                          .split(' ')
+                          .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '')
+                          .join(' ')
+                      }
                     </p>
                     <p className="text-xs text-gray-500 ml-2">{transaction.id}</p>
                   </div>
                   <p className="text-sm text-gray-600 truncate">
-                    {transaction.billPeriod && `Billing Period: ${transaction.billPeriod}`}
+                    {transaction.billPeriod && 
+                      `Billing Period: ${new Date(transaction.billPeriod).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}`}
                   </p>
                   <div className="flex items-center space-x-2 mt-1">
                     <p className="text-xs text-gray-500">{transaction.paymentMethod}</p>

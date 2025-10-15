@@ -10,4 +10,4 @@ const roleMiddleware = require('../middleware/roleMiddleware')
 router.route('/').post(authMiddleware, roleMiddleware('resident'), payPayment).get(authMiddleware, getPayment)
 router.route('/:id').patch(authMiddleware, roleMiddleware('treasurer'), updatePaymentStatus)
 
-module.exports = router
+module.exports = router 

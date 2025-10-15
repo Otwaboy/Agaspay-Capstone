@@ -22,7 +22,7 @@ const residentMenuItems = [
   {
     icon: Home,
     label: "Dashboard",
-    href: "/resident",
+    href: "/resident-dashboard",
     color: "text-blue-600"
   },
   {
@@ -34,7 +34,7 @@ const residentMenuItems = [
   {
     icon: Receipt,
     label: "Payment History",
-    href: "/resident/payment-history",
+    href: "/resident-dashboard/payment-history",
     color: "text-purple-600"
   },
   {

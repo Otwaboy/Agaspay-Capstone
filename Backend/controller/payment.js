@@ -167,7 +167,6 @@ const payPayment = async (req, res) => {
 };
 
 
-
 // mo return ug daghan
 // const getPayment = async (req, res) => {
 //     const user = req.user;
@@ -203,9 +202,6 @@ const payPayment = async (req, res) => {
 //     res.status(StatusCodes.OK).json(result);
 // };
 
-
-
-
 const getPayment = async (req, res) => {
     const user = req.user;
 
@@ -213,8 +209,46 @@ const getPayment = async (req, res) => {
         throw new UnauthorizedError("You're not authorized");
     }
 
+    let query = {};
+    
+    // FIX: Build query based on user role (same pattern as getBilling)
+    if (user.role === 'resident') {
+        // Step 1: Find resident record linked to this user
+        const resident = await Resident.findOne({ user_id: user.userId });
+
+        if (!resident) {
+            return res.status(StatusCodes.OK).json({ 
+                data: [],
+                msg: 'No resident record found for this user'
+            });
+        }
+
+        // Step 2: Find the water connection for that resident
+        const connection = await WaterConnection.findOne({ resident_id: resident._id });
+        
+        if (!connection) {
+            return res.status(StatusCodes.OK).json({ 
+                data: [],
+                msg: 'No water connection found for this resident'
+            });
+        }
+
+        // Step 3: Find bills for that connection
+        const bills = await Billing.find({ connection_id: connection._id }).select('_id');
+        const billIds = bills.map(b => b._id);
+        
+        // Step 4: Filter payments by those bill IDs
+        query = { bill_id: { $in: billIds } };
+        
+    } else if (user.role === 'treasurer' || user.role === 'admin') {
+        // TREASURER/ADMIN: No filter, get all payments
+        query = {};
+    } else {
+        throw new UnauthorizedError("You don't have permission to view payments");
+    }
+
     // Populate bill_id -> connection_id -> resident_id
-    const payments = await Payment.find({}).populate({
+    const payments = await Payment.find(query).populate({
         path: "bill_id",
         populate: {
             path: "connection_id",
@@ -223,14 +257,15 @@ const getPayment = async (req, res) => {
                 select: "first_name last_name purok"
             }
         }
-    });
+    }).sort({ payment_date: -1 }); // Sort by newest first
 
     // Map payments to include only the desired fields
     const result = payments.map(payment => {
         const connection = payment.bill_id?.connection_id;
         const resident = connection?.resident_id;
         const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
-        const purok = resident?.purok
+        const purok = resident?.purok;
+        const billPeriod =  payment.bill_id?.due_date
 
         return {
             payment_id: payment._id,
@@ -244,12 +279,15 @@ const getPayment = async (req, res) => {
             createdAt: payment.createdAt,
             updatedAt: payment.updatedAt,
             residentFullName: fullName,
+            billPeriod: billPeriod,
             purok: purok
         };
     });
 
-    res.status(StatusCodes.OK).json({data: result});
+    res.status(StatusCodes.OK).json({ data: result });
 };
+
+
  
 
 const updatePaymentStatus = async (req, res) => {
@@ -311,5 +349,8 @@ const updatePaymentStatus = async (req, res) => {
     });
 };
 
+
+
+ 
 
 module.exports = { payPayment, getPayment, updatePaymentStatus };
