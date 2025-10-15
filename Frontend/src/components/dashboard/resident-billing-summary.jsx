@@ -3,13 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
-import { CreditCard, Clock, AlertTriangle, CheckCircle, WifiOff } from "lucide-react";
+import { CreditCard, Clock, AlertTriangle, CheckCircle, WifiOff, XCircle } from "lucide-react";
 import {apiClient} from "../../lib/api";
   
 
 export default function ResidentBillingSummary() {
    
-   
+    
   const { data: billingData, isLoading } = useQuery({
     queryKey: ['accountOverview'],
       queryFn: async () => {
@@ -44,6 +44,9 @@ export default function ResidentBillingSummary() {
      
   });
 
+  console.log('hehe boi billing data', billingData);
+  
+
   if (isLoading) {
     return (
       <Card>
@@ -70,14 +73,16 @@ export default function ResidentBillingSummary() {
     );
   }
 
-  const getBillStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case "unpaid": return "bg-green-100 text-green-800";
-      case "partial": return "bg-yellow-100 text-yellow-800";
-      case "overdue": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
+const getBillStatusColor = (status) => {
+  switch (status.toLowerCase()) {
+    case "paid": return "bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800";
+    case "pending": return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800";
+    case "overdue": return "bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800";
+    case "unpaid": return "bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800";
+    case "partial": return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800";
+    default: return "bg-gray-100 text-gray-800 hover:bg-gray-100 hover:text-gray-800";
+  }
+};
  
   // const getDaysUntilDue = (dueDate) => {
   //   const today = new Date();
@@ -106,11 +111,21 @@ export default function ResidentBillingSummary() {
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium text-blue-900">Current Bill</h4>
-            <Badge className={billingData?.currentBilling ? getBillStatusColor(billingData.currentBilling.status) : ""}>
-              {billingData?.currentBilling?.status
+            <div className="flex items-center space-x-1"> 
+
+              {billingData?.currentBilling?.status === 'paid' ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : billingData?.currentBilling?.status ? (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                ) : null
+              }
+
+            <Badge className = {billingData?.currentBilling ? getBillStatusColor(billingData.currentBilling.status) : ""}>
+                {billingData?.currentBilling?.status
                 ? billingData.currentBilling.status.toUpperCase()
-                : "Loading..."}
+                : "N/A"}
             </Badge>
+          </div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between">
@@ -118,7 +133,7 @@ export default function ResidentBillingSummary() {
               <span className="text-sm font-medium text-blue-900">
                 {billingData && billingData.currentBilling && billingData.currentBilling.period 
                   ? billingData.currentBilling.period 
-                  : "Loading..."}
+                  : "N/A"}
               </span>
             </div>
             <div className="flex justify-between">
@@ -126,7 +141,7 @@ export default function ResidentBillingSummary() {
               <span className="text-lg font-bold text-blue-900">
                 ₱{billingData?.currentBilling?.amount
                   ? billingData.currentBilling.amount.toFixed(2)
-                  : "0.00"}
+                  : "N/A"}
               </span>
             </div>
             <div className="flex justify-between">
@@ -134,7 +149,7 @@ export default function ResidentBillingSummary() {
               <span className="text-sm font-medium text-blue-900">
                 {billingData?.currentBilling?.dueDate
                   ? new Date(billingData.currentBilling.dueDate).toLocaleDateString()
-                  : "Loading..."}
+                  : "N/A"}
               </span>
             </div>
            {/* validation if mo lapas nag due date ag bayronon */}
@@ -161,7 +176,17 @@ export default function ResidentBillingSummary() {
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium text-gray-900">Previous Bill</h4>
             <div className="flex items-center space-x-1">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              
+             {billingData?.previousBilling?.status === "paid"  // ✅ FIXED - added ?.
+              ? (
+              <CheckCircle className="h-4 w-4 text-green-600" />) 
+              : billingData?.previousBilling?.status ?
+              (
+              <XCircle className="h-4 w-4 text-red-600" /> 
+              )
+              : null
+            }
+
               <Badge
                 className={
                   billingData?.previousBilling
@@ -228,10 +253,12 @@ export default function ResidentBillingSummary() {
         <Button
           className="w-full"
           onClick={() => window.dispatchEvent(new Event("openPayBillModal"))}
-          disabled={billingData?.currentBilling?.status === "paid"}
+          disabled={!billingData || !billingData.currentBilling || billingData.currentBilling.status === "paid"}
           data-testid="button-pay-now"
         >
-          {billingData?.currentBilling?.status === "paid"
+          {!billingData || !billingData.currentBilling
+            ? "No Billing Record Yet"
+            : billingData.currentBilling.status === "paid"
             ? "Bill Already Paid"
             : `Pay ₱${billingData?.currentBilling.amount ? billingData.currentBilling.amount.toFixed(2) : "0.00"} Now`}
         </Button>

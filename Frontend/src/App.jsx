@@ -193,7 +193,7 @@ function App() {
                 </TreasurerRoute>
               )}
             </Route>
-            <Route path="/meter-reader">
+            <Route path="/meter-reader-dashboard">
               {() => (
                   <MeterReaderRoute>
                       <MeterReaderDashboard/>

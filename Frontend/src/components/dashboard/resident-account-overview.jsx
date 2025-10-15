@@ -185,7 +185,8 @@ export default function ResidentAccountOverview() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-blue-700">Meter Number:</span>
-                  <span className="text-sm font-medium text-blue-900">{accountData.meterNumber}</span>
+                  <span className="text-sm font-medium text-blue-900">{accountData?.meterNumber ? accountData.meterNumber.charAt(0).toUpperCase() + 
+                  accountData.meterNumber.slice(1) : ""}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-blue-700">Last Reading:</span>
@@ -193,8 +194,8 @@ export default function ResidentAccountOverview() {
                     {isBillLoading 
                       ? "Loading..." 
                       : billingData?.lastReading 
-                        ? billingData.lastReading 
-                        : "No record found"} cubic meters
+                        ? `${billingData.lastReading} m³`
+                        : "No record yet"} 
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -202,7 +203,7 @@ export default function ResidentAccountOverview() {
                   <span className="text-sm font-medium text-blue-900">
                     {isBillLoading
                     ? "Loading..."
-                    : (billingData?.readAt && new Date(billingData.readAt).toLocaleDateString()) || "No record found"}
+                    : (billingData?.readAt && new Date(billingData.readAt).toLocaleDateString()) || "No record yet"}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -210,8 +211,9 @@ export default function ResidentAccountOverview() {
                   <span className="text-sm font-medium text-blue-900">
                    {isBillLoading
                     ? "Loading..."
-                    : billingData?.consumption ?? "No record found"}
-                  cubic meters
+                   : billingData?.consumption 
+                        ? `${billingData.consumption} m³`
+                        : "No record yet"}
                   </span>
                 </div>
               </div>
@@ -227,7 +229,7 @@ export default function ResidentAccountOverview() {
                 <span className="text-lg font-bold text-gray-900">
                   ₱{billingData?.totalAmount != null
                   ? billingData.totalAmount.toFixed(2)
-                  : "0.00"}</span>
+                  : "N/A"}</span>
               </div>
 
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -248,14 +250,15 @@ export default function ResidentAccountOverview() {
         {/* Action Buttons */}
         <div className="mt-6 pt-4 border-t border-gray-200">
           <div className="flex flex-wrap gap-3">
-            <Button 
+            {/* i excluded this button because it is not necessary */}
+            {/* <Button 
               className="flex items-center space-x-2"
               onClick={() => window.dispatchEvent(new Event("openPayBillModal"))}
               data-testid="button-pay-bill"
             >
               <CreditCard className="h-4 w-4" />
               <span>Pay Bill</span>
-            </Button>
+            </Button> */}
             <Button variant="outline" className="flex items-center space-x-2">
               <Droplets className="h-4 w-4" />
               <span>View Usage History</span>

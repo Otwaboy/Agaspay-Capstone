@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const BillingSchema = new mongoose.Schema({
-  
+   
   connection_id: {
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'WaterConnection',

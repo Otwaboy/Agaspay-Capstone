@@ -7,7 +7,7 @@ const WaterConnection = require('../model/WaterConnection')
 const Resident = require('../model/Resident')
 const MeterReading = require('../model/Meter-reading')
 const Rate = require("../model/Rate")
-
+const Payment = require("../model/Payment")
 
 
 const getBilling = async (req, res) => {
@@ -82,11 +82,6 @@ const getBilling = async (req, res) => {
     data: billingDetails
   });
 };
-
-
- 
-
-
 
 
 /**
@@ -168,17 +163,119 @@ const createBilling = async (req, res) => {
 };
 
 
+//continue
+const getOverdueBilling = async (req, res) => {
+  try {
+    const user = req.user;
 
-const getOverdueBilling = async (req ,res) => {
-    const user = req.user
-
-    if (user.role !== 'treasurer'){
-     return res.status(StatusCodes.BAD_REQUEST).json({`Hello dile ka si`})
+    // ✅ Only treasurer can access overdue accounts
+    if (user.role !== 'treasurer') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        msg: 'Unauthorized. Only treasurer can access overdue accounts.',
+      });
     }
 
-}
+    const currentDate = new Date();
+
+    // ✅ Find all overdue billings (status = 'overdue' OR past due_date with unpaid status)
+    const overdueBillings = await Billing.find({
+      // checking for two possible cases:
+      $or: [
+        { status: 'overdue' },
+        { 
+          //means: match if status is any of these values.
+          status: { $in: ['unpaid', 'partial'] }, 
+          //less than sa currentDate as of now
+          due_date: { $lt: currentDate } 
+        }
+      ]
+    })
+    .populate({
+      path: 'connection_id',
+      select: 'connection_id meter_no resident_id',
+      populate: {
+        path: 'resident_id',
+        select: 'first_name last_name contact_no purok'
+      }
+    })
+    .sort({ due_date: 1 }); // Sort by oldest due date first
+
+    // ✅ Process each overdue billing to get complete information
+    const overdueAccounts = await Promise.all(
+      overdueBillings.map(async (billing) => {
+        const connection = billing.connection_id;
+        const resident = connection?.resident_id;
+
+        if (!resident || !connection) {
+          return null; // Skip if no resident/connection found
+        }
+
+        // ✅ Calculate months overdue
+        const dueDate = new Date(billing.due_date);
+        const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
+        const monthsOverdue = Math.max(1, monthsDiff);
+
+        // ✅ Find last payment for this connection
+        const lastPayment = await Payment.findOne({ 
+          connection_id: connection._id,
+          payment_status: 'confirmed'
+        })
+        .sort({ payment_date: -1 })
+        .limit(1);
+
+        // ✅ Determine status based on months overdue
+        let status = 'moderate';
+        if (monthsOverdue >= 3) {
+          status = 'critical';
+        } else if (monthsOverdue >= 2) {
+          status = 'warning';
+        }
+
+        // ✅ Format account data for frontend
+        return {
+          id: billing._id,
+          residentName: `${resident.first_name} ${resident.last_name}`,
+          purok: resident.purok || connection.purok || 'N/A',
+          totalDue: billing.total_amount,
+          monthsOverdue: monthsOverdue,
+          lastPayment: lastPayment ? lastPayment.payment_date : null,
+          dueDate: billing.due_date,
+          status: status,
+          contactNo: resident.contact_no || 'N/A',
+          meterNo: connection.meter_no,
+          billPeriod: billing.generated_at
+        };
+      })
+    );
+
+    // ✅ Filter out null values (from skipped records)
+    const validAccounts = overdueAccounts.filter(account => account !== null);
+
+    // ✅ Calculate summary statistics
+    const totalOutstanding = validAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
+    const criticalCount = validAccounts.filter(acc => acc.status === 'critical').length;
+
+    res.status(StatusCodes.OK).json({
+      msg: 'Overdue accounts retrieved successfully',
+      data: validAccounts,
+      summary: {
+        totalOutstanding: totalOutstanding,
+        criticalCount: criticalCount,
+        totalAccounts: validAccounts.length
+      }
+    });
+
+  } catch (error) {
+    console.error('🔥 getOverdueBilling error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: 'Failed to retrieve overdue accounts',
+      error: error.message
+    });
+  }
+};
 
 
+ 
 
 
 

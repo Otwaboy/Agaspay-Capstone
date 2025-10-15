@@ -72,6 +72,15 @@ async createBilling(billData) {
   }
 }
 
+ async getOverdueBilling() {
+   try {
+    return await this.request('/api/v1/billing/overdue-billing');
+   } catch (error) {
+    console.log("fetching overdue billing:", error);
+    throw error;
+   }
+  }
+
 async inputReading(requestData) {
   try {
     return await this.request('/api/v1/meter-reader', {

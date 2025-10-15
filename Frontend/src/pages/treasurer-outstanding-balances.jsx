@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
+import apiClient from "../lib/api";
 
 export default function TreasurerOutstandingBalances() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,67 +25,92 @@ export default function TreasurerOutstandingBalances() {
   const { data: balances, isLoading } = useQuery({
     queryKey: ['/api/v1/treasurer/outstanding-balances', filterStatus],
     staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
+        const res = await apiClient.getOverdueBilling()
+        const overdueBilling = res.data
+        console.log('overdue data', overdueBilling);
+        
+
+        return overdueBilling.map((ob) => ({
+          
+            id: ob.id,
+            residentName: ob.residentName,
+            meterNo: ob.meterNo,
+            totalDue: ob.totalDue,
+            monthsOverDue: ob.monthsOverdue,
+            lastPayment: ob.lastPayment,
+            dueDate: ob.dueDate,
+            status: ob.status,
+            contactNo: ob.contactNo
+        }))
+            
+        
+        
+    }
   });
 
-  const mockBalances = [
-    {
-      id: "BAL-001",
-      residentName: "Juan Dela Cruz",
-      accountNo: "ACC-12345",
-      totalDue: 1350.00,
-      monthsOverdue: 3,
-      lastPayment: "2024-05-15",
-      dueDate: "2024-08-15",
-      status: "critical",
-      contactNo: "+63 912 345 6789"
-    },
-    {
-      id: "BAL-002",
-      residentName: "Maria Santos",
-      accountNo: "ACC-12346",
-      totalDue: 640.00,
-      monthsOverdue: 2,
-      lastPayment: "2024-06-20",
-      dueDate: "2024-08-20",
-      status: "warning",
-      contactNo: "+63 923 456 7890"
-    },
-    {
-      id: "BAL-003",
-      residentName: "Pedro Reyes",
-      accountNo: "ACC-12347",
-      totalDue: 2890.00,
-      monthsOverdue: 5,
-      lastPayment: "2024-03-10",
-      dueDate: "2024-08-10",
-      status: "critical",
-      contactNo: "+63 934 567 8901"
-    },
-    {
-      id: "BAL-004",
-      residentName: "Ana Garcia",
-      accountNo: "ACC-12348",
-      totalDue: 450.00,
-      monthsOverdue: 1,
-      lastPayment: "2024-07-15",
-      dueDate: "2024-08-15",
-      status: "moderate",
-      contactNo: "+63 945 678 9012"
-    },
-    {
-      id: "BAL-005",
-      residentName: "Roberto Luna",
-      accountNo: "ACC-12349",
-      totalDue: 1820.00,
-      monthsOverdue: 4,
-      lastPayment: "2024-04-25",
-      dueDate: "2024-08-25",
-      status: "critical",
-      contactNo: "+63 956 789 0123"
-    }
-  ];
+  
+  //   {
+  //     id: "BAL-001",
+  //     residentName: "Juan Dela Cruz",
+  //     accountNo: "ACC-12345",
+  //     totalDue: 1350.00,
+  //     monthsOverdue: 3,
+  //     lastPayment: "2024-05-15",
+  //     dueDate: "2024-08-15",
+  //     status: "critical",
+  //     contactNo: "+63 912 345 6789"
+  //   },
+  //   {
+  //     id: "BAL-002",
+  //     residentName: "Maria Santos",
+  //     accountNo: "ACC-12346",
+  //     totalDue: 640.00,
+  //     monthsOverdue: 2,
+  //     lastPayment: "2024-06-20",
+  //     dueDate: "2024-08-20",
+  //     status: "warning",
+  //     contactNo: "+63 923 456 7890"
+  //   },
+  //   {
+  //     id: "BAL-003",
+  //     residentName: "Pedro Reyes",
+  //     accountNo: "ACC-12347",
+  //     totalDue: 2890.00,
+  //     monthsOverdue: 5,
+  //     lastPayment: "2024-03-10",
+  //     dueDate: "2024-08-10",
+  //     status: "critical",
+  //     contactNo: "+63 934 567 8901"
+  //   },
+  //   {
+  //     id: "BAL-004",
+  //     residentName: "Ana Garcia",
+  //     accountNo: "ACC-12348",
+  //     totalDue: 450.00,
+  //     monthsOverdue: 1,
+  //     lastPayment: "2024-07-15",
+  //     dueDate: "2024-08-15",
+  //     status: "moderate",
+  //     contactNo: "+63 945 678 9012"
+  //   },
+  //   {
+  //     id: "BAL-005",
+  //     residentName: "Roberto Luna",
+  //     accountNo: "ACC-12349",
+  //     totalDue: 1820.00,
+  //     monthsOverdue: 4,
+  //     lastPayment: "2024-04-25",
+  //     dueDate: "2024-08-25",
+  //     status: "critical",
+  //     contactNo: "+63 956 789 0123"
+  //   }
+  // ];
 
-  const balanceData = balances || mockBalances;
+  const balanceData = balances || [];
+
+  console.log('mga blances data',balanceData);
+  
 
   const filteredData = balanceData.filter(balance => {
     const matchesSearch = balance.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -274,7 +300,7 @@ export default function TreasurerOutstandingBalances() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Account
+                          Meter No
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Resident
@@ -302,7 +328,7 @@ export default function TreasurerOutstandingBalances() {
                         return (
                           <tr key={balance.id} data-testid={`balance-row-${balance.id}`}>
                             <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                              {balance.accountNo}
+                              {balance.meterNo}
                             </td>
                             <td className="py-4 px-6">
                               <div>
