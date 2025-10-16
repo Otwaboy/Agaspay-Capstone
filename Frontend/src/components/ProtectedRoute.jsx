@@ -3,9 +3,10 @@ import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
 
 // Protected Route component for role-based access
-export function ProtectedRoute({ children, requireAdmin = false, requireSecretary = false, requireTreasurer = false, requireResident = false,  requireMeterReader = false,  allowBoth = false, allowAll = false }) {
+export function ProtectedRoute({ children, requireAdmin = false, requireSecretary = false, requireTreasurer = false, requireResident = false, 
+                                 requireMeterReader = false, requireMaintenance = false, allowBoth = false, allowAll = false }) {
   const { isAuthenticated, canAccessAdminDashboard, canAccessSecretaryDashboard,  canAccessTreasurerDashboard, canAccessMeterReaderDashboard,
-    canAccessResidentDashboard, canAccessDashboard, canAccessAnyDashboard, isLoading } = useAuth();
+    canAccessResidentDashboard, canAccessMaintenanceDashboard, canAccessDashboard, canAccessAnyDashboard, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   // Use effect to handle redirects
@@ -58,7 +59,10 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSecretar
   } else if (requireMeterReader) {
     hasAccess = canAccessMeterReaderDashboard;
     accessMessage = "You don't have permission to access the treasurer dashboard. Only Resident can access this area.";
-  } else if (allowBoth) {
+  } else if (requireMaintenance) {
+    hasAccess = canAccessMaintenanceDashboard;
+    accessMessage = "You don't have permission to access the Maintenace dashboard. Only Resident can access this area.";
+  }else if (allowBoth) {
     hasAccess = canAccessDashboard;
     accessMessage = "You don't have permission to access this dashboard. Only administrators and secretaries can access this area.";
   } else if (allowAll) {
@@ -152,6 +156,16 @@ export function ResidentRoute({ children }) {
     </ProtectedRoute>
   );
 }
+
+// Maintenance-only route wrapper
+export function MaintenanceRoute({ children }) {
+  return (
+    <ProtectedRoute requireMaintenance={true}>
+      {children}
+    </ProtectedRoute>
+  );
+}
+
 
 // Route for both admin and secretary access
 export function DashboardRoute({ children }) {

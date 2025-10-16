@@ -260,6 +260,11 @@ class AuthManager {
     return user && user.role === 'resident';
   }
 
+   isMaintenance() {
+    const user = this.getUser();
+    return user && user.role === 'maintenance';
+  }
+
   // Check if user can access admin dashboard
   canAccessAdminDashboard() {
     return this.isAuthenticated() && this.isAdmin();
@@ -284,18 +289,21 @@ class AuthManager {
     return this.isAuthenticated() && this.isResident();
   }
 
+  
+  canAccessMaintenanceDashboard() {
+    return this.isAuthenticated() && this.isMaintenance();
+  }
+
   // Check if user can access any dashboard (admin or secretary)
   canAccessDashboard() {
-    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard || this.canAccessMeterReaderDashboard;
+  return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard || this.canAccessMeterReaderDashboard || this.canAccessMaintenanceDashboard;
   }
   
    canAccessAnyDashboard() {
-    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard || this.canAccessMeterReaderDashboard;;
+    return this.canAccessAdminDashboard() || this.canAccessSecretaryDashboard() || this.canAccessResidentDashboard || this.canAccessTreasurerDashboard || this.canAccessMeterReaderDashboard || this.canAccessMaintenanceDashboard;
   }
 }
 
  
-  
-
 export const authManager = new AuthManager();
 export { AuthManager };

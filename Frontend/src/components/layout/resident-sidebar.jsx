@@ -17,7 +17,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
-
+ 
 const residentMenuItems = [
   {
     icon: Home,
@@ -28,7 +28,7 @@ const residentMenuItems = [
   {
     icon: CreditCard,
     label: "Bills & Payments",
-    href: "/resident/bills",
+    href: "/resident-dashboard/bills",
     color: "text-green-600"
   },
   {
@@ -40,37 +40,37 @@ const residentMenuItems = [
   {
     icon: Droplets,
     label: "Water Usage",
-    href: "/resident/usage",
+    href: "/resident-dashboard/usage",
     color: "text-blue-500"
   },
   {
     icon: Wrench,
     label: "Service Requests",
-    href: "/resident/service-requests",
+    href: "/resident-dashboard/service-requests",
     color: "text-orange-600"
   },
   {
     icon: AlertTriangle,
     label: "Report Issue",
-    href: "/resident/report-issue",
+    href: "/resident-dashboard/report-issue",
     color: "text-red-600"
   },
   {
     icon: MessageSquare,
     label: "Announcements",
-    href: "/resident/announcements",
+    href: "/resident-dashboard/announcements",
     color: "text-indigo-600"
   },
   {
     icon: User,
     label: "Profile",
-    href: "/resident/profile",
+    href: "/resident-dashboard/profile",
     color: "text-gray-600"
   },
   {
     icon: Settings,
     label: "Settings",
-    href: "/resident/settings",
+    href: "/resident-dashboard/settings",
     color: "text-gray-600"
   }
 ];

@@ -1,7 +1,9 @@
 import { Router, Route, Switch } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
-import { AdminRoute, SecretaryRoute, ResidentRoute, TreasurerRoute, MeterReaderRoute,DashboardRoute, AnyDashboardRoute } from "./components/ProtectedRoute";
+import { AdminRoute, SecretaryRoute, ResidentRoute, TreasurerRoute, MeterReaderRoute, MaintenanceRoute, DashboardRoute, AnyDashboardRoute } from "./components/ProtectedRoute";
+
+
 //admin
 import Dashboard from "./pages/dashboard";
 import AdminUsers from "./pages/admin-users";
@@ -41,6 +43,20 @@ import ResidentDashboard from "./pages/residentDashboard";
 import PaymentSuccess from "./components/payment-success";
 import DemoCheckout from "./components/demo-checkout";
 import ResidentPaymentHistory from "./pages/resident-payment-history";
+import ResidentAnnouncements from "./pages/resident-announcements";
+import ResidentProfile from "./pages/resident-profile";
+import ResidentBills from "./pages/resident-bills";
+import ResidentReportIssue from "./pages/resident-report-issue";
+import ResidentServiceRequests from "./pages/resident-service-requests";
+import ResidentSettings from "./pages/resident-settings";
+import ResidentUsage from "./pages/resident-usage";
+
+// Maintenance
+import MaintenanceDashboard from "./pages/maintenance-dashboard";
+import MaintenanceIncidents from "./pages/maintenance-incidents";
+import MaintenanceTasks from "./pages/maintenance-tasks";
+
+
 
 
 
@@ -52,13 +68,14 @@ import "./index.css";
 const queryClient = new QueryClient();
 
 function DashboardRouter() {
-  const { isAdmin, isSecretary, isTreasurer, isMeterReader, isResident } = useAuth();
+  const { isAdmin, isSecretary, isTreasurer, isMeterReader, isResident, isMaintenance } = useAuth();
   
   if (isAdmin) return <Dashboard />;
   if (isSecretary) return <SecretaryDashboard />;
   if (isTreasurer) return <TreasurerDashboard />;
   if (isMeterReader) return <MeterReaderDashboard />;
   if (isResident) return <ResidentDashboard />;
+  if (isMaintenance) return <MaintenanceDashboard/>
 
   
   return <NotFound />;
@@ -98,6 +115,8 @@ function App() {
                 </SecretaryRoute>
               )}
             </Route>
+
+            {/* Treasurer */}
              <Route path="/treasurer-dashboard">
               {() => (
                   <TreasurerRoute>
@@ -197,6 +216,8 @@ function App() {
                 </TreasurerRoute>
               )}
             </Route>
+
+            {/* Meter Reader */}
             <Route path="/meter-reader-dashboard">
               {() => (
                   <MeterReaderRoute>
@@ -211,6 +232,8 @@ function App() {
                   </MeterReaderRoute>
                 )}
               </Route>
+
+              {/* Resident */}
             <Route path="/resident-dashboard">
               {() => (
                 <ResidentRoute>
@@ -225,7 +248,81 @@ function App() {
                 </ResidentRoute>
               )}
             </Route>
+            <Route path="/resident-dashboard/bills">
+              {() => (
+                <ResidentRoute>
+                  <ResidentBills />
+                </ResidentRoute>
+              )}
+            </Route>
+            <Route path="/resident-dashboard/usage">
+              {() => (
+                <ResidentRoute>
+                  <ResidentUsage />
+                </ResidentRoute>
+              )}
+            </Route>
+            <Route path="/resident-dashboard/service-requests">
+              {() => (
+                <ResidentRoute>
+                  <ResidentServiceRequests />
+                </ResidentRoute>
+              )}
+            </Route>
+            <Route path="/resident-dashboard/report-issue">
+              {() => (
+                <ResidentRoute>
+                  <ResidentReportIssue />
+                </ResidentRoute>
+              )}
+            </Route>
+            <Route path="/resident-dashboard/announcements">
+              {() => (
+                <ResidentRoute>
+                  <ResidentAnnouncements />
+                </ResidentRoute>
+              )}
+            </Route>
+            <Route path="/resident-dashboard/profile">
+              {() => (
+                <ResidentRoute>
+                  <ResidentProfile />
+                </ResidentRoute>
+              )}
+            </Route>
+            <Route path="/resident-dashboard/settings">
+              {() => (
+                <ResidentRoute>
+                  <ResidentSettings />
+                </ResidentRoute>
+              )}
+            </Route>
+
+            {/* Maintenance */}
+            <Route path="/maintenance-dashboard">
+              {() => (
+                <MaintenanceRoute>
+                  <MaintenanceDashboard />
+                </MaintenanceRoute>
+              )}
+            </Route>
+            <Route path="/maintenance-dashboard/tasks">
+              {() => (
+                <MaintenanceRoute>
+                  <MaintenanceTasks />
+                </MaintenanceRoute>
+              )}
+            </Route>
+            <Route path="/maintenance-dashboard/incidents">
+              {() => (
+                <MaintenanceRoute>
+                  <MaintenanceIncidents />
+                </MaintenanceRoute>
+              )}
+            </Route>
             
+
+            {/* Admin */}
             <Route path="/admin-dashboard/users">
               {() => (
                 <AdminRoute>

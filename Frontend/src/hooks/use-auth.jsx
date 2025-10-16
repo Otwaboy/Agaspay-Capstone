@@ -51,11 +51,13 @@ export function AuthProvider({ children }) {
   const isTreasurer = authManager.isTreasurer();
   const isMeterReader = authManager.isMeterReader();
   const isResident = authManager.isResident();
+  const isMaintenance = authManager.isMaintenance();
   const canAccessAdminDashboard = authManager.canAccessAdminDashboard();
   const canAccessSecretaryDashboard = authManager.canAccessSecretaryDashboard();
   const canAccessTreasurerDashboard = authManager.canAccessTreasurerDashboard();
   const canAccessMeterReaderDashboard = authManager.canAccessMeterReaderDashboard();
   const canAccessResidentDashboard = authManager.canAccessResidentDashboard();
+  const canAccessMaintenanceDashboard = authManager.canAccessMaintenanceDashboard();
   const canAccessDashboard = authManager.canAccessDashboard();
   const canAccessAnyDashboard = authManager.canAccessAnyDashboard();
 
@@ -65,13 +67,15 @@ export function AuthProvider({ children }) {
     isAdmin, 
     isSecretary,
     isTreasurer,
-     isMeterReader,
+    isMeterReader,
     isResident,
+    isMaintenance,
     canAccessAdminDashboard,
     canAccessSecretaryDashboard,
     canAccessTreasurerDashboard,
     canAccessMeterReaderDashboard,
     canAccessResidentDashboard,
+    canAccessMaintenanceDashboard,
     canAccessDashboard,
     canAccessAnyDashboard,
     isLoading,
