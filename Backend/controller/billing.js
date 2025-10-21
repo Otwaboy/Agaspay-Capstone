@@ -8,6 +8,7 @@ const Resident = require('../model/Resident')
 const MeterReading = require('../model/Meter-reading')
 const Rate = require("../model/Rate")
 const Payment = require("../model/Payment")
+const {sendOverdueReminder} = require("../utils/sms")
 
  
 const getBilling = async (req, res) => {
@@ -167,74 +168,63 @@ const createBilling = async (req, res) => {
 const getOverdueBilling = async (req, res) => {
   try {
     const user = req.user;
-
     // ✅ Only treasurer can access overdue accounts
     if (user.role !== 'treasurer') {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         msg: 'Unauthorized. Only treasurer can access overdue accounts.',
       });
     }
-
     const currentDate = new Date();
-
-    // ✅ Find all overdue billings (status = 'overdue' OR past due_date with unpaid status)
+    // ✅ Find all overdue billings
     const overdueBillings = await Billing.find({
-      // checking for two possible cases:
       $or: [
         { status: 'overdue' },
         { 
-          //means: match if status is any of these values.
           status: { $in: ['unpaid', 'partial'] }, 
-          //less than sa currentDate as of now
           due_date: { $lt: currentDate } 
         }
       ]
     })
     .populate({
       path: 'connection_id',
-      select: 'connection_id meter_no resident_id',
+      select: 'connection_id meter_no purok resident_id',
       populate: {
         path: 'resident_id',
         select: 'first_name last_name contact_no purok'
       }
     })
-    .sort({ due_date: 1 }); // Sort by oldest due date first
-
-    // ✅ Process each overdue billing to get complete information
+    .sort({ due_date: 1 });
+    // ✅ Process each overdue billing
     const overdueAccounts = await Promise.all(
       overdueBillings.map(async (billing) => {
         const connection = billing.connection_id;
         const resident = connection?.resident_id;
-
         if (!resident || !connection) {
-          return null; // Skip if no resident/connection found
+          return null;
         }
-
         // ✅ Calculate months overdue
         const dueDate = new Date(billing.due_date);
         const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
         const monthsOverdue = Math.max(1, monthsDiff);
-
-        // ✅ Find last payment for this connection
+        // ✅ Find last payment
         const lastPayment = await Payment.findOne({ 
           connection_id: connection._id,
           payment_status: 'confirmed'
         })
         .sort({ payment_date: -1 })
         .limit(1);
-
-        // ✅ Determine status based on months overdue
+        // ✅ Determine status
         let status = 'moderate';
         if (monthsOverdue >= 3) {
           status = 'critical';
         } else if (monthsOverdue >= 2) {
           status = 'warning';
         }
-
-        // ✅ Format account data for frontend
         return {
           id: billing._id,
           residentName: `${resident.first_name} ${resident.last_name}`,
+          accountNo: connection.connection_id || connection.meter_no,
+          meterNo: connection.meter_no,
           purok: resident.purok || connection.purok || 'N/A',
           totalDue: billing.total_amount,
           monthsOverdue: monthsOverdue,
@@ -242,19 +232,14 @@ const getOverdueBilling = async (req, res) => {
           dueDate: billing.due_date,
           status: status,
           contactNo: resident.contact_no || 'N/A',
-          meterNo: connection.meter_no,
           billPeriod: billing.generated_at
         };
       })
     );
-
-    // ✅ Filter out null values (from skipped records)
     const validAccounts = overdueAccounts.filter(account => account !== null);
-
-    // ✅ Calculate summary statistics
+    // ✅ Calculate summary
     const totalOutstanding = validAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
     const criticalCount = validAccounts.filter(acc => acc.status === 'critical').length;
-
     res.status(StatusCodes.OK).json({
       msg: 'Overdue accounts retrieved successfully',
       data: validAccounts,
@@ -264,11 +249,99 @@ const getOverdueBilling = async (req, res) => {
         totalAccounts: validAccounts.length
       }
     });
-
   } catch (error) {
     console.error('🔥 getOverdueBilling error:', error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       msg: 'Failed to retrieve overdue accounts',
+      error: error.message
+    });
+  }
+};
+/**
+ * Controller: sendReminderSMS
+ * 
+ * Purpose: Send SMS reminder to a resident about their overdue balance
+ * Access: Treasurer only
+ */
+const sendReminderSMS = async (req, res) => {
+  try {
+    const user = req.user;
+    const { billingId } = req.body;
+    // ✅ Only treasurer can send reminders
+    if (user.role !== 'treasurer') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        msg: 'Unauthorized. Only treasurer can send reminders.',
+      });
+    }
+    // ✅ Validate billing ID
+    if (!billingId) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        msg: 'Billing ID is required',
+      });
+    }
+    // ✅ Find billing with populated data
+    const billing = await Billing.findById(billingId)
+      .populate({
+        path: 'connection_id',
+        select: 'meter_no resident_id',
+        populate: {
+          path: 'resident_id',
+          select: 'first_name last_name contact_no'
+        }
+      });
+    if (!billing) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        msg: 'Billing record not found',
+      });
+    }
+    const connection = billing.connection_id;
+    const resident = connection?.resident_id;
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        msg: 'Resident information not found',
+      });
+    }
+    // ✅ Check contact number
+    if (!resident.contact_no) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        msg: 'Resident contact number not available',
+      });
+    }
+    // ✅ Calculate months overdue
+    const currentDate = new Date();
+    const dueDate = new Date(billing.due_date);
+    const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
+    const monthsOverdue = Math.max(1, monthsDiff);
+    // ✅ Send SMS
+    const reminderData = {
+      residentName: `${resident.first_name} ${resident.last_name}`,
+      contactNo: resident.contact_no,
+      totalDue: billing.total_amount,
+      monthsOverdue: monthsOverdue,
+      dueDate: billing.due_date
+    };
+    console.log('📤 Sending overdue reminder SMS:', reminderData);
+    
+    const smsResult = await sendOverdueReminder(reminderData);
+    if (smsResult.success) {
+      return res.status(StatusCodes.OK).json({
+        msg: 'SMS reminder sent successfully',
+        data: {
+          recipient: smsResult.recipient,
+          residentName: reminderData.residentName,
+          sentAt: new Date()
+        }
+      });
+    } else {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        msg: 'Failed to send SMS reminder',
+        error: smsResult.error
+      });
+    }
+  } catch (error) {
+    console.error('🔥 sendReminderSMS error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: 'Failed to send reminder',
       error: error.message
     });
   }
@@ -279,4 +352,4 @@ const getOverdueBilling = async (req, res) => {
 
 
 
-module.exports = {createBilling, getBilling, getOverdueBilling} 
+module.exports = {createBilling, getBilling, getOverdueBilling, sendReminderSMS} 

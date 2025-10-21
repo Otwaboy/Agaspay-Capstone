@@ -34,6 +34,8 @@ const payPayment = async (req, res) => {
     const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
     const email = resident?.email || null;
     const phone = resident?.contact_no || null;
+    console.log(fullName);
+    
 
     // 🔹 Validate required fields
     if (!bill_id || !payment_method) {
@@ -110,12 +112,13 @@ const payPayment = async (req, res) => {
         data: {
           attributes: {
             billing: {
-              name: `${user.username}`,
-              phone: `${phone}`
+              name: `${fullName}`, // why does it get null in here?
+              phone: `${phone}`, // also here and please fixed these
+              
             },
             line_items: [
               {
-                name: `AGASPAY WATER BILL - ${user.username}`,
+                name: `AGASPAY WATER BILL - ${fullName}`,
                 amount: Math.round(amountToPay * 100),
                 currency: "PHP",
                 quantity: 1
@@ -125,6 +128,8 @@ const payPayment = async (req, res) => {
             payment_method_types: [payment_method],
             success_url: `${baseUrl}/payment/success?payment_intent_id=${paymentIntent.id}&status=succeeded`,
             cancel_url: `${baseUrl}/payment/cancel?payment_intent_id=${paymentIntent.id}&status=failed`,
+
+            send_email_receipt: true,
           },
         },
       }, 

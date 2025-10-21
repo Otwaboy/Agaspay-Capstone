@@ -119,6 +119,13 @@ async addRatingAmount(rateAmount) {
   }
 }
 
+async sendOverdueReminder(billingId) {
+  return await this.request('/api/v1/billing/send-reminder', {
+    method: 'POST',
+    body: JSON.stringify({ billingId }),
+  });
+}
+
   // Payment related API calls
   async getCurrentBill() {
     return await this.request('/api/v1/billing');

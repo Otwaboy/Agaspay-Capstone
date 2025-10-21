@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -12,44 +12,54 @@ import {
   Eye,
   Calendar,
   DollarSign,
-  Users
+  Users,
+  Loader2
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
 import apiClient from "../lib/api";
+import { useToast } from "../hooks/use-toast";
 
 export default function TreasurerOutstandingBalances() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [sendingReminder, setSendingReminder] = useState(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
 
   const { data: balances, isLoading } = useQuery({
     queryKey: ['/api/v1/treasurer/outstanding-balances', filterStatus],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-        const res = await apiClient.getOverdueBilling()
-        const overdueBilling = res.data
-        console.log('overdue data', overdueBilling);
-        
-
-        return overdueBilling.map((ob) => ({
-          
-            id: ob.id,
-            residentName: ob.residentName,
-            meterNo: ob.meterNo,
-            totalDue: ob.totalDue,
-            monthsOverDue: ob.monthsOverdue,
-            lastPayment: ob.lastPayment,
-            dueDate: ob.dueDate,
-            status: ob.status,
-            contactNo: ob.contactNo
-        }))
-            
-        
-        
+      const res = await apiClient.getOverdueBilling();
+      return res.data;
     }
   });
 
-  
+
+  const sendReminderMutation = useMutation({
+    mutationFn: async (billingId) => {
+      return await apiClient.sendOverdueReminder(billingId);
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "SMS Reminder Sent",
+        description: `Payment reminder sent successfully to ${data.data?.residentName}`,
+      });
+      setSendingReminder(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Send Reminder",
+        description: error.message || "Unable to send SMS reminder. Please try again.",
+        variant: "destructive",
+      });
+      setSendingReminder(null);
+    }
+  });
+
+  // const mockBalances = [
   //   {
   //     id: "BAL-001",
   //     residentName: "Juan Dela Cruz",
@@ -109,9 +119,6 @@ export default function TreasurerOutstandingBalances() {
 
   const balanceData = balances || [];
 
-  console.log('mga blances data',balanceData);
-  
-
   const filteredData = balanceData.filter(balance => {
     const matchesSearch = balance.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          balance.accountNo.toLowerCase().includes(searchTerm.toLowerCase());
@@ -132,6 +139,7 @@ export default function TreasurerOutstandingBalances() {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-PH', {
       month: 'short',
       day: 'numeric',
@@ -168,8 +176,18 @@ export default function TreasurerOutstandingBalances() {
     }
   };
 
-  const handleSendReminder = (accountId) => {
-    console.log(`Sending reminder to ${accountId}`);
+  const handleSendReminder = (balance) => {
+    if (!balance.contactNo || balance.contactNo === 'N/A') {
+      toast({
+        title: "No Contact Number",
+        description: `${balance.residentName} does not have a contact number on file.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingReminder(balance.id);
+    sendReminderMutation.mutate(balance.id);
   };
 
   return (
@@ -300,7 +318,7 @@ export default function TreasurerOutstandingBalances() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Meter No
+                          Account
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Resident
@@ -325,10 +343,12 @@ export default function TreasurerOutstandingBalances() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredData.map((balance) => {
                         const statusConfig = getStatusConfig(balance.status);
+                        const isReminding = sendingReminder === balance.id;
+                        
                         return (
                           <tr key={balance.id} data-testid={`balance-row-${balance.id}`}>
                             <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                              {balance.meterNo}
+                              {balance.accountNo || balance.meterNo}
                             </td>
                             <td className="py-4 px-6">
                               <div>
@@ -368,11 +388,21 @@ export default function TreasurerOutstandingBalances() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleSendReminder(balance.id)}
+                                  onClick={() => handleSendReminder(balance)}
+                                  disabled={isReminding || !balance.contactNo || balance.contactNo === 'N/A'}
                                   data-testid={`button-remind-${balance.id}`}
                                 >
-                                  <Send className="h-4 w-4 mr-1" />
-                                  Remind
+                                  {isReminding ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                      Sending...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Send className="h-4 w-4 mr-1" />
+                                      Remind
+                                    </>
+                                  )}
                                 </Button>
                               </div>
                             </td>
