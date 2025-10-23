@@ -8,16 +8,15 @@ import SecretaryRecentActivities from "../components/dashboard/secretary-recent-
 import SecretaryRecentDocuments from "../components/dashboard/secretary-recent-documents";
 import SecretaryQuickActions from "../components/dashboard/secretary-quick-actions";
 import SecretarySystemAlerts from "../components/dashboard/secretary-system-alerts";
+import SecretaryPendingOverview from "../components/dashboard/secretary-pending-overview";
 import CreateResidentModal from "../components/modals/create-resident-modal";
 import ScheduleAppointmentModal from "../components/modals/schedule-appointment-modal";
 import { Loader2 } from "lucide-react";
 
 export default function SecretaryDashboard() {
-  // Added state for modals
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
 
-  // Added event listeners
   useEffect(() => {
     const handleOpenResidentModal = () => setIsResidentModalOpen(true);
     const handleOpenAppointmentModal = () => setIsAppointmentModalOpen(true);
@@ -56,14 +55,12 @@ export default function SecretaryDashboard() {
     <div className="flex h-screen bg-gray-100">
       <SecretarySidebar />
 
-      {/* container ni sya sa top header ou ag body  */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <SecretaryTopHeader />
 
-        {/* this is the body part or the content inside */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-          
           <div className="max-w-7xl mx-auto">
+            {/* Header Section */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900" data-testid="text-dashboard-title">
                 Secretary Dashboard
@@ -73,17 +70,18 @@ export default function SecretaryDashboard() {
               </p>
             </div>
 
-            {/*Statscard ug quick aciton container lg: min-width: 1024px */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-              <div className="lg:col-span-8">
-                <SecretaryStatsCards />
-              </div>
-              <div className="lg:col-span-4">
-                <SecretaryQuickActions />
-              </div>
+            {/* Stats Cards - Full Width */}
+            <div className="mb-6">
+              <SecretaryStatsCards />
             </div>
 
-            {/*recent act ug system alert na container  */}
+            {/* Quick Actions and Pending Overview - Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <SecretaryQuickActions />
+              <SecretaryPendingOverview />
+            </div>
+
+            {/* Recent Activities and System Alerts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               <div className="lg:col-span-2">
                 <SecretaryRecentActivities />
@@ -93,6 +91,7 @@ export default function SecretaryDashboard() {
               </div>
             </div>
 
+            {/* Recent Documents - Full Width */}
             <div className="grid grid-cols-1 gap-6">
               <SecretaryRecentDocuments />
             </div>
