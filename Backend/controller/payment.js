@@ -12,30 +12,11 @@ const stripe = require("stripe")(process.env.PAYMONGO_SECRET_KEY);
 ; // use env in production
 
 
+
 const payPayment = async (req, res) => {
   try {
     const user = req.user;
     const { bill_id, payment_method, amount } = req.body;
-
-    //getting the fullname
-    const info = await Payment.find({}).populate({
-      path: "bill_id",
-      populate: {
-        path: "connection_id",
-        populate: {
-          path: "resident_id",
-          select: "first_name last_name email contact_no"
-        }
-      }
-    });
-
-    const connection = info.bill_id?.connection_id;
-    const resident = connection?.resident_id;
-    const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
-    const email = resident?.email || null;
-    const phone = resident?.contact_no || null;
-    console.log(fullName);
-    
 
     // 🔹 Validate required fields
     if (!bill_id || !payment_method) {
@@ -53,31 +34,46 @@ const payPayment = async (req, res) => {
       });
     }
 
-    // 🔹 Find billing record
-    const billing = await Billing.findById(bill_id);
-    if (!billing) {
+    // 🔹 Get full resident info via Billing (not Payment)
+    const billingInfo = await Billing.findById(bill_id).populate({
+      path: "connection_id",
+      populate: {
+        path: "resident_id",
+        select: "first_name last_name email contact_no",
+      },
+    });
+
+    if (!billingInfo) {
       return res.status(404).json({
         success: false,
         message: "Billing record not found",
       });
     }
 
-    const amountToPay = amount ?? billing.total_amount;
+    // ✅ Extract resident details
+    const connection = billingInfo.connection_id;
+    const resident = connection?.resident_id;
+    const fullName = resident ? `${resident.first_name} ${resident.last_name}` : "Unknown Resident";
+    const email = resident?.email || null;
+    const phone = resident?.contact_no || null;
 
-    // 🔹 Create local Payment record (reference will be added after PayMongo response)
+    console.log("Resident Info:", { fullName, email, phone });
+
+    const amountToPay = amount ?? billingInfo.total_amount;
+
+    // 🔹 Create local Payment record (before PayMongo)
     const payment = await Payment.create({
       bill_id,
       amount_paid: amountToPay,
       payment_method,
-      payment_type: amountToPay < billing.total_amount ? "partial" : "full",
+      payment_type: amountToPay < billingInfo.total_amount ? "partial" : "full",
       payment_status: "pending",
-      payment_reference: null, // will be updated later
+      payment_reference: null,
     });
 
     // 🔹 Prepare PayMongo request
-    //a safely way to verify paymongo that my api is legit
     const paymongoAuth = Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64");
-   
+
     const headers = {
       Authorization: `Basic ${paymongoAuth}`,
       "Content-Type": "application/json",
@@ -89,15 +85,14 @@ const payPayment = async (req, res) => {
       {
         data: {
           attributes: {
-            amount: Math.round(amountToPay * 100), //JavaScript function that rounds a number to the nearest integer. ex (4.2) = (4.5) = 5
+            amount: Math.round(amountToPay * 100), // PayMongo uses centavos
             currency: "PHP",
             payment_method_allowed: ["gcash", "paymaya"],
             capture_type: "automatic",
           },
         },
       },
-      { headers } // so these part i called headers authorization para ma verify sa paymongo api
-                  // basically to post these api request we need a legit nga authentication
+      { headers }
     );
 
     const paymentIntent = paymentIntentResponse.data.data;
@@ -105,49 +100,48 @@ const payPayment = async (req, res) => {
     // 🔹 Build frontend URLs
     const baseUrl = req.headers.origin || "http://localhost:5173";
 
-    //  Create Checkout Session
+    // 🔹 Create Checkout Session (with email receipt)
     const checkoutResponse = await axios.post(
       "https://api.paymongo.com/v1/checkout_sessions",
       {
         data: {
           attributes: {
             billing: {
-              name: `${fullName}`, // why does it get null in here?
-              phone: `${phone}`, // also here and please fixed these
-              
+              name: fullName,
+              phone: phone,
+              email: email,
             },
             line_items: [
               {
                 name: `AGASPAY WATER BILL - ${fullName}`,
                 amount: Math.round(amountToPay * 100),
                 currency: "PHP",
-                quantity: 1
+                quantity: 1,
               },
             ],
             payment_intent_id: paymentIntent.id,
             payment_method_types: [payment_method],
             success_url: `${baseUrl}/payment/success?payment_intent_id=${paymentIntent.id}&status=succeeded`,
             cancel_url: `${baseUrl}/payment/cancel?payment_intent_id=${paymentIntent.id}&status=failed`,
-
             send_email_receipt: true,
           },
         },
-      }, 
+      },
       { headers }
     );
 
     const checkoutSession = checkoutResponse.data.data;
 
-    // 🔹 Save PayMongo Payment Intent ID as reference (from Checkout Session)
-    payment.payment_reference = checkoutSession.attributes.payment_intent.id; // so it get the paymentIntent.id used in checkout
-    await payment.save(); 
+    // 🔹 Save PayMongo Payment Intent ID as reference
+    payment.payment_reference = checkoutSession.attributes.payment_intent.id;
+    await payment.save();
 
     // 🔹 Respond to frontend
     res.status(200).json({
       success: true,
       msg: "Payment initialized",
       paymentId: payment._id,
-      payment_reference: payment.payment_reference, // PayMongo intent ID
+      payment_reference: payment.payment_reference,
       payment_method: payment.payment_method,
       payment_type: payment.payment_type,
       checkoutUrl: checkoutSession.attributes.checkout_url,
@@ -170,6 +164,8 @@ const payPayment = async (req, res) => {
     });
   }
 };
+
+
 
 
 // mo return ug daghan

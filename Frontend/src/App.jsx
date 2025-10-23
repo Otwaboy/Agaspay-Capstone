@@ -17,6 +17,13 @@ import AdminSettings from "./pages/admin-settings";
 
 //secretary
 import SecretaryDashboard from "./pages/secretaryDashboard";
+import SecretaryAnnouncements from "./pages/secretary-announcements";
+import SecretaryResidents from "./pages/secretary-residents";
+import SecretaryRegistration from "./pages/secretary-registration";
+import SecretaryDocuments from "./pages/secretary-documents";
+import SecretaryAppointments from "./pages/secretary-appointments";
+import SecretarySettings from "./pages/secretary-settings";
+import SecretaryApplications from "./pages/secretary-applications";
 
 //meter- reader
 import MeterReaderDashboard from "./pages/meter-reader-dashboard";
@@ -108,13 +115,68 @@ function App() {
                 </AdminRoute>
               )}
             </Route>
-            <Route path="/secretary">
+
+            {/* secretary */}
+            <Route path="/secretary-dashboard">
               {() => (
                 <SecretaryRoute>
                   <SecretaryDashboard />
                 </SecretaryRoute>
               )}
             </Route>
+           
+            <Route path="/secretary-dashboard/residents">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryResidents />
+                </SecretaryRoute>
+              )}
+            </Route>             
+            <Route path="/secretary-dashboard/registration">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryRegistration />
+                </SecretaryRoute>
+              )}
+            </Route>             
+            <Route path="/secretary-dashboard/documents">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryDocuments />
+                </SecretaryRoute>
+              )}
+            </Route>             
+            <Route path="/secretary-dashboard/applications">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryApplications />
+                </SecretaryRoute>
+              )}
+            </Route>          
+            <Route path="/secretary-dashboard/appointments">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryAppointments/>
+                </SecretaryRoute>
+              )}
+            </Route>            
+            <Route path="/secretary-dashboard/announcements">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryAnnouncements />
+                </SecretaryRoute>
+              )}
+            </Route>
+             <Route path="/secretary-dashboard/settings">
+              {() => (
+                <SecretaryRoute>
+                  <SecretarySettings />
+                </SecretaryRoute>
+              )}
+            </Route>
+            
+
+
 
             {/* Treasurer */}
              <Route path="/treasurer-dashboard">
@@ -124,7 +186,6 @@ function App() {
                   </TreasurerRoute>
               )}
             </Route>
-            
             <Route path="/treasurer-dashboard/billing/generate">
               {() => (
                 <TreasurerRoute>

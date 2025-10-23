@@ -72,7 +72,7 @@ export default function PaymentSuccess() {
   };
 
   const handleReturnToDashboard = () => {
-    setLocation('/resident');
+    setLocation('/resident-dashboard');
   };
 
   const renderStatusIcon = () => {
@@ -153,7 +153,7 @@ export default function PaymentSuccess() {
             {paymentStatus === 'failed' && (
               <Button 
                 variant="outline" 
-                onClick={() => setLocation('/resident')}
+                onClick={() => setLocation('/resident-dashboard')}
                 className="w-full"
               >
                 Try Payment Again

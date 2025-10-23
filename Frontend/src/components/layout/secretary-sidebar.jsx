@@ -21,49 +21,49 @@ const secretaryMenuItems = [
   {
     icon: Home,
     label: "Dashboard",
-    href: "/secretary",
+    href: "/secretary-dashboard",
     color: "text-blue-600"
   },
   {
     icon: Users,
     label: "Residents",
-    href: "/secretary/residents",
+    href: "/secretary-dashboard/residents",
     color: "text-green-600"
   },
   {
     icon: UserPlus,
     label: "Registration",
-    href: "/secretary/registration",
+    href: "/secretary-dashboard/registration",
     color: "text-purple-600"
   },
   {
     icon: FileText,
     label: "Documents",
-    href: "/secretary/documents",
+    href: "/secretary-dashboard/documents",
     color: "text-orange-600"
   },
   {
     icon: ClipboardList,
     label: "Applications",
-    href: "/secretary/applications",
+    href: "/secretary-dashboard/applications",
     color: "text-cyan-600"
   },
   {
     icon: Calendar,
     label: "Appointments",
-    href: "/secretary/appointments",
+    href: "/secretary-dashboard/appointments",
     color: "text-teal-600"
   },
   {
     icon: MessageSquare,
     label: "Announcements",
-    href: "/secretary/announcements",
+    href: "/secretary-dashboard/announcements",
     color: "text-indigo-600"
   },
   {
     icon: Settings,
     label: "Settings",
-    href: "/secretary/settings",
+    href: "/secretary-dashboard/settings",
     color: "text-gray-600"
   }
 ];
