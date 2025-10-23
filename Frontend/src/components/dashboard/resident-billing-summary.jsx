@@ -247,7 +247,7 @@ const getBillStatusColor = (status) => {
             </div>
           )}
 
-        </div>
+        </div> 
 
         {/* Action Button */}
         <Button

@@ -140,8 +140,6 @@ async sendOverdueReminder(billingId) {
    }
   }
 
-
-
 //getwaterconnecitons
      async getWaterConnections() {
     return await this.request('/api/v1/water-connection');
@@ -151,15 +149,6 @@ async sendOverdueReminder(billingId) {
     async getLatestReadings() {
     return await this.request('/api/v1/meter-reader/latest-readings');
   }
-
-  // async inputReading(requestData) {
-  //    return await this.request('/api/v1/meter-reader', {
-  //     method: 'POST',
-  //     body: JSON.stringify(requestData),
-  //   });
-  // } 
-  
-
 
   async createPayment(paymentData) {
     return await this.request('/api/v1/payment', {
@@ -177,39 +166,7 @@ async getCurrentReading() {
     return await this.request(`/api/v1/meter-reader}`);
   }
 
-  // async getPaymentStatus(paymentIntentId) {
-  //   return await this.request(`/api/v1/payment/status/${paymentIntentId}`);
-  // }
-
-  // async getTransactionHistory() {
-  //   return await this.request('/api/v1/payments/history');
-  // }
-
-  // async getBillingHistory() {
-  //   return await this.request('/api/v1/billing/history');
-  // }
-
-  // Resident account related API calls
- 
-
-  // async getWaterUsage() {
-  //   return await this.request('/api/v1/residents/usage');
-  // }
-
-  // async submitServiceRequest(requestData) {
-  //   return await this.request('/api/v1/service-requests', {
-  //     method: 'POST',
-  //     body: JSON.stringify(requestData),
-  //   });
-  // }
-
-  // async getServiceRequests() {
-  //   return await this.request('/api/v1/service-requests');
-  // }
-
-  // async getAnnouncements() {
-  //   return await this.request('/api/v1/announcements/resident');
-  // }
+  
 }
 
 

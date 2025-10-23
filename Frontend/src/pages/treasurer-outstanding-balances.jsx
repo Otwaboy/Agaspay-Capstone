@@ -34,9 +34,11 @@ export default function TreasurerOutstandingBalances() {
     queryFn: async () => {
       const res = await apiClient.getOverdueBilling();
       return res.data;
+
+      
     }
   });
-
+ 
 
   const sendReminderMutation = useMutation({
     mutationFn: async (billingId) => {

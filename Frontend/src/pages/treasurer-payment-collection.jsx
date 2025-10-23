@@ -44,7 +44,7 @@ export default function TreasurerPaymentCollection() {
   const [editingPayment, setEditingPayment] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-
+ 
   const { data: collections, isLoading, refetch } = useQuery({
     queryKey: ['/api/v1/treasurer/collections', filterStatus],
     staleTime: 2 * 60 * 1000,

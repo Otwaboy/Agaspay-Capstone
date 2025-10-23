@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
 import SecretarySidebar from "../components/layout/secretary-sidebar";
 import SecretaryTopHeader from "../components/layout/secretary-top-header";
+import CreateResidentModal from "../components/modals/create-resident-modal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -29,7 +30,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar } from "lucide-react";
+import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar, UserPlus, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "../lib/api";
+import { queryClient } from "../lib/query-client";
 
 export default function SecretaryResidents() {
   const [, setLocation] = useLocation();
@@ -38,54 +42,31 @@ export default function SecretaryResidents() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedResident, setSelectedResident] = useState(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
 
-  // Mock data - Replace with actual API call
-  const residents = [
-    {
-      id: 1,
-      name: "Juan Dela Cruz",
-      address: "123 Main St, Brgy. Biking",
-      contactNo: "09171234567",
-      email: "juan@email.com",
-      status: "active",
-      connectionId: "CON-2024-001",
-      registrationDate: "2024-01-15",
-      accountBalance: 540.00
-    },
-    {
-      id: 2,
-      name: "Maria Santos",
-      address: "456 Oak Ave, Brgy. Biking",
-      contactNo: "09181234567",
-      email: "maria@email.com",
-      status: "active",
-      connectionId: "CON-2024-002",
-      registrationDate: "2024-02-20",
-      accountBalance: 0
-    },
-    {
-      id: 3,
-      name: "Pedro Garcia",
-      address: "789 Pine Rd, Brgy. Biking",
-      contactNo: "09191234567",
-      email: "pedro@email.com",
-      status: "inactive",
-      connectionId: "CON-2024-003",
-      registrationDate: "2024-03-10",
-      accountBalance: 1200.00
-    },
-    {
-      id: 4,
-      name: "Ana Reyes",
-      address: "321 Elm St, Brgy. Biking",
-      contactNo: "09201234567",
-      email: "ana@email.com",
-      status: "active",
-      connectionId: "CON-2024-004",
-      registrationDate: "2024-04-05",
-      accountBalance: 0
-    },
-  ];
+  // Fetch water connections from backend
+  const { data: residents = [], isLoading, error } = useQuery({
+    queryKey: ['/api/water-connections'],
+    queryFn: async () => {
+      const res = await apiClient.getWaterConnections();
+      const connections = res.data;
+      
+      // Map backend data to frontend format
+      return connections.map((conn) => ({
+        id: conn.connection_id,
+        name: conn.full_name,
+        address: conn.address,
+        contactNo: conn.contact_no,
+        email: conn.email,
+        status: conn.status,
+        connectionStatus: conn.connection_status,
+        meter_no: conn.meter_no,
+        type: conn.type,
+        previousReading: conn.previous_reading || 0,
+        presentReading: conn.present_reading || 0
+      }));
+    }
+  });
 
   const filteredResidents = residents.filter(resident => {
     const matchesSearch = resident.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,6 +79,12 @@ export default function SecretaryResidents() {
   const handleViewDetails = (resident) => {
     setSelectedResident(resident);
     setViewDetailsOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsResidentModalOpen(false);
+    // Refetch water connections after creating a new resident
+    queryClient.invalidateQueries({ queryKey: ['/api/water-connections'] });
   };
 
   if (!isAuthenticated) {
@@ -131,7 +118,9 @@ export default function SecretaryResidents() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Residents</p>
-                      <p className="text-2xl font-bold text-gray-900" data-testid="text-total-residents">{residents.length}</p>
+                      <p className="text-2xl font-bold text-gray-900" data-testid="text-total-residents">
+                        {isLoading ? "..." : residents.length}
+                      </p>
                     </div>
                     <div className="bg-blue-100 p-3 rounded-lg">
                       <UserCheck className="h-6 w-6 text-blue-600" />
@@ -146,7 +135,7 @@ export default function SecretaryResidents() {
                     <div>
                       <p className="text-sm font-medium text-gray-600">Active</p>
                       <p className="text-2xl font-bold text-green-600" data-testid="text-active-residents">
-                        {residents.filter(r => r.status === "active").length}
+                        {isLoading ? "..." : residents.filter(r => r.status === "active").length}
                       </p>
                     </div>
                     <div className="bg-green-100 p-3 rounded-lg">
@@ -162,7 +151,7 @@ export default function SecretaryResidents() {
                     <div>
                       <p className="text-sm font-medium text-gray-600">Inactive</p>
                       <p className="text-2xl font-bold text-orange-600" data-testid="text-inactive-residents">
-                        {residents.filter(r => r.status === "inactive").length}
+                        {isLoading ? "..." : residents.filter(r => r.status === "inactive").length}
                       </p>
                     </div>
                     <div className="bg-orange-100 p-3 rounded-lg">
@@ -176,8 +165,10 @@ export default function SecretaryResidents() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">New This Month</p>
-                      <p className="text-2xl font-bold text-purple-600">2</p>
+                      <p className="text-sm font-medium text-gray-600">Pending</p>
+                      <p className="text-2xl font-bold text-purple-600" data-testid="text-pending-residents">
+                        {isLoading ? "..." : residents.filter(r => r.connectionStatus === "pending").length}
+                      </p>
                     </div>
                     <div className="bg-purple-100 p-3 rounded-lg">
                       <Calendar className="h-6 w-6 text-purple-600" />
@@ -198,7 +189,11 @@ export default function SecretaryResidents() {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button data-testid="button-add-resident">
+                    <Button 
+                      onClick={() => setIsResidentModalOpen(true)}
+                      data-testid="button-add-resident"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
                       Add New Resident
                     </Button>
                   </div>
@@ -230,80 +225,105 @@ export default function SecretaryResidents() {
                   </Select>
                 </div>
 
+                {/* Loading State */}
+                {isLoading && (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    <span className="ml-3 text-gray-600">Loading residents...</span>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <p className="text-red-800 text-sm">
+                      <strong>Error loading residents:</strong> {error.message}
+                    </p>
+                  </div>
+                )}
+
                 {/* Table */}
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50">
-                        <TableHead>Name</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead>Connection ID</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredResidents.length > 0 ? (
-                        filteredResidents.map((resident) => (
-                          <TableRow key={resident.id} data-testid={`row-resident-${resident.id}`}>
-                            <TableCell className="font-medium">{resident.name}</TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                <div>{resident.contactNo}</div>
-                                <div className="text-gray-500">{resident.email}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="max-w-xs truncate">{resident.address}</TableCell>
-                            <TableCell>
-                              <span className="font-mono text-sm">{resident.connectionId}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={resident.status === "active" ? "success" : "secondary"}
-                                className={
-                                  resident.status === "active"
-                                    ? "bg-green-100 text-green-700 hover:bg-green-100"
-                                    : "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                                }
-                                data-testid={`badge-status-${resident.id}`}
-                              >
-                                {resident.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleViewDetails(resident)}
-                                  data-testid={`button-view-${resident.id}`}
+                {!isLoading && !error && (
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Address</TableHead>
+                          <TableHead>Meter No.</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResidents.length > 0 ? (
+                          filteredResidents.map((resident) => (
+                            <TableRow key={resident.id} data-testid={`row-resident-${resident.id}`}>
+                              <TableCell className="font-medium">{resident.name}</TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div>{resident.contactNo}</div>
+                                  <div className="text-gray-500">{resident.email}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">{resident.address}</TableCell>
+                              <TableCell>
+                                <span className="font-mono text-sm">{resident.meter_no}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="capitalize">
+                                  {resident.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={resident.status === "active" ? "success" : "secondary"}
+                                  className={
+                                    resident.status === "active"
+                                      ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                      : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                                  }
+                                  data-testid={`badge-status-${resident.id}`}
                                 >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  View
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  data-testid={`button-edit-${resident.id}`}
-                                >
-                                  <Edit className="h-4 w-4 mr-1" />
-                                  Edit
-                                </Button>
-                              </div>
+                                  {resident.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleViewDetails(resident)}
+                                    data-testid={`button-view-${resident.id}`}
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    data-testid={`button-edit-${resident.id}`}
+                                  >
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    Edit
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                              No residents found matching your criteria
                             </TableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                            No residents found matching your criteria
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -327,8 +347,8 @@ export default function SecretaryResidents() {
                   <p className="text-gray-900 mt-1">{selectedResident.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Connection ID</label>
-                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.connectionId}</p>
+                  <label className="text-sm font-medium text-gray-700">Meter Number</label>
+                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.meter_no}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Contact Number</label>
@@ -352,14 +372,27 @@ export default function SecretaryResidents() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Registration Date</label>
-                  <p className="text-gray-900 mt-1">{new Date(selectedResident.registrationDate).toLocaleDateString()}</p>
+                  <label className="text-sm font-medium text-gray-700">Connection Type</label>
+                  <p className="text-gray-900 mt-1 capitalize">{selectedResident.type}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Account Balance</label>
-                  <p className={`mt-1 font-semibold ${selectedResident.accountBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    PHP {selectedResident.accountBalance.toFixed(2)}
-                  </p>
+                  <label className="text-sm font-medium text-gray-700">Connection Status</label>
+                  <div className="mt-1">
+                    <Badge
+                      variant="outline"
+                      className="capitalize"
+                    >
+                      {selectedResident.connectionStatus}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Previous Reading</label>
+                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.previousReading} m³</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Present Reading</label>
+                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.presentReading} m³</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Status</label>
@@ -387,6 +420,12 @@ export default function SecretaryResidents() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Add Resident Modal */}
+      <CreateResidentModal 
+        isOpen={isResidentModalOpen} 
+        onClose={handleCloseModal} 
+      />
     </div>
   );
 }

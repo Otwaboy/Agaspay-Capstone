@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,13 +17,16 @@ import { authManager } from "../../lib/auth";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function CreateResidentModal({ isOpen, onClose }) {
+  
+     
+
 
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     meterNo: "",
     purok: "",
-    email: "",
+    email: "", 
     phone: "",
     zone: "",
     type: "",
@@ -352,5 +355,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         </form>
       </DialogContent>
     </Dialog>
+
+    
   );
 }   

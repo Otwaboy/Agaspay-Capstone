@@ -49,7 +49,7 @@ const getWaterConnections = async (req, res) => {
 
 
     // Map each connection with extra details
-    const connectionDetails = await Promise.all(
+    const data = await Promise.all(
       connections.map(async (conn) => {
         const lastReading = await Reading.findOne({ connection_id: conn._id })
     
@@ -59,10 +59,13 @@ const getWaterConnections = async (req, res) => {
           full_name: conn.resident_id
             ? `${conn.resident_id.first_name} ${conn.resident_id.last_name}`
             : "Unknown",
-          purok_no: conn.resident_id?.purok || "N/A", // from Resident
+          address: `Biking ${conn.resident_id.zone}, Purok ${conn.resident_id.purok}`,
           meter_no: conn.meter_no,
           connection_status: conn.connection_status,
           type: conn.type,
+          contact_no: conn.resident_id.contact_no,
+          email: conn.resident_id.email,
+          status: conn.resident_id.status,
           previous_reading: lastReading ? lastReading.previous_reading : 0,
           present_reading: lastReading ? lastReading.present_reading : 0,
         };
@@ -71,10 +74,12 @@ const getWaterConnections = async (req, res) => {
 
     res.status(200).json({
       message: "Connections fetched successfully",
-      connection_details: connectionDetails,
+       data,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 module.exports = { getLatestConnections, getWaterConnections };
