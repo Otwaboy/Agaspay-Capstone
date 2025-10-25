@@ -89,11 +89,11 @@ function SidebarContent() {
       {/* Logo Section */}
       <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
         <div className="flex items-center">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <Droplets className="h-6 w-6 text-white" />
+          <div className="bg-blue-500 p-2 rounded-4xl">
+            <Droplets className="h-9 w-9 text-white" />
           </div>
           <div className="ml-3">
-            <h2 className="text-lg font-bold text-gray-900">AGASPAY</h2>
+            <h2 className="text-xl font-bold text-gray-900">AGASPAY</h2>
             <p className="text-xs text-gray-500">Waterworks Admin</p>
           </div>
         </div>

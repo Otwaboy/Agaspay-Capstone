@@ -43,16 +43,15 @@ const getLatestConnections = async (req, res) => {
 
 const getWaterConnections = async (req, res) => {
   try {
-    // Only fetch active connections
-    const connections = await WaterConnection.find({ connection_status: "pending" })
+    // ✅ FIXED: Fetch ALL connections, not just pending
+    const connections = await WaterConnection.find({})
       .populate("resident_id"); // get resident details
-
 
     // Map each connection with extra details
     const data = await Promise.all(
       connections.map(async (conn) => {
         const lastReading = await Reading.findOne({ connection_id: conn._id })
-    
+          .sort({ createdAt: -1 });
 
         return {
           connection_id: conn._id,
@@ -74,7 +73,7 @@ const getWaterConnections = async (req, res) => {
 
     res.status(200).json({
       message: "Connections fetched successfully",
-       data,
+      data,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -86,7 +85,8 @@ const getWaterConnections = async (req, res) => {
 
 const editResidentAccount = async (req, res) => {
   try {
-    const { connection_id } = req.params; // Get connection ID from URL params
+    // ✅ FIXED: Changed from { connection_id } to { id }
+    const {connection_id } = req.params; // Get connection ID from URL params
     const updateData = req.body; // Get updated data from request body
 
     // Find the water connection first
@@ -160,14 +160,9 @@ const editResidentAccount = async (req, res) => {
       message: error.message || "Failed to update resident account" 
     });
   }
-};
+};;
 
-// Export the controller
-module.exports = {
-  getWaterConnections,
-  editResidentAccount,
-  // ... other controllers
-};
+
 
 
 module.exports = { getLatestConnections, getWaterConnections,  editResidentAccount };

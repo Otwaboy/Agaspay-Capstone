@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/use-auth";
 import SecretarySidebar from "../components/layout/secretary-sidebar";
 import SecretaryTopHeader from "../components/layout/secretary-top-header";
 import CreateResidentModal from "../components/modals/create-resident-modal";
+import EditResidentModal from "../components/modals/edit-resident-modal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -43,6 +44,8 @@ export default function SecretaryResidents() {
   const [selectedResident, setSelectedResident] = useState(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [residentToEdit, setResidentToEdit] = useState(null);
 
   // Fetch water connections from backend
   const { data: residents = [], isLoading, error } = useQuery({
@@ -51,9 +54,15 @@ export default function SecretaryResidents() {
       const res = await apiClient.getWaterConnections();
       const connections = res.data;
       
+      // Debug: Log the first connection to see the structure
+      if (connections && connections.length > 0) {
+        console.log('🔍 First connection from backend:', connections[0]);
+        console.log('🔍 Available fields:', Object.keys(connections[0]));
+      }
+      
       // Map backend data to frontend format
       return connections.map((conn) => ({
-        id: conn.connection_id,
+        id: conn.connection_id || conn._id,
         name: conn.full_name,
         address: conn.address,
         contactNo: conn.contact_no,
@@ -69,10 +78,13 @@ export default function SecretaryResidents() {
   });
 
   const filteredResidents = residents.filter(resident => {
+
+    //search
     const matchesSearch = resident.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          resident.contactNo.includes(searchQuery) ||
                          resident.address.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterStatus === "all" || resident.status === filterStatus;
+      //filter
+    const matchesFilter = filterStatus === "all" || resident.connectionStatus === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
@@ -84,6 +96,18 @@ export default function SecretaryResidents() {
   const handleCloseModal = () => {
     setIsResidentModalOpen(false);
     // Refetch water connections after creating a new resident
+    queryClient.invalidateQueries({ queryKey: ['/api/water-connections'] });
+  };
+
+  const handleEditResident = (resident) => {
+    setResidentToEdit(resident);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setResidentToEdit(null);
+    // Refetch water connections after updating a resident
     queryClient.invalidateQueries({ queryKey: ['/api/water-connections'] });
   };
 
@@ -149,9 +173,9 @@ export default function SecretaryResidents() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Inactive</p>
+                      <p className="text-sm font-medium text-gray-600">Disconnected</p>
                       <p className="text-2xl font-bold text-orange-600" data-testid="text-inactive-residents">
-                        {isLoading ? "..." : residents.filter(r => r.status === "inactive").length}
+                        {isLoading ? "..." : residents.filter(r => r.connectionStatus === "disconnected").length}
                       </p>
                     </div>
                     <div className="bg-orange-100 p-3 rounded-lg">
@@ -200,6 +224,7 @@ export default function SecretaryResidents() {
                 </div>
               </CardHeader>
               <CardContent>
+                
                 {/* Search and Filter */}
                 <div className="flex flex-col md:flex-row gap-4 mb-6">
                   <div className="flex-1 relative">
@@ -215,12 +240,13 @@ export default function SecretaryResidents() {
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
                     <SelectTrigger className="w-full md:w-48" data-testid="select-status-filter">
                       <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Filter by status" />
+                      <SelectValue placeholder="Filter by connection status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="disconnected">Disconnected</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -279,16 +305,22 @@ export default function SecretaryResidents() {
                               </TableCell>
                               <TableCell>
                                 <Badge
-                                  variant={resident.status === "active" ? "success" : "secondary"}
-                                  className={
-                                    resident.status === "active"
-                                      ? "bg-green-100 text-green-700 hover:bg-green-100"
-                                      : "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                                  }
-                                  data-testid={`badge-status-${resident.id}`}
-                                >
-                                  {resident.status}
-                                </Badge>
+                                    variant={resident.connectionStatus === "active" ? "success" : "secondary"}
+                                    className={`
+                                      ${
+                                        resident.connectionStatus === "active"
+                                          ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                          : resident.connectionStatus === "pending"
+                                          ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+                                          : resident.connectionStatus === "disconnected"
+                                          ? "bg-red-100 text-red-700 hover:bg-red-100"
+                                          : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                                      }
+                                    `}
+                                    data-testid={`badge-status-${resident.id}`}
+                                  >
+                                    {resident.connectionStatus.charAt(0).toUpperCase() + resident.connectionStatus.slice(1)}
+                                  </Badge>
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
@@ -304,6 +336,7 @@ export default function SecretaryResidents() {
                                   <Button
                                     size="sm"
                                     variant="outline"
+                                    onClick={() => handleEditResident(resident)}
                                     data-testid={`button-edit-${resident.id}`}
                                   >
                                     <Edit className="h-4 w-4 mr-1" />
@@ -425,6 +458,13 @@ export default function SecretaryResidents() {
       <CreateResidentModal 
         isOpen={isResidentModalOpen} 
         onClose={handleCloseModal} 
+      />
+
+      {/* Edit Resident Modal */}
+      <EditResidentModal 
+        isOpen={isEditModalOpen} 
+        onClose={handleCloseEditModal}
+        resident={residentToEdit}
       />
     </div>
   );

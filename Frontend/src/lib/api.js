@@ -145,6 +145,14 @@ async sendOverdueReminder(billingId) {
     return await this.request('/api/v1/water-connection');
   }
 
+// Update resident account (edit)
+async updateResidentAccount(connectionId, updateData) {
+  return await this.request(`/api/v1/water-connection/${connectionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updateData),
+  });
+}
+
   //getlatestReading
     async getLatestReadings() {
     return await this.request('/api/v1/meter-reader/latest-readings');

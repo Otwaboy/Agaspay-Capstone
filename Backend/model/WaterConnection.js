@@ -10,14 +10,14 @@ const WaterConnectionSchema = new mongoose.Schema({
   },
   meter_no: 
   {
-    type: String,
+    type: String, 
     required: [true, 'Meter number is required'],
     unique: true
   },
   connection_status: 
   {
     type: String,
-    enum: ['pending', 'active', 'disconnected', 'reconnected'],
+    enum: ['pending', 'active', 'disconnected'],
     default: 'pending'
   },
   // purok: 

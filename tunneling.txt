@@ -18,3 +18,11 @@ topheader
  <div className="flex items-center justify-between px-6 py-6">
 
 ngrok http 3000 
+
+
+
+
+
+delete a folder
+
+Remove-Item -Recurse -Force .\src\assets\attached_assets
