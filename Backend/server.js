@@ -34,6 +34,7 @@ const billingRoutes = require('./routes/billing')
 const paymentRoutes = require('./routes/payment')
 const manageUserRoutes = require('./routes/manage-user')
 const waterConnectionRoutes = require('./routes/water-connection')
+const IncidentReportRoutes = require('./routes/Incident-reports')
 
 
 //cors
@@ -54,6 +55,7 @@ app.use('/api/v1/billing', billingRoutes)
 app.use('/api/v1/payment', paymentRoutes) 
 app.use('/api/v1/user', manageUserRoutes)
 app.use('/api/v1/water-connection', waterConnectionRoutes)
+app.use('/api/v1/incident-report', IncidentReportRoutes)
 
 
 //webhooks

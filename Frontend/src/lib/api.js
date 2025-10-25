@@ -56,6 +56,13 @@ async updatePaymentStatus(paymentId) {
   }
 }
 
+ // Incident Reports API
+  async createIncidentReport(reportData) {
+    return await this.request('/api/v1/incident-report', {
+      method: 'POST',
+      body: JSON.stringify(reportData),
+    });
+  }
 
   //create billing api
   //send this api to the backend

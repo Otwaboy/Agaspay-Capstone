@@ -4,7 +4,7 @@ const WaterConnection = require('../model/WaterConnection');
 
 const {UnauthorizedError, BadRequestError} = require('../errors')
 
-
+ 
 const getAllConnectionIDs = async (req, res) => {
 
     const user = req.user

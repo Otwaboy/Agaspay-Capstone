@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+ 
 const ResidentSchema = new mongoose.Schema(
   {
     user_id:
