@@ -61,7 +61,7 @@ const createTask = async (req, res) => {
       task_type,
       schedule_date: new Date(schedule_date),
       schedule_time,
-      task_status: task_status || 'Pending',
+      task_status: task_status || 'Unassigned',
       scheduled_by: user.userId, // ✅ Using user.userId
       description: description || '',
       assigned_to: assigned_to || null
@@ -172,7 +172,7 @@ const updateTaskStatus = async (req, res) => {
     });
   }
 
-  const validStatuses = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+  const validStatuses = ['Unassigned', 'Scheduled', 'Completed', 'Cancelled'];
   if (!validStatuses.includes(task_status)) {
     return res.status(400).json({
       success: false,

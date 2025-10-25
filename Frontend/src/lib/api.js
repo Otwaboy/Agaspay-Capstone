@@ -2,8 +2,8 @@
 // 📦 API Client Utility for AGASPAY System
 // ======================================================
 
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://your-backend-domain.com'
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-backend-domain.com' 
   : 'http://localhost:3000';
 
 class ApiClient {
@@ -17,7 +17,7 @@ class ApiClient {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('agaspay_token');
-
+    
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -42,78 +42,12 @@ class ApiClient {
     } catch (error) {
       console.error('API Request failed:', error);
       throw error;
-    }
+    } 
   }
 
   // ======================================================
-  // 💧 WATER CONNECTION (Secretary / Admin)
+  // 💳 PAYMENT API
   // ======================================================
-  async getWaterConnections() {
-    return await this.request('/api/v1/water-connection');
-  }
-
-  async updateResidentAccount(connectionId, updateData) {
-    return await this.request(`/api/v1/water-connection/${connectionId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
-    });
-  }
-
-  // ======================================================
-  // 🧾 BILLING (Treasurer / Admin)
-  // ======================================================
-  async createBilling(billData) {
-    try {
-      return await this.request('/api/v1/billing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(billData),
-      });
-    } catch (error) {
-      console.error("Billing creation failed:", error);
-      throw error;
-    }
-  }
-
-  async getOverdueBilling() {
-    try {
-      return await this.request('/api/v1/billing/overdue-billing');
-    } catch (error) {
-      console.log("Fetching overdue billing:", error);
-      throw error;
-    }
-  }
-
-  async getCurrentBill() {
-    return await this.request('/api/v1/billing');
-  }
-
-  async sendOverdueReminder(billingId) {
-    return await this.request('/api/v1/billing/send-reminder', {
-      method: 'POST',
-      body: JSON.stringify({ billingId }),
-    });
-  }
-
-  // ======================================================
-  // 💳 PAYMENT (Treasurer / Resident)
-  // ======================================================
-  async createPayment(paymentData) {
-    return await this.request('/api/v1/payment', {
-      method: 'POST',
-      body: JSON.stringify(paymentData),
-    });
-  }
-
-  async getRecentPayment() {
-    try {
-      return await this.request('/api/v1/payment');
-    } catch (error) {
-      console.log("Fetching getRecentPayment:", error);
-      throw error;
-    }
-  }
-
   async updatePaymentStatus(paymentId) {
     try {
       return await this.request(`/api/v1/payment/${paymentId}`, {
@@ -124,6 +58,53 @@ class ApiClient {
       console.error("❌ Payment status update failed:", error);
       throw error;
     }
+  }
+
+  async getRecentPayment() {
+    try {
+      return await this.request('/api/v1/payment');
+    } catch (error) {
+      console.log("fetching getrecentpayment:", error);
+      throw error;
+    }
+  }
+
+  async createPayment(paymentData) {
+    return await this.request('/api/v1/payment', {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  }
+
+  // ======================================================
+  // 🧾 BILLING API (Treasurer / Admin)
+  // ======================================================
+  async createBilling(billData) {
+    try {
+      return await this.request('/api/v1/billing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(billData),
+      });
+    } catch (error) {
+      console.error("YAWA RA Billing creation failed:", error);
+      throw error;
+    }
+  }
+
+  async getCurrentBill() {
+    return await this.request('/api/v1/billing');
+  }
+
+  async getOverdueBilling() {
+    return await this.request('/api/v1/billing/overdue-billing');
+  }
+
+  async sendOverdueReminder(billingId) {
+    return await this.request('/api/v1/billing/send-reminder', {
+      method: 'POST',
+      body: JSON.stringify({ billingId }),
+    });
   }
 
   // ======================================================
@@ -146,13 +127,13 @@ class ApiClient {
         body: JSON.stringify(rateAmount),
       });
     } catch (error) {
-      console.error("Adding rate amount failed:", error);
+      console.error("Billing creation failed:", error);
       throw error;
     }
   }
 
   // ======================================================
-  // 🔧 METER READER MODULE (Meter Reader)
+  // 🔧 METER READER MODULE
   // ======================================================
   async inputReading(requestData) {
     try {
@@ -162,7 +143,7 @@ class ApiClient {
         body: JSON.stringify(requestData),
       });
     } catch (error) {
-      console.error("Inputting reading failed:", error);
+      console.error("YAWA RA inputing reading is failed failed:", error);
       throw error;
     }
   }
@@ -176,6 +157,27 @@ class ApiClient {
   }
 
   // ======================================================
+  // 💧 WATER CONNECTION (Secretary / Admin)
+  // ======================================================
+  async getWaterConnections() {
+    return await this.request('/api/v1/water-connection');
+  }
+
+  async updateResidentAccount(connectionId, updateData) {
+    return await this.request(`/api/v1/water-connection/${connectionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  // ======================================================
+  // 👤 USER MANAGEMENT
+  // ======================================================
+  async getUserAccount() {
+    return await this.request('/api/v1/user');
+  }
+
+  // ======================================================
   // 🚨 INCIDENT REPORTS (Resident / Meter Reader)
   // ======================================================
   async createIncidentReport(reportData) {
@@ -185,47 +187,82 @@ class ApiClient {
     });
   }
 
-  async getIncidentReports(){
-    return await this.request('/api/v1/incident-report')
+  async getIncidentReports() {
+    return await this.request('/api/v1/incident-report');
   }
 
-  
-
-  // ======================================================
-  // 👤 USER MANAGEMENT (Resident / Personnel)
-  // ======================================================
-  async getUserAccount() {
-    return await this.request('/api/v1/user');
+  async getIncidentReportById(reportId) {
+    return await this.request(`/api/v1/incident-report/${reportId}`);
   }
 
-
+  async updateIncidentReport(reportId, updateData) {
+    return await this.request(`/api/v1/incident-report/${reportId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
 
   // ======================================================
-  // 🚨 SCHEDULE TASK (Resident / Meter Reader)
+  // 📅 SCHEDULE TASK (Secretary / Admin)
   // ======================================================
   async createScheduleTask(taskData) {
     return await this.request('/api/v1/schedule-task', {
       method: 'POST',
       body: JSON.stringify(taskData),
     });
-  } 
+  }
 
-   
+  async getScheduleTasks() {
+    return await this.request('/api/v1/schedule-tasks');
+  }
+
+  async updateTaskStatus(taskId, statusData) {
+    return await this.request(`/api/v1/schedule-tasks/${taskId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(statusData),
+    });
+  }
+
+  async deleteScheduleTask(taskId) {
+    return await this.request(`/api/v1/schedule-tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+  }
 
   // ======================================================
-  // 🚨 SCHEDULE TASK (Resident / Meter Reader)
+  // 📋 ASSIGNMENT API (Secretary / Admin)
   // ======================================================
-
   async createAssignment(assignmentData) {
     return await this.request('/api/v1/assignments', {
       method: 'POST',
       body: JSON.stringify(assignmentData),
     });
   }
+
   async getAssignments() {
     return await this.request('/api/v1/assignments');
   }
 
+  async getUnassignedTasks() {
+    return await this.request('/api/v1/assignments/unassigned-tasks');
+  }
+
+  async getMaintenancePersonnel() {
+    return await this.request('/api/v1/assignments/maintenance-personnel');
+  }
+
+  async updateAssignment(assignmentId, updateData) {
+    return await this.request(`/api/v1/assignments/${assignmentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteAssignment(assignmentId) {
+    return await this.request(`/api/v1/assignments/${assignmentId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

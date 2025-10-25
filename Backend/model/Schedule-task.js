@@ -27,8 +27,8 @@ const ScheduleTaskSchema = new mongoose.Schema(
     },
     task_status: {
       type: String,
-      enum: ['Pending', 'In Progress', 'Completed', 'Cancelled'],
-      default: 'Pending',
+      enum: ['Unassigned', 'Scheduled', 'Completed', 'Cancelled'],
+      default: 'Unassigned',  // Match the enum!
     },
     scheduled_by: {
       type: mongoose.Schema.Types.ObjectId,
@@ -36,7 +36,7 @@ const ScheduleTaskSchema = new mongoose.Schema(
       required: [true, 'Please provide the user who scheduled the task'],
     },
   },
-  { timestamps: true }
+  { timestamps: true } 
   
 );
 

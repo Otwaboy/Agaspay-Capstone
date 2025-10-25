@@ -104,29 +104,29 @@ export default function SecretaryAssignments() {
   const allTasks = [
     ...unassignedTasks.map(task => ({
       id: task.id,
-      type: task.type,
-      location: task.location,
-      scheduledDate: task.scheduled_date,
-      timeSlot: task.time_slot,
-      priority: task.priority,
+      type: task.task_type,
+      location: task.report?.description || 'N/A',
+      scheduledDate: task.schedule_date,
+      timeSlot: task.schedule_time,
+      priority: task.report?.urgency_level?.toLowerCase() || 'medium',
       status: 'Unassigned',
       assignedTo: null,
-      notes: task.notes,
+      notes: '',
       reportDescription: task.report?.description || '',
     })),
     ...assignments.map(assignment => ({
       id: assignment.task.id,
       assignmentId: assignment.id,
-      type: assignment.task.type,
-      location: assignment.task.location,
-      scheduledDate: assignment.task.scheduled_date,
-      timeSlot: assignment.task.time_slot,
-      priority: assignment.task.priority,
-      status: assignment.task.status,
+      type: assignment.task.task_type,
+      location: 'N/A',
+      scheduledDate: assignment.task.schedule_date,
+      timeSlot: assignment.task.schedule_time,
+      priority: 'medium',
+      status: assignment.task.task_status,
       assignedTo: assignment.personnel.name,
       assignedToId: assignment.personnel.id,
       assignedToContact: assignment.personnel.contact_no,
-      notes: assignment.task.notes,
+      notes: '',
       reportDescription: '',
     })),
   ];
@@ -257,9 +257,9 @@ export default function SecretaryAssignments() {
 
   const statusConfig = {
     Unassigned: { color: "bg-gray-100 text-gray-700", label: "Unassigned" },
-    Assigned: { color: "bg-blue-100 text-blue-700", label: "Assigned" },
-    "In Progress": { color: "bg-yellow-100 text-yellow-700", label: "In Progress" },
+    Scheduled: { color: "bg-blue-100 text-blue-700", label: "Scheduled" },
     Completed: { color: "bg-green-100 text-green-700", label: "Completed" },
+    Cancelled: { color: "bg-red-100 text-red-700", label: "Cancelled" },
   };
 
   const unassignedCount = allTasks.filter(t => t.status === "Unassigned").length;
