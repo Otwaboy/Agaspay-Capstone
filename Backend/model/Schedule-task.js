@@ -5,7 +5,12 @@ const ScheduleTaskSchema = new mongoose.Schema(
     connection_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'WaterConnection',
-      required: [true, 'Please provide a water connection'],
+      required: false, // not all tasks come from connection
+    },
+    report_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'IncidentReport',
+      required: false, // not all tasks come from reports
     },
     task_type: {
       type: String,
@@ -32,6 +37,7 @@ const ScheduleTaskSchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
+  
 );
 
 module.exports = mongoose.model('ScheduleTask', ScheduleTaskSchema);

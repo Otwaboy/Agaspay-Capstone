@@ -35,6 +35,8 @@ const paymentRoutes = require('./routes/payment')
 const manageUserRoutes = require('./routes/manage-user')
 const waterConnectionRoutes = require('./routes/water-connection')
 const IncidentReportRoutes = require('./routes/Incident-reports')
+const scheduleTaskRoutes = require('./routes/schedule-task')
+const assignmentRoutes= require('./routes/assignments')
 
 
 //cors
@@ -56,6 +58,8 @@ app.use('/api/v1/payment', paymentRoutes)
 app.use('/api/v1/user', manageUserRoutes)
 app.use('/api/v1/water-connection', waterConnectionRoutes)
 app.use('/api/v1/incident-report', IncidentReportRoutes)
+app.use('/api/v1/schedule-task', scheduleTaskRoutes)
+app.use('/api/v1/assignments', assignmentRoutes)
 
 
 //webhooks

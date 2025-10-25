@@ -21,9 +21,9 @@ import SecretaryAnnouncements from "./pages/secretary-announcements";
 import SecretaryResidents from "./pages/secretary-residents";
 import SecretaryRegistration from "./pages/secretary-registration";
 import SecretaryDocuments from "./pages/secretary-documents";
-import SecretaryAppointments from "./pages/secretary-appointments";
+import SecretaryIncidentReports from "./pages/secretary-incident-reports";
 import SecretarySettings from "./pages/secretary-settings";
-import SecretaryApplications from "./pages/secretary-applications";
+import SecretaryAssignments from "./pages/secretary-assignments";
 
 //meter- reader
 import MeterReaderDashboard from "./pages/meter-reader-dashboard";
@@ -149,14 +149,14 @@ function App() {
             <Route path="/secretary-dashboard/applications">
               {() => (
                 <SecretaryRoute>
-                  <SecretaryApplications />
+                  <SecretaryIncidentReports />
                 </SecretaryRoute>
               )}
             </Route>          
             <Route path="/secretary-dashboard/appointments">
               {() => (
                 <SecretaryRoute>
-                  <SecretaryAppointments/>
+                  <SecretaryAssignments/>
                 </SecretaryRoute>
               )}
             </Route>            
