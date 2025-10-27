@@ -10,12 +10,7 @@ const ScheduleTaskSchema = new mongoose.Schema(
     report_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'IncidentReport',
-      required: false, // not all tasks come from reports
-    },
-    task_type: {
-      type: String,
-      enum: ['Meter Reading', 'Maintenance', 'Billing Preparation', 'Inspection', 'Other'],
-      required: [true, 'Please specify the type of task'],
+      required: false, // not all tasks come from reports 
     },
     schedule_date: {
       type: Date,
@@ -37,7 +32,7 @@ const ScheduleTaskSchema = new mongoose.Schema(
     },
   },
   { timestamps: true } 
-  
+    
 );
 
 module.exports = mongoose.model('ScheduleTask', ScheduleTaskSchema);

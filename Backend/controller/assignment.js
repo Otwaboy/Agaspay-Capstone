@@ -78,7 +78,7 @@ const createAssignment = async (req, res) => {
       assigned_to,
     });
 
-    // ✅ Update task status to 'Assigned'
+    // ✅ Update task status to 'Scheduled' (assigned and ready)
     await ScheduleTask.findByIdAndUpdate(task_id, { task_status: 'Scheduled' });
 
     // ✅ Populate assignment details
@@ -112,26 +112,44 @@ const createAssignment = async (req, res) => {
 /**
  * Controller: getAssignments
  * 
- * Purpose: Get all assignments (tasks with assigned personnel)
- * Access: Secretary and Admin
+ * Purpose: Get assignments based on user role
+ * Access: Secretary, Admin, and Maintenance
+ * 
+ * Behavior:
+ * - Secretary & Admin: Get ALL assignments
+ * - Maintenance: Get only their assigned tasks
  * 
  * Returns:
- * - List of all assignments with task and personnel details
+ * - List of assignments with task and personnel details
  */
 const getAssignments = async (req, res) => {
   try {
     const user = req.user;
-
-    // ✅ Only secretary and admin can view all assignments
-    if (!['secretary', 'admin'].includes(user.role)) {
+    // ✅ Allow secretary, admin, and maintenance to access
+    if (!['secretary', 'admin', 'maintenance'].includes(user.role)) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: 'Unauthorized access',
       });
     }
-
-    // ✅ Fetch all assignments with populated details
-    const assignments = await Assignment.find()
+    let assignmentQuery = {};
+    // ✅ If maintenance, filter by their personnel ID
+    if (user.role === 'maintenance') {
+      // Find the personnel record for this logged-in user
+      const personnel = await Personnel.findOne({ user_id: user.userId });
+      
+      if (!personnel) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Personnel record not found for this user',
+        });
+      }
+      // Filter assignments to only show tasks assigned to this personnel
+      assignmentQuery = { assigned_to: personnel._id };
+      console.log(`🔧 Maintenance user ${user.userId} filtering by personnel ${personnel._id}`);
+    }
+    // ✅ Fetch assignments (all for secretary/admin, filtered for maintenance)
+    const assignments = await Assignment.find(assignmentQuery)
       .populate({
         path: 'task_id',
         populate: {
@@ -143,13 +161,11 @@ const getAssignments = async (req, res) => {
         select: 'first_name last_name contact_no role assigned_zone',
       })
       .sort({ createdAt: -1 });
-
     // ✅ Format assignments for frontend
     const formattedAssignments = assignments.map(assignment => {
       const task = assignment.task_id;
       const personnel = assignment.assigned_to;
       const report = task?.report_id;
-
       return {
         id: assignment._id,
         task: {
@@ -161,6 +177,7 @@ const getAssignments = async (req, res) => {
           connection_id: task?.connection_id,
           scheduled_by: task?.scheduled_by,
           report_id: report?._id,
+          location: report?.location || 'N/A', // ✅ Added location from incident report
         },
         personnel: {
           id: personnel?._id,
@@ -172,13 +189,11 @@ const getAssignments = async (req, res) => {
         assigned_at: assignment.createdAt,
       };
     });
-
     res.status(StatusCodes.OK).json({
       success: true,
       assignments: formattedAssignments,
       count: formattedAssignments.length,
     });
-
   } catch (error) {
     console.error('🔥 getAssignments error:', error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -201,6 +216,7 @@ const getAssignments = async (req, res) => {
 const getUnassignedTasks = async (req, res) => {
   try {
     const user = req.user;
+
     // ✅ Only secretary can view unassigned tasks
     if (user.role !== 'secretary') {
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -208,8 +224,10 @@ const getUnassignedTasks = async (req, res) => {
         message: 'Unauthorized. Only secretary can view unassigned tasks.',
       });
     }
+
     // ✅ Get all assigned task IDs
     const assignedTaskIds = await Assignment.find().distinct('task_id');
+
     // ✅ Find scheduled tasks that are not in the assigned list
     const unassignedTasks = await ScheduleTask.find({
       _id: { $nin: assignedTaskIds },
@@ -217,9 +235,12 @@ const getUnassignedTasks = async (req, res) => {
     })
       .populate('report_id')
       .sort({ schedule_date: 1, schedule_time: 1 });
+
     // ✅ Format tasks for frontend
     const formattedTasks = unassignedTasks.map(task => {
       const report = task.report_id;
+      
+
       return {
         id: task._id,
         task_type: task.task_type,
@@ -237,11 +258,13 @@ const getUnassignedTasks = async (req, res) => {
         created_at: task.createdAt,
       };
     });
+
     res.status(StatusCodes.OK).json({
       success: true,
       tasks: formattedTasks,
       count: formattedTasks.length,
     });
+
   } catch (error) {
     console.error('🔥 getUnassignedTasks error:', error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -429,9 +452,9 @@ const deleteAssignment = async (req, res) => {
       });
     }
 
-    // ✅ Reset task status to 'Scheduled'
+    // ✅ Reset task status to 'Unassigned'
     await ScheduleTask.findByIdAndUpdate(assignment.task_id, {
-      task_status: 'Scheduled',
+      task_status: 'Unassigned',
     });
 
     console.log('✅ Assignment deleted:', id);

@@ -11,9 +11,10 @@ import {
   MessageSquare,
   LogOut,
   Menu,
+  AlertTriangle,
   UserPlus,
   Settings,
-  Droplets
+  Droplets,
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -43,14 +44,14 @@ const secretaryMenuItems = [
     color: "text-orange-600"
   },
   {
-    icon: ClipboardList,
-    label: "Applications",
+    icon: AlertTriangle,
+    label: "Incident Reports",
     href: "/secretary-dashboard/applications",
     color: "text-cyan-600"
   },
   {
     icon: Calendar,
-    label: "Appointments",
+    label: "Assignments",
     href: "/secretary-dashboard/appointments",
     color: "text-teal-600"
   },

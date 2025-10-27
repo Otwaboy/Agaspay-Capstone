@@ -24,6 +24,7 @@ import { Textarea } from "../components/ui/textarea";
 import MaintenanceSidebar from "../components/layout/maintenance-sidebar";
 import MaintenanceTopHeader from "../components/layout/maintenance-top-header";
 import { useToast } from "../hooks/use-toast";
+import { apiClient } from "../lib/api";
 import {
   Wrench,
   MapPin,
@@ -45,82 +46,37 @@ export default function MaintenanceTasks() {
   const [remarks, setRemarks] = useState("");
   const { toast } = useToast();
 
-  // Mock data - replace with actual API calls
-  const { data: tasksData, isLoading, refetch } = useQuery({
-    queryKey: ['/api/maintenance/tasks'],
+  // Fetch assignments from backend (filtered by maintenance role automatically)
+  const { data: assignmentsResponse, isLoading, refetch } = useQuery({
+    queryKey: ['/api/v1/assignments'],
     queryFn: async () => {
-      // Replace with actual API call
-      return [
-        {
-          id: 1,
-          type: 'Installation',
-          location: 'Purok 4, Biking 1',
-          resident: 'Juan Dela Cruz',
-          connectionId: 'WC-2024-001',
-          status: 'pending',
-          priority: 'high',
-          scheduledDate: '2025-10-16',
-          scheduledTime: '09:00 AM',
-          assignedDate: '2025-10-15',
-          description: 'New water meter installation for new connection'
-        },
-        {
-          id: 2,
-          type: 'Disconnection',
-          location: 'Purok 2, Biking 2',
-          resident: 'Maria Santos',
-          connectionId: 'WC-2024-002',
-          status: 'in_progress',
-          priority: 'medium',
-          scheduledDate: '2025-10-16',
-          scheduledTime: '10:30 AM',
-          assignedDate: '2025-10-15',
-          description: 'Disconnection due to non-payment'
-        },
-        {
-          id: 3,
-          type: 'Reconnection',
-          location: 'Purok 5, Biking 1',
-          resident: 'Pedro Garcia',
-          connectionId: 'WC-2024-003',
-          status: 'pending',
-          priority: 'high',
-          scheduledDate: '2025-10-17',
-          scheduledTime: '11:00 AM',
-          assignedDate: '2025-10-16',
-          description: 'Reconnection after payment settlement'
-        },
-        {
-          id: 4,
-          type: 'Repair',
-          location: 'Purok 7, Biking 3',
-          resident: 'Anna Reyes',
-          connectionId: 'WC-2024-004',
-          status: 'completed',
-          priority: 'urgent',
-          scheduledDate: '2025-10-15',
-          scheduledTime: '02:00 PM',
-          assignedDate: '2025-10-15',
-          completedDate: '2025-10-15',
-          description: 'Emergency pipe leak repair'
-        },
-        {
-          id: 5,
-          type: 'Installation',
-          location: 'Purok 3, Biking 2',
-          resident: 'Jose Cruz',
-          connectionId: 'WC-2024-005',
-          status: 'scheduled',
-          priority: 'medium',
-          scheduledDate: '2025-10-18',
-          scheduledTime: '01:00 PM',
-          assignedDate: '2025-10-16',
-          description: 'Water meter installation'
-        }
-      ];
+      const response = await apiClient.getAssignments();
+      return response;
     },
     retry: 1
   });
+
+  // Transform backend data to match UI format
+  const tasksData = assignmentsResponse?.assignments?.map(assignment => ({
+    id: assignment.id,
+    assignmentId: assignment.id,
+    type: assignment.task?.task_type || 'N/A',
+    location: assignment.task?.location || 'N/A',
+    resident: assignment.personnel?.name || 'N/A',
+    connectionId: assignment.task?.connection_id || 'N/A',
+    status: assignment.task?.task_status?.toLowerCase() || 'scheduled',
+    priority: 'medium', // Not available in current backend response
+    scheduledDate: assignment.task?.schedule_date 
+      ? new Date(assignment.task.schedule_date).toLocaleDateString() 
+      : 'N/A',
+    scheduledTime: assignment.task?.schedule_time || 'N/A',
+    assignedDate: assignment.assigned_at 
+      ? new Date(assignment.assigned_at).toLocaleDateString() 
+      : 'N/A',
+    description: `${assignment.task?.task_type || 'Task'} scheduled`,
+    personnelName: assignment.personnel?.name,
+    personnelContact: assignment.personnel?.contact_no,
+  })) || [];
 
   const updateTaskMutation = useMutation({
     mutationFn: async ({ taskId, status, remarks }) => {
@@ -150,16 +106,16 @@ export default function MaintenanceTasks() {
 
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
+      case 'unassigned':
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Unassigned</Badge>;
       case 'scheduled':
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Scheduled</Badge>;
-      case 'in_progress':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Scheduled</Badge>;
       case 'completed':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completed</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Cancelled</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">{status}</Badge>;
     }
   };
 
@@ -255,10 +211,10 @@ export default function MaintenanceTasks() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -335,11 +291,11 @@ export default function MaintenanceTasks() {
                             <p className="text-xs text-gray-500 mt-1">Connection ID: {task.connectionId}</p>
                           </div>
 
-                          {task.status !== 'completed' && (
+                          {task.status !== 'completed' && task.status !== 'cancelled' && (
                             <Button
                               onClick={() => {
                                 setSelectedTask(task);
-                                setNewStatus(task.status === 'pending' ? 'in_progress' : 'completed');
+                                setNewStatus('completed');
                                 setIsUpdateModalOpen(true);
                               }}
                               data-testid={`button-update-task-${task.id}`}
@@ -386,9 +342,8 @@ export default function MaintenanceTasks() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -577,7 +577,7 @@ export default function SecretaryIncidentReports() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-700">Name</label>
-                    <p className="text-gray-900 mt-1">{selectedReport.reported_by?.name || "Unknown"}</p>
+                    <p className="text-gray-900 mt-1">{selectedReport.reported_by || "Unknown"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-700">Report ID</label>
@@ -714,22 +714,10 @@ export default function SecretaryIncidentReports() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
+            {/* <div>
               <Label htmlFor="task-type">Task Type *</Label>
-              <Select
-                value={taskForm.task_type}
-                onValueChange={(value) => setTaskForm({ ...taskForm, task_type: value })}
-              >
-                <SelectTrigger id="task-type" data-testid="select-task-type">
-                  <SelectValue placeholder="Select task type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {taskTypes.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+            </div> */}
 
             <div>
               <Label htmlFor="schedule-date">Schedule Date *</Label>

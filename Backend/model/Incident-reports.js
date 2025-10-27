@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+  
 const IncidentReportSchema = new mongoose.Schema(
   {
     type: {
@@ -22,7 +22,7 @@ const IncidentReportSchema = new mongoose.Schema(
     },
     reported_issue_status: {
       type: String,
-      enum: ['Pending','Completed'],
+      enum: ['Pending','Completed', 'Cancelled'],
       default: 'Pending',
     },
     reported_at: {

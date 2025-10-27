@@ -104,7 +104,7 @@ export default function SecretaryAssignments() {
   const allTasks = [
     ...unassignedTasks.map(task => ({
       id: task.id,
-      type: task.task_type,
+      type: task.report.type,
       location: task.report?.description || 'N/A',
       scheduledDate: task.schedule_date,
       timeSlot: task.schedule_time,
@@ -114,10 +114,11 @@ export default function SecretaryAssignments() {
       notes: '',
       reportDescription: task.report?.description || '',
     })),
+
     ...assignments.map(assignment => ({
       id: assignment.task.id,
       assignmentId: assignment.id,
-      type: assignment.task.task_type,
+      type: assignment.task.type,
       location: 'N/A',
       scheduledDate: assignment.task.schedule_date,
       timeSlot: assignment.task.schedule_time,
