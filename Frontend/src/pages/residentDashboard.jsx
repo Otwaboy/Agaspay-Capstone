@@ -3,12 +3,12 @@ import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
-import ResidentAccountOverview from "../components/dashboard/resident-account-overview";
-import ResidentBillingSummary from "../components/dashboard/resident-billing-summary";
-import ResidentQuickActions from "../components/dashboard/resident-quick-actions";
+import ResidentModernStats from "../components/dashboard/resident-modern-stats";
+import ResidentBillPaymentCard from "../components/dashboard/resident-bill-payment-card";
+import ResidentUsageChart from "../components/dashboard/resident-usage-chart";
 import ResidentRecentTransactions from "../components/dashboard/resident-recent-transactions";
-import ResidentServiceRequests from "../components/dashboard/resident-service-requests";
-import ResidentAnnouncements from "../components/dashboard/resident-annoucements";
+import ResidentModernAnnouncements from "../components/dashboard/resident-modern-announcements";
+import ResidentQuickActions from "../components/dashboard/resident-quick-actions";
 import PayBillModal from "../components/modals/pay-bill-modal";
 import ReportIssueModal from "../components/modals/report-issue-modal";
 import { Loader2 } from "lucide-react";
@@ -69,31 +69,31 @@ export default function ResidentDashboard() {
               </p>
             </div>
 
-            {/* Account Overview and Billing Summary */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              <div className="lg:col-span-2">
-                <ResidentAccountOverview />
-              </div>
+            {/* Modern Stats Cards */}
+            <ResidentModernStats />
+
+            {/* Bill Payment and Usage Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               <div className="lg:col-span-1">
-                <ResidentBillingSummary />
+                <ResidentBillPaymentCard />
+              </div>
+              <div className="lg:col-span-2">
+                <ResidentUsageChart />
               </div>
             </div>
 
-            {/* Quick Actions and Recent Transactions */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-              <div className="lg:col-span-4">
-                <ResidentQuickActions />
-              </div>
-              <div className="lg:col-span-8">
+            {/* Recent Transactions and Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <div className="lg:col-span-2">
                 <ResidentRecentTransactions />
               </div>
+              <div className="lg:col-span-1">
+                <ResidentQuickActions />
+              </div>
             </div>
 
-            {/* Service Requests and Announcements */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <ResidentServiceRequests />
-              <ResidentAnnouncements />
-            </div>
+            {/* Announcements */}
+            <ResidentModernAnnouncements />
           </div>
         </main>
       </div>
