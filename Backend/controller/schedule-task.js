@@ -87,7 +87,6 @@ const getTasks = async (req, res) => {
       .populate('connection_id', 'meter_no connection_status')
       .populate('report_id', 'type location urgency_level description')
       .populate('scheduled_by', 'first_name last_name role')
-      .populate('assigned_to', 'first_name last_name role')
       .sort({ schedule_date: -1, createdAt: -1 })
       .lean();
     // ✅ Format tasks and extract task_type from incident report

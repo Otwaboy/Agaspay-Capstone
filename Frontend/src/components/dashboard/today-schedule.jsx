@@ -68,16 +68,9 @@ export default function TodaySchedule() {
                   <div className="flex -space-x-2">
                     <Avatar className="w-8 h-8 border-2 border-white">
                       <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
-                        {task.assigned_to?.first_name?.[0] || 'T'}
+                        {task.scheduled_by?.first_name?.[0] || 'T'}
                       </AvatarFallback>
                     </Avatar>
-                    {task.maintenance_personnel && task.maintenance_personnel.length > 0 && (
-                      <Avatar className="w-8 h-8 border-2 border-white">
-                        <AvatarFallback className="bg-green-100 text-green-600 text-xs">
-                          {task.maintenance_personnel.length}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
@@ -89,14 +82,11 @@ export default function TodaySchedule() {
                     </p>
                   </div>
                   
-                  {task.maintenance_personnel && task.maintenance_personnel.length > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-indigo-100 rounded-full">
-                      <Users className="h-3 w-3 text-indigo-600" />
-                      <span className="text-xs font-medium text-indigo-600">
-                        {task.maintenance_personnel.length + 1}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1 px-2 py-1 bg-indigo-100 rounded-full">
+                    <span className="text-xs font-medium text-indigo-600">
+                      {task.task_status || 'Pending'}
+                    </span>
+                  </div>
                 </div>
               ))
             )}
