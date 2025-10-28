@@ -2,12 +2,8 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../hooks/use-auth"
-import ModernSidebar from "../components/layout/modern-sidebar";
-import ModernHeader from "../components/layout/modern-header";
-import { 
-  Home, DollarSign, CreditCard, Users, FileText, TrendingUp,
-  AlertTriangle, Calendar, Settings, HelpCircle 
-} from "lucide-react";
+import TreasurerSidebar from "../components/layout/treasurer-sidebar";
+import TreasurerTopHeader from "..//components/layout/treasurer-top-header";
 import TreasurerStatsCards from "..//components/dashboard/treasurer-stats-cards";
 import TreasurerQuickActions from "../components/dashboard/treasurer-quick-actions";
 import TreasurerRecentTransactions from "../components/dashboard/treasurer-recent-transactions";
@@ -36,28 +32,23 @@ export default function TreasurerDashboard() {
     return null;
   }
 
-  const treasurerMenuItems = [
-    { icon: Home, label: "Dashboard", href: "/treasurer-dashboard" },
-    { icon: DollarSign, label: "Revenue Reports", href: "/treasurer-dashboard/revenue-reports" },
-    { icon: CreditCard, label: "Payment Collection", href: "/treasurer-dashboard/payment-collection" },
-    { icon: FileText, label: "Generate Bills", href: "/treasurer-dashboard/generate-bills" },
-    { icon: Users, label: "Customer Accounts", href: "/treasurer-dashboard/customer-accounts" },
-    { icon: AlertTriangle, label: "Outstanding Balances", href: "/treasurer-dashboard/outstanding-balances", isOther: true },
-    { icon: TrendingUp, label: "Analytics", href: "/treasurer-dashboard/analytics", isOther: true },
-    { icon: Calendar, label: "Monthly Reports", href: "/treasurer-dashboard/monthly-reports", isOther: true },
-    { icon: HelpCircle, label: "Help Center", href: "/help", isSettings: true },
-    { icon: Settings, label: "Settings", href: "/treasurer-dashboard/billing-settings", isSettings: true },
-  ];
-
   return (
-    <div className="flex h-screen bg-gray-50">
-      <ModernSidebar menuItems={treasurerMenuItems} title="AGASPAY" subtitle="Treasurer Portal" />
+    <div className="flex h-screen bg-gray-100">
+      <TreasurerSidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <ModernHeader title="Financial Overview" />
+        <TreasurerTopHeader />
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-          <div className="max-w-7xl mx-auto">
+        <main className="  flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 ">
+          <div className=" max-w-7xl mx-auto ">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-dashboard-title">
+                Treasurer Dashboard
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Welcome to AGASPAY - Financial Management Portal
+              </p>
+            </div>
 
              <div className="grid grid-cols-1 gap-6 mb-6">
               <div className="lg:col-span-8">

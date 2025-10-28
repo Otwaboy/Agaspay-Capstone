@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
-import ModernSidebar from "../components/layout/modern-sidebar";
-import ModernHeader from "../components/layout/modern-header";
-import { 
-  Home, Users, Wrench, Calendar, FileText, AlertTriangle, 
-  Megaphone, Droplets, Settings, HelpCircle 
-} from "lucide-react";
+import Sidebar from "../components/layout/sidebar";
+import TopHeader from "../components/layout/top-header";
 import ModernStatsCards from "../components/dashboard/modern-stats-cards";
 import PendingAnnouncements from "../components/dashboard/pending-announcements";
 import ConnectionBreakdown from "../components/dashboard/connection-breakdown";
@@ -56,26 +52,12 @@ export default function Dashboard() {
     return null;
   }
 
-  const adminMenuItems = [
-    { icon: Home, label: "Dashboard", href: "/dashboard" },
-    { icon: Users, label: "Users", href: "/users" },
-    { icon: Users, label: "Personnel", href: "/personnel" },
-    { icon: Droplets, label: "Connections", href: "/connections" },
-    { icon: FileText, label: "Billing", href: "/billing" },
-    { icon: AlertTriangle, label: "Incidents", href: "/incidents" },
-    { icon: Calendar, label: "Scheduling", href: "/scheduling", isOther: true },
-    { icon: Megaphone, label: "Announcements", href: "/announcements", isOther: true },
-    { icon: FileText, label: "Reports", href: "/reports", isOther: true },
-    { icon: HelpCircle, label: "Help Center", href: "/help", isSettings: true },
-    { icon: Settings, label: "Settings", href: "/settings", isSettings: true },
-  ];
-
   return (
     <div className="flex h-screen bg-gray-50">
-      <ModernSidebar menuItems={adminMenuItems} title="AGASPAY" subtitle="Admin Portal" />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <ModernHeader title="Overview" />
+        <TopHeader />
 
         <main className="flex-1 overflow-auto p-6 bg-gray-50">
           <div className="max-w-7xl mx-auto">
