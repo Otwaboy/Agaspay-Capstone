@@ -3,21 +3,15 @@ class AuthManager {
   constructor() {
     this.tokenKey = 'agaspay_token';
     this.userKey = 'agaspay_user';
-    // Dynamically determine backend URL based on environment
-    // In Replit, multi-port access uses the format: https://PORT-DOMAIN
-    const currentOrigin = window.location.origin;
-    if (currentOrigin.includes('replit.dev')) {
-      // Replit environment - use port-prefixed URL
-      const domain = window.location.hostname;
-      this.backendURL = `https://3000-${domain}`;
-    } else {
-      // Local development
-      this.backendURL = currentOrigin.replace(':5000', ':3000');
-    }
+    // Use relative URL - Vite proxy will forward to backend
+    this.backendURL = '';
   }
 
   async login(credentials) {
     try {
+      // Debug: Log the backend URL being used
+      console.log('Attempting login to:', `${this.backendURL}/api/v1/auth/login`);
+      
       // Try connecting to your MongoDB backend first
       const response = await fetch(`${this.backendURL}/api/v1/auth/login`, {
         method: 'POST',
