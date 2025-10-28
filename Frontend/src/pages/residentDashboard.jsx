@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
-import ResidentSidebar from "../components/layout/resident-sidebar";
-import ResidentTopHeader from "../components/layout/resident-top-header";
+import ModernSidebar from "../components/layout/modern-sidebar";
+import ModernHeader from "../components/layout/modern-header";
+import { 
+  Home, CreditCard, Receipt, Droplets, Wrench, AlertTriangle,
+  MessageSquare, User, Settings 
+} from "lucide-react";
 import ResidentModernStats from "../components/dashboard/resident-modern-stats";
 import ResidentBillPaymentCard from "../components/dashboard/resident-bill-payment-card";
 import ResidentUsageChart from "../components/dashboard/resident-usage-chart";
@@ -51,12 +55,24 @@ export default function ResidentDashboard() {
     return null;
   }
 
+  const residentMenuItems = [
+    { icon: Home, label: "Dashboard", href: "/resident-dashboard" },
+    { icon: CreditCard, label: "Bills & Payments", href: "/resident-dashboard/bills" },
+    { icon: Receipt, label: "Payment History", href: "/resident-dashboard/payment-history" },
+    { icon: Droplets, label: "Water Usage", href: "/resident-dashboard/usage" },
+    { icon: Wrench, label: "Service Requests", href: "/resident-dashboard/service-requests", isOther: true },
+    { icon: AlertTriangle, label: "Report Issue", href: "/resident-dashboard/report-issue", isOther: true },
+    { icon: MessageSquare, label: "Announcements", href: "/resident-dashboard/announcements", isOther: true },
+    { icon: User, label: "Profile", href: "/resident-dashboard/profile", isSettings: true },
+    { icon: Settings, label: "Settings", href: "/resident-dashboard/settings", isSettings: true },
+  ];
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      <ResidentSidebar />
+    <div className="flex h-screen bg-gray-50">
+      <ModernSidebar menuItems={residentMenuItems} title="AGASPAY" subtitle="Resident Portal" />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <ResidentTopHeader />
+        <ModernHeader title="My Dashboard" />
 
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
