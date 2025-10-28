@@ -3,6 +3,50 @@ const Resident = require('../../model/Resident')
 const Personnel = require('../../model/Personnel')
 const { UnauthorizedError, BadRequestError } = require('../../errors')
 
+// Get all residents (for admin)
+const getAllResidents = async (req, res) => {
+  try {
+    const { status, search } = req.query;
+    
+    // Build filter query
+    let filter = {};
+    if (status && status !== 'all') {
+      filter.status = status;
+    }
+    
+    // Fetch all residents with their water connections
+    const residents = await Resident.find(filter)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // Get water connections for each resident
+    const residentsWithConnections = await Promise.all(
+      residents.map(async (resident) => {
+        const connection = await WaterConnection.findOne({ resident_id: resident._id });
+        return {
+          ...resident,
+          account_number: connection?.account_number || null,
+          zone: resident.zone || null,
+          purok: resident.purok || null,
+          connection_status: connection?.connection_status || null
+        };
+      })
+    );
+    
+    res.status(200).json({
+      success: true,
+      users: residentsWithConnections,
+      count: residentsWithConnections.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 const getUserAccount = async (req, res) => {
   const user = req.user  // this comes from your auth middleware
 
@@ -57,4 +101,4 @@ const getUserAccount = async (req, res) => {
   })
 }
 
-module.exports = { getUserAccount }
+module.exports = { getUserAccount, getAllResidents }

@@ -36,7 +36,7 @@ export const dashboardApi = {
 // Users/Residents APIs
 export const usersApi = {
   getAll: async (params = {}) => {
-    const response = await apiClient.get('/user', { params });
+    const response = await apiClient.get('/user/all', { params });
     return response.data;
   },
   getById: async (id) => {
