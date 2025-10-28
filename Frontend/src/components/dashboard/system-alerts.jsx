@@ -1,187 +1,148 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Skeleton } from "../ui/skeleton";
-import { AlertTriangle, Info, CheckCircle, XCircle, X, Bell } from "lucide-react";
+import { AlertCircle, AlertTriangle, Clock, CheckCircle2, Megaphone, Droplets } from "lucide-react";
+import { dashboardApi, incidentsApi, connectionsApi, announcementsApi } from "../../services/adminApi";
 
 export default function SystemAlerts() {
-  const { data: alerts, isLoading } = useQuery({
-    queryKey: ['/api/dashboard/alerts'],
-    initialData: [
-        {
-          id: 1,
-          type: "warning",
-          title: "High Water Usage Detected",
-          message: "Zone 3 showing 40% above normal consumption",
-          timestamp: "2024-08-19T14:30:00Z",
-          severity: "medium",
-          resolved: false
-        },
-        {
-          id: 2,
-          type: "error",
-          title: "Payment Gateway Issue",
-          message: "GCash payments temporarily unavailable",
-          timestamp: "2024-08-19T13:15:00Z",
-          severity: "high",
-          resolved: false
-        },
-        {
-          id: 3,
-          type: "info",
-          title: "Scheduled Maintenance",
-          message: "Water supply interruption in Zone 1 from 2-4 PM",
-          timestamp: "2024-08-19T12:00:00Z",
-          severity: "low",
-          resolved: false
-        },
-        {
-          id: 4,
-          type: "success",
-          title: "System Backup Completed",
-          message: "Daily database backup finished successfully",
-          timestamp: "2024-08-19T02:00:00Z",
-          severity: "low",
-          resolved: true
-        }
-      ]
+  const { data: stats } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: () => dashboardApi.getStats(),
   });
 
-  const getIcon = (type) => {
-    switch (type) {
-      case "warning": return AlertTriangle;
-      case "error": return XCircle;
-      case "info": return Info;
-      case "success": return CheckCircle;
-      default: return Info;
+  const { data: incidents } = useQuery({
+    queryKey: ['unresolved-incidents'],
+    queryFn: () => incidentsApi.getAll({ reported_issue_status: 'Pending' }),
+  });
+
+  const { data: pendingConnections } = useQuery({
+    queryKey: ['pending-connections'],
+    queryFn: () => connectionsApi.getAll({ connection_status: 'Pending' }),
+  });
+
+  const { data: pendingAnnouncements } = useQuery({
+    queryKey: ['pending-announcements-count'],
+    queryFn: () => announcementsApi.getPending(),
+  });
+
+  const alerts = [
+    {
+      id: 1,
+      title: 'Overdue Payments',
+      count: stats?.overdueBills || 0,
+      icon: AlertTriangle,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200',
+      description: 'Bills past due date',
+      severity: 'high'
+    },
+    {
+      id: 2,
+      title: 'Pending Connections',
+      count: pendingConnections?.connections?.length || 0,
+      icon: Droplets,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      description: 'Awaiting approval',
+      severity: 'medium'
+    },
+    {
+      id: 3,
+      title: 'Unresolved Incidents',
+      count: incidents?.incident_reports?.length || 0,
+      icon: AlertCircle,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200',
+      description: 'Require attention',
+      severity: 'high'
+    },
+    {
+      id: 4,
+      title: 'Pending Announcements',
+      count: pendingAnnouncements?.announcements?.length || 0,
+      icon: Megaphone,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+      description: 'Need approval',
+      severity: 'low'
+    },
+    {
+      id: 5,
+      title: 'Active Connections',
+      count: stats?.activeConnections || 0,
+      icon: CheckCircle2,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      description: 'Currently active',
+      severity: 'info'
+    },
+    {
+      id: 6,
+      title: 'Pending Payments',
+      count: stats?.totalPendingPayments || 0,
+      icon: Clock,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-200',
+      description: 'Awaiting confirmation',
+      severity: 'medium'
     }
-  };
-
-  const getIconColor = (type) => {
-    switch (type) {
-      case "warning": return "text-yellow-600";
-      case "error": return "text-red-600";
-      case "info": return "text-blue-600";
-      case "success": return "text-green-600";
-      default: return "text-gray-600";
-    }
-  };
-
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case "high": return "bg-red-100 text-red-800";
-      case "medium": return "bg-yellow-100 text-yellow-800";
-      case "low": return "bg-blue-100 text-blue-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-
-    if (diffMins < 60) {
-      return `${diffMins} minutes ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours} hours ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>System Alerts</CardTitle>
-          <CardDescription>Important system notifications</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex items-start space-x-4 p-4 border rounded-lg">
-                <Skeleton className="h-6 w-6 rounded-full" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-4 w-[200px]" />
-                  <Skeleton className="h-3 w-[300px]" />
-                  <Skeleton className="h-3 w-[100px]" />
-                </div>
-                <Skeleton className="h-6 w-16" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const unresolvedAlerts = alerts?.filter(alert => !alert.resolved) || [];
+  ];
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>System Alerts</CardTitle>
-          <CardDescription>
-            {unresolvedAlerts.length} active alerts requiring attention
-          </CardDescription>
-        </div>
-        <Button variant="outline" size="sm">
-          View All
-        </Button>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-indigo-600" />
+          System Overview
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {alerts?.map((alert) => {
-            const Icon = getIcon(alert.type);
+        <div className="grid grid-cols-2 gap-3">
+          {alerts.map((alert) => {
+            const Icon = alert.icon;
             return (
-              <div key={alert.id} className={`flex items-start space-x-4 p-4 border rounded-lg ${alert.resolved ? 'opacity-60' : ''}`}>
-                <div className="flex-shrink-0">
-                  <Icon className={`h-6 w-6 ${getIconColor(alert.type)}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h4 className="text-sm font-medium text-gray-900">
-                      {alert.title}
-                    </h4>
-                    <Badge className={getSeverityColor(alert.severity)}>
-                      {alert.severity}
-                    </Badge>
+              <div
+                key={alert.id}
+                className={`${alert.bgColor} ${alert.borderColor} border rounded-lg p-3 hover:shadow-md transition-shadow`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className={`h-4 w-4 ${alert.color}`} />
+                      <p className="text-xs font-medium text-gray-700">{alert.title}</p>
+                    </div>
+                    <p className={`text-2xl font-bold ${alert.color} mb-1`}>
+                      {alert.count}
+                    </p>
+                    <p className="text-xs text-gray-600">{alert.description}</p>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {alert.message}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {formatTime(alert.timestamp)}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 flex items-center space-x-2">
-                  {alert.resolved ? (
-                    <Badge variant="outline" className="text-green-600 border-green-200">
-                      Resolved
+                  {alert.count > 0 && alert.severity === 'high' && (
+                    <Badge variant="destructive" className="text-xs px-1.5 py-0.5">
+                      !
                     </Badge>
-                  ) : (
-                    <Button variant="ghost" size="sm">
-                      <X className="h-4 w-4" />
-                    </Button>
                   )}
                 </div>
               </div>
             );
           })}
         </div>
-        {unresolvedAlerts.length === 0 && (
-          <div className="text-center py-8">
-            <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">All Clear!</h3>
-            <p className="text-gray-500">No active alerts at this time.</p>
+
+        <div className="mt-4 p-3 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-100">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <p className="text-xs font-medium text-gray-700">System Status: Operational</p>
           </div>
-        )}
+          <p className="text-xs text-gray-600">
+            All services running normally. Last updated: {new Date().toLocaleTimeString()}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

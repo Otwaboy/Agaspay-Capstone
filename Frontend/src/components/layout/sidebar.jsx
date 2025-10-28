@@ -90,7 +90,7 @@ function SidebarContent() {
       <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
         <div className="flex items-center">
           <div className="bg-blue-500 p-2 rounded-4xl">
-            <Droplets className="h-9 w-9 text-white" />
+            <Droplets className="h-6 w-6 text-white" />
           </div>
           <div className="ml-3">
             <h2 className="text-xl font-bold text-gray-900">AGASPAY</h2>

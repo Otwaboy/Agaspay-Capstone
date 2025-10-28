@@ -4,9 +4,9 @@ import { useAuth } from "../hooks/use-auth";
 import Sidebar from "../components/layout/sidebar";
 import TopHeader from "../components/layout/top-header";
 import ModernStatsCards from "../components/dashboard/modern-stats-cards";
-import RevenueOverview from "../components/dashboard/revenue-overview";
+import PendingAnnouncements from "../components/dashboard/pending-announcements";
 import ConnectionBreakdown from "../components/dashboard/connection-breakdown";
-import TodaySchedule from "../components/dashboard/today-schedule";
+import SystemAlerts from "../components/dashboard/system-alerts";
 import RecentActivities from "../components/dashboard/recent-activities";
 import CreatePersonnelModal from "../components/modals/create-personnel-modal";
 import ScheduleTaskModal from "../components/modals/schedule-task-modal";
@@ -73,9 +73,9 @@ export default function Dashboard() {
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              {/* Revenue Overview - Takes 2 columns */}
+              {/* Pending Announcements - Takes 2 columns */}
               <div className="lg:col-span-2">
-                <RevenueOverview />
+                <PendingAnnouncements />
               </div>
 
               {/* Connection Breakdown - Takes 1 column */}
@@ -86,9 +86,9 @@ export default function Dashboard() {
 
             {/* Bottom Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Today's Schedule - Takes 2 columns */}
+              {/* System Overview - Takes 2 columns */}
               <div className="lg:col-span-2">
-                <TodaySchedule />
+                <SystemAlerts />
               </div>
 
               {/* Recent Activities - Takes 1 column */}

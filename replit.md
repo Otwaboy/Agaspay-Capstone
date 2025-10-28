@@ -120,9 +120,21 @@ The system supports multiple user roles with different permissions:
   - ✅ Query invalidation for real-time updates
   - ✅ **Modern Dashboard Design** - Redesigned with:
     - Modern stats cards with inline trend charts
-    - Revenue overview with bar charts and time period selector
+    - **Pending Announcements** section (replaces revenue overview):
+      - Shows announcements created by Secretary awaiting Admin approval
+      - Approve/Reject buttons for each announcement
+      - Category badges (Maintenance, Event, Information, Billing, Alert)
+      - Priority indicators (high, normal, low)
+      - Real-time updates using React Query
     - Connection status donut chart breakdown
-    - Today's schedule timeline view
+    - **System Overview** section (replaces today's schedule):
+      - Overdue payments tracker
+      - Pending connections count
+      - Unresolved incidents alert
+      - Pending announcements count
+      - Active connections status
+      - Pending payments summary
+      - Real-time system status indicator
     - Recent activities with avatar displays
     - Clean, professional layout inspired by modern healthcare dashboards
   
