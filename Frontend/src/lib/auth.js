@@ -3,12 +3,14 @@ class AuthManager {
   constructor() {
     this.tokenKey = 'agaspay_token';
     this.userKey = 'agaspay_user';
+    // Dynamically determine backend URL based on environment
+    this.backendURL = window.location.origin.replace(':5000', ':3000');
   }
 
   async login(credentials) {
     try {
       // Try connecting to your MongoDB backend first
-      const response = await fetch('http://localhost:3000/api/v1/auth/login', {
+      const response = await fetch(`${this.backendURL}/api/v1/auth/login`, {
         method: 'POST',
         mode: 'cors',
         headers: {
@@ -82,7 +84,7 @@ class AuthManager {
     console.log('Creating account with data:', credentials);
     
     try {
-      const response = await fetch('http://localhost:3000/api/v1/auth/register-personnel', {
+      const response = await fetch(`${this.backendURL}/api/v1/auth/register-personnel`, {
         method: 'POST',
         mode: 'cors', // since ag backend run on port 3000 so i added a cors mode to allow cross origin request
         headers: {
@@ -149,7 +151,7 @@ class AuthManager {
     console.log('Creating account with data:', credentials);
     
     try {
-      const response = await fetch('http://localhost:3000/api/v1/auth/register-resident', {
+      const response = await fetch(`${this.backendURL}/api/v1/auth/register-resident`, {
         method: 'POST',
         mode: 'cors', // since ag backend run on port 3000 so i added a cors mode to allow cross origin request
         headers: {
