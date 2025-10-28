@@ -2,9 +2,9 @@
 // 📦 API Client Utility for AGASPAY System
 // ======================================================
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
+const API_BASE_URL = import.meta.env.PROD 
   ? 'https://your-backend-domain.com' 
-  : 'http://localhost:3000';
+  : window.location.origin.replace(':5000', ':3000');
 
 class ApiClient {
   constructor() {
