@@ -5,7 +5,7 @@ const API_BASE = '/api/v1';
 
 // Get auth token from localStorage
 const getAuthToken = () => {
-  return localStorage.getItem('token');
+  return localStorage.getItem('agaspay_token');
 };
 
 // Axios instance with auth
