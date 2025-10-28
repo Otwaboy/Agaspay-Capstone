@@ -2,18 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { Users, Droplets, DollarSign, AlertTriangle } from "lucide-react";
+import { dashboardApi } from "../../services/adminApi";
 
 
 export default function StatsCards() {
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['/api/dashboard/stats'],
-    initialData: {
-      totalUsers: 1250,
-      activeConnections: 892,
-      monthlyRevenue: 45000,
-      pendingIssues: 12
-    }
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: dashboardApi.getStats
   });
+
+  const stats = data?.stats || {};
 
   if (isLoading) {
     return (
@@ -37,29 +35,29 @@ export default function StatsCards() {
   const statCards = [
     {
       title: "Total Users",
-      value: stats?.totalUsers || 0,
-      description: "+12% from last month",
+      value: (stats?.users?.totalResidents || 0) + (stats?.users?.totalPersonnel || 0),
+      description: `${stats?.users?.totalResidents || 0} Residents, ${stats?.users?.totalPersonnel || 0} Personnel`,
       icon: Users,
       color: "text-blue-600"
     },
     {
       title: "Active Connections",
-      value: stats?.activeConnections || 0,
-      description: "+5% from last month",
+      value: stats?.connections?.active || 0,
+      description: `${stats?.connections?.pending || 0} pending, ${stats?.connections?.disconnected || 0} disconnected`,
       icon: Droplets,
       color: "text-green-600"
     },
     {
-      title: "Monthly Revenue",
-      value: `₱${(stats?.monthlyRevenue || 0).toLocaleString()}`,
-      description: "+8% from last month",
+      title: "Total Revenue",
+      value: `₱${(stats?.financial?.totalRevenue || 0).toLocaleString()}`,
+      description: `₱${(stats?.financial?.pendingPayments || 0).toLocaleString()} pending`,
       icon: DollarSign,
       color: "text-yellow-600"
     },
     {
-      title: "Pending Issues",
-      value: stats?.pendingIssues || 0,
-      description: "-3% from last month",
+      title: "Open Incidents",
+      value: stats?.incidents?.open || 0,
+      description: `${stats?.incidents?.resolved || 0} resolved this month`,
       icon: AlertTriangle,
       color: "text-red-600"
     }

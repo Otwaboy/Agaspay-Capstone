@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import Sidebar from "../components/layout/sidebar";
@@ -10,10 +12,71 @@ import {
   DollarSign,
   Users,
   Calendar,
-  Printer
+  Printer,
+  Loader2
 } from "lucide-react";
+import { reportsApi } from "../services/adminApi";
+import { useToast } from "../hooks/use-toast";
 
 export default function AdminReports() {
+  const { toast } = useToast();
+  const [generatingReport, setGeneratingReport] = useState(null);
+
+  const generateReportMutation = useMutation({
+    mutationFn: async ({ type, params }) => {
+      setGeneratingReport(type);
+      let response;
+      switch (type) {
+        case 'revenue':
+          response = await reportsApi.generateRevenue(params);
+          break;
+        case 'consumption':
+          response = await reportsApi.generateConsumption(params);
+          break;
+        case 'billing':
+          response = await reportsApi.generateBilling(params);
+          break;
+        case 'users':
+          response = await reportsApi.generateUsers(params);
+          break;
+        case 'incidents':
+          response = await reportsApi.generateIncidents(params);
+          break;
+        default:
+          throw new Error('Unknown report type');
+      }
+      return response;
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: "Report Generated",
+        description: `${variables.type} report has been generated successfully`,
+      });
+      
+      if (data && typeof data === 'object') {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${variables.type}-report-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+      
+      setGeneratingReport(null);
+    },
+    onError: (error, variables) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.msg || `Failed to generate ${variables.type} report`,
+        variant: "destructive",
+      });
+      setGeneratingReport(null);
+    }
+  });
+
   const reportTypes = [
     {
       title: "Revenue Report",
@@ -21,7 +84,7 @@ export default function AdminReports() {
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      action: "Generate"
+      type: "revenue"
     },
     {
       title: "Consumption Report",
@@ -29,7 +92,7 @@ export default function AdminReports() {
       icon: TrendingUp,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
-      action: "Generate"
+      type: "consumption"
     },
     {
       title: "Billing Summary",
@@ -37,7 +100,7 @@ export default function AdminReports() {
       icon: FileText,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
-      action: "Generate"
+      type: "billing"
     },
     {
       title: "User Analytics",
@@ -45,15 +108,15 @@ export default function AdminReports() {
       icon: Users,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-      action: "Generate"
+      type: "users"
     },
     {
-      title: "Payment Analysis",
-      description: "Payment methods and transaction history",
+      title: "Incident Report",
+      description: "Service incidents and resolution statistics",
       icon: BarChart3,
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
-      action: "Generate"
+      type: "incidents"
     },
     {
       title: "Monthly Summary",
@@ -61,7 +124,7 @@ export default function AdminReports() {
       icon: Calendar,
       color: "text-teal-600",
       bgColor: "bg-teal-50",
-      action: "Generate"
+      type: "billing"
     }
   ];
 
@@ -86,6 +149,13 @@ export default function AdminReports() {
     }
   ];
 
+  const handleGenerateReport = (type) => {
+    generateReportMutation.mutate({ 
+      type, 
+      params: {} 
+    });
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
@@ -95,7 +165,6 @@ export default function AdminReports() {
         
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
-            {/* Header */}
             <div className="mb-8">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
@@ -110,35 +179,50 @@ export default function AdminReports() {
               </div>
             </div>
 
-            {/* Report Types */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {reportTypes.map((report, index) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className={`w-12 h-12 ${report.bgColor} rounded-lg flex items-center justify-center`}>
-                        <report.icon className={`h-6 w-6 ${report.color}`} />
+              {reportTypes.map((report, index) => {
+                const isGenerating = generatingReport === report.type;
+                return (
+                  <Card key={index} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className={`w-12 h-12 ${report.bgColor} rounded-lg flex items-center justify-center`}>
+                          <report.icon className={`h-6 w-6 ${report.color}`} />
+                        </div>
                       </div>
-                    </div>
-                    <CardTitle className="mt-4">{report.title}</CardTitle>
-                    <CardDescription>{report.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex space-x-2">
-                      <Button className="flex-1" data-testid={`button-generate-${report.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                        <Download className="h-4 w-4 mr-2" />
-                        {report.action}
-                      </Button>
-                      <Button variant="outline" size="icon">
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <CardTitle className="mt-4">{report.title}</CardTitle>
+                      <CardDescription>{report.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex space-x-2">
+                        <Button 
+                          className="flex-1" 
+                          data-testid={`button-generate-${report.title.toLowerCase().replace(/\s+/g, '-')}`}
+                          onClick={() => handleGenerateReport(report.type)}
+                          disabled={isGenerating || generateReportMutation.isPending}
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="h-4 w-4 mr-2" />
+                              Generate
+                            </>
+                          )}
+                        </Button>
+                        <Button variant="outline" size="icon">
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
-            {/* Recent Reports */}
             <Card>
               <CardHeader>
                 <CardTitle>Recent Reports</CardTitle>
@@ -165,6 +249,11 @@ export default function AdminReports() {
                       </div>
                     </div>
                   ))}
+                  {recentReports.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                      No recent reports
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

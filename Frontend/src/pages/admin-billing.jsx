@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
+import { Skeleton } from "../components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -31,63 +33,44 @@ import {
   XCircle,
   DollarSign
 } from "lucide-react";
+import { billingApi, paymentApi } from "../services/adminApi";
 
 export default function AdminBilling() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Mock data - replace with API call
-  const bills = [
-    {
-      id: "BILL-001",
-      residentName: "Juan Dela Cruz",
-      accountNumber: "WS-2024-001",
-      period: "January 2024",
-      consumption: 25,
-      amount: 450.00,
-      dueDate: "2024-02-05",
-      status: "paid",
-      paidDate: "2024-01-28"
-    },
-    {
-      id: "BILL-002",
-      residentName: "Maria Santos",
-      accountNumber: "WS-2024-002",
-      period: "January 2024",
-      consumption: 18,
-      amount: 320.00,
-      dueDate: "2024-02-05",
-      status: "pending",
-      paidDate: null
-    },
-    {
-      id: "BILL-003",
-      residentName: "Pedro Rodriguez",
-      accountNumber: "WS-2024-003",
-      period: "January 2024",
-      consumption: 42,
-      amount: 890.00,
-      dueDate: "2024-01-20",
-      status: "overdue",
-      paidDate: null
-    },
-    {
-      id: "BILL-004",
-      residentName: "Ana Garcia",
-      accountNumber: "WS-2024-004",
-      period: "January 2024",
-      consumption: 15,
-      amount: 275.00,
-      dueDate: "2024-02-05",
-      status: "paid",
-      paidDate: "2024-01-25"
-    }
-  ];
+  const { data: billingData, isLoading: billingLoading } = useQuery({
+    queryKey: ['billing'],
+    queryFn: () => billingApi.getAll()
+  });
 
-  const filteredBills = bills.filter(bill => {
-    const matchesSearch = bill.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bill.accountNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bill.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const { data: paymentData, isLoading: paymentLoading } = useQuery({
+    queryKey: ['payments'],
+    queryFn: () => paymentApi.getAll()
+  });
+
+  const isLoading = billingLoading || paymentLoading;
+  const bills = billingData?.billings || [];
+  const payments = paymentData?.payments || [];
+
+  const enrichedBills = bills.map(bill => {
+    const payment = payments.find(p => p.billing_id?._id === bill._id);
+    const isPaid = payment && payment.payment_status === 'paid';
+    const isOverdue = !isPaid && new Date(bill.due_date) < new Date();
+    
+    return {
+      ...bill,
+      status: isPaid ? 'paid' : (isOverdue ? 'overdue' : 'pending'),
+      payment: payment,
+      paidDate: payment?.payment_date
+    };
+  });
+
+  const filteredBills = enrichedBills.filter(bill => {
+    const residentName = bill.resident_id ? 
+      `${bill.resident_id.first_name} ${bill.resident_id.last_name}` : '';
+    const matchesSearch = residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bill.resident_id?.account_number?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || bill.status === statusFilter;
     
@@ -103,9 +86,9 @@ export default function AdminBilling() {
     return config[status] || config.pending;
   };
 
-  const totalRevenue = bills.filter(b => b.status === "paid").reduce((sum, b) => sum + b.amount, 0);
-  const pendingAmount = bills.filter(b => b.status === "pending").reduce((sum, b) => sum + b.amount, 0);
-  const overdueAmount = bills.filter(b => b.status === "overdue").reduce((sum, b) => sum + b.amount, 0);
+  const totalRevenue = enrichedBills.filter(b => b.status === "paid").reduce((sum, b) => sum + (b.total_amount || 0), 0);
+  const pendingAmount = enrichedBills.filter(b => b.status === "pending").reduce((sum, b) => sum + (b.total_amount || 0), 0);
+  const overdueAmount = enrichedBills.filter(b => b.status === "overdue").reduce((sum, b) => sum + (b.total_amount || 0), 0);
 
   const stats = [
     {
@@ -138,6 +121,26 @@ export default function AdminBilling() {
     }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TopHeader />
+          <main className="flex-1 overflow-auto p-6">
+            <div className="max-w-7xl mx-auto">
+              <Skeleton className="h-8 w-64 mb-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+              </div>
+              <Skeleton className="h-96" />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
@@ -147,7 +150,6 @@ export default function AdminBilling() {
         
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
-            {/* Header */}
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -174,7 +176,6 @@ export default function AdminBilling() {
               </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {stats.map((stat, index) => (
                 <Card key={index}>
@@ -193,7 +194,6 @@ export default function AdminBilling() {
               ))}
             </div>
 
-            {/* Filters and Search */}
             <Card className="mb-6">
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-4">
@@ -226,7 +226,6 @@ export default function AdminBilling() {
               </CardContent>
             </Card>
 
-            {/* Bills Table */}
             <Card>
               <CardHeader>
                 <CardTitle>Billing Records ({filteredBills.length})</CardTitle>
@@ -265,21 +264,27 @@ export default function AdminBilling() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredBills.map((bill) => {
                         const statusConfig = getStatusBadge(bill.status);
+                        const residentName = bill.resident_id ? 
+                          `${bill.resident_id.first_name} ${bill.resident_id.last_name}` : 'N/A';
+                        const billingPeriod = bill.billing_month && bill.billing_year ? 
+                          `${bill.billing_month} ${bill.billing_year}` : 'N/A';
+                        const dueDate = bill.due_date ? new Date(bill.due_date).toLocaleDateString() : 'N/A';
+                        
                         return (
-                          <tr key={bill.id} data-testid={`row-bill-${bill.id}`}>
-                            <td className="py-4 px-6 text-sm font-medium text-gray-900">{bill.id}</td>
+                          <tr key={bill._id} data-testid={`row-bill-${bill._id}`}>
+                            <td className="py-4 px-6 text-sm font-medium text-gray-900">{bill._id.slice(-6)}</td>
                             <td className="py-4 px-6">
                               <div>
-                                <p className="text-sm font-medium text-gray-900">{bill.residentName}</p>
-                                <p className="text-sm text-gray-500">{bill.accountNumber}</p>
+                                <p className="text-sm font-medium text-gray-900">{residentName}</p>
+                                <p className="text-sm text-gray-500">{bill.resident_id?.account_number || 'N/A'}</p>
                               </div>
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-900">{bill.period}</td>
-                            <td className="py-4 px-6 text-sm text-gray-900">{bill.consumption} m³</td>
+                            <td className="py-4 px-6 text-sm text-gray-900">{billingPeriod}</td>
+                            <td className="py-4 px-6 text-sm text-gray-900">{bill.consumption || 0} m³</td>
                             <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                              ₱{bill.amount.toFixed(2)}
+                              ₱{(bill.total_amount || 0).toFixed(2)}
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-900">{bill.dueDate}</td>
+                            <td className="py-4 px-6 text-sm text-gray-900">{dueDate}</td>
                             <td className="py-4 px-6">
                               <Badge className={`${statusConfig.className} flex items-center w-fit`}>
                                 <statusConfig.icon className="w-3 h-3 mr-1" />
@@ -289,7 +294,7 @@ export default function AdminBilling() {
                             <td className="py-4 px-6">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" data-testid={`button-actions-${bill.id}`}>
+                                  <Button variant="ghost" size="sm" data-testid={`button-actions-${bill._id}`}>
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -314,6 +319,13 @@ export default function AdminBilling() {
                           </tr>
                         );
                       })}
+                      {filteredBills.length === 0 && (
+                        <tr>
+                          <td colSpan="8" className="p-8 text-center text-gray-500">
+                            No billing records found
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

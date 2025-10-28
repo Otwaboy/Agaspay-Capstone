@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
+import { Skeleton } from "../components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -21,68 +23,53 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
+import { incidentsApi } from "../services/adminApi";
+import { useToast } from "../hooks/use-toast";
 
 export default function AdminIncidents() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const incidents = [
-    {
-      id: "INC-001",
-      title: "Water Leak in Zone 2",
-      reporter: "Maria Santos",
-      location: "Zone 2, Purok 5",
-      priority: "high",
-      status: "in-progress",
-      reportedDate: "2024-01-20 08:30 AM",
-      description: "Major water leak near the main pipeline"
+  const { data, isLoading } = useQuery({
+    queryKey: ['incidents', statusFilter],
+    queryFn: () => incidentsApi.getAll({ status: statusFilter !== 'all' ? statusFilter : undefined })
+  });
+
+  const incidents = data?.incidents || [];
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status, resolution_notes }) => incidentsApi.updateStatus(id, status, resolution_notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['incidents']);
+      toast({
+        title: "Success",
+        description: "Incident status updated successfully",
+      });
     },
-    {
-      id: "INC-002",
-      title: "Low Water Pressure",
-      reporter: "Juan Dela Cruz",
-      location: "Zone 1, Purok 3",
-      priority: "medium",
-      status: "open",
-      reportedDate: "2024-01-20 10:15 AM",
-      description: "Residents experiencing low water pressure"
-    },
-    {
-      id: "INC-003",
-      title: "Meter Malfunction",
-      reporter: "Pedro Rodriguez",
-      location: "Zone 3, Purok 7",
-      priority: "low",
-      status: "resolved",
-      reportedDate: "2024-01-19 02:00 PM",
-      description: "Water meter not recording accurate readings"
-    },
-    {
-      id: "INC-004",
-      title: "Pipeline Damage",
-      reporter: "Ana Garcia",
-      location: "Zone 2, Purok 4",
-      priority: "high",
-      status: "open",
-      reportedDate: "2024-01-21 09:00 AM",
-      description: "Damaged pipeline causing water interruption"
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.msg || "Failed to update incident status",
+        variant: "destructive",
+      });
     }
-  ];
+  });
 
   const filteredIncidents = incidents.filter(incident => {
-    const matchesSearch = incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.reporter.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = incident.reported_issue?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      incident.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      incident.reporter_id?.first_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || incident.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   const getStatusBadge = (status) => {
     const config = {
       open: { label: "Open", className: "bg-blue-100 text-blue-800", icon: Clock },
       "in-progress": { label: "In Progress", className: "bg-yellow-100 text-yellow-800", icon: Clock },
+      "in progress": { label: "In Progress", className: "bg-yellow-100 text-yellow-800", icon: Clock },
       resolved: { label: "Resolved", className: "bg-green-100 text-green-800", icon: CheckCircle },
       closed: { label: "Closed", className: "bg-gray-100 text-gray-800", icon: XCircle }
     };
@@ -98,6 +85,13 @@ export default function AdminIncidents() {
     return config[priority] || config.medium;
   };
 
+  const handleStatusChange = (id, newStatus) => {
+    const notes = newStatus === 'resolved' ? prompt("Enter resolution notes:") : '';
+    if (newStatus === 'resolved' && !notes) return;
+    
+    updateStatusMutation.mutate({ id, status: newStatus, resolution_notes: notes });
+  };
+
   const stats = [
     {
       title: "Total Incidents",
@@ -108,26 +102,46 @@ export default function AdminIncidents() {
     },
     {
       title: "Open",
-      value: incidents.filter(i => i.status === "open").length,
+      value: incidents.filter(i => i.reported_issue_status === "open").length,
       icon: Clock,
       color: "text-blue-600",
       bgColor: "bg-blue-50"
     },
     {
       title: "In Progress",
-      value: incidents.filter(i => i.status === "in-progress").length,
+      value: incidents.filter(i => i.reported_issue_status === "in progress").length,
       icon: Clock,
       color: "text-yellow-600",
       bgColor: "bg-yellow-50"
     },
     {
       title: "Resolved",
-      value: incidents.filter(i => i.status === "resolved").length,
+      value: incidents.filter(i => i.reported_issue_status === "resolved").length,
       icon: CheckCircle,
       color: "text-green-600",
       bgColor: "bg-green-50"
     }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TopHeader />
+          <main className="flex-1 overflow-auto p-6">
+            <div className="max-w-7xl mx-auto">
+              <Skeleton className="h-8 w-64 mb-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+              </div>
+              <Skeleton className="h-96" />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -138,7 +152,6 @@ export default function AdminIncidents() {
         
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
-            {/* Header */}
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -159,7 +172,6 @@ export default function AdminIncidents() {
               </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {stats.map((stat, index) => (
                 <Card key={index}>
@@ -178,7 +190,6 @@ export default function AdminIncidents() {
               ))}
             </div>
 
-            {/* Filters and Search */}
             <Card className="mb-6">
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-4">
@@ -199,7 +210,7 @@ export default function AdminIncidents() {
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="in-progress">In Progress</SelectItem>
+                      <SelectItem value="in progress">In Progress</SelectItem>
                       <SelectItem value="resolved">Resolved</SelectItem>
                     </SelectContent>
                   </Select>
@@ -211,7 +222,6 @@ export default function AdminIncidents() {
               </CardContent>
             </Card>
 
-            {/* Incidents List */}
             <Card>
               <CardHeader>
                 <CardTitle>Incidents ({filteredIncidents.length})</CardTitle>
@@ -219,14 +229,19 @@ export default function AdminIncidents() {
               <CardContent>
                 <div className="space-y-4">
                   {filteredIncidents.map((incident) => {
-                    const statusConfig = getStatusBadge(incident.status);
-                    const priorityConfig = getPriorityBadge(incident.priority);
+                    const statusConfig = getStatusBadge(incident.reported_issue_status);
+                    const priorityConfig = getPriorityBadge(incident.priority || 'medium');
+                    const reporterName = incident.reporter_id ? 
+                      `${incident.reporter_id.first_name} ${incident.reporter_id.last_name}` : 'Unknown';
+                    const reportedDate = incident.reported_date ? 
+                      new Date(incident.reported_date).toLocaleString() : 'N/A';
+                    
                     return (
-                      <div key={incident.id} className="p-4 border rounded-lg" data-testid={`incident-${incident.id}`}>
+                      <div key={incident._id} className="p-4 border rounded-lg" data-testid={`incident-${incident._id}`}>
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <h4 className="text-sm font-medium text-gray-900">{incident.title}</h4>
+                              <h4 className="text-sm font-medium text-gray-900">{incident.reported_issue}</h4>
                               <Badge className={priorityConfig.className}>
                                 {priorityConfig.label}
                               </Badge>
@@ -235,20 +250,37 @@ export default function AdminIncidents() {
                                 {statusConfig.label}
                               </Badge>
                             </div>
-                            <p className="text-sm text-gray-600 mb-2">{incident.description}</p>
+                            <p className="text-sm text-gray-600 mb-2">{incident.description || 'No description'}</p>
                             <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <span>Reporter: {incident.reporter}</span>
-                              <span>Location: {incident.location}</span>
-                              <span>{incident.reportedDate}</span>
+                              <span>Reporter: {reporterName}</span>
+                              <span>Location: {incident.location || 'N/A'}</span>
+                              <span>{reportedDate}</span>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">
-                            View Details
-                          </Button>
+                          <div className="flex flex-col gap-2">
+                            <Button variant="outline" size="sm">
+                              View Details
+                            </Button>
+                            {incident.reported_issue_status !== 'resolved' && (
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleStatusChange(incident._id, 'resolved')}
+                                disabled={updateStatusMutation.isPending}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Resolve
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
+                  {filteredIncidents.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                      No incidents found
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
