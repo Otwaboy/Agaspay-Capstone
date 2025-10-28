@@ -178,4 +178,95 @@ const getReports = async (req, res) => {
 };
 
 
-module.exports = { createReports, getReports};
+// Update incident status
+const updateIncidentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reported_issue_status, resolution_notes } = req.body;
+    const user = req.user;
+
+    if (!['admin', 'secretary', 'maintenance'].includes(user.role)) {
+      return res.status(403).json({ message: 'Not authorized to update incidents' });
+    }
+
+    const validStatuses = ['Pending', 'In Progress', 'Resolved', 'Closed'];
+    if (!validStatuses.includes(reported_issue_status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const incident = await IncidentReport.findByIdAndUpdate(
+      id,
+      { 
+        reported_issue_status,
+        resolution_notes,
+        resolved_at: reported_issue_status === 'Resolved' ? new Date() : null
+      },
+      { new: true }
+    );
+
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Incident status updated',
+      incident
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all incidents for admin
+const getAllIncidents = async (req, res) => {
+  try {
+    const { status, priority } = req.query;
+    
+    let filter = {};
+    if (status && status !== 'all') filter.reported_issue_status = status;
+    if (priority && priority !== 'all') filter.urgency_level = priority;
+    
+    const incidents = await IncidentReport.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // Populate reporter names
+    const populatedIncidents = await Promise.all(
+      incidents.map(async (incident) => {
+        if (incident.reported_by) {
+          try {
+            let reporterInfo = null;
+            if (incident.reported_by_model === 'Resident') {
+              reporterInfo = await Resident.findOne({ user: incident.reported_by }).lean();
+            } else {
+              reporterInfo = await Personnel.findOne({ user_id: incident.reported_by }).lean();
+            }
+            
+            if (reporterInfo) {
+              const name = reporterInfo.name || 
+                          `${reporterInfo.first_name || ''} ${reporterInfo.last_name || ''}`.trim() ||
+                          'Unknown';
+              incident.reported_by = name;
+            } else {
+              incident.reported_by = 'Unknown';
+            }
+          } catch (err) {
+            incident.reported_by = 'Unknown';
+          }
+        }
+        return incident;
+      })
+    );
+    
+    res.status(200).json({
+      success: true,
+      incidents: populatedIncidents,
+      count: populatedIncidents.length
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { createReports, getReports, updateIncidentStatus, getAllIncidents };
