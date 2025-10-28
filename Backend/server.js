@@ -17,9 +17,12 @@ const errorHandlerMiddleware = require('./middleware/error-handler')
 //cors allowing cross origin request
 const corsOptions = {
   origin: [
-    'http://localhost:5173', // Vite dev server or ag frontend react server
-    'http://localhost:3000'  // Your backend
-  ],
+    'http://localhost:5173', // Vite dev server
+    'http://localhost:5000', // Replit frontend port
+    'http://0.0.0.0:5000',   // Replit frontend
+    `https://${process.env.REPLIT_DOMAINS}`, // Replit deployment domain
+    'http://localhost:3000'  // Backend
+  ].filter(Boolean), // Remove undefined values
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -76,7 +79,7 @@ const start  = async ()=> {
 
         try {
             await connectDB(process.env.MONGO_URI)
-            app.listen(port, ()=> {console.log(`Server is listening to port ${port}`);})
+            app.listen(port, 'localhost', ()=> {console.log(`Server is listening on localhost:${port}`);})
         } catch (error) {
             console.log(error);
             

@@ -1,15 +1,11 @@
 require("dotenv").config();
 const axios = require('axios');
-const Stripe = require("stripe");
 const { StatusCodes } = require('http-status-codes');
 const { BadRequestError, UnauthorizedError } = require('../errors');
 const Payment = require('../model/Payment');
 const Billing = require('../model/Billing');
 const Resident = require('../model/Resident');
 const WaterConnection = require('../model/WaterConnection');
-
-const stripe = require("stripe")(process.env.PAYMONGO_SECRET_KEY);
-; // use env in production
 
 
 
