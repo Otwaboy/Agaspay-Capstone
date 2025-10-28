@@ -40,6 +40,11 @@ const waterConnectionRoutes = require('./routes/water-connection')
 const IncidentReportRoutes = require('./routes/Incident-reports')
 const scheduleTaskRoutes = require('./routes/schedule-task')
 const assignmentRoutes= require('./routes/assignments')
+const announcementRoutes = require('./routes/announcement')
+const waterScheduleRoutes = require('./routes/water-schedule')
+const receiptRoutes = require('./routes/receipt')
+const archiveRoutes = require('./routes/archive')
+const connectionManagementRoutes = require('./routes/connection-management')
 
 
 //cors
@@ -63,6 +68,11 @@ app.use('/api/v1/water-connection', waterConnectionRoutes)
 app.use('/api/v1/incident-report', IncidentReportRoutes)
 app.use('/api/v1/schedule-task', scheduleTaskRoutes)
 app.use('/api/v1/assignments', assignmentRoutes)
+app.use('/api/v1/announcements', announcementRoutes)
+app.use('/api/v1/water-schedules', waterScheduleRoutes)
+app.use('/api/v1/receipts', receiptRoutes)
+app.use('/api/v1/archive', archiveRoutes)
+app.use('/api/v1/connection-management', connectionManagementRoutes)
 
 
 //webhooks
