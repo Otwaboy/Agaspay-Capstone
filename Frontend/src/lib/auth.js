@@ -4,7 +4,16 @@ class AuthManager {
     this.tokenKey = 'agaspay_token';
     this.userKey = 'agaspay_user';
     // Dynamically determine backend URL based on environment
-    this.backendURL = window.location.origin.replace(':5000', ':3000');
+    // In Replit, multi-port access uses the format: https://PORT-DOMAIN
+    const currentOrigin = window.location.origin;
+    if (currentOrigin.includes('replit.dev')) {
+      // Replit environment - use port-prefixed URL
+      const domain = window.location.hostname;
+      this.backendURL = `https://3000-${domain}`;
+    } else {
+      // Local development
+      this.backendURL = currentOrigin.replace(':5000', ':3000');
+    }
   }
 
   async login(credentials) {

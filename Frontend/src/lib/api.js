@@ -2,9 +2,24 @@
 // 📦 API Client Utility for AGASPAY System
 // ======================================================
 
-const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://your-backend-domain.com' 
-  : window.location.origin.replace(':5000', ':3000');
+// Dynamically determine backend URL based on environment
+const getBackendURL = () => {
+  if (import.meta.env.PROD) {
+    return 'https://your-backend-domain.com';
+  }
+  
+  const currentOrigin = window.location.origin;
+  if (currentOrigin.includes('replit.dev')) {
+    // Replit environment - use port-prefixed URL
+    const domain = window.location.hostname;
+    return `https://3000-${domain}`;
+  }
+  
+  // Local development
+  return currentOrigin.replace(':5000', ':3000');
+};
+
+const API_BASE_URL = getBackendURL();
 
 class ApiClient {
   constructor() {
