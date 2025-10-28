@@ -37,6 +37,18 @@ const BillingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Personnel', // assuming your personnel collection/model name
     required: true
+  },
+  consecutive_unpaid_months: {
+    type: Number,
+    default: 0
+  },
+  is_delinquent: {
+    type: Boolean,
+    default: false
+  },
+  marked_for_disconnection: {
+    type: Boolean,
+    default: false
   }
 }, {
   collection: 'Billing',

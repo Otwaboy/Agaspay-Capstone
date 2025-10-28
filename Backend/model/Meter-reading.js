@@ -39,6 +39,19 @@ const MeterReadingSchema = new mongoose.Schema({
     enum: ['inprogress', 'submitted', 'approved'],
     default: 'inprogress'
   },
+  monthly_status: {
+    type: String,
+    enum: ['pending', 'completed'],
+    default: 'pending'
+  },
+  reading_period: {
+    month: { type: Number, required: true },
+    year: { type: Number, required: true }
+  },
+  can_edit: {
+    type: Boolean,
+    default: true
+  },
   recorded_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Personnel',
