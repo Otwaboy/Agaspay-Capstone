@@ -60,9 +60,13 @@ The system supports multiple user roles with different permissions:
 - **MongoDB:** Port 27017 (local instance for development, cloud for production)
 
 ### Key Configurations
-1. **Vite Config:** Configured with `allowedHosts: true` to work with Replit's proxy system
+1. **Vite Config:** 
+   - Configured with `allowedHosts: true` to work with Replit's proxy system
+   - **Vite Proxy:** All `/api` requests are forwarded to backend on `localhost:3000`
 2. **CORS:** Backend allows Replit domains and localhost origins
 3. **Database:** Uses MongoDB Atlas (cloud) with connection string in .env
+4. **Backend Server:** Binds to `0.0.0.0:3000` (accessible from frontend via Vite proxy)
+5. **Frontend Server:** Runs on `0.0.0.0:5000` (public-facing port)
 
 ### Workflows
 - **Backend:** Starts MongoDB (if needed) and runs Express server with nodemon
@@ -79,18 +83,23 @@ The system supports multiple user roles with different permissions:
 - Financial reports and analytics
 - SMS notifications for overdue bills
 
-## Demo Credentials
-- **Username:** admin
-- **Password:** admin123
+## Working Credentials
+- **Username:** `replitadmin`
+- **Password:** `replit2025`
+
+**Note:** Your original database users exist but may have different passwords. Use the credentials above or check your database for other valid accounts.
 
 ## Recent Changes
 - **October 28, 2025:**
-  - Migrated from GitHub to Replit
-  - Configured Vite to allow Replit proxy domains
-  - Set up MongoDB connection to Atlas cloud database
-  - Removed unused Stripe dependency (system uses PayMongo)
-  - Configured backend CORS for Replit environment
-  - Set up deployment configuration for autoscale deployment
+  - ✅ Migrated from GitHub to Replit successfully
+  - ✅ Configured Vite to allow Replit proxy domains
+  - ✅ Set up MongoDB Atlas cloud database connection
+  - ✅ Removed unused Stripe dependency (system uses PayMongo)
+  - ✅ Configured backend CORS for Replit environment
+  - ✅ **Implemented Vite proxy** to forward API requests from frontend to backend
+  - ✅ Created test admin account: `replitadmin` / `replit2025`
+  - ✅ Verified login functionality and database connectivity
+  - ✅ Set up deployment configuration for autoscale deployment
 
 ## Development
 - Frontend runs with hot module replacement (HMR)
