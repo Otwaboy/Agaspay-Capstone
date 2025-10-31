@@ -21,7 +21,7 @@ const menuItems = [
     label: "Dashboard",
     href: "/maintenance-dashboard",
     color: "text-blue-600"
-  },
+  }, 
   {
     icon: Wrench,
     label: "My Tasks",

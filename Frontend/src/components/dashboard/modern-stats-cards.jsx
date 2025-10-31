@@ -2,75 +2,95 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { Users, Droplets, DollarSign, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
-import { dashboardApi } from "../../services/adminApi";
+import apiClient from "../../lib/api";
 
 export default function ModernStatsCards() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: dashboardApi.getStats
+  // ✅ Fetch active connections
+  const { data: activeData, isLoading: activeLoading } = useQuery({
+    queryKey: ["active-connections"],
+    queryFn: () => apiClient.getActiveWaterConnections(),
   });
 
-  const stats = data?.stats || {};
+  // ✅ Fetch inactive connections
+  const { data: inactiveData, isLoading: inactiveLoading } = useQuery({
+    queryKey: ["inactive-connections"],
+    queryFn: () => apiClient.getInactiveWaterConnections(),
+  });
 
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i} className="border-none shadow-sm">
-            <CardContent className="p-6">
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
+   const { data: overdueData, isLoading: overdueLoading } = useQuery({
+    queryKey: ["overdue-billing"],
+    queryFn: () => apiClient.getOverdueBilling(),
+  });
 
+  // ✅ Extract connection counts safely
+  const activeConnections = activeData?.data?.length || 0;
+  const inactiveConnections = inactiveData?.data?.length || 0;
+  const overdueBilling = overdueData?.data?.length || 0
+
+  console.log("Active Connections:", activeData?.data);
+  console.log("Inactive Connections:", inactiveData?.data);
+
+  // ✅ Loading state skeleton
+  // if (activeLoading || inactiveLoading || overdueLoading) {
+  //   return (
+  //     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  //       {[...Array(4)].map((_, i) => (
+  //         <Card key={i} className="border-none shadow-sm">
+  //           <CardContent className="p-6">
+  //             <Skeleton className="h-20 w-full" />
+  //           </CardContent>
+  //         </Card>
+  //       ))}
+  //     </div>
+  //   );
+  // }
+
+  // ✅ Stat Cards Data
   const statCards = [
     {
       title: "Active Connections",
-      value: stats?.connections?.active || 0,
+      value: activeConnections,
       change: "+8.95%",
       trend: "up",
-      subtitle: "Since last week",
+      subtitle: "Total currently active",
       icon: Droplets,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
-      chartColor: "bg-blue-500"
+      chartColor: "bg-blue-500",
     },
     {
-      title: "New This Week",
-      value: stats?.connections?.pending || 0,
-      change: "+4.11%",
-      trend: "up",
-      subtitle: "Since last week",
+      title: "Inactive Connections",
+      value: inactiveConnections,
+      change: "-3.42%",
+      trend: "down",
+      subtitle: "Temporarily inactive users",
       icon: Users,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      chartColor: "bg-green-500"
+      color: "text-gray-600",
+      bgColor: "bg-gray-50",
+      chartColor: "bg-gray-500",
     },
     {
       title: "Overdue Bills",
-      value: stats?.financial?.delinquentAccounts || 0,
+      value: overdueBilling,
       change: "+92.05%",
       trend: "down",
       subtitle: "Since last week",
       icon: AlertTriangle,
       color: "text-red-600",
       bgColor: "bg-red-50",
-      chartColor: "bg-red-500"
+      chartColor: "bg-red-500",
     },
     {
       title: "Scheduled Tasks",
-      value: stats?.tasks?.pending || 0,
+      value: 7, // Replace with actual backend data later
       change: "+27.47%",
       trend: "up",
-      subtitle: "Since last week",
+      subtitle: "Upcoming maintenance",
       icon: DollarSign,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-      chartColor: "bg-purple-500"
-    }
+      chartColor: "bg-purple-500",
+    },
   ];
 
   return (
@@ -83,10 +103,14 @@ export default function ModernStatsCards() {
                 <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
                 <h3 className="text-3xl font-bold text-gray-900">{stat.value}</h3>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={`text-xs font-medium ${stat.trend === 'up' ? 'text-blue-600' : 'text-red-600'}`}>
+                  <span
+                    className={`text-xs font-medium ${
+                      stat.trend === "up" ? "text-blue-600" : "text-red-600"
+                    }`}
+                  >
                     {stat.change}
                   </span>
-                  {stat.trend === 'up' ? (
+                  {stat.trend === "up" ? (
                     <TrendingUp className="h-3 w-3 text-blue-600" />
                   ) : (
                     <TrendingDown className="h-3 w-3 text-red-600" />
@@ -94,13 +118,15 @@ export default function ModernStatsCards() {
                 </div>
                 <p className="text-xs text-gray-400 mt-1">{stat.subtitle}</p>
               </div>
-              
-              {/* Mini trend chart */}
+
+              {/* Mini bar chart */}
               <div className="flex items-end gap-0.5 h-12 ml-2">
                 {[30, 45, 35, 50, 40, 60, 55, 70, 65, 75].map((height, i) => (
                   <div
                     key={i}
-                    className={`w-1.5 ${stat.chartColor} opacity-${i === 9 ? '100' : '40'} rounded-sm`}
+                    className={`w-1.5 ${stat.chartColor} opacity-${
+                      i === 9 ? "100" : "40"
+                    } rounded-sm`}
                     style={{ height: `${height}%` }}
                   />
                 ))}

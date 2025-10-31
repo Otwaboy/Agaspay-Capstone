@@ -36,12 +36,12 @@ const menuItems = [
     href: "/admin-dashboard/personnel",
     color: "text-purple-600"
   },
-  {
-    icon: Droplets,
-    label: "Water Connections",
-    href: "/admin-dashboard/connections",
-    color: "text-cyan-600"
-  },
+  // {
+  //   icon: Droplets,
+  //   label: "Water Connections",
+  //   href: "/admin-dashboard/connections",
+  //   color: "text-cyan-600"
+  // },
   {
     icon: FileText,
     label: "Billing & Payments",
@@ -97,7 +97,7 @@ function SidebarContent() {
             <p className="text-xs text-gray-500">Waterworks Admin</p>
           </div>
         </div>
-      </div>
+      </div> 
       {/* Logo Section */}
 
 

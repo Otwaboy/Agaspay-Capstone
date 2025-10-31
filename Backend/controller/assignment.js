@@ -166,11 +166,12 @@ const getAssignments = async (req, res) => {
       const task = assignment.task_id;
       const personnel = assignment.assigned_to;
       const report = task?.report_id;
+      
       return {
         id: assignment._id,
         task: {
           id: task?._id,
-          task_type: task?.task_type,
+          type: report?.type,
           schedule_date: task?.schedule_date,
           schedule_time: task?.schedule_time,
           task_status: task?.task_status,

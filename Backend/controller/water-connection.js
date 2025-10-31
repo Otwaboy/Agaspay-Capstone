@@ -40,14 +40,12 @@ const getLatestConnections = async (req, res) => {
 };
 
 
-
-const getWaterConnections = async (req, res) => {
+// ✅ Get all ACTIVE water connections
+const getAllWaterConnections = async (req, res) => {
   try {
-    // ✅ FIXED: Fetch ALL connections, not just pending
     const connections = await WaterConnection.find({})
-      .populate("resident_id"); // get resident details
+      .populate("resident_id");
 
-    // Map each connection with extra details
     const data = await Promise.all(
       connections.map(async (conn) => {
         const lastReading = await Reading.findOne({ connection_id: conn._id })
@@ -58,27 +56,120 @@ const getWaterConnections = async (req, res) => {
           full_name: conn.resident_id
             ? `${conn.resident_id.first_name} ${conn.resident_id.last_name}`
             : "Unknown",
-          address: `Biking ${conn.resident_id.zone}, Purok ${conn.resident_id.purok}`,
+          address: conn.resident_id
+            ? `Biking ${conn.resident_id.zone}, Purok ${conn.resident_id.purok}`
+            : "No address available",
           meter_no: conn.meter_no,
           connection_status: conn.connection_status,
           type: conn.type,
-          contact_no: conn.resident_id.contact_no,
-          email: conn.resident_id.email,
-          status: conn.resident_id.status,
-          previous_reading: lastReading ? lastReading.previous_reading : 0,
-          present_reading: lastReading ? lastReading.present_reading : 0,
+          contact_no: conn.resident_id?.contact_no || "N/A",
+          email: conn.resident_id?.email || "N/A",
+          status: conn.resident_id?.status || "N/A",
+          previous_reading: lastReading?.previous_reading || 0,
+          present_reading: lastReading?.present_reading || 0,
         };
       })
     );
 
     res.status(200).json({
-      message: "Connections fetched successfully",
+      success: true,
+      message: "Active water connections fetched successfully",
       data,
+      count: data.length
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+
+// ✅ Get all ACTIVE water connections
+const getActiveWaterConnections = async (req, res) => {
+  try {
+    const connections = await WaterConnection.find({ connection_status: "active" })
+      .populate("resident_id");
+
+    const data = await Promise.all(
+      connections.map(async (conn) => {
+        const lastReading = await Reading.findOne({ connection_id: conn._id })
+          .sort({ createdAt: -1 });
+
+        return {
+          connection_id: conn._id,
+          full_name: conn.resident_id
+            ? `${conn.resident_id.first_name} ${conn.resident_id.last_name}`
+            : "Unknown",
+          address: conn.resident_id
+            ? `Biking ${conn.resident_id.zone}, Purok ${conn.resident_id.purok}`
+            : "No address available",
+          meter_no: conn.meter_no,
+          connection_status: conn.connection_status,
+          type: conn.type,
+          contact_no: conn.resident_id?.contact_no || "N/A",
+          email: conn.resident_id?.email || "N/A",
+          status: conn.resident_id?.status || "N/A",
+          previous_reading: lastReading?.previous_reading || 0,
+          present_reading: lastReading?.present_reading || 0,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Active water connections fetched successfully",
+      data,
+      count: data.length
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+// ✅ Get all INACTIVE water connections
+const getInactiveWaterConnections = async (req, res) => {
+  try {
+    const connections = await WaterConnection.find({ connection_status: "inactive" })
+      .populate("resident_id");
+
+    const data = await Promise.all(
+      connections.map(async (conn) => {
+        const lastReading = await Reading.findOne({ connection_id: conn._id })
+          .sort({ createdAt: -1 });
+
+        return {
+          connection_id: conn._id,
+          full_name: conn.resident_id
+            ? `${conn.resident_id.first_name} ${conn.resident_id.last_name}`
+            : "Unknown",
+          address: conn.resident_id
+            ? `Biking ${conn.resident_id.zone}, Purok ${conn.resident_id.purok}`
+            : "No address available",
+          meter_no: conn.meter_no,
+          connection_status: conn.connection_status,
+          type: conn.type,
+          contact_no: conn.resident_id?.contact_no || "N/A",
+          email: conn.resident_id?.email || "N/A",
+          status: conn.resident_id?.status || "N/A",
+          previous_reading: lastReading?.previous_reading || 0,
+          present_reading: lastReading?.present_reading || 0,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Inactive water connections fetched successfully",
+      data,
+      count: data.length
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 
 
 // Add this controller to your backend (e.g., controllers/residentController.js or authController.js)
@@ -165,4 +256,4 @@ const editResidentAccount = async (req, res) => {
 
 
 
-module.exports = { getLatestConnections, getWaterConnections,  editResidentAccount };
+module.exports = { getLatestConnections, getAllWaterConnections, getActiveWaterConnections,getInactiveWaterConnections, editResidentAccount };

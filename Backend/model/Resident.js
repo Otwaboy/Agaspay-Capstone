@@ -52,17 +52,20 @@ const ResidentSchema = new mongoose.Schema(
       // required: [true, 'Status of water connection is required'],
       default: 'active'
     },
-    voluntary_disconnection: {
-      type: Boolean,
-      default: false
-    },
-    archive_requested: {
-      type: Boolean,
-      default: false
-    },
-    archive_request_date: {
-      type: Date
-    },
+    // voluntary_disconnection: {
+    //   type: Boolean,
+    //   default: false,
+    //   required: false
+    // },
+    // archive_requested: {
+    //   type: Boolean,
+    //   default: false,
+    //   required: false
+    // },
+    // archive_request_date: {
+    //   type: Date,
+    //   required: false
+    // },
     created_at: {
       type: Date,
       default: Date.now

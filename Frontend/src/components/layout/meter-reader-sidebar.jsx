@@ -10,7 +10,7 @@ import {
   BarChart3,
   Calendar,
   Settings,
-  LogOut,
+  LogOut, 
   Navigation,
   Clock,
   Menu
@@ -23,11 +23,6 @@ const menuItems = [
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/meter-reader-dashboard",
-  },
-  {
-    title: "Today's Route",
-    icon: Route,
-    href: "/meter-reader-dashboard/route",
   },
   {
     title: "Meter Readings",
@@ -50,25 +45,10 @@ const menuItems = [
     href: "/meter-reader-dashboard/schedule",
   },
   {
-    title: "Navigation",
-    icon: Navigation,
-    href: "/meter-reader-dashboard/navigation",
-  },
-  {
     title: "Issue Reports",
     icon: AlertTriangle,
     href: "/meter-reader-dashboard/issues",
   },
-  {
-    title: "Performance",
-    icon: BarChart3,
-    href: "/meter-reader-dashboard/performance",
-  },
-  {
-    title: "Time Tracking",
-    icon: Clock,
-    href: "/meter-reader-dashboard/time-tracking",
-  }
 ];
 
 function MeterReaderSidebarContent() {

@@ -51,7 +51,7 @@ export default function SecretaryResidents() {
   const { data: residents = [], isLoading, error } = useQuery({
     queryKey: ['/api/water-connections'],
     queryFn: async () => {
-      const res = await apiClient.getWaterConnections();
+      const res = await apiClient.getAllWaterConnections();
       const connections = res.data;
       
       // Debug: Log the first connection to see the structure
@@ -159,7 +159,7 @@ export default function SecretaryResidents() {
                     <div>
                       <p className="text-sm font-medium text-gray-600">Active</p>
                       <p className="text-2xl font-bold text-green-600" data-testid="text-active-residents">
-                        {isLoading ? "..." : residents.filter(r => r.status === "active").length}
+                        {isLoading ? "..." : residents.filter(r => r.connectionStatus === "active").length}
                       </p>
                     </div>
                     <div className="bg-green-100 p-3 rounded-lg">

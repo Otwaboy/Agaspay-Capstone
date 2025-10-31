@@ -31,18 +31,18 @@ const secretaryMenuItems = [
     href: "/secretary-dashboard/residents",
     color: "text-green-600"
   },
-  {
-    icon: UserPlus,
-    label: "Registration",
-    href: "/secretary-dashboard/registration",
-    color: "text-purple-600"
-  },
-  {
-    icon: FileText,
-    label: "Documents",
-    href: "/secretary-dashboard/documents",
-    color: "text-orange-600"
-  },
+  // {
+  //   icon: UserPlus,
+  //   label: "Registration",
+  //   href: "/secretary-dashboard/registration",
+  //   color: "text-purple-600"
+  // },
+  // {
+  //   icon: FileText,
+  //   label: "Documents",
+  //   href: "/secretary-dashboard/documents",
+  //   color: "text-orange-600"
+  // },
   {
     icon: AlertTriangle,
     label: "Incident Reports",
@@ -54,7 +54,7 @@ const secretaryMenuItems = [
     label: "Assignments",
     href: "/secretary-dashboard/appointments",
     color: "text-teal-600"
-  },
+  }, 
   {
     icon: MessageSquare,
     label: "Announcements",

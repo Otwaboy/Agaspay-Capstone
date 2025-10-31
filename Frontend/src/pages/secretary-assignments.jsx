@@ -52,7 +52,7 @@ export default function SecretaryAssignments() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("unassigned");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [selectedTask, setSelectedTask] = useState(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
@@ -119,7 +119,7 @@ export default function SecretaryAssignments() {
       id: assignment.task.id,
       assignmentId: assignment.id,
       type: assignment.task.type,
-      location: 'N/A',
+      location: assignment.task.location || 'N/A',
       scheduledDate: assignment.task.schedule_date,
       timeSlot: assignment.task.schedule_time,
       priority: 'medium',

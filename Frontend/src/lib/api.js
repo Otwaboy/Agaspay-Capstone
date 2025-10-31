@@ -130,7 +130,7 @@ class ApiClient {
       });
     } catch (error) {
       console.error("Billing creation failed:", error);
-      throw error;
+      throw error; 
     }
   }
 
@@ -161,8 +161,16 @@ class ApiClient {
   // ======================================================
   // 💧 WATER CONNECTION (Secretary / Admin)
   // ======================================================
-  async getWaterConnections() {
+
+    async getAllWaterConnections() {
     return await this.request('/api/v1/water-connection');
+  }
+  async getActiveWaterConnections() {
+    return await this.request('/api/v1/water-connection/active');
+  }
+
+   async getInactiveWaterConnections() {
+    return await this.request('/api/v1/water-connection/inactive');
   }
 
   async updateResidentAccount(connectionId, updateData) {
@@ -265,7 +273,31 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+
+   // ======================================================
+  // 📋 ANNOOUNCEMENT (Secretary / Admin)
+  // ======================================================
+  async createAnnouncements(data) {
+      return await this.request('/api/v1/announcements', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
+
+    async getAnnouncements() {
+      return await this.request('/api/v1/announcements');
+    }
+
+    async getPendingAnnouncements() {
+      return await this.request('/api/v1/announcements/pending');
+    }
+
+
 }
+
+
+
 
 export const apiClient = new ApiClient();
 export default apiClient;

@@ -25,12 +25,12 @@ const residentMenuItems = [
     href: "/resident-dashboard",
     color: "text-blue-600"
   },
-  {
-    icon: CreditCard,
-    label: "Bills & Payments",
-    href: "/resident-dashboard/bills",
-    color: "text-green-600"
-  },
+  // {
+  //   icon: CreditCard,
+  //   label: "Bills & Payments",
+  //   href: "/resident-dashboard/bills",
+  //   color: "text-green-600"
+  // },
   {
     icon: Receipt,
     label: "Payment History",
@@ -44,14 +44,8 @@ const residentMenuItems = [
     color: "text-blue-500"
   },
   {
-    icon: Wrench,
-    label: "Service Requests",
-    href: "/resident-dashboard/service-requests",
-    color: "text-orange-600"
-  },
-  {
     icon: AlertTriangle,
-    label: "Report Issue",
+    label: "Reported Issue ",
     href: "/resident-dashboard/report-issue",
     color: "text-red-600"
   },
@@ -139,7 +133,7 @@ function ResidentSidebarContent() {
             </p>
             <p className="text-xs text-gray-500 truncate">Water Service Customer</p>
           </div>
-        </div>
+        </div> 
         <Button
           variant="ghost"
           onClick={handleLogout}

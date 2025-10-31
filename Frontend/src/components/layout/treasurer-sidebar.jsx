@@ -21,25 +21,25 @@ const menuItems = [
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/treasurer-dashboard",
-  }, 
+  },  
   {
     title: "Revenue Management",
     icon: DollarSign,
     subItems: [
       { title: "Payment Collection", href: "/treasurer-dashboard/revenue/payment-collection" },
-      { title: "Revenue Reports", href: "/treasurer-dashboard/revenue/revenue-reports" },
+      // { title: "Revenue Reports", href: "/treasurer-dashboard/revenue/revenue-reports" },
       { title: "Outstanding Balances", href: "/treasurer-dashboard/revenue/outstanding-balances" },
     ]
   },
-  {
-    title: "Financial Reports",
-    icon: FileText,
-    subItems: [
-      { title: "Monthly Reports", href: "/treasurer-dashboard/reports/monthly" },
-      { title: "Annual Reports", href: "/treasurer-dashboard/reports/annual" },
-      { title: "Custom Reports", href: "/treasurer-dashboard/reports/custom" },
-    ]
-  },
+  // {
+  //   title: "Financial Reports",
+  //   icon: FileText,
+  //   subItems: [
+  //     { title: "Monthly Reports", href: "/treasurer-dashboard/reports/monthly" },
+  //     { title: "Annual Reports", href: "/treasurer-dashboard/reports/annual" },
+  //     { title: "Custom Reports", href: "/treasurer-dashboard/reports/custom" },
+  //   ]
+  // },
   {
     title: "Billing Management",
     icon: Receipt,
@@ -49,16 +49,16 @@ const menuItems = [
       { title: "Billing Settings", href: "/treasurer-dashboard/billing/settings" },
     ]
   },
-  {
-    title: "Analytics",
-    icon: BarChart3,
-    href: "/treasurer-dashboard/analytics",
-  },
-  {
-    title: "Payment Methods",
-    icon: CreditCard,
-    href: "/treasurer-dashboard/payment-methods",
-  },
+  // {
+  //   title: "Analytics",
+  //   icon: BarChart3,
+  //   href: "/treasurer-dashboard/analytics",
+  // },
+  // {
+  //   title: "Payment Methods",
+  //   icon: CreditCard,
+  //   href: "/treasurer-dashboard/payment-methods",
+  // },
   {
     title: "Customer Accounts",
     icon: Users,
