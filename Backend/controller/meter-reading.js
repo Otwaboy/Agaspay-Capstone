@@ -1,6 +1,7 @@
 const { StatusCodes } = require('http-status-codes');
 const MeterReading = require('../model/Meter-reading');
 const WaterConnection = require('../model/WaterConnection');
+const Personnel = require('../model/Personnel');
 
 const {UnauthorizedError, BadRequestError} = require('../errors')
 
@@ -113,6 +114,7 @@ const inputReading = async (req, res) => {
  * Controller: getLatestReadings
  *
  * What it does:
+ *  - FILTERS by meter reader's assigned zone (SECURITY: meter readers can only see their zone)
  *  - For each connection, fetch the latest meter reading
  *  - Join resident info
  *  - Check if that reading already has a billing record
@@ -122,7 +124,36 @@ const inputReading = async (req, res) => {
  */
 const getLatestReadings = async (req, res) => {
   try {
+    // 🔒 SECURITY: Get the meter reader's assigned zone
+    const { userId, role } = req.user;
+    
+    let zoneFilter = {};
+    
+    // If user is a meter reader, enforce zone-based filtering
+    if (role === 'meter_reader') {
+      const personnel = await Personnel.findById(userId).select('assigned_zone');
+      
+      if (!personnel || !personnel.assigned_zone) {
+        return res.status(StatusCodes.FORBIDDEN).json({
+          message: "Meter reader must have an assigned zone",
+          connection_details: [],
+          total: 0
+        });
+      }
+      
+      // Filter connections by zone
+      zoneFilter = { zone: personnel.assigned_zone };
+      console.log('🔐 Zone filter applied for meter reader:', { 
+        userId, 
+        assigned_zone: personnel.assigned_zone 
+      });
+    }
+    // Treasurer can see all zones, so no filter needed
+    
     const readings = await WaterConnection.aggregate([
+      // 0️⃣ FILTER BY ZONE FIRST (if meter reader)
+      ...(Object.keys(zoneFilter).length > 0 ? [{ $match: zoneFilter }] : []),
+      
       // 1️⃣ Get the latest meterreading for each connection
       {
         $lookup: {
@@ -216,6 +247,7 @@ const getLatestReadings = async (req, res) => {
         inclusive_date: reading?.inclusive_date || null,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
         purok_no: resident?.purok || "not here purok",
+        zone: item.zone || null, // Include zone for display/debugging
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
