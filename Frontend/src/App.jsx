@@ -28,6 +28,11 @@ import SecretaryAssignments from "./pages/secretary-assignments";
 //meter- reader
 import MeterReaderDashboard from "./pages/meter-reader-dashboard";
 import MeterReaderReadings from "./pages/meter-reader-readings";
+import MeterReaderHistory from "./pages/meter-reader-history";
+import MeterReaderZones from "./pages/meter-reader-zones";
+import MeterReaderSchedule from "./pages/meter-reader-schedule";
+import MeterReaderIssues from "./pages/meter-reader-issues";
+import MeterReaderSettings from "./pages/meter-reader-settings";
 
 //treasurer
 import TreasurerDashboard from "./pages/treasurerDashboard";
@@ -290,6 +295,41 @@ function App() {
                 {() => (
                   <MeterReaderRoute>
                     <MeterReaderReadings />
+                  </MeterReaderRoute>
+                )}
+              </Route>
+            <Route path="/meter-reader-dashboard/history">
+                {() => (
+                  <MeterReaderRoute>
+                    <MeterReaderHistory />
+                  </MeterReaderRoute>
+                )}
+              </Route>
+            <Route path="/meter-reader-dashboard/zones">
+                {() => (
+                  <MeterReaderRoute>
+                    <MeterReaderZones />
+                  </MeterReaderRoute>
+                )}
+              </Route>
+            <Route path="/meter-reader-dashboard/schedule">
+                {() => (
+                  <MeterReaderRoute>
+                    <MeterReaderSchedule />
+                  </MeterReaderRoute>
+                )}
+              </Route>
+            <Route path="/meter-reader-dashboard/issues">
+                {() => (
+                  <MeterReaderRoute>
+                    <MeterReaderIssues />
+                  </MeterReaderRoute>
+                )}
+              </Route>
+            <Route path="/meter-reader-dashboard/settings">
+                {() => (
+                  <MeterReaderRoute>
+                    <MeterReaderSettings />
                   </MeterReaderRoute>
                 )}
               </Route>

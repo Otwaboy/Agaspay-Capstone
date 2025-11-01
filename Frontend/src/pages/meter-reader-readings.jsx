@@ -7,74 +7,75 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useToast } from "../hooks/use-toast";
-import { Gauge, Calendar, User, MapPin, Plus } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import { apiClient } from "../lib/api";
+import { Badge } from "../components/ui/badge";
 
 export default function MeterReaderReadings() {
-
   const [formData, setFormData] = useState({
     connection_id: "",
     present_reading: "",
     inclusive_date: {
       start: "",
-      end:""
+      end: ""
     },
     remarks: ""
-
   });
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // ✅ Fetch water connections
   const { data: connectionsResponse, isLoading: connectionsLoading } = useQuery({
     queryKey: ["connections"],
     queryFn: async () => {
-      return await apiClient.getLatestReadings(); 
-      // returns { message, connection_details: [...] }
+      return await apiClient.getLatestReadings();
+    }
+  });
+
+  const { data: authUser } = useQuery({
+    queryKey: ["auth-user"],
+    queryFn: async () => {
+      const response = await apiClient.get("/auth/me");
+      return response.data;
     }
   });
 
   const connectionList = connectionsResponse?.connection_details || [];
+  const meterReaderZone = authUser?.user?.assigned_zone;
 
-  // Find selected connection
-const selectedConnectionData = connectionList.find(
-  (conn) => String(conn.connection_id) === String(formData.connection_id) // id form mongodb
-);
+  const filteredConnections = connectionList.filter((conn) => {
+    const matchesZone = meterReaderZone ? conn.zone === meterReaderZone : true;
+    const matchesSearch = searchQuery
+      ? conn.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conn.purok_no?.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    return matchesZone && matchesSearch;
+  });
 
+  const selectedConnectionData = filteredConnections.find(
+    (conn) => String(conn.connection_id) === String(formData.connection_id)
+  );
 
-// ✅ Debug logs (plain JS, not JSX)
-console.log("connection list ni", connectionList);
-  console.log("connection_id ni ha", formData.connection_id);
-  console.log("selectedConnectionData", selectedConnectionData);
-
-  // getting the present reading of the latest reading and make it previous reading in a new reading
   const previousReading = selectedConnectionData?.present_reading || 0;
-
-  // Consumption 
   const presentReading = parseFloat(formData.present_reading) || 0;
-  const consumption =
-    presentReading > previousReading ? presentReading - previousReading : 0;
+  const consumption = presentReading > previousReading ? presentReading - previousReading : 0;
 
-  // ✅ Record reading
   const recordReadingMutation = useMutation({
     mutationFn: async (readingData) => {
       return await apiClient.inputReading(readingData);
     },
-
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Meter reading recorded successfully"
       });
-
       setFormData({
         connection_id: "",
         present_reading: "",
         inclusive_date: { start: "", end: "" },
         remarks: ""
       });
-
       queryClient.invalidateQueries({ queryKey: ["connections"] });
     },
     onError: (error) => {
@@ -86,7 +87,6 @@ console.log("connection list ni", connectionList);
     }
   });
 
-  // Input handler
   const handleInputChange = (field, value) => {
     if (field.includes(".")) {
       const [parent, child] = field.split(".");
@@ -105,7 +105,6 @@ console.log("connection list ni", connectionList);
     }
   };
 
-  //Handle submit reading to treasurer
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -141,7 +140,6 @@ console.log("connection list ni", connectionList);
       });
     }
 
-    // this payload will be passed on the backend
     const payload = {
       connection_id: formData.connection_id,
       present_reading: Number(formData.present_reading),
@@ -155,124 +153,138 @@ console.log("connection list ni", connectionList);
     recordReadingMutation.mutate(payload);
   };
 
-
-
-
-
   return (
     <div className="flex h-screen bg-gray-50">
       <MeterReaderSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Gauge className="h-5 w-5 text-blue-600" />
+        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <Gauge className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold">Record Meter Reading</h1>
+                <p className="text-sm text-green-100">Zone {meterReaderZone} - Field Operations</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Record Meter Reading</h1>
-              <p className="text-sm text-gray-500">Input water consumption measurements</p>
+            <div className="hidden sm:flex items-center space-x-2 bg-white bg-opacity-20 px-4 py-2 rounded-lg backdrop-blur-sm">
+              <TrendingUp className="h-5 w-5" />
+              <span className="text-sm font-medium">{filteredConnections.length} Connections</span>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-2xl mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Plus className="h-5 w-5" />
-                  <span>New Meter Reading</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+        <div className="flex-1 overflow-auto p-4 sm:p-6">
+          <div className="max-w-4xl mx-auto space-y-4">
+            <Card className="shadow-md">
+              <CardContent className="p-4 sm:p-6">
+                <div className="relative mb-6">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search by name or purok..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-12 text-base border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+
+                {meterReaderZone && (
+                  <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-green-900">Your Assigned Zone</p>
+                        <p className="text-xs text-green-700">Zone {meterReaderZone} - {filteredConnections.length} residents</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Connection Selection */}
                   <div className="space-y-2">
-                    <Label htmlFor="connection_id" className="flex items-center space-x-2">
+                    <Label htmlFor="connection_id" className="flex items-center space-x-2 text-base">
                       <User className="h-4 w-4" />
-                      <span>Water Connection</span>
-                    </Label> 
-
-
-          {/* handle sa mga names selected */}
+                      <span>Select Resident</span>
+                    </Label>
                     <Select
                       value={formData.connection_id}
                       onValueChange={(value) => handleInputChange("connection_id", value)}
                       data-testid="select-connection"
                     >
-                       <SelectTrigger>
-                              {selectedConnectionData ? (
-                                <span>{selectedConnectionData.full_name}</span>
-                              ) : (
-                                <SelectValue placeholder="Select Resident" />
-                              )}
-                              
-                            </SelectTrigger>
-
+                      <SelectTrigger className="h-12 text-base">
+                        {selectedConnectionData ? (
+                          <div className="flex items-center justify-between w-full">
+                            <span>{selectedConnectionData.full_name}</span>
+                            <Badge variant="outline" className="ml-2">Zone {selectedConnectionData.zone}</Badge>
+                          </div>
+                        ) : (
+                          <SelectValue placeholder="Search and select resident" />
+                        )}
+                      </SelectTrigger>
                       <SelectContent>
                         {connectionsLoading ? (
                           <SelectItem value="loading" disabled>
                             Loading connections...
                           </SelectItem>
-                        ) : connectionList.length === 0 ? (
+                        ) : filteredConnections.length === 0 ? (
                           <SelectItem value="no-connections" disabled>
-                            No connections available
+                            {searchQuery ? "No residents found" : "No connections in your zone"}
                           </SelectItem>
                         ) : (
-                          connectionList.map((connection) => (
+                          filteredConnections.map((connection) => (
                             <SelectItem
                               key={connection.connection_id}
-                              value={String(connection.connection_id)} // ✅ use _id
+                              value={String(connection.connection_id)}
                             >
-                              {connection.full_name || "Unnamed"}
+                              <div className="flex items-center justify-between w-full">
+                                <span>{connection.full_name || "Unnamed"}</span>
+                                <Badge variant="secondary" className="ml-2 text-xs">Purok {connection.purok_no}</Badge>
+                              </div>
                             </SelectItem>
                           ))
                         )}
                       </SelectContent>
                     </Select>
-
                   </div>
 
-
-                  {/* Connection Details */}
-                  
                   {selectedConnectionData && (
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">Customer:</span>
-                          <p className="text-gray-900">
-                            {selectedConnectionData.full_name || "N/A"}
-                          </p>
+                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="bg-white p-3 rounded-lg">
+                          <span className="font-medium text-gray-600 block mb-1">Customer</span>
+                          <p className="text-gray-900 font-semibold">{selectedConnectionData.full_name}</p>
                         </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Purok:</span>
-                          <p className="text-gray-900">
-                            {selectedConnectionData.purok_no || "N/A"}
-                          </p>
+                        <div className="bg-white p-3 rounded-lg">
+                          <span className="font-medium text-gray-600 block mb-1">Purok</span>
+                          <p className="text-gray-900 font-semibold">Purok {selectedConnectionData.purok_no}</p>
                         </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Previous Reading:</span>
-                          <p className="text-gray-900">{previousReading} m³</p>
+                        <div className="bg-white p-3 rounded-lg">
+                          <span className="font-medium text-gray-600 block mb-1">Previous Reading</span>
+                          <p className="text-blue-600 font-bold text-lg">{previousReading} m³</p>
                         </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Calculated Consumption:</span>
-                          <p className="text-blue-600 font-semibold">
-                            {consumption.toFixed(2)} m³
-                          </p>
+                        <div className="bg-white p-3 rounded-lg">
+                          <span className="font-medium text-gray-600 block mb-1">Consumption</span>
+                          <p className="text-green-600 font-bold text-lg">{consumption.toFixed(2)} m³</p>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Present Reading */}
                   <div className="space-y-2">
-                    <Label htmlFor="present_reading" className="flex items-center space-x-2">
+                    <Label htmlFor="present_reading" className="flex items-center space-x-2 text-base">
                       <Gauge className="h-4 w-4" />
                       <span>Present Reading (m³)</span>
                     </Label>
@@ -282,79 +294,76 @@ console.log("connection list ni", connectionList);
                       step="0.1"
                       placeholder="Enter current meter reading"
                       value={formData.present_reading}
-                      onChange={(e) =>
-                        handleInputChange("present_reading", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("present_reading", e.target.value)}
+                      className="h-12 text-base text-lg font-semibold"
                       data-testid="input-present-reading"
                     />
                   </div>
 
-                  {/* Date Range */}
                   <div className="space-y-4">
-                    <Label className="flex items-center space-x-2">
+                    <Label className="flex items-center space-x-2 text-base">
                       <Calendar className="h-4 w-4" />
                       <span>Reading Period</span>
                     </Label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="start" className="text-sm">
+                        <Label htmlFor="start" className="text-sm font-medium">
                           Start Date
                         </Label>
                         <Input
                           id="start"
                           type="date"
                           value={formData.inclusive_date.start}
-                          onChange={(e) =>
-                            handleInputChange("inclusive_date.start", e.target.value)
-                          }
+                          onChange={(e) => handleInputChange("inclusive_date.start", e.target.value)}
+                          className="h-12 text-base"
                           data-testid="input-start-date"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="end" className="text-sm">
+                        <Label htmlFor="end" className="text-sm font-medium">
                           End Date
                         </Label>
                         <Input
                           id="end"
                           type="date"
                           value={formData.inclusive_date.end}
-                          onChange={(e) =>
-                            handleInputChange("inclusive_date.end", e.target.value)
-                          }
+                          onChange={(e) => handleInputChange("inclusive_date.end", e.target.value)}
+                          className="h-12 text-base"
                           data-testid="input-end-date"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Remarks */}
                   <div className="space-y-2">
-                    <Label htmlFor="remarks" className="flex items-center space-x-2">
+                    <Label htmlFor="remarks" className="flex items-center space-x-2 text-base">
                       <MapPin className="h-4 w-4" />
                       <span>Remarks (Optional)</span>
                     </Label>
                     <Textarea
                       id="remarks"
-                      placeholder="Enter any additional notes about this reading..."
+                      placeholder="Any notes about this reading (e.g., meter condition, access issues)..."
                       value={formData.remarks}
                       onChange={(e) => handleInputChange("remarks", e.target.value)}
+                      className="min-h-[100px] text-base"
                       data-testid="textarea-remarks"
                     />
                   </div>
 
-                  {/* Submit */}
-                  <div className="flex justify-end space-x-3 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() =>
+                      onClick={() => {
                         setFormData({
                           connection_id: "",
                           present_reading: "",
                           inclusive_date: { start: "", end: "" },
                           remarks: ""
-                        })
-                      }
+                        });
+                        setSearchQuery("");
+                      }}
+                      className="flex-1 h-12 text-base"
                       data-testid="button-cancel"
                     >
                       Clear Form
@@ -362,11 +371,10 @@ console.log("connection list ni", connectionList);
                     <Button
                       type="submit"
                       disabled={recordReadingMutation.isPending}
+                      className="flex-1 h-12 text-base bg-green-600 hover:bg-green-700"
                       data-testid="button-submit"
                     >
-                      {recordReadingMutation.isPending
-                        ? "Recording..."
-                        : "Record Reading"}
+                      {recordReadingMutation.isPending ? "Recording..." : "Record Reading"}
                     </Button>
                   </div>
                 </form>
