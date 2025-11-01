@@ -25,8 +25,11 @@ export default function AdminScheduling() {
     queryKey: ['scheduleTasks'],
     queryFn: () => scheduleTaskApi.getAll()
   });
-
+ 
   const tasks = data?.tasks || [];
+
+  console.log('task', tasks);
+  
 
   const deleteMutation = useMutation({
     mutationFn: (id) => scheduleTaskApi.delete(id),
@@ -64,7 +67,7 @@ export default function AdminScheduling() {
     }
   });
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status) => { 
     const config = {
       completed: { label: "Completed", className: "bg-green-100 text-green-800" },
       scheduled: { label: "Scheduled", className: "bg-blue-100 text-blue-800" },
@@ -73,7 +76,7 @@ export default function AdminScheduling() {
       "in progress": { label: "In Progress", className: "bg-yellow-100 text-yellow-800" },
       cancelled: { label: "Cancelled", className: "bg-red-100 text-red-800" }
     };
-    return config[status] || config.scheduled;
+    return config[status] ||  { label: status, className: "bg-gray-100 text-gray-800" };
   };
 
   const getTypeBadge = (type) => {
@@ -204,13 +207,13 @@ export default function AdminScheduling() {
               <CardContent>
                 <div className="space-y-4">
                   {tasks.map((task) => {
-                    const statusConfig = getStatusBadge(task.status);
+                    const statusConfig = getStatusBadge(task.task_status);
                     const typeConfig = getTypeBadge(task.task_type);
                     const assignedTo = task.assigned_to ? 
-                      `${task.assigned_to.first_name} ${task.assigned_to.last_name}` : 'Unassigned';
-                    const scheduledDate = task.scheduled_date ? 
-                      new Date(task.scheduled_date).toLocaleDateString() : 'N/A';
-                    const scheduledTime = task.scheduled_time || 'N/A';
+                      `${task.assigned_to.name}` : 'Unassigned';
+                    const scheduledDate = task.schedule_date ? 
+                      new Date(task.schedule_date).toLocaleDateString() : 'N/A';
+                    const scheduledTime = task.schedule_time || 'N/A';
                     
                     return (
                       <div key={task._id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`task-${task._id}`}>
@@ -219,7 +222,7 @@ export default function AdminScheduling() {
                             <Calendar className="h-5 w-5 text-teal-600" />
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-sm font-medium text-gray-900">{task.task_name || 'Untitled Task'}</h4>
+                            <h4 className="text-sm font-medium text-gray-900">{task.report_id.type || 'Untitled Task'}</h4>
                             <div className="flex items-center space-x-4 mt-1">
                               <div className="flex items-center text-sm text-gray-500">
                                 <Users className="h-4 w-4 mr-1" />
@@ -239,7 +242,7 @@ export default function AdminScheduling() {
                           <Badge className={statusConfig.className}>
                             {statusConfig.label}
                           </Badge>
-                          {task.status !== 'completed' && (
+                          {task.task_status !== 'Completed' && (
                             <Button 
                               size="sm" 
                               variant="ghost"

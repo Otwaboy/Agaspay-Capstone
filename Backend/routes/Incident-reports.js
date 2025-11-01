@@ -10,10 +10,10 @@ const roleMiddleware = require('../middleware/roleMiddleware')
 router.post('/', authMiddleware, roleMiddleware('meter_reader', 'resident', 'secretary'), createReports)
 
 // Get reports (filtered by role)
-router.get('/', authMiddleware, roleMiddleware('meter_reader', 'resident', 'secretary'), getReports)
+router.get('/', authMiddleware, roleMiddleware('meter_reader', 'resident', 'secretary', 'admin'), getReports)
 
 // Get all incidents (Admin only)
-router.get('/all', authMiddleware, roleMiddleware('admin', 'secretary', 'maintenance'), getAllIncidents)
+router.get('/all', authMiddleware, roleMiddleware('admin', 'secretary', 'maintenance',), getAllIncidents)
 
 // Update incident status (Admin, Secretary, Maintenance)
 router.patch('/:id/status', authMiddleware, roleMiddleware('admin', 'secretary', 'maintenance'), updateIncidentStatus)

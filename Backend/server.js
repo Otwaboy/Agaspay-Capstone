@@ -54,11 +54,11 @@ const reportsRoutes = require('./routes/reports')
 app.use(cors(corsOptions));
 
 
- 
+  
 
 //extra packages 
 app.use(express.json())
-
+ 
 
 //routes
 app.use('/api/v1/auth', authRoutes)

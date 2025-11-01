@@ -1,6 +1,7 @@
 const ScheduleTask = require('../model/Schedule-task');
+const Assignment = require('../model/Assignment')
 
-
+ 
 
 const createTask = async (req, res) => {
   const user = req.user; // using user.userId
@@ -59,72 +60,139 @@ const createTask = async (req, res) => {
     });
   }
 };
+
+
+
 // Get all schedule tasks (with filtering based on user role)
 const getTasks = async (req, res) => {
   const user = req.user;
+
+  // 🔒 Check authentication
   if (!user) {
     return res.status(401).json({
       success: false,
-      message: 'User not authenticated'
+      message: 'User not authenticated',
     });
   }
-  if (!['meter_reader', 'admin', 'secretary', 'maintenance'].includes(user.role)) {
+
+  // 🔒 Role check
+  if (!['admin', 'secretary', 'maintenance'].includes(user.role)) {
     return res.status(403).json({
       success: false,
-      message: 'Unauthorized access'
+      message: 'Unauthorized access',
     });
   }
+
   try {
-    console.log('🔍 Fetching tasks for user:', {
-      userId: user.userId,
-      role: user.role
-    });
-    let filter = {};
-    // ✅ Removed task_type filtering - will filter by report type after population
-    // Admin and secretary see all tasks (no filter)
-    console.log('📋 Query filter:', filter);
-    const tasks = await ScheduleTask.find(filter)
+    console.log('🔍 Fetching tasks for user:', { userId: user.userId, role: user.role });
+
+    const now = new Date();
+
+    // 🔹 Step 1: Fetch all tasks that are still "Scheduled"
+    const schedTasks = await ScheduleTask.find({
+      task_status: { $nin: ['Pending', 'Completed'] },
+    })
+      .populate('report_id', 'schedule_date schedule_time')
+      .lean();
+
+    // 🔹 Step 2: Check if the schedule date+time has passed
+    const updates = [];
+    for (const task of schedTasks) {
+      if (!task.report_id?.schedule_date || !task.report_id?.schedule_time) continue;
+
+      const scheduleDate = new Date(task.report_id.schedule_date);
+      const timeStr = task.report_id.schedule_time.trim();
+
+      // Parse time (support formats like "11:30 AM" or "14:00")
+      let [time, modifier] = timeStr.split(' ');
+      let [hours, minutes] = time.split(':').map(Number);
+      if (modifier?.toLowerCase() === 'pm' && hours < 12) hours += 12;
+      if (modifier?.toLowerCase() === 'am' && hours === 12) hours = 0;
+
+      scheduleDate.setHours(hours, minutes || 0, 0, 0);
+
+      // Compare current time vs schedule
+      if (scheduleDate < now) {
+        updates.push(task._id);
+      }
+    }
+
+    // 🔹 Step 3: Update overdue ones in bulk
+    if (updates.length > 0) {
+      await ScheduleTask.updateMany(
+        { _id: { $in: updates } },
+        { $set: { task_status: 'Pending' } }
+      );
+      console.log(`🕒 Updated ${updates.length} tasks to Pending (overdue)`);
+    }
+
+    // 🔹 Step 4: Fetch all tasks again after updates
+    const tasks = await ScheduleTask.find({})
       .populate('connection_id', 'meter_no connection_status')
-      .populate('report_id', 'type location urgency_level description')
+      .populate('report_id', 'type location urgency_level description schedule_time schedule_date')
       .populate('scheduled_by', 'first_name last_name role')
       .sort({ schedule_date: -1, createdAt: -1 })
       .lean();
-    // ✅ Format tasks and extract task_type from incident report
-    const formattedTasks = tasks.map(task => {
+
+    // 🔹 Step 5: Fetch all assignments
+    const allAssignments = await Assignment.find({})
+      .populate('assigned_to', 'first_name last_name role')
+      .lean();
+
+    // 🔹 Step 6: Attach assignment info
+    const formattedTasks = tasks.map((task) => {
+      const assignment = allAssignments.find(
+        (a) => a.task_id.toString() === task._id.toString()
+      );
+
       return {
         ...task,
-        task_type: task.report_id?.type || 'N/A', // ✅ Get type from incident report
+        task_type: task.report_id?.type || 'N/A',
+        assigned_to: assignment?.assigned_to
+          ? {
+              _id: assignment.assigned_to._id,
+              name: `${assignment.assigned_to.first_name} ${assignment.assigned_to.last_name}`,
+              role: assignment.assigned_to.role,
+            }
+          : null,
       };
     });
-    // ✅ Apply role-based filtering AFTER populating
+
+    // 🔹 Step 7: Role-based filtering
     let filteredTasks = formattedTasks;
-    if (user.role === 'meter_reader') {
-      // Meter readers see only meter reading tasks
-      filteredTasks = formattedTasks.filter(task => 
-        task.task_type === 'Meter Problem' || task.assigned_to?._id?.toString() === user.userId
-      );
-    } else if (user.role === 'maintenance') {
-      // Maintenance staff see maintenance-related tasks
-      filteredTasks = formattedTasks.filter(task => 
-        ['Pipe Leak', 'Damaged Infrastructure', 'Low Water Pressure', 'No Water Supply'].includes(task.task_type) || 
-        task.assigned_to?._id?.toString() === user.userId
+    if (user.role === 'maintenance') {
+      filteredTasks = formattedTasks.filter(
+        (task) =>
+          [
+            'Pipe Leak',
+            'Damaged Infrastructure',
+            'Low Water Pressure',
+            'No Water Supply',
+          ].includes(task.task_type) ||
+          task.assigned_to?._id?.toString() === user.userId
       );
     }
+
     console.log(`✅ Found ${filteredTasks.length} tasks (${formattedTasks.length} total before filtering)`);
+
     res.status(200).json({
       success: true,
       tasks: filteredTasks,
-      count: filteredTasks.length
+      count: filteredTasks.length,
     });
   } catch (error) {
     console.error('❌ Error fetching schedule tasks:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch schedule tasks',
-      error: error.message
+      error: error.message,
     });
   }
 };
+
+
+
+
 
 // Update task status
 const updateTaskStatus = async (req, res) => {

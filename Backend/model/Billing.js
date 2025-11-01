@@ -14,7 +14,7 @@ const BillingSchema = new mongoose.Schema({
   },  
   rate_id: { 
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Rate', 
+    ref: 'Rate',  
   },
   total_amount: {
     type: Number,

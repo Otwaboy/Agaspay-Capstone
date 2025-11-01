@@ -199,10 +199,10 @@ export default function AdminUsers() {
                           <tr key={user._id} className="border-b hover:bg-gray-50">
                             <td className="p-4">
                               <div className="font-medium">{user.first_name} {user.last_name}</div>
-                              <div className="text-sm text-gray-500">{user.meter_no || 'N/A'}</div>
+                              <div className="text-sm text-gray-500">{user.meter_number || 'N/A'}</div>
                             </td>
                             <td className="p-4 text-sm">{user.email}</td>
-                            <td className="p-4 text-sm">{user.zone || 'N/A'} / {user.purok || 'N/A'}</td>
+                            <td className="p-4 text-sm"> {`Biking ${user.zone}`} / {`Purok ${user.purok}`}</td>
                             <td className="p-4">
                               <Badge className={statusConfig.className}>
                                 {statusConfig.label}

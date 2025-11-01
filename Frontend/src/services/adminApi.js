@@ -15,7 +15,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json'
   }
 });
-
+ 
 // Add auth token to all requests
 apiClient.interceptors.request.use(config => {
   const token = getAuthToken();
@@ -148,7 +148,7 @@ export const scheduleTaskApi = {
 // Incidents APIs
 export const incidentsApi = {
   getAll: async (params = {}) => {
-    const response = await apiClient.get('/incident-report/all', { params });
+    const response = await apiClient.get('/incident-report', { params });
     return response.data;
   },
   getById: async (id) => {
@@ -243,6 +243,9 @@ export const reportsApi = {
     return response.data;
   }
 };
+
+;
+
 
 export default {
   dashboard: dashboardApi,

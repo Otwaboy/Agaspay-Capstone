@@ -8,7 +8,7 @@ const IncidentReportSchema = new mongoose.Schema(
       enum: ['No Water Supply', 'Low Water Pressure', 'Pipe Leak', 'Water Quality Issue', 'Meter Problem', 'Damaged Infrastructure', 'Other'],
     },
     location: {
-      type: String,
+      type: String, 
       required: [true, 'Please provide the location of the incident'],
     },
     urgency_level:{

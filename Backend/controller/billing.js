@@ -46,7 +46,7 @@ const getBilling = async (req, res) => {
     path: 'connection_id',
     populate: {
       path: 'resident_id',
-      select: 'first_name last_name'
+      select: 'first_name last_name purok'
     }
   });
 
@@ -55,7 +55,7 @@ const getBilling = async (req, res) => {
     billings.map(async (billing) => {
       const connection = billing.connection_id;
       const resident = connection.resident_id;
-
+ 
       // ✅ Find latest reading for this connection
      const reading = await MeterReading.findById(billing.reading_id);
 
@@ -64,7 +64,7 @@ const getBilling = async (req, res) => {
         connection_id: connection?._id,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : 'unknown',
         meter_no: connection?.meter_no,
-        purok_no: connection?.purok ?? 'unknown',
+        purok_no: resident?.purok ?? 'unknownss',
         total_amount: billing?.total_amount,  // ✅ fixed
         status: billing?.status ?? 'unknown',
 

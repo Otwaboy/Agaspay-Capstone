@@ -26,7 +26,7 @@ const getAllResidents = async (req, res) => {
         const connection = await WaterConnection.findOne({ resident_id: resident._id });
         return {
           ...resident,
-          account_number: connection?.account_number || null,
+          meter_number: connection?.meter_no || null,
           zone: resident.zone || null,
           purok: resident.purok || null,
           connection_status: connection?.connection_status || null

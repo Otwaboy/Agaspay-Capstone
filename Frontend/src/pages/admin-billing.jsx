@@ -25,7 +25,7 @@ import {
   Search,
   Filter,
   Plus,
-  MoreVertical,
+  MoreVertical, 
   Download,
   Eye,
   CheckCircle,
@@ -50,12 +50,15 @@ export default function AdminBilling() {
   });
 
   const isLoading = billingLoading || paymentLoading;
-  const bills = billingData?.billings || [];
+
+  const bills = billingData?.data || [];
   const payments = paymentData?.payments || [];
 
+  console.log('sure uy', bills);
+  
   const enrichedBills = bills.map(bill => {
     const payment = payments.find(p => p.billing_id?._id === bill._id);
-    const isPaid = payment && payment.payment_status === 'paid';
+    const isPaid = bill.status === 'paid';
     const isOverdue = !isPaid && new Date(bill.due_date) < new Date();
     
     return {
@@ -121,25 +124,25 @@ export default function AdminBilling() {
     }
   ];
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen bg-gray-100">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <TopHeader />
-          <main className="flex-1 overflow-auto p-6">
-            <div className="max-w-7xl mx-auto">
-              <Skeleton className="h-8 w-64 mb-4" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
-              </div>
-              <Skeleton className="h-96" />
-            </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="flex h-screen bg-gray-100">
+  //       <Sidebar />
+  //       <div className="flex-1 flex flex-col overflow-hidden">
+  //         <TopHeader />
+  //         <main className="flex-1 overflow-auto p-6">
+  //           <div className="max-w-7xl mx-auto">
+  //             <Skeleton className="h-8 w-64 mb-4" />
+  //             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  //               {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+  //             </div>
+  //             <Skeleton className="h-96" />
+  //           </div>
+  //         </main>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -264,23 +267,21 @@ export default function AdminBilling() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredBills.map((bill) => {
                         const statusConfig = getStatusBadge(bill.status);
-                        const residentName = bill.resident_id ? 
-                          `${bill.resident_id.first_name} ${bill.resident_id.last_name}` : 'N/A';
-                        const billingPeriod = bill.billing_month && bill.billing_year ? 
-                          `${bill.billing_month} ${bill.billing_year}` : 'N/A';
+                        const residentName = bill.full_name
+                        const billingPeriod = bill.due_date ? new Date(bill.due_date).toLocaleDateString() : 'N/A';
                         const dueDate = bill.due_date ? new Date(bill.due_date).toLocaleDateString() : 'N/A';
                         
                         return (
                           <tr key={bill._id} data-testid={`row-bill-${bill._id}`}>
-                            <td className="py-4 px-6 text-sm font-medium text-gray-900">{bill._id.slice(-6)}</td>
+                            <td className="py-4 px-6 text-sm font-medium text-gray-900">{bill.bill_id.slice(-6)}</td>
                             <td className="py-4 px-6">
                               <div>
                                 <p className="text-sm font-medium text-gray-900">{residentName}</p>
-                                <p className="text-sm text-gray-500">{bill.resident_id?.account_number || 'N/A'}</p>
+                                <p className="text-sm text-gray-500">{bill.meter_no || 'N/A'}</p>
                               </div>
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-900">{billingPeriod}</td>
-                            <td className="py-4 px-6 text-sm text-gray-900">{bill.consumption || 0} m³</td>
+                            <td className="py-4 px-6 text-sm text-gray-900">{bill.calculated || 0} m³</td>
                             <td className="py-4 px-6 text-sm font-medium text-gray-900">
                               ₱{(bill.total_amount || 0).toFixed(2)}
                             </td>

@@ -22,7 +22,7 @@ const ScheduleTaskSchema = new mongoose.Schema(
     },
     task_status: {
       type: String,
-      enum: ['Unassigned', 'Scheduled', 'Completed', 'Cancelled'],
+      enum: ['Unassigned', 'Scheduled', 'Completed', 'Cancelled', 'Pending'],
       default: 'Unassigned',  // Match the enum!
     },
     scheduled_by: {
@@ -34,5 +34,5 @@ const ScheduleTaskSchema = new mongoose.Schema(
   { timestamps: true } 
     
 );
-
+ 
 module.exports = mongoose.model('ScheduleTask', ScheduleTaskSchema);

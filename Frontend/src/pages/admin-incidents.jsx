@@ -37,7 +37,10 @@ export default function AdminIncidents() {
     queryFn: () => incidentsApi.getAll({ status: statusFilter !== 'all' ? statusFilter : undefined })
   });
 
-  const incidents = data?.incidents || [];
+ const incidents = data?.reports || [];
+
+  console.log('incidents', incidents);
+  
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status, resolution_notes }) => incidentsApi.updateStatus(id, status, resolution_notes),
@@ -231,9 +234,8 @@ export default function AdminIncidents() {
                   {filteredIncidents.map((incident) => {
                     const statusConfig = getStatusBadge(incident.reported_issue_status);
                     const priorityConfig = getPriorityBadge(incident.priority || 'medium');
-                    const reporterName = incident.reporter_id ? 
-                      `${incident.reporter_id.first_name} ${incident.reporter_id.last_name}` : 'Unknown';
-                    const reportedDate = incident.reported_date ? 
+                    const reporterName = incident.reported_by || 'NA'
+                    const reportedDate = incident.reported_at ?
                       new Date(incident.reported_date).toLocaleString() : 'N/A';
                     
                     return (
@@ -241,7 +243,7 @@ export default function AdminIncidents() {
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <h4 className="text-sm font-medium text-gray-900">{incident.reported_issue}</h4>
+                              <h4 className="text-sm font-medium text-gray-900">{incident.type}</h4>
                               <Badge className={priorityConfig.className}>
                                 {priorityConfig.label}
                               </Badge>
@@ -255,7 +257,7 @@ export default function AdminIncidents() {
                               <span>Reporter: {reporterName}</span>
                               <span>Location: {incident.location || 'N/A'}</span>
                               <span>{reportedDate}</span>
-                            </div>
+                            </div> 
                           </div>
                           <div className="flex flex-col gap-2">
                             <Button variant="outline" size="sm">

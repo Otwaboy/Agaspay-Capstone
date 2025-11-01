@@ -7,7 +7,7 @@ const roleMiddleware = require('../middleware/roleMiddleware')
 
 router.route('/')
 .post(authMiddleware, roleMiddleware('treasurer'), createBilling)
-.get(authMiddleware, roleMiddleware('resident' , 'treasurer'), getBilling)
+.get(authMiddleware, roleMiddleware('resident' , 'treasurer', 'admin'), getBilling)
 
 router.route('/overdue-billing')
 .get(authMiddleware, roleMiddleware('treasurer'), getOverdueBilling)
@@ -15,4 +15,4 @@ router.route('/overdue-billing')
 router.route('/send-reminder')
 .post(authMiddleware, roleMiddleware('treasurer'), sendReminderSMS)
 
-module.exports = router  
+module.exports = router   
