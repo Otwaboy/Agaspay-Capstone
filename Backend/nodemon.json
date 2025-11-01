@@ -1,0 +1,16 @@
+{
+  "watch": [
+    "controller",
+    "middleware",
+    "routes",
+    "model",
+    "server.js"
+  ],
+  "ignore": [
+    "../Frontend/**",
+    "**/*.log",
+    "tmp/**",
+    "node_modules/**"
+  ],
+  "ext": "js,json"
+}

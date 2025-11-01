@@ -1,6 +1,6 @@
 # AGASPAY - Barangay Waterworks Management System
 
-**Last Updated:** October 28, 2025
+**Last Updated:** November 1, 2025
 
 ## Overview
 AGASPAY is a comprehensive water billing and management system designed for barangay waterworks. The system handles resident accounts, water meter readings, billing, payments, incident reports, task scheduling, and personnel management.
@@ -99,7 +99,21 @@ The system supports multiple user roles with different permissions:
   - Consistent across ALL user roles
 
 ## Recent Changes
-- **November 1, 2025:**
+- **November 1, 2025 (Evening):**
+  - 🔧 **CRITICAL BUG FIX:** Resolved backend crash issue
+    - **Root cause:** Nodemon was watching all files (including Frontend builds), causing constant restarts
+    - **Solution:** Created `Backend/nodemon.json` to limit watch scope to Backend files only
+    - **Watch directories:** controller, middleware, routes, model, server.js
+    - **Ignored directories:** Frontend, logs, tmp, node_modules
+    - Backend now stable and handles multiple concurrent requests without crashing
+  - 🔒 **Security fix:** Removed JWT secret logging from authentication middleware
+    - JWT_SECRET was being printed to console logs (security vulnerability)
+    - Now verifies tokens silently without exposing secrets
+  - ✅ **Stability verified:** Backend successfully handled 9+ consecutive API requests without crashes
+    - Zone-based filtering working correctly for multiple users
+    - Both Zone 2 and Zone 3 meter readers tested successfully
+
+- **November 1, 2025 (Morning):**
   - 🔒 **CRITICAL SECURITY FIX:** Implemented zone-based filtering for meter readers
     - Fixed major security vulnerability where meter readers could see ALL residents
     - Backend now enforces zone-based filtering in `getLatestReadings` API
