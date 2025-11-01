@@ -92,14 +92,14 @@ export default function ResidentBillPaymentCard() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="bg-white/70 backdrop-blur-md rounded-lg p-4 border border-gray-200">
             <p className="text-xs text-gray-500 mb-1.5 flex items-center gap-1">
               <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
               Consumption
             </p>
             <p className="text-lg font-bold text-gray-900">{billingData.consumption} m³</p>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="bg-white/70 backdrop-blur-md rounded-lg p-4 border border-gray-200">
             <p className="text-xs text-gray-500 mb-1.5 flex items-center gap-1">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               Due Date

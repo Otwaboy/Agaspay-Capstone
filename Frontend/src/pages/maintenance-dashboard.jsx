@@ -126,20 +126,23 @@ export default function MaintenanceDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       <MaintenanceSidebar />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
+        <div className="absolute bottom-20 left-20 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+        
         <MaintenanceTopHeader />
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-7xl mx-auto">
             {/* Page Header */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-dashboard-title">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="text-dashboard-title">
                 Maintenance Dashboard
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-gray-600">
                 Manage your assigned tasks and incident reports
               </p>
             </div>
