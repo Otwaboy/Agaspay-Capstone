@@ -117,6 +117,15 @@ The system supports multiple user roles with different permissions:
     - Search input now appears inside the resident selection dropdown
     - Cleaner, more intuitive interface for selecting residents
     - Sticky search bar stays at top while scrolling through residents
+  - 📅 **NEW FEATURE:** Monthly Reading Progress Tracker
+    - Backend tracks which residents have been read in the current month (UTC-based)
+    - Frontend displays check icon (✓) for residents with readings this month
+    - "Read" badge (green) vs "Not Read" badge (gray) for each resident
+    - Monthly progress card shows: "X of Y residents read this month (Z%)"
+    - Progress bar visualization for quick status overview
+    - **Automatic monthly reset:** Readings reset to "Not Read" at UTC month boundaries
+    - Uses UTC timezone to prevent misclassification across different server timezones
+    - Helps meter readers track their monthly reading completion progress
 
 - **October 28, 2025:**
   - ✅ Migrated from GitHub to Replit successfully
