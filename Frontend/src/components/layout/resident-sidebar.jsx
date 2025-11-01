@@ -79,9 +79,9 @@ function ResidentSidebarContent() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white shadow-lg">
+    <div className="flex flex-col h-full bg-white/80 backdrop-blur-md shadow-lg">
       {/* Logo Section */}
-      <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
+      <div className="flex items-center px-6 py-5.5 border-b border-b-white/20">
         <div className="flex items-center">
           <div className="bg-blue-600 p-2 rounded-lg">
             <Droplets className="h-6 w-6 text-white" />
@@ -119,7 +119,7 @@ function ResidentSidebarContent() {
       </nav>
 
       {/* User Info and Logout */}
-      <div className="px-4 py-4 border-t border-gray-200">
+      <div className="px-4 py-4 border-t border-white/20">
         <div className="flex items-center mb-3 px-2">
           <div className="bg-blue-100 p-2 rounded-full">
             <User className="h-4 w-4 text-blue-600" />
