@@ -34,7 +34,7 @@ export default function ResidentBillPaymentCard() {
 
   if (isLoading) {
     return (
-      <Card className="bg-white border border-gray-200 shadow-sm">
+      <Card className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
             <div className="h-6 bg-gray-200 rounded w-3/4"></div>
@@ -48,7 +48,7 @@ export default function ResidentBillPaymentCard() {
 
   if (!billingData) {
     return (
-      <Card className="bg-white border border-gray-200 shadow-sm">
+      <Card className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm">
         <CardContent className="p-6 text-center">
           <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
           <p className="text-gray-700 font-medium">No current bill</p>
@@ -63,7 +63,7 @@ export default function ResidentBillPaymentCard() {
   const isDueSoon = billingData.daysUntilDue <= 3 && billingData.daysUntilDue >= 0;
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+    <Card className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
       <CardHeader className="pb-3 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2 text-gray-900">

@@ -82,7 +82,7 @@ export default function ResidentModernStats() {
         const isPositive = trendValue > 0;
         
         return (
-          <Card key={index} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <Card key={index} className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
