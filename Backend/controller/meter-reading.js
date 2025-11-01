@@ -124,6 +124,8 @@ const inputReading = async (req, res) => {
  */
 const getLatestReadings = async (req, res) => {
   try {
+    console.log('🚀 getLatestReadings called by user:', req.user);
+    
     // 🔒 SECURITY: Get the meter reader's assigned zone
     const { userId, role } = req.user;
     
@@ -131,9 +133,12 @@ const getLatestReadings = async (req, res) => {
     
     // If user is a meter reader, enforce zone-based filtering
     if (role === 'meter_reader') {
+      console.log('👤 Fetching personnel record for userId:', userId);
       const personnel = await Personnel.findById(userId).select('assigned_zone');
+      console.log('👤 Personnel found:', personnel);
       
       if (!personnel || !personnel.assigned_zone) {
+        console.log('❌ No personnel found or no assigned_zone');
         return res.status(StatusCodes.FORBIDDEN).json({
           message: "Meter reader must have an assigned zone",
           connection_details: [],
@@ -145,8 +150,11 @@ const getLatestReadings = async (req, res) => {
       zoneFilter = { zone: personnel.assigned_zone };
       console.log('🔐 Zone filter applied for meter reader:', { 
         userId, 
-        assigned_zone: personnel.assigned_zone 
+        assigned_zone: personnel.assigned_zone,
+        zoneFilter
       });
+    } else {
+      console.log('💼 User is treasurer/admin - no zone filter applied');
     }
     // Treasurer can see all zones, so no filter needed
     
@@ -259,6 +267,14 @@ const getLatestReadings = async (req, res) => {
       };
     });
 
+    console.log('📊 Total raw results from aggregation:', readings.length);
+    console.log('📊 First 3 aggregation results:', readings.slice(0, 3).map(r => ({
+      connection_id: r._id,
+      resident_name: r.resident ? `${r.resident.first_name} ${r.resident.last_name}` : 'Unknown',
+      resident_zone: r.resident?.zone,
+      has_reading: !!r.latestReading
+    })));
+
     // 🪵 Debug log for zone filtering
     if (role === 'meter_reader') {
       console.log('📊 Zone filter results:', {
@@ -267,12 +283,7 @@ const getLatestReadings = async (req, res) => {
       });
     }
 
-    // 🪵 Debug log of billed connections
-    const billedSamples = connectionDetails.filter(c => c.is_billed).slice(0, 10);
-    console.log('🔎 getLatestReadings - billed samples (up to 10):', billedSamples.map(b => ({
-      connection_id: b.connection_id,
-      reading_id: b.reading_id
-    })));
+    console.log('✅ Returning response with', connectionDetails.length, 'connections');
 
     return res.status(StatusCodes.OK).json({
       message: "Latest reading per connection fetched",
