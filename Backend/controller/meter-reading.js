@@ -151,10 +151,25 @@ const getLatestReadings = async (req, res) => {
     // Treasurer can see all zones, so no filter needed
     
     const readings = await WaterConnection.aggregate([
-      // 0️⃣ FILTER BY ZONE FIRST (if meter reader)
-      ...(Object.keys(zoneFilter).length > 0 ? [{ $match: zoneFilter }] : []),
+      // 1️⃣ Attach resident info FIRST (we need this to filter by zone)
+      {
+        $lookup: {
+          from: "residents",
+          localField: "resident_id",
+          foreignField: "_id",
+          as: "resident"
+        }
+      },
+      { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
+
+      // 2️⃣ FILTER BY ZONE (zone is in resident, not connection)
+      ...(Object.keys(zoneFilter).length > 0 ? [{ 
+        $match: { 
+          "resident.zone": zoneFilter.zone 
+        } 
+      }] : []),
       
-      // 1️⃣ Get the latest meterreading for each connection
+      // 3️⃣ Get the latest meterreading for each connection
       {
         $lookup: {
           from: "meterreadings",
@@ -169,18 +184,7 @@ const getLatestReadings = async (req, res) => {
       },
       { $unwind: { path: "$latestReading", preserveNullAndEmptyArrays: true } },
 
-      // 2️⃣ Attach resident info
-      {
-        $lookup: {
-          from: "residents",
-          localField: "resident_id",
-          foreignField: "_id",
-          as: "resident"
-        }
-      },
-      { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
-
-      // 3️⃣ Check if billing exists for that reading
+      // 4️⃣ Check if billing exists for that reading
       //    We do two lookups because collection might be named "Billing" or "billings"
       {
         $lookup: {
@@ -247,13 +251,21 @@ const getLatestReadings = async (req, res) => {
         inclusive_date: reading?.inclusive_date || null,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
         purok_no: resident?.purok || "not here purok",
-        zone: item.zone || null, // Include zone for display/debugging
+        zone: resident?.zone || null, // Include zone from resident for display/debugging
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
         is_billed: !!item.is_billed
       };
     });
+
+    // 🪵 Debug log for zone filtering
+    if (role === 'meter_reader') {
+      console.log('📊 Zone filter results:', {
+        total_connections_found: connectionDetails.length,
+        zones_in_results: [...new Set(connectionDetails.map(c => c.zone))]
+      });
+    }
 
     // 🪵 Debug log of billed connections
     const billedSamples = connectionDetails.filter(c => c.is_billed).slice(0, 10);
