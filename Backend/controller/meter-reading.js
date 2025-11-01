@@ -253,6 +253,20 @@ const getLatestReadings = async (req, res) => {
       const reading = item.latestReading;
       const resident = item.resident;
 
+      // 📅 Check if reading was done in the current month (UTC-based to avoid timezone issues)
+      let read_this_month = false;
+      if (reading?.created_at) {
+        const readingDate = new Date(reading.created_at);
+        const now = new Date();
+        
+        // Use UTC methods to ensure consistent month/year comparison across all timezones
+        // This prevents readings from being misclassified when server timezone != user timezone
+        read_this_month = (
+          readingDate.getUTCMonth() === now.getUTCMonth() &&
+          readingDate.getUTCFullYear() === now.getUTCFullYear()
+        );
+      }
+
       return {
         reading_id: reading?._id ? reading._id.toString() : null,
         connection_id: item._id ? item._id.toString() : null,
@@ -263,7 +277,9 @@ const getLatestReadings = async (req, res) => {
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
-        is_billed: !!item.is_billed
+        is_billed: !!item.is_billed,
+        read_this_month: read_this_month, // ✅ Monthly status tracker
+        last_read_date: reading?.created_at || null // For reference
       };
     });
 

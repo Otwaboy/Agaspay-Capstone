@@ -7,7 +7,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useToast } from "../hooks/use-toast";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2 } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
@@ -53,6 +53,11 @@ export default function MeterReaderReadings() {
       : true;
     return matchesZone && matchesSearch;
   });
+
+  // 📊 Calculate monthly reading progress
+  const readCount = filteredConnections.filter(conn => conn.read_this_month).length;
+  const totalCount = filteredConnections.length;
+  const progressPercentage = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
 
   const selectedConnectionData = filteredConnections.find(
     (conn) => String(conn.connection_id) === String(formData.connection_id)
@@ -172,12 +177,39 @@ export default function MeterReaderReadings() {
             <Card className="shadow-md">
               <CardContent className="p-4 sm:p-6">
                 {meterReaderZone && (
-                  <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-5 w-5 text-green-600" />
-                      <div>
-                        <p className="text-sm font-semibold text-green-900">Your Assigned Zone</p>
-                        <p className="text-xs text-green-700">Zone {meterReaderZone} - {filteredConnections.length} residents</p>
+                  <div className="mb-6 space-y-3">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <MapPin className="h-5 w-5 text-green-600" />
+                          <div>
+                            <p className="text-sm font-semibold text-green-900">Your Assigned Zone</p>
+                            <p className="text-xs text-green-700">Zone {meterReaderZone} - {filteredConnections.length} residents</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="text-sm font-semibold text-blue-900">Monthly Progress</p>
+                            <p className="text-xs text-blue-700">
+                              {readCount} of {totalCount} residents read this month ({progressPercentage}%)
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-blue-600">{readCount}/{totalCount}</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 bg-white rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="bg-blue-600 h-full transition-all duration-300"
+                          style={{ width: `${progressPercentage}%` }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -234,9 +266,23 @@ export default function MeterReaderReadings() {
                                 key={connection.connection_id}
                                 value={String(connection.connection_id)}
                               >
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{connection.full_name || "Unnamed"}</span>
-                                  <Badge variant="secondary" className="ml-2 text-xs">Purok {connection.purok_no}</Badge>
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    {connection.read_this_month ? (
+                                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                    ) : (
+                                      <div className="h-4 w-4 flex-shrink-0" />
+                                    )}
+                                    <span className="truncate">{connection.full_name || "Unnamed"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <Badge variant="secondary" className="text-xs">Purok {connection.purok_no}</Badge>
+                                    {connection.read_this_month ? (
+                                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">Read</Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-gray-500 text-xs">Not Read</Badge>
+                                    )}
+                                  </div>
                                 </div>
                               </SelectItem>
                             ))
