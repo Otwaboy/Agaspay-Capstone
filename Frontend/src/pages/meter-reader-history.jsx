@@ -5,6 +5,7 @@ import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { ClipboardList, Search, Calendar, Gauge, User, TrendingUp, Filter } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
+import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
 import { format } from "date-fns";
 
@@ -39,26 +40,20 @@ export default function MeterReaderHistory() {
   const totalConsumption = filteredReadings.reduce((sum, r) => sum + (r.consumption || 0), 0);
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-100">
       <MeterReaderSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <ClipboardList className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold">Reading History</h1>
-                <p className="text-sm text-green-100">All submitted meter readings</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MeterReaderTopHeader />
 
-        <div className="flex-1 overflow-auto p-4 sm:p-6">
-          <div className="max-w-6xl mx-auto space-y-4">
+        <main className="flex-1 overflow-auto p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">Reading History</h1>
+              <p className="text-gray-600 mt-2">All submitted meter readings</p>
+            </div>
+
+            <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
                 <CardContent className="p-4">
@@ -182,7 +177,8 @@ export default function MeterReaderHistory() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );

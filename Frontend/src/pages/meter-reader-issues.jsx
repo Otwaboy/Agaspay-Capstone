@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../components/ui/badge";
 import { AlertTriangle, Plus, Search, MapPin, Calendar, User, Image } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
+import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
 import { format } from "date-fns";
@@ -110,33 +111,29 @@ export default function MeterReaderIssues() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-100">
       <MeterReaderSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <AlertTriangle className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold">Issue Reports</h1>
-                <p className="text-sm text-green-100">Field issues & maintenance reports</p>
-              </div>
-            </div>
-            <Button
-              onClick={() => setShowForm(!showForm)}
-              className="bg-white text-green-600 hover:bg-green-50"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Report Issue</span>
-            </Button>
-          </div>
-        </div>
+        <MeterReaderTopHeader />
 
-        <div className="flex-1 overflow-auto p-4 sm:p-6">
-          <div className="max-w-6xl mx-auto space-y-4">
+        <main className="flex-1 overflow-auto p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Issue Reports</h1>
+                <p className="text-gray-600 mt-2">Field issues & maintenance reports</p>
+              </div>
+              <Button
+                onClick={() => setShowForm(!showForm)}
+                className="bg-green-600 text-white hover:bg-green-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Report Issue
+              </Button>
+            </div>
+
+            <div className="space-y-4">
             {showForm && (
               <Card className="shadow-md border-green-200 border-2">
                 <CardHeader className="bg-green-50">
@@ -301,7 +298,8 @@ export default function MeterReaderIssues() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );

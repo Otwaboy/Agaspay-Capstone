@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useToast } from "../hooks/use-toast";
 import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
+import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
 import { Badge } from "../components/ui/badge";
 
@@ -154,30 +155,20 @@ export default function MeterReaderReadings() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-100">
       <MeterReaderSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Gauge className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold">Record Meter Reading</h1>
-                <p className="text-sm text-green-100">Zone {meterReaderZone} - Field Operations</p>
-              </div>
-            </div>
-            <div className="hidden sm:flex items-center space-x-2 bg-white bg-opacity-20 px-4 py-2 rounded-lg backdrop-blur-sm">
-              <TrendingUp className="h-5 w-5" />
-              <span className="text-sm font-medium">{filteredConnections.length} Connections</span>
-            </div>
-          </div>
-        </div>
+        <MeterReaderTopHeader />
 
-        <div className="flex-1 overflow-auto p-4 sm:p-6">
-          <div className="max-w-4xl mx-auto space-y-4">
+        <main className="flex-1 overflow-auto p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">Record Meter Reading</h1>
+              <p className="text-gray-600 mt-2">Zone {meterReaderZone} - {filteredConnections.length} Connections Available</p>
+            </div>
+
+            <div className="space-y-4">
             <Card className="shadow-md">
               <CardContent className="p-4 sm:p-6">
                 <div className="relative mb-6">
@@ -381,7 +372,8 @@ export default function MeterReaderReadings() {
               </CardContent>
             </Card>
           </div>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );

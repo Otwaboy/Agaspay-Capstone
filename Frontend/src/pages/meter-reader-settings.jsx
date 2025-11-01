@@ -7,6 +7,7 @@ import { Label } from "../components/ui/label";
 import { Badge } from "../components/ui/badge";
 import { Settings, User, Mail, Phone, MapPin, Shield, Save } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
+import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
 
@@ -79,24 +80,20 @@ export default function MeterReaderSettings() {
   const user = authUser?.user;
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-100">
       <MeterReaderSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-4 shadow-lg">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Settings className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Settings</h1>
-              <p className="text-sm text-green-100">Manage your profile and preferences</p>
-            </div>
-          </div>
-        </div>
+        <MeterReaderTopHeader />
 
-        <div className="flex-1 overflow-auto p-4 sm:p-6">
-          <div className="max-w-4xl mx-auto space-y-4">
+        <main className="flex-1 overflow-auto p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+              <p className="text-gray-600 mt-2">Manage your profile and preferences</p>
+            </div>
+
+            <div className="space-y-4">
             <Card className="shadow-md">
               <CardHeader className="bg-gradient-to-r from-green-50 to-cyan-50">
                 <CardTitle className="flex items-center space-x-2">
@@ -230,7 +227,8 @@ export default function MeterReaderSettings() {
               </CardContent>
             </Card>
           </div>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );
