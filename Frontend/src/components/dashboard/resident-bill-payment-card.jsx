@@ -34,7 +34,7 @@ export default function ResidentBillPaymentCard() {
 
   if (isLoading) {
     return (
-      <Card className="border-2 border-blue-200">
+      <Card className="bg-white border border-gray-200 shadow-sm">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
             <div className="h-6 bg-gray-200 rounded w-3/4"></div>
@@ -48,11 +48,11 @@ export default function ResidentBillPaymentCard() {
 
   if (!billingData) {
     return (
-      <Card className="border-2 border-gray-200">
+      <Card className="bg-white border border-gray-200 shadow-sm">
         <CardContent className="p-6 text-center">
-          <CheckCircle2 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No current bill</p>
-          <p className="text-sm text-gray-400 mt-1">You're all caught up!</p>
+          <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
+          <p className="text-gray-700 font-medium">No current bill</p>
+          <p className="text-sm text-gray-500 mt-1">You're all caught up!</p>
         </CardContent>
       </Card>
     );
@@ -63,26 +63,28 @@ export default function ResidentBillPaymentCard() {
   const isDueSoon = billingData.daysUntilDue <= 3 && billingData.daysUntilDue >= 0;
 
   return (
-    <Card className={`border-2 ${isPaid ? 'border-green-200 bg-green-50' : isOverdue ? 'border-red-200 bg-red-50' : isDueSoon ? 'border-yellow-200 bg-yellow-50' : 'border-blue-200 bg-blue-50'}`}>
-      <CardHeader className="pb-3">
+    <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <CreditCard className={`h-5 w-5 ${isPaid ? 'text-green-600' : isOverdue ? 'text-red-600' : 'text-blue-600'}`} />
+          <CardTitle className="text-lg font-semibold flex items-center gap-2 text-gray-900">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <CreditCard className="h-5 w-5 text-blue-600" />
+            </div>
             Current Water Bill
           </CardTitle>
           <Badge className={
-            isPaid ? 'bg-green-600 text-white' : 
-            isOverdue ? 'bg-red-600 text-white' : 
-            isDueSoon ? 'bg-yellow-600 text-white' : 
-            'bg-blue-600 text-white'
+            isPaid ? 'bg-green-100 text-green-700 border border-green-200' : 
+            isOverdue ? 'bg-red-100 text-red-700 border border-red-200' : 
+            isDueSoon ? 'bg-orange-100 text-orange-700 border border-orange-200' : 
+            'bg-blue-100 text-blue-700 border border-blue-200'
           }>
             {isPaid ? 'Paid' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
           </Badge>
         </div>
-        <p className="text-sm text-gray-600 mt-1">Billing Period: {billingData.billingPeriod}</p>
+        <p className="text-sm text-gray-500 mt-2">Billing Period: {billingData.billingPeriod}</p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+      <CardContent className="space-y-4 pt-6">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
           <p className="text-sm text-gray-600 mb-1">Amount Due</p>
           <p className={`text-4xl font-bold ${isPaid ? 'text-green-600' : isOverdue ? 'text-red-600' : 'text-blue-600'}`}>
             ₱{billingData.amount.toFixed(2)}
@@ -90,15 +92,21 @@ export default function ResidentBillPaymentCard() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-lg p-3 border border-gray-200">
-            <p className="text-xs text-gray-500 mb-1">Consumption</p>
-            <p className="text-lg font-bold text-cyan-600">{billingData.consumption} m³</p>
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <p className="text-xs text-gray-500 mb-1.5 flex items-center gap-1">
+              <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+              Consumption
+            </p>
+            <p className="text-lg font-bold text-gray-900">{billingData.consumption} m³</p>
           </div>
-          <div className="bg-white rounded-lg p-3 border border-gray-200">
-            <p className="text-xs text-gray-500 mb-1">Due Date</p>
-            <div className="flex items-center gap-1">
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <p className="text-xs text-gray-500 mb-1.5 flex items-center gap-1">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              Due Date
+            </p>
+            <div className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4 text-gray-400" />
-              <p className="text-sm font-semibold text-gray-700">
+              <p className="text-sm font-semibold text-gray-900">
                 {new Date(billingData.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </p>
             </div>
@@ -106,11 +114,11 @@ export default function ResidentBillPaymentCard() {
         </div>
 
         {!isPaid && isOverdue && (
-          <div className="flex items-start gap-2 p-3 bg-red-100 border border-red-300 rounded-lg">
+          <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-red-800">Payment Overdue!</p>
-              <p className="text-xs text-red-600 mt-1">
+              <p className="text-sm font-medium text-red-900">Payment Overdue!</p>
+              <p className="text-xs text-red-700 mt-1">
                 This bill was due {Math.abs(billingData.daysUntilDue)} days ago. Please pay immediately to avoid service interruption.
               </p>
             </div>
@@ -118,17 +126,17 @@ export default function ResidentBillPaymentCard() {
         )}
 
         {!isPaid && isDueSoon && (
-          <div className="flex items-start gap-2 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
-            <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-yellow-800">Due in {billingData.daysUntilDue} {billingData.daysUntilDue === 1 ? 'day' : 'days'}</p>
-              <p className="text-xs text-yellow-600 mt-1">Don't forget to pay before the due date!</p>
+              <p className="text-sm font-medium text-orange-900">Due in {billingData.daysUntilDue} {billingData.daysUntilDue === 1 ? 'day' : 'days'}</p>
+              <p className="text-xs text-orange-700 mt-1">Don't forget to pay before the due date!</p>
             </div>
           </div>
         )}
 
         <Button 
-          className={`w-full ${isPaid ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'} text-white font-semibold`}
+          className={`w-full ${isPaid ? 'bg-gray-300 hover:bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'} text-white font-semibold shadow-sm`}
           size="lg"
           onClick={() => !isPaid && window.dispatchEvent(new Event("openPayBillModal"))}
           disabled={isPaid}
@@ -147,9 +155,9 @@ export default function ResidentBillPaymentCard() {
           )}
         </Button>
 
-        <div className="text-center">
+        <div className="text-center pt-2 border-t border-gray-100">
           <p className="text-xs text-gray-500">
-            Previous Reading: {billingData.previousReading} m³ → Current: {billingData.presentReading} m³
+            Previous Reading: <span className="font-medium text-gray-700">{billingData.previousReading} m³</span> → Current: <span className="font-medium text-gray-700">{billingData.presentReading} m³</span>
           </p>
         </div>
       </CardContent>

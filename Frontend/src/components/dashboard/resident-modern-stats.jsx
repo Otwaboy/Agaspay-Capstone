@@ -39,9 +39,8 @@ export default function ResidentModernStats() {
       title: "Current Bill",
       value: `₱${billingData?.amount?.toFixed(2) || "0.00"}`,
       icon: CreditCard,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-200",
+      iconColor: "text-blue-600",
+      iconBg: "bg-blue-50",
       trend: billingData?.previous ? 
         ((billingData.amount - billingData.previous.total_amount) / billingData.previous.total_amount * 100).toFixed(1) : 0,
       trendLabel: "vs last month"
@@ -50,18 +49,17 @@ export default function ResidentModernStats() {
       title: "Payment Status",
       value: billingData?.status === "paid" ? "Paid" : billingData?.status === "pending" ? "Pending" : "Unpaid",
       icon: billingData?.status === "paid" ? CheckCircle : AlertCircle,
-      color: billingData?.status === "paid" ? "text-green-600" : billingData?.status === "pending" ? "text-yellow-600" : "text-red-600",
-      bgColor: billingData?.status === "paid" ? "bg-green-50" : billingData?.status === "pending" ? "bg-yellow-50" : "bg-red-50",
-      borderColor: billingData?.status === "paid" ? "border-green-200" : billingData?.status === "pending" ? "border-yellow-200" : "border-red-200",
-      subtitle: billingData?.dueDate ? `Due: ${new Date(billingData.dueDate).toLocaleDateString()}` : ""
+      iconColor: billingData?.status === "paid" ? "text-green-600" : billingData?.status === "pending" ? "text-orange-600" : "text-red-600",
+      iconBg: billingData?.status === "paid" ? "bg-green-50" : billingData?.status === "pending" ? "bg-orange-50" : "bg-red-50",
+      subtitle: billingData?.dueDate ? `Due: ${new Date(billingData.dueDate).toLocaleDateString()}` : "",
+      statusColor: billingData?.status === "paid" ? "text-green-600" : billingData?.status === "pending" ? "text-orange-600" : "text-red-600"
     },
     {
       title: "Water Consumption",
       value: `${billingData?.consumption || 0} m³`,
       icon: Droplets,
-      color: "text-cyan-600",
-      bgColor: "bg-cyan-50",
-      borderColor: "border-cyan-200",
+      iconColor: "text-cyan-600",
+      iconBg: "bg-cyan-50",
       trend: billingData?.previous ? 
         ((billingData.consumption - billingData.previous.calculated) / billingData.previous.calculated * 100).toFixed(1) : 0,
       trendLabel: "vs last month"
@@ -70,9 +68,8 @@ export default function ResidentModernStats() {
       title: "Connection Status",
       value: accountData?.status?.charAt(0)?.toUpperCase() + accountData?.status?.slice(1) || "Active",
       icon: TrendingUp,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
+      iconColor: "text-green-600",
+      iconBg: "bg-green-50",
       subtitle: `Zone ${accountData?.zone || "N/A"}`
     }
   ];
@@ -85,19 +82,19 @@ export default function ResidentModernStats() {
         const isPositive = trendValue > 0;
         
         return (
-          <Card key={index} className={`border-2 ${stat.borderColor} ${stat.bgColor}`}>
-            <CardContent className="p-4">
+          <Card key={index} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                  <p className={`text-2xl font-bold ${stat.color} mb-2`}>
+                  <p className="text-sm font-medium text-gray-500 mb-2">{stat.title}</p>
+                  <p className={`text-2xl font-bold ${stat.statusColor || 'text-gray-900'} mb-2`}>
                     {stat.value}
                   </p>
                   {stat.trend !== undefined && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 mt-2">
                       <Badge 
                         variant="secondary" 
-                        className={`text-xs ${isPositive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                        className={`text-xs px-2 py-0.5 ${isPositive ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}
                       >
                         {isPositive ? '↑' : '↓'} {Math.abs(trendValue)}%
                       </Badge>
@@ -105,11 +102,11 @@ export default function ResidentModernStats() {
                     </div>
                   )}
                   {stat.subtitle && (
-                    <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
+                    <p className="text-xs text-gray-500 mt-2">{stat.subtitle}</p>
                   )}
                 </div>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`h-6 w-6 ${stat.color}`} />
+                <div className={`p-3 rounded-xl ${stat.iconBg}`}>
+                  <Icon className={`h-6 w-6 ${stat.iconColor}`} />
                 </div>
               </div>
             </CardContent>
