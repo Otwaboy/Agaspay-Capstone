@@ -66,27 +66,27 @@ export default function MeterReaderDailyProgress() {
     return "bg-red-500";
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">Daily Progress Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="space-y-4">
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <Card>
+  //       <CardHeader>
+  //         <CardTitle className="text-lg font-semibold text-gray-900">Daily Progress Summary</CardTitle>
+  //       </CardHeader>
+  //       <CardContent>
+  //         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  //           {Array.from({ length: 3 }).map((_, index) => (
+  //             <div key={index} className="space-y-4">
+  //               <Skeleton className="h-6 w-32" />
+  //               <Skeleton className="h-4 w-full" />
+  //               <Skeleton className="h-4 w-full" />
+  //               <Skeleton className="h-4 w-3/4" />
+  //             </div>
+  //           ))}
+  //         </div>
+  //       </CardContent>
+  //     </Card>
+  //   );
+  // }
 
   return (
     <Card>

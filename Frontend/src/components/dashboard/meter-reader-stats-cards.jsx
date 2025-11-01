@@ -98,24 +98,24 @@ export default function MeterReaderStatsCards() {
     }
   ];
 
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-8 w-8 rounded" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-20 mb-2" />
-              <Skeleton className="h-4 w-16" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  //       {Array.from({ length: 6 }).map((_, index) => (
+  //         <Card key={index}>
+  //           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+  //             <Skeleton className="h-4 w-24" />
+  //             <Skeleton className="h-8 w-8 rounded" />
+  //           </CardHeader>
+  //           <CardContent>
+  //             <Skeleton className="h-8 w-20 mb-2" />
+  //             <Skeleton className="h-4 w-16" />
+  //           </CardContent>
+  //         </Card>
+  //       ))}
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

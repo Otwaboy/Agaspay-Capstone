@@ -90,6 +90,7 @@ const getUserAccount = async (req, res) => {
       fullname: `${personnel.first_name} ${personnel.last_name}`, 
       username: personnel.username,
       role: personnel.role,
+      assigned_zone: personnel.assigned_zone
     }
   } else {
     throw new UnauthorizedError('Unknown role')
@@ -100,5 +101,5 @@ const getUserAccount = async (req, res) => {
     user: userData
   })
 }
-
+ 
 module.exports = { getUserAccount, getAllResidents }

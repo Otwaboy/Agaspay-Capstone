@@ -14,10 +14,12 @@ export default function MeterReaderZones() {
   const { data: authUser } = useQuery({
     queryKey: ["auth-user"],
     queryFn: async () => {
-      const response = await apiClient.get("/auth/me");
-      return response.data;
-    }
+      const response = await apiClient.getUserAccount();
+      return response.user;
+    } 
   });
+
+  
 
   const { data: connectionsResponse, isLoading } = useQuery({
     queryKey: ["zone-connections"],
@@ -26,8 +28,11 @@ export default function MeterReaderZones() {
     }
   });
 
-  const meterReaderZone = authUser?.user?.assigned_zone;
+  const meterReaderZone = authUser?.assigned_zone;
+  console.log('assignex zone', meterReaderZone);
+  
   const allConnections = connectionsResponse?.connection_details || [];
+
 
   const zoneConnections = allConnections.filter((conn) => conn.zone === meterReaderZone);
 

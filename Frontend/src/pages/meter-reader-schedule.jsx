@@ -11,10 +11,10 @@ export default function MeterReaderSchedule() {
   const { data: authUser } = useQuery({
     queryKey: ["auth-user"],
     queryFn: async () => {
-      const response = await apiClient.get("/auth/me");
+      const response = await apiClient.getUserAccount();
       return response.data;
     }
-  });
+  }); 
 
   const { data: scheduleData, isLoading } = useQuery({
     queryKey: ["meter-reader-schedule"],

@@ -50,22 +50,16 @@ export default function MeterReaderDashboard() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+            {/* <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
               <div className="lg:col-span-8">
                 <MeterReaderStatsCards />
               </div>
-              <div className="lg:col-span-4">
-                <MeterReaderQuickActions />
-              </div>
-            </div>
+              
+            </div> */}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              <div className="lg:col-span-2">
-                <MeterReaderRouteSchedule />
-              </div>
-              <div className="lg:col-span-1">
-                <MeterReaderRecentReadings />
-              </div>
+             
+              
             </div>
 
             <div className="grid grid-cols-1 gap-6">

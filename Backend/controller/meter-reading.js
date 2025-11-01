@@ -1,5 +1,5 @@
 const { StatusCodes } = require('http-status-codes');
-const MeterReading = require('../model/Meter-reading');
+const MeterReading = require('../model/Meter-reading'); 
 const WaterConnection = require('../model/WaterConnection');
 const Personnel = require('../model/Personnel');
 
@@ -270,6 +270,7 @@ const getLatestReadings = async (req, res) => {
       return {
         reading_id: reading?._id ? reading._id.toString() : null,
         connection_id: item._id ? item._id.toString() : null,
+        connection_type: item.type || "Unknown", // ✅ Fetch from WaterConnection
         inclusive_date: reading?.inclusive_date || null,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
         purok_no: resident?.purok || "not here purok",
