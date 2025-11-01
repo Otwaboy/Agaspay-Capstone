@@ -133,8 +133,8 @@ const getLatestReadings = async (req, res) => {
     
     // If user is a meter reader, enforce zone-based filtering
     if (role === 'meter_reader') {
-      console.log('👤 Fetching personnel record for userId:', userId);
-      const personnel = await Personnel.findById(userId).select('assigned_zone');
+      console.log('👤 Fetching personnel record for user_id:', userId);
+      const personnel = await Personnel.findOne({ user_id: userId }).select('assigned_zone');
       console.log('👤 Personnel found:', personnel);
       
       if (!personnel || !personnel.assigned_zone) {
