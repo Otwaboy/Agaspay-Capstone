@@ -63,11 +63,11 @@ export default function ResidentDashboard() {
 
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-7xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-dashboard-title">
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="text-dashboard-title">
                 My Dashboard
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-gray-600">
                 Welcome to AGASPAY - Manage your water service account
               </p>
             </div>
