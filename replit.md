@@ -103,15 +103,20 @@ The system supports multiple user roles with different permissions:
   - 🔒 **CRITICAL SECURITY FIX:** Implemented zone-based filtering for meter readers
     - Fixed major security vulnerability where meter readers could see ALL residents
     - Backend now enforces zone-based filtering in `getLatestReadings` API
+    - Fixed Personnel lookup to use `user_id` field instead of `_id` (was causing "null" error)
     - Meter readers with `assigned_zone=2` can now ONLY see residents with `zone=2`
-    - Added Personnel model lookup to get meter reader's assigned zone
-    - Frontend already had client-side filtering, but backend now enforces server-side security
+    - Zone is stored in Resident model, filtering applied after joining residents
     - Added zone field to API response for debugging and display
     - Treasurers can still see all zones (no filter applied)
   - ✅ Unified all Meter Reader pages with consistent header design
     - All 6 meter-reader pages now use `MeterReaderTopHeader` component
     - Moved page titles from custom headers to main content area
     - Consistent layout structure across: Readings, History, Zones, Schedule, Issues, Settings
+  - 🎨 **UX Improvement:** Combined search and select into single searchable dropdown
+    - Removed separate search bar on Meter Readings page
+    - Search input now appears inside the resident selection dropdown
+    - Cleaner, more intuitive interface for selecting residents
+    - Sticky search bar stays at top while scrolling through residents
 
 - **October 28, 2025:**
   - ✅ Migrated from GitHub to Replit successfully

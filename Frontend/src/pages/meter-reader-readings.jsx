@@ -171,27 +171,6 @@ export default function MeterReaderReadings() {
             <div className="space-y-4">
             <Card className="shadow-md">
               <CardContent className="p-4 sm:p-6">
-                <div className="relative mb-6">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search by name or purok..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-12 text-base border-gray-300 focus:border-green-500 focus:ring-green-500"
-                  />
-                  {searchQuery && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-
                 {meterReaderZone && (
                   <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2">
@@ -226,27 +205,43 @@ export default function MeterReaderReadings() {
                         )}
                       </SelectTrigger>
                       <SelectContent>
-                        {connectionsLoading ? (
-                          <SelectItem value="loading" disabled>
-                            Loading connections...
-                          </SelectItem>
-                        ) : filteredConnections.length === 0 ? (
-                          <SelectItem value="no-connections" disabled>
-                            {searchQuery ? "No residents found" : "No connections in your zone"}
-                          </SelectItem>
-                        ) : (
-                          filteredConnections.map((connection) => (
-                            <SelectItem
-                              key={connection.connection_id}
-                              value={String(connection.connection_id)}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span>{connection.full_name || "Unnamed"}</span>
-                                <Badge variant="secondary" className="ml-2 text-xs">Purok {connection.purok_no}</Badge>
-                              </div>
+                        <div className="sticky top-0 bg-white p-2 border-b z-10">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                              type="text"
+                              placeholder="Search by name or purok..."
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              className="pl-9 h-9 text-sm"
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-[300px] overflow-y-auto">
+                          {connectionsLoading ? (
+                            <SelectItem value="loading" disabled>
+                              Loading connections...
                             </SelectItem>
-                          ))
-                        )}
+                          ) : filteredConnections.length === 0 ? (
+                            <SelectItem value="no-connections" disabled>
+                              {searchQuery ? "No residents found" : "No connections in your zone"}
+                            </SelectItem>
+                          ) : (
+                            filteredConnections.map((connection) => (
+                              <SelectItem
+                                key={connection.connection_id}
+                                value={String(connection.connection_id)}
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{connection.full_name || "Unnamed"}</span>
+                                  <Badge variant="secondary" className="ml-2 text-xs">Purok {connection.purok_no}</Badge>
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
+                        </div>
                       </SelectContent>
                     </Select>
                   </div>
