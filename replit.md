@@ -63,7 +63,42 @@ This design is applied consistently across all pages and user roles.
 -   **SMS Service:** PhilSMS
 
 ## Recent Changes
-- **November 2, 2025 (Afternoon - Latest):**
+- **November 2, 2025 (Afternoon - Latest Update):**
+  - ✅ **INTEGRATED SCHEDULING IN CREATE RESIDENT FORM:** Secretary can now optionally schedule meter installation when creating resident accounts
+    - **User Requirement:** User requested scheduling option directly in create resident form instead of separate steps
+    - **Frontend Changes (create-resident-modal.jsx):**
+      - Added optional "Schedule Meter Installation Now" checkbox
+      - When enabled, shows scheduling section with:
+        - Date picker (minimum date = today)
+        - Time picker  
+        - Personnel dropdown with real-time availability checking
+      - Fetches maintenance personnel with availability when date/time selected
+      - Displays green "✓ Available" / red "✗ Busy" badges for each personnel
+      - Shows yellow warning card if secretary selects busy personnel
+      - Form validation ensures all scheduling fields filled if checkbox enabled
+      - Sends scheduling data to backend only if checkbox enabled
+    - **Backend Changes (register.js):**
+      - Accepts optional scheduling fields: `schedule_installation`, `schedule_date`, `schedule_time`, `assigned_personnel`
+      - Validates scheduling fields if scheduling requested
+      - Creates ScheduleTask with status 'Assigned' if scheduling data provided
+      - Returns contextual success message based on whether scheduling was done
+      - Response includes task metadata if scheduled
+    - **Two Workflow Options:**
+      1. **Schedule Now:** Secretary checks box → fills date/time/personnel → creates account with scheduled installation in one step
+      2. **Schedule Later:** Secretary unchecks box → creates account only → manually schedules later via Assignments page
+    - **Benefits:**
+      - Flexible: Secretary chooses to schedule now or later
+      - Convenient: One-click workflow if scheduling immediately
+      - Informed decisions: Availability badges show personnel status
+      - Still prevents conflicts: Uses availability checking
+      - Maintains manual control: No forced automatic scheduling
+    - **Bug Fixes:**
+      - Fixed personnel dropdown disappearing when all busy
+      - Corrected response.personnel extraction from API
+      - Fixed field name mapping (id vs _id, name vs first_name/last_name)
+    - **Architect Review:** ✅ Passed - Complete end-to-end workflow functional with availability-aware personnel selection
+
+- **November 2, 2025 (Afternoon):**
   - ✅ **CHANGED TO MANUAL METER INSTALLATION SCHEDULING:** Removed automatic scheduling to give secretary full control
     - **Reason for Change:** User requested manual scheduling to avoid:
       - Weekend scheduling when maintenance is unavailable
