@@ -7,7 +7,6 @@ const User = require('../model/User')
 const Resident = require('../model/Resident')
 const Personnel = require('../model/Personnel')
 const WaterConnection = require('../model/WaterConnection')
-const ScheduleTask = require('../model/Schedule-task')
 const bcrypt = require('bcrypt')
 
 const registerResident = async (req, res) => {
@@ -48,30 +47,18 @@ const registerResident = async (req, res) => {
     const tempMeterNo = `PENDING-${Date.now()}`;
     const waterConnection = await createWaterConnection(resident._id, tempMeterNo, type);
     
-    // Schedule installation for tomorrow at 9 AM
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0);
-
-    const installationTask = await ScheduleTask.create({
-      connection_id: waterConnection._id,
-      schedule_date: tomorrow,
-      schedule_time: '09:00',
-      task_status: 'Unassigned',
-      scheduled_by: secretary._id,
-    });
+    // Note: Meter installation must be scheduled manually by Secretary through Assignments page
+    // This allows flexible scheduling and avoids conflicts with maintenance availability
 
     const token = user.createJWT();
 
     res.status(201).json({
-      message: 'Resident was successfully registered. Meter installation task has been scheduled for tomorrow at 9:00 AM.',
+      message: 'Resident was successfully registered. Please schedule meter installation through the Assignments page.',
       user_id: user._id,
       resident_id: resident._id,
       username: user.username,
       connection_id: waterConnection._id,
       connection_status: waterConnection.connection_status,
-      task_id: installationTask._id,
-      scheduled_date: installationTask.schedule_date,
       token
     });
 
