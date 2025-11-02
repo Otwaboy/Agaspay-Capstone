@@ -149,9 +149,28 @@ export default function SecretaryAssignments() {
     return matchesSearch && matchesPriority && matchesStatus;
   });
 
-  const handleAssignTask = (task) => {
+  const handleAssignTask = async (task) => {
     setSelectedTask(task);
     setSelectedPersonnel("");
+    
+    // Fetch personnel with availability for this task's date/time
+    try {
+      const personnelResponse = await apiClient.getMaintenancePersonnel(
+        task.scheduledDate,
+        task.timeSlot
+      );
+      
+      console.log('👷 Personnel with availability:', personnelResponse);
+      setMaintenancePersonnel(personnelResponse.personnel || []);
+    } catch (error) {
+      console.error('Error fetching personnel availability:', error);
+      toast({
+        title: "Warning",
+        description: "Could not check personnel availability. Showing all personnel.",
+        variant: "default",
+      });
+    }
+    
     setAssignModalOpen(true);
   };
 
@@ -572,6 +591,10 @@ export default function SecretaryAssignments() {
               {/* Personnel Selection */}
               <div>
                 <Label htmlFor="personnel">Select Maintenance Personnel</Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">
+                  {maintenancePersonnel.some(p => !p.isAvailable) && 
+                    "⚠️ Personnel with red badges are already scheduled at this time"}
+                </p>
                 <Select value={selectedPersonnel} onValueChange={setSelectedPersonnel}>
                   <SelectTrigger className="mt-2" data-testid="select-personnel">
                     <SelectValue placeholder="Choose personnel..." />
@@ -580,8 +603,31 @@ export default function SecretaryAssignments() {
                     {maintenancePersonnel.length > 0 ? (
                       maintenancePersonnel.map((person) => (
                         <SelectItem key={person.id} value={person.id}>
-                          {person.name} - {person.contact_no}
-                          {person.assigned_zone && ` (Zone ${person.assigned_zone})`}
+                          <div className="flex items-center justify-between w-full gap-3">
+                            <div className="flex-1">
+                              <div className="font-medium">{person.name}</div>
+                              <div className="text-xs text-gray-500">
+                                {person.contact_no}
+                                {person.assigned_zone && ` • Zone ${person.assigned_zone}`}
+                              </div>
+                              {!person.isAvailable && person.conflictingTasks?.length > 0 && (
+                                <div className="text-xs text-red-600 mt-0.5">
+                                  Conflict: {person.conflictingTasks[0].time}
+                                  {person.conflictingTasks.length > 1 && 
+                                    ` (+${person.conflictingTasks.length - 1} more)`}
+                                </div>
+                              )}
+                            </div>
+                            <Badge 
+                              className={
+                                person.isAvailable 
+                                  ? "bg-green-100 text-green-700 shrink-0" 
+                                  : "bg-red-100 text-red-700 shrink-0"
+                              }
+                            >
+                              {person.isAvailable ? "✓ Available" : "✗ Busy"}
+                            </Badge>
+                          </div>
                         </SelectItem>
                       ))
                     ) : (
@@ -591,6 +637,21 @@ export default function SecretaryAssignments() {
                     )}
                   </SelectContent>
                 </Select>
+                
+                {/* Show warning if selected personnel is not available */}
+                {selectedPersonnel && !maintenancePersonnel.find(p => p.id === selectedPersonnel)?.isAvailable && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-yellow-900">Scheduling Conflict Warning</p>
+                        <p className="text-yellow-700 mt-1">
+                          This personnel is already scheduled at this time. Assigning this task may cause conflicts.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -277,17 +277,116 @@ const getUnassignedTasks = async (req, res) => {
 };
 
 /**
+ * Helper Function: checkTimeConflict
+ * 
+ * Purpose: Check if a time slot overlaps with another
+ * 
+ * Time format: "HH:MM", "HH:MM AM/PM", or "HH:MM - HH:MM" (with optional AM/PM)
+ * 
+ * Returns: true if there's a conflict, false otherwise
+ */
+const checkTimeConflict = (time1, time2) => {
+  const parseTime = (timeStr) => {
+    // Remove leading/trailing whitespace
+    timeStr = timeStr.trim();
+    
+    // Check if time has AM/PM
+    const hasAmPm = /AM|PM/i.test(timeStr);
+    
+    if (hasAmPm) {
+      // Handle 12-hour format: "09:00 AM" or "02:30 PM"
+      const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!match) {
+        console.error('Invalid time format:', timeStr);
+        return 0; // Default to midnight if parsing fails
+      }
+      
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const meridiem = match[3].toUpperCase();
+      
+      // Convert to 24-hour format
+      if (meridiem === 'PM' && hours !== 12) {
+        hours += 12;
+      } else if (meridiem === 'AM' && hours === 12) {
+        hours = 0;
+      }
+      
+      return hours * 60 + minutes;
+    } else {
+      // Handle 24-hour format: "09:00" or "14:30"
+      const parts = timeStr.split(':');
+      if (parts.length !== 2) {
+        console.error('Invalid time format:', timeStr);
+        return 0;
+      }
+      
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10);
+      
+      if (isNaN(hours) || isNaN(minutes)) {
+        console.error('Invalid time values:', timeStr);
+        return 0;
+      }
+      
+      return hours * 60 + minutes;
+    }
+  };
+
+  const parseTimeRange = (timeStr) => {
+    const parts = timeStr.split('-').map(s => s.trim());
+    
+    if (parts.length === 2) {
+      // Range format: "09:00 - 10:00" or "09:00 AM - 10:00 AM"
+      return {
+        start: parseTime(parts[0]),
+        end: parseTime(parts[1]),
+      };
+    } else {
+      // Single time: "09:00" - assume 30 minute duration
+      const start = parseTime(parts[0]);
+      return {
+        start: start,
+        end: start + 30,
+      };
+    }
+  };
+
+  try {
+    const range1 = parseTimeRange(time1);
+    const range2 = parseTimeRange(time2);
+
+    // Check if ranges overlap
+    const hasConflict = (range1.start < range2.end && range1.end > range2.start);
+    
+    if (hasConflict) {
+      console.log(`⚠️ Time conflict detected: ${time1} overlaps with ${time2}`);
+    }
+    
+    return hasConflict;
+  } catch (error) {
+    console.error('Error checking time conflict:', error);
+    return false; // Assume no conflict if parsing fails
+  }
+};
+
+/**
  * Controller: getMaintenancePersonnel
  * 
- * Purpose: Get all maintenance personnel available for assignment
+ * Purpose: Get all maintenance personnel with availability status for a specific task
  * Access: Secretary only
  * 
+ * Query Parameters (optional):
+ * - schedule_date: Date of the task (YYYY-MM-DD)
+ * - schedule_time: Time of the task (HH:MM or HH:MM - HH:MM)
+ * 
  * Returns:
- * - List of maintenance personnel with their details
+ * - List of maintenance personnel with their details and availability status
  */
 const getMaintenancePersonnel = async (req, res) => {
   try {
     const user = req.user;
+    const { schedule_date, schedule_time } = req.query;
 
     // ✅ Only secretary can view maintenance personnel
     if (user.role !== 'secretary') {
@@ -302,18 +401,74 @@ const getMaintenancePersonnel = async (req, res) => {
       .select('first_name last_name contact_no assigned_zone')
       .sort({ first_name: 1 });
 
-    // ✅ Format personnel for frontend
-    const formattedPersonnel = maintenancePersonnel.map(person => ({
-      id: person._id,
-      name: `${person.first_name} ${person.last_name}`,
-      contact_no: person.contact_no,
-      assigned_zone: person.assigned_zone,
-    }));
+    // ✅ Check availability if schedule_date and schedule_time are provided
+    let personnelWithAvailability = [];
+
+    if (schedule_date && schedule_time) {
+      // Get all assignments for the specified date
+      const assignmentsOnDate = await Assignment.find()
+        .populate({
+          path: 'task_id',
+          match: {
+            schedule_date: new Date(schedule_date),
+          },
+        })
+        .populate('assigned_to');
+
+      // Filter out null task_id (tasks that didn't match the date)
+      const validAssignments = assignmentsOnDate.filter(a => a.task_id !== null);
+
+      // Map personnel to check conflicts
+      personnelWithAvailability = maintenancePersonnel.map(person => {
+        // Find assignments for this person on the specified date
+        const personAssignments = validAssignments.filter(
+          a => a.assigned_to && a.assigned_to._id.toString() === person._id.toString()
+        );
+
+        // Check for time conflicts
+        let hasConflict = false;
+        let conflictingTasks = [];
+
+        for (const assignment of personAssignments) {
+          const taskTime = assignment.task_id.schedule_time;
+          if (checkTimeConflict(schedule_time, taskTime)) {
+            hasConflict = true;
+            conflictingTasks.push({
+              time: taskTime,
+              type: assignment.task_id.task_type,
+            });
+          }
+        }
+
+        return {
+          id: person._id,
+          name: `${person.first_name} ${person.last_name}`,
+          contact_no: person.contact_no,
+          assigned_zone: person.assigned_zone,
+          isAvailable: !hasConflict,
+          conflictingTasks: hasConflict ? conflictingTasks : [],
+          tasksOnDate: personAssignments.length,
+        };
+      });
+    } else {
+      // No date/time provided, just return basic personnel info
+      personnelWithAvailability = maintenancePersonnel.map(person => ({
+        id: person._id,
+        name: `${person.first_name} ${person.last_name}`,
+        contact_no: person.contact_no,
+        assigned_zone: person.assigned_zone,
+        isAvailable: true, // No date specified, assume available
+        conflictingTasks: [],
+        tasksOnDate: 0,
+      }));
+    }
 
     res.status(StatusCodes.OK).json({
       success: true,
-      personnel: formattedPersonnel,
-      count: formattedPersonnel.length,
+      personnel: personnelWithAvailability,
+      count: personnelWithAvailability.length,
+      checked_date: schedule_date || null,
+      checked_time: schedule_time || null,
     });
 
   } catch (error) {

@@ -257,8 +257,19 @@ class ApiClient {
     return await this.request('/api/v1/assignments/unassigned-tasks');
   }
 
-  async getMaintenancePersonnel() {
-    return await this.request('/api/v1/assignments/maintenance-personnel');
+  async getMaintenancePersonnel(scheduleDate = null, scheduleTime = null) {
+    let url = '/api/v1/assignments/maintenance-personnel';
+    
+    // Add query parameters if date and time are provided for availability checking
+    if (scheduleDate && scheduleTime) {
+      const params = new URLSearchParams({
+        schedule_date: scheduleDate,
+        schedule_time: scheduleTime,
+      });
+      url += `?${params.toString()}`;
+    }
+    
+    return await this.request(url);
   }
 
   async updateAssignment(assignmentId, updateData) {
