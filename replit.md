@@ -70,13 +70,11 @@ This design is applied consistently across all pages and user roles.
       - Added optional "Schedule Meter Installation Now" checkbox
       - When enabled, shows scheduling section with:
         - Date picker (minimum date = today)
-        - **Grid-style time slot picker** (matching incident report UX)
-          - Clickable cards in 2-column grid layout
-          - Each card shows time range (e.g., "8:00 AM - 9:00 AM")
-          - Duration label (60 min)
-          - Green "Available" badge
-          - Selected card has blue border and ring effect
-          - Hover animation (lift and shadow)
+        - **Grid-style time slot picker** (compact and simple)
+          - Responsive grid layout (2 columns mobile, 3 tablet, 4 desktop)
+          - Compact clickable buttons showing time range (e.g., "8:00 AM - 9:00 AM")
+          - Selected slot has blue border and background
+          - Clean, minimal design with small spacing
         - Personnel dropdown with real-time availability checking
       - Fetches maintenance personnel with availability when date/time selected
       - Displays green "✓ Available" / red "✗ Busy" badges for each personnel

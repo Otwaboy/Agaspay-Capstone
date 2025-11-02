@@ -475,28 +475,20 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                       <Clock className="inline h-4 w-4 mr-2" />
                       Select Time Slot <span className="text-red-500">*</span>
                     </Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
                       {timeSlots.map((slot) => (
                         <button
                           key={slot.id}
                           type="button"
                           onClick={() => setSchedulingData(prev => ({ ...prev, scheduleTime: slot.start }))}
-                          className={`relative flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                          className={`py-3 px-3 rounded-lg border text-sm font-medium transition-all min-h-[44px] ${
                             schedulingData.scheduleTime === slot.start
-                              ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                              : 'border-gray-200 bg-white/70 backdrop-blur-sm hover:border-blue-300'
+                              ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-300'
+                              : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50'
                           }`}
                           data-testid={`time-slot-${slot.id}`}
                         >
-                          <div className="text-left">
-                            <div className="font-semibold text-gray-900">{slot.label}</div>
-                            <div className="text-sm text-gray-600">Duration: {slot.duration} min</div>
-                          </div>
-                          <div>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Available
-                            </span>
-                          </div>
+                          {slot.label}
                         </button>
                       ))}
                     </div>
