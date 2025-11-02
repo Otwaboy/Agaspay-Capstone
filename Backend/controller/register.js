@@ -7,6 +7,7 @@ const User = require('../model/User')
 const Resident = require('../model/Resident')
 const Personnel = require('../model/Personnel')
 const WaterConnection = require('../model/WaterConnection')
+const ScheduleTask = require('../model/Schedule-task')
 const bcrypt = require('bcrypt')
 
 const registerResident = async (req, res) => {
@@ -33,10 +34,22 @@ const registerResident = async (req, res) => {
            purok, 
            contact_no, 
            type,
+           // Optional scheduling fields
+           schedule_installation,
+           schedule_date,
+           schedule_time,
+           assigned_personnel
         } = req.body;
 
     if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type) {
       throw new BadRequestError('Please provide all required fields');
+    }
+
+    // Validate scheduling fields if scheduling is requested
+    if (schedule_installation) {
+      if (!schedule_date || !schedule_time || !assigned_personnel) {
+        throw new BadRequestError('Scheduling requires date, time, and assigned personnel');
+      }
     }
 
     // Now safe to create records after authentication and validation
@@ -47,20 +60,42 @@ const registerResident = async (req, res) => {
     const tempMeterNo = `PENDING-${Date.now()}`;
     const waterConnection = await createWaterConnection(resident._id, tempMeterNo, type);
     
-    // Note: Meter installation must be scheduled manually by Secretary through Assignments page
-    // This allows flexible scheduling and avoids conflicts with maintenance availability
+    let installationTask = null;
+    
+    // Create installation task if scheduling was requested
+    if (schedule_installation) {
+      installationTask = await ScheduleTask.create({
+        connection_id: waterConnection._id,
+        schedule_date: schedule_date,
+        schedule_time: schedule_time,
+        task_status: 'Assigned',
+        assigned_personnel: assigned_personnel,
+        scheduled_by: secretary._id,
+      });
+    }
 
     const token = user.createJWT();
 
-    res.status(201).json({
-      message: 'Resident was successfully registered. Please schedule meter installation through the Assignments page.',
+    const responseData = {
+      message: schedule_installation 
+        ? `Resident was successfully registered. Meter installation scheduled for ${schedule_date} at ${schedule_time}.`
+        : 'Resident was successfully registered. Please schedule meter installation through the Assignments page.',
       user_id: user._id,
       resident_id: resident._id,
       username: user.username,
       connection_id: waterConnection._id,
       connection_status: waterConnection.connection_status,
       token
-    });
+    };
+
+    // Add task info if scheduling was done
+    if (installationTask) {
+      responseData.task_id = installationTask._id;
+      responseData.scheduled_date = installationTask.schedule_date;
+      responseData.scheduled_time = installationTask.schedule_time;
+    }
+
+    res.status(201).json(responseData);
 
 
 }

@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Checkbox } from "../ui/checkbox";
 import { useToast } from "../../hooks/use-toast";
 import { authManager } from "../../lib/auth";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Calendar, Clock, User, AlertCircle } from "lucide-react";
+import { apiClient } from "../../lib/api";
 
 export default function CreateResidentModal({ isOpen, onClose }) {
   
@@ -32,10 +33,47 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     username: "",
     password: ""
   });
+  
+  // Scheduling state
+  const [scheduleInstallation, setScheduleInstallation] = useState(false);
+  const [schedulingData, setSchedulingData] = useState({
+    scheduleDate: "",
+    scheduleTime: "",
+    assignedPersonnel: ""
+  });
+  const [maintenancePersonnel, setMaintenancePersonnel] = useState([]);
+  const [isLoadingPersonnel, setIsLoadingPersonnel] = useState(false);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
+  // Fetch maintenance personnel with availability checking
+  useEffect(() => {
+    const fetchPersonnel = async () => {
+      if (!scheduleInstallation || !schedulingData.scheduleDate || !schedulingData.scheduleTime) {
+        setMaintenancePersonnel([]);
+        return;
+      }
+
+      setIsLoadingPersonnel(true);
+      try {
+        const response = await apiClient.getMaintenancePersonnel(
+          schedulingData.scheduleDate,
+          schedulingData.scheduleTime
+        );
+        // Backend returns { personnel: [...], count: N }
+        setMaintenancePersonnel(response.personnel || []);
+      } catch (error) {
+        console.error("Failed to fetch personnel:", error);
+        setMaintenancePersonnel([]);
+      } finally {
+        setIsLoadingPersonnel(false);
+      }
+    };
+
+    fetchPersonnel();
+  }, [scheduleInstallation, schedulingData.scheduleDate, schedulingData.scheduleTime]);
 
   // functions when submmiting the button
   const handleSubmit = async (e) => {
@@ -64,7 +102,20 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         return;
       }
 
-      // Create resident account - always create the account
+      // Validate scheduling if enabled
+      if (scheduleInstallation) {
+        if (!schedulingData.scheduleDate || !schedulingData.scheduleTime || !schedulingData.assignedPersonnel) {
+          toast({
+            title: "Validation Error",
+            description: "Please fill in all scheduling fields (date, time, and personnel)",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Create resident account with optional scheduling data
       const accountData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -76,11 +127,24 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         username: formData.username,
         password: formData.password,
       };
+
+      // Add scheduling data if enabled
+      if (scheduleInstallation) {
+        accountData.schedule_installation = true;
+        accountData.schedule_date = schedulingData.scheduleDate;
+        accountData.schedule_time = schedulingData.scheduleTime;
+        accountData.assigned_personnel = schedulingData.assignedPersonnel;
+      }
+
       await authManager.createResidentAccount(accountData);
       
+      const successMessage = scheduleInstallation
+        ? `${formData.firstName} ${formData.lastName} has been registered. Meter installation scheduled for ${schedulingData.scheduleDate} at ${schedulingData.scheduleTime}.`
+        : `${formData.firstName} ${formData.lastName} has been registered. Please schedule meter installation through the Assignments page.`;
+
       toast({
         title: "Resident Created Successfully",
-        description: `${formData.firstName} ${formData.lastName} has been registered. Meter installation task has been scheduled for maintenance.`,
+        description: successMessage,
         variant: "default"
       });
 
@@ -96,6 +160,15 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         username: "",
         password: ""
       });
+      
+      // Reset scheduling data
+      setScheduleInstallation(false);
+      setSchedulingData({
+        scheduleDate: "",
+        scheduleTime: "",
+        assignedPersonnel: ""
+      });
+      setMaintenancePersonnel([]);
       
       onClose();
 
@@ -325,6 +398,129 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 </div>
               </div>
             {/* )} */}
+          </div>
+
+          {/* Meter Installation Scheduling Section */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox
+                id="scheduleInstallation"
+                checked={scheduleInstallation}
+                onCheckedChange={setScheduleInstallation}
+                data-testid="checkbox-schedule-installation"
+              />
+              <Label htmlFor="scheduleInstallation" className="text-sm font-medium cursor-pointer">
+                Schedule Meter Installation Now (Optional)
+              </Label>
+            </div>
+
+            {scheduleInstallation && (
+              <div className="space-y-4 bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-3">
+                  Schedule the meter installation appointment. The system will check personnel availability.
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="scheduleDate">
+                      <Calendar className="inline h-4 w-4 mr-2" />
+                      Installation Date
+                    </Label>
+                    <Input
+                      id="scheduleDate"
+                      type="date"
+                      value={schedulingData.scheduleDate}
+                      onChange={(e) => setSchedulingData(prev => ({ ...prev, scheduleDate: e.target.value }))}
+                      min={new Date().toISOString().split('T')[0]}
+                      required={scheduleInstallation}
+                      data-testid="input-schedule-date"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="scheduleTime">
+                      <Clock className="inline h-4 w-4 mr-2" />
+                      Installation Time
+                    </Label>
+                    <Input
+                      id="scheduleTime"
+                      type="time"
+                      value={schedulingData.scheduleTime}
+                      onChange={(e) => setSchedulingData(prev => ({ ...prev, scheduleTime: e.target.value }))}
+                      required={scheduleInstallation}
+                      data-testid="input-schedule-time"
+                    />
+                  </div>
+                </div>
+
+                {/* Personnel Selection with Availability */}
+                <div className="space-y-2">
+                  <Label htmlFor="assignedPersonnel">
+                    <User className="inline h-4 w-4 mr-2" />
+                    Assign Maintenance Personnel
+                  </Label>
+                  
+                  {isLoadingPersonnel ? (
+                    <div className="text-sm text-gray-500 py-2">Loading available personnel...</div>
+                  ) : !schedulingData.scheduleDate || !schedulingData.scheduleTime ? (
+                    <div className="text-sm text-amber-600 py-2 bg-amber-50 p-3 rounded">
+                      Please select date and time first to check personnel availability
+                    </div>
+                  ) : maintenancePersonnel.length === 0 ? (
+                    <div className="text-sm text-red-600 py-2 bg-red-50 p-3 rounded">
+                      No maintenance personnel found. Please add maintenance personnel first.
+                    </div>
+                  ) : (
+                    <Select
+                      value={schedulingData.assignedPersonnel}
+                      onValueChange={(value) => setSchedulingData(prev => ({ ...prev, assignedPersonnel: value }))}
+                      required={scheduleInstallation}
+                    >
+                      <SelectTrigger data-testid="select-assigned-personnel">
+                        <SelectValue placeholder="Select maintenance personnel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {maintenancePersonnel.map((person) => (
+                          <SelectItem key={person.id} value={person.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span>{person.name}</span>
+                              {person.isAvailable ? (
+                                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                  ✓ Available
+                                </span>
+                              ) : (
+                                <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                                  ✗ Busy
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Show warning if selected personnel is busy */}
+                  {schedulingData.assignedPersonnel && maintenancePersonnel.find(p => p.id === schedulingData.assignedPersonnel && !p.isAvailable) && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
+                      <div className="flex items-start">
+                        <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-yellow-800">Scheduling Conflict Warning</p>
+                          <p className="text-xs text-yellow-700 mt-1">
+                            This personnel is already scheduled at this time. Consider choosing another time or available personnel.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500 mt-2">
+                    <strong>Hint:</strong> Personnel with green badges are available at the selected time.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
