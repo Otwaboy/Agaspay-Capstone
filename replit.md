@@ -45,7 +45,7 @@ This design is applied consistently across all pages and user roles.
 -   SMS notifications.
 -   Zone-based filtering for meter readers.
 -   Monthly Reading Progress Tracker.
--   Resident account creation automatically schedules meter installation.
+-   Personnel availability checking for task assignments.
 
 ### Technical Implementations
 -   **Vite Configuration:** Proxies `/api` requests to the backend, `allowedHosts: true` for Replit compatibility.
@@ -55,7 +55,7 @@ This design is applied consistently across all pages and user roles.
 -   **Nodemon Configuration:** Backend uses `nodemon.json` to watch specific directories (`controller`, `middleware`, `routes`, `model`, `server.js`) to prevent unnecessary restarts.
 -   **Security:** Implemented zone-based filtering for meter readers and ensured JWT secrets are not logged.
 -   **Admin Dashboard:** Comprehensive integration with all backend APIs, utilizing React Query for data fetching and state management, featuring modern stats cards, pending announcements, and system overview.
--   **Automated Workflow:** Resident account creation triggers automatic meter installation task scheduling.
+-   **Manual Meter Installation Scheduling:** Resident account creation creates PENDING water connection; secretary manually schedules meter installation through Assignments page with availability checking to prevent conflicts.
 
 ## External Dependencies
 -   **Database:** MongoDB Atlas (Cloud)
@@ -63,6 +63,29 @@ This design is applied consistently across all pages and user roles.
 -   **SMS Service:** PhilSMS
 
 ## Recent Changes
+- **November 2, 2025 (Afternoon - Latest):**
+  - ✅ **CHANGED TO MANUAL METER INSTALLATION SCHEDULING:** Removed automatic scheduling to give secretary full control
+    - **Reason for Change:** User requested manual scheduling to avoid:
+      - Weekend scheduling when maintenance is unavailable
+      - Conflicts when maintenance personnel are sick or busy
+      - Inflexible fixed time (9:00 AM) that doesn't consider workload
+    - **Backend Changes (register.js):**
+      - Removed automatic ScheduleTask creation from `registerResident` function
+      - Removed unused ScheduleTask import
+      - Updated response message to instruct secretary to schedule manually
+      - **Still creates:** User + Resident + WaterConnection (PENDING status)
+    - **New Workflow:**
+      1. Secretary creates resident account → Only creates account and PENDING connection
+      2. Secretary manually schedules meter installation through Assignments page
+      3. Uses availability checking feature to prevent conflicts
+      4. Full control over date, time, and personnel assignment
+    - **Benefits:** 
+      - Avoids weekend/holiday scheduling
+      - Secretary can check maintenance availability first
+      - Flexible scheduling based on workload
+      - Uses conflict detection to prevent double-booking
+    - **Architect Review:** ✅ Passed - Clean removal with no orphaned references
+
 - **November 2, 2025 (Afternoon):**
   - ✅ **PERSONNEL AVAILABILITY CHECKING FEATURE:** Secretary Assignment page now shows real-time availability to prevent double-booking
     - **Backend Changes (assignment.js):**
@@ -82,7 +105,7 @@ This design is applied consistently across all pages and user roles.
     - **Architect Review:** ✅ Passed - Time parsing correctly handles AM/PM and 24-hour formats
 
 - **November 2, 2025 (Morning):**
-  - ✅ **CHAPTER 3 WORKFLOW IMPLEMENTATION:** Resident account creation with automatic meter installation scheduling
+  - ✅ **CHAPTER 3 WORKFLOW IMPLEMENTATION:** Resident account creation (originally with automatic meter installation - changed to manual in afternoon)
   - **Security Fixes:** Authentication/authorization validation moved to TOP of registerResident (before DB operations)
   - Fixed JWT secret logging vulnerability in User.js model
   - Added authentication middleware to `/register-resident` and `/register-personnel` routes
