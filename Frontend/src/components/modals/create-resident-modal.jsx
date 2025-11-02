@@ -195,38 +195,13 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Generate time slots as 1-hour windows (grid-style like incident report)
-  const timeSlots = [];
-  const slots = [
-    { start: '08:00', end: '09:00' },
-    { start: '09:00', end: '10:00' },
-    { start: '10:00', end: '11:00' },
-    { start: '11:00', end: '12:00' },
-    { start: '13:00', end: '14:00' },
-    { start: '14:00', end: '15:00' },
-    { start: '15:00', end: '16:00' },
-    { start: '16:00', end: '17:00' }
+  // Generate time slots - exactly 4 slots matching the screenshot
+  const timeSlots = [
+    { start: '09:30', end: '10:30', label: '09:30 - 10:30', duration: 60 },
+    { start: '11:30', end: '12:30', label: '11:30 - 12:30', duration: 60 },
+    { start: '13:30', end: '14:30', label: '13:30 - 14:30', duration: 60 },
+    { start: '15:30', end: '16:30', label: '15:30 - 16:30', duration: 60 }
   ];
-
-  slots.forEach(slot => {
-    const startTime = new Date(`2024-01-01T${slot.start}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-    const endTime = new Date(`2024-01-01T${slot.end}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-    timeSlots.push({
-      id: slot.start,
-      start: slot.start,
-      end: slot.end,
-      label: `${startTime} - ${endTime}`,
-      duration: 60
-    });
-  });
 
 
 
@@ -470,28 +445,37 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>
-                      <Clock className="inline h-4 w-4 mr-2" />
-                      Select Time Slot <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
-                      {timeSlots.map((slot) => (
-                        <button
-                          key={slot.id}
-                          type="button"
-                          onClick={() => setSchedulingData(prev => ({ ...prev, scheduleTime: slot.start }))}
-                          className={`py-3 px-3 rounded-lg border text-sm font-medium transition-all min-h-[44px] ${
-                            schedulingData.scheduleTime === slot.start
-                              ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-300'
-                              : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50'
-                          }`}
-                          data-testid={`time-slot-${slot.id}`}
-                        >
-                          {slot.label}
-                        </button>
-                      ))}
-                    </div>
+                </div>
+
+                {/* Time Slot Selection - Below Date */}
+                <div className="space-y-2">
+                  <Label>
+                    Select Time Slot <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                    {timeSlots.map((slot) => (
+                      <button
+                        key={slot.start}
+                        type="button"
+                        onClick={() => setSchedulingData(prev => ({ ...prev, scheduleTime: slot.start }))}
+                        className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                          schedulingData.scheduleTime === slot.start
+                            ? 'border-gray-300 bg-gray-50 shadow-sm'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                        data-testid={`time-slot-${slot.start}`}
+                      >
+                        <div className="text-left">
+                          <div className="font-semibold text-gray-900">{slot.label}</div>
+                          <div className="text-sm text-gray-600">Duration: {slot.duration} min</div>
+                        </div>
+                        <div>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Available
+                          </span>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
