@@ -195,6 +195,20 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Generate time slots from 8 AM to 5 PM (same as incident report UX)
+  const timeSlots = [];
+  for (let hour = 8; hour <= 17; hour++) {
+    for (let minute of ['00', '30']) {
+      const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+      const displayTime = new Date(`2024-01-01T${time}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      timeSlots.push({ value: time, label: displayTime });
+    }
+  }
+
 
 
   return (
@@ -442,14 +456,22 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                       <Clock className="inline h-4 w-4 mr-2" />
                       Installation Time
                     </Label>
-                    <Input
-                      id="scheduleTime"
-                      type="time"
+                    <Select
                       value={schedulingData.scheduleTime}
-                      onChange={(e) => setSchedulingData(prev => ({ ...prev, scheduleTime: e.target.value }))}
+                      onValueChange={(value) => setSchedulingData(prev => ({ ...prev, scheduleTime: value }))}
                       required={scheduleInstallation}
-                      data-testid="input-schedule-time"
-                    />
+                    >
+                      <SelectTrigger data-testid="select-schedule-time">
+                        <SelectValue placeholder="Select time" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {timeSlots.map((slot) => (
+                          <SelectItem key={slot.value} value={slot.value}>
+                            {slot.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
