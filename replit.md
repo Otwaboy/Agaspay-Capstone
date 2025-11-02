@@ -61,3 +61,28 @@ This design is applied consistently across all pages and user roles.
 -   **Database:** MongoDB Atlas (Cloud)
 -   **Payment Gateway:** PayMongo
 -   **SMS Service:** PhilSMS
+
+## Recent Changes
+- **November 2, 2025 (Afternoon):**
+  - ✅ **PERSONNEL AVAILABILITY CHECKING FEATURE:** Secretary Assignment page now shows real-time availability to prevent double-booking
+    - **Backend Changes (assignment.js):**
+      - Added `checkTimeConflict()` helper function to detect overlapping time slots
+        - Supports both 12-hour format ("09:00 AM") and 24-hour format ("14:30")
+        - Handles time ranges ("09:00 AM - 10:00 AM") and single times
+        - Converts times to minutes since midnight for accurate overlap detection
+      - Enhanced `getMaintenancePersonnel` API to accept query parameters (`schedule_date`, `schedule_time`)
+      - Returns availability status: `isAvailable`, `conflictingTasks`, `tasksOnDate`
+    - **Frontend Changes (secretary-assignments.jsx, api.js):**
+      - Fetches personnel with availability when opening assignment modal
+      - **Green badge "✓ Available"** for personnel with no conflicts
+      - **Red badge "✗ Busy"** for personnel already scheduled at that time
+      - Shows conflict details (time and task count) for busy personnel
+      - **Yellow warning card** when selecting unavailable personnel
+    - **Benefits:** Prevents accidental double-booking, provides clear visual feedback, shows exact conflict times
+    - **Architect Review:** ✅ Passed - Time parsing correctly handles AM/PM and 24-hour formats
+
+- **November 2, 2025 (Morning):**
+  - ✅ **CHAPTER 3 WORKFLOW IMPLEMENTATION:** Resident account creation with automatic meter installation scheduling
+  - **Security Fixes:** Authentication/authorization validation moved to TOP of registerResident (before DB operations)
+  - Fixed JWT secret logging vulnerability in User.js model
+  - Added authentication middleware to `/register-resident` and `/register-personnel` routes
