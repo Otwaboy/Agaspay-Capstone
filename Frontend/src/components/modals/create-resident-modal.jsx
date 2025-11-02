@@ -24,16 +24,13 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    meterNo: "",
     purok: "",
     email: "", 
     phone: "",
     zone: "",
     type: "",
     username: "",
-    password: "",
-    status: "",
-    createAccount: false
+    password: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -46,72 +43,58 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     setIsLoading(true);
 
     try {
-      // If create account is checked, validate account fields and create account first
-      if (formData.createAccount) {
-        if (!formData.username || !formData.password) {
-          toast({
-            title: "Validation Error",
-            description: "Username and password are required when creating an account",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        if (formData.password.length < 6) {
-          toast({
-            title: "Validation Error", 
-            description: "Password must be at least 6 characters long",
-            variant: "destructive"
-          });
-          return;
-        }
-
-
-  // Create account using authManager which is masave sya sa database
-        const accountData = {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          meter_no: formData.meterNo,
-          purok: formData.purok,
-          email: formData.email,
-          contact_no: formData.phone,
-          zone: formData.zone,
-          type: formData.type,
-          username: formData.username,
-          password: formData.password,
-          status: formData.status,
-          
-        };
-        await authManager.createResidentAccount(accountData);
+      // Validate required fields
+      if (!formData.username || !formData.password) {
+        toast({
+          title: "Validation Error",
+          description: "Username and password are required",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
       }
 
-      // Simulate personnel creation (this would normally be a separate API call)
-      // await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const successMessage = formData.createAccount 
-        ? `${formData.firstName} ${formData.lastName} has been added as ${formData.role} with login account created`
-        : `${formData.firstName} ${formData.lastName} has been added as ${formData.role}`;
+      if (formData.password.length < 6) {
+        toast({
+          title: "Validation Error", 
+          description: "Password must be at least 6 characters long",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
 
+      // Create resident account - always create the account
+      const accountData = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        purok: formData.purok,
+        email: formData.email,
+        contact_no: formData.phone,
+        zone: formData.zone,
+        type: formData.type,
+        username: formData.username,
+        password: formData.password,
+      };
+      await authManager.createResidentAccount(accountData);
+      
       toast({
-        title: "Personnel Created Successfully",
-        description: successMessage,
+        title: "Resident Created Successfully",
+        description: `${formData.firstName} ${formData.lastName} has been registered. Meter installation task has been scheduled for maintenance.`,
         variant: "default"
       });
 
       // Reset form
       setFormData({
-        irstName: "",
+        firstName: "",
         lastName: "",
-        meterNo: "",
         purok: "",
         email: "",
         phone: "",
         zone: "",
         type: "",
         username: "",
-        password: "",
-        status: "",
-        createAccount: false
+        password: ""
       });
       
       onClose();
@@ -179,18 +162,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               />
             </div>
           </div>
-
-           <div className="space-y-2">
-              <Label htmlFor="meterNo">Meter Number</Label>
-              <Input
-                id="meterNo"
-                value={formData.meterNo}
-                onChange={(e) => handleChange("meterNo")(e.target.value)}
-                placeholder="Enter Meter Number"
-                required
-                data-testid="input-meter-no"
-              />
-            </div>
 
             {/* assigning  zone */}
 
@@ -303,20 +274,11 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   {/* Account Creation Section */}
           <div className="border-t pt-4 mt-4">
             <div className="flex items-center space-x-2 mb-4">
-              {/* <Checkbox
-                id="createAccount"
-                checked={formData.createAccount}
-                onCheckedChange={(checked) => handleChange("createAccount")(checked)}
-                data-testid="checkbox-create-account"
-              /> */}
               <Label htmlFor="createAccount" className="text-sm font-medium">
-                Create login account for this resident
+                Login Account Details
               </Label>
             </div>
            
-
-      {/* this line of code mo render sya if formData.createAccount is true */}
-            {/* {formData.createAccount && ( */}
               <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
@@ -325,7 +287,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     value={formData.username}
                     onChange={(e) => handleChange("username")(e.target.value)}
                     placeholder="Enter username for login"
-                    required={formData.createAccount}
+                    required
                     data-testid="input-username"
                   />
                 </div>
@@ -339,7 +301,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                       value={formData.password}
                       onChange={(e) => handleChange("password")(e.target.value)}
                       placeholder="Enter password (min 6 characters)"
-                      required={formData.createAccount}
+                      required
                       data-testid="input-password"
                     />
                     <Button
@@ -380,7 +342,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               disabled={isLoading}
               data-testid="button-create"
             >
-              {isLoading ? "Creating..." : "Create Personnel"}
+              {isLoading ? "Creating..." : "Create Resident"}
             </Button>
           </div>
         </form>
