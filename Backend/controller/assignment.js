@@ -171,8 +171,8 @@ const getAssignments = async (req, res) => {
         id: assignment._id,
         task: {
           id: task?._id,
-          type: report?.type,
-          
+          type: report?.type || task.schedule_type,
+
           schedule_date: task?.schedule_date,
           schedule_time: task?.schedule_time,
           task_status: task?.task_status,
