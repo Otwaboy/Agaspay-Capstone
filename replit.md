@@ -1,234 +1,63 @@
 # AGASPAY - Barangay Waterworks Management System
 
-**Last Updated:** November 1, 2025
-
 ## Overview
-AGASPAY is a comprehensive water billing and management system designed for barangay waterworks. The system handles resident accounts, water meter readings, billing, payments, incident reports, task scheduling, and personnel management.
+AGASPAY is a comprehensive water billing and management system for barangay waterworks. It manages resident accounts, water meter readings, billing, payments, incident reports, task scheduling, and personnel. The system aims to streamline operations for barangay officials and provide convenient services for residents, including online payments and issue reporting.
 
-## Project Architecture
+## User Preferences
+- The user prefers clear and concise explanations.
+- The user wants the agent to focus on completing tasks efficiently.
+- The user prefers that the agent asks for confirmation before making significant architectural changes or refactoring large portions of code.
+- The user expects the agent to adhere to the established design system and maintain UI/UX consistency.
+- The user wants the agent to prioritize security fixes and robust error handling.
+- The user prefers an iterative development approach, focusing on one feature or fix at a time.
+- Do not make changes to the folder `node_modules/` in the `Backend` directory.
+
+## System Architecture
 
 ### Tech Stack
-- **Frontend:** React 19 + Vite 7 + Tailwind CSS 4
-- **Backend:** Node.js 20 + Express 4
-- **Database:** MongoDB (Cloud - MongoDB Atlas)
-- **Payment Gateway:** PayMongo
-- **SMS Service:** PhilSMS
+-   **Frontend:** React 19, Vite 7, Tailwind CSS 4
+-   **Backend:** Node.js 20, Express 4
+-   **Database:** MongoDB (Cloud - MongoDB Atlas)
 
 ### Project Structure
-```
-├── Backend/               # Express.js API server
-│   ├── controller/       # Route controllers (auth, billing, payments, etc.)
-│   ├── model/           # MongoDB Mongoose models
-│   ├── routes/          # API route definitions
-│   ├── middleware/      # Authentication & error handling
-│   └── server.js        # Main server entry point
-├── Frontend/             # React + Vite application
-│   ├── src/
-│   │   ├── components/  # UI components (dashboards, modals, layouts)
-│   │   ├── pages/       # Page components for different roles
-│   │   ├── lib/         # API client & utilities
-│   │   └── hooks/       # Custom React hooks
-│   └── vite.config.js   # Vite configuration
-└── start-backend.sh      # Backend startup script (includes MongoDB setup)
-```
+The project is divided into `Backend` (Express.js API) and `Frontend` (React + Vite). The backend includes controllers, models, routes, and middleware, while the frontend is structured with components, pages, utility libraries, and hooks.
 
-## User Roles
-The system supports multiple user roles with different permissions:
-1. **Admin** - Full system access
-2. **Treasurer** - Financial management, billing, payments
-3. **Secretary** - Resident registration, document management
-4. **Meter Reader** - Water meter reading input
-5. **Maintenance** - Task assignments and incident handling
-6. **Resident** - View bills, make payments, report issues
+### User Roles
+The system supports six distinct roles with tailored permissions: Admin, Treasurer, Secretary, Meter Reader, Maintenance, and Resident.
 
-## Environment Configuration
+### UI/UX Design
+The system currently implements a "Premium Frosted Glass Design" characterized by:
+-   A gradient background (`bg-gradient-to-br from-blue-50 via-white to-cyan-50`).
+-   Decorative blurry water drop overlays for visual depth.
+-   Frosted glass effect for cards (`bg-white/70 backdrop-blur-md border-white/30`).
+-   Solid white sidebar.
+-   Standardized header text styling (`text-3xl font-bold text-gray-900` for titles, `text-gray-600` for subtitles).
+-   Consistent layering using `relative z-10` for content.
+This design is applied consistently across all pages and user roles.
 
-### Backend Environment Variables (.env)
-- `PORT` - Backend server port (3000)
-- `MONGO_URI` - MongoDB Atlas connection string
-- `JWT_SECRET` - Secret key for JWT token generation
-- `JWT_LIFETIME` - Token expiration time
-- `PAYMONGO_SECRET_KEY` - PayMongo payment gateway API key
-- `PHILSMS_API_KEY` - PhilSMS service API key
-- `NODE_ENV` - Environment (development/production)
+### Key Features
+-   User authentication and role-based access control.
+-   Water meter reading and automated billing.
+-   Online payment processing.
+-   Incident reporting and task scheduling.
+-   Water connection management.
+-   Financial reporting and analytics.
+-   SMS notifications.
+-   Zone-based filtering for meter readers.
+-   Monthly Reading Progress Tracker.
+-   Resident account creation automatically schedules meter installation.
 
-## Replit Setup Notes
+### Technical Implementations
+-   **Vite Configuration:** Proxies `/api` requests to the backend, `allowedHosts: true` for Replit compatibility.
+-   **CORS:** Backend configured to allow Replit domains and localhost.
+-   **Backend Server:** Binds to `0.0.0.0:3000`.
+-   **Frontend Server:** Runs on `0.0.0.0:5000`.
+-   **Nodemon Configuration:** Backend uses `nodemon.json` to watch specific directories (`controller`, `middleware`, `routes`, `model`, `server.js`) to prevent unnecessary restarts.
+-   **Security:** Implemented zone-based filtering for meter readers and ensured JWT secrets are not logged.
+-   **Admin Dashboard:** Comprehensive integration with all backend APIs, utilizing React Query for data fetching and state management, featuring modern stats cards, pending announcements, and system overview.
+-   **Automated Workflow:** Resident account creation triggers automatic meter installation task scheduling.
 
-### Ports
-- **Frontend:** Port 5000 (Vite dev server, bound to 0.0.0.0)
-- **Backend:** Port 3000 (Express server, bound to localhost)
-- **MongoDB:** Port 27017 (local instance for development, cloud for production)
-
-### Key Configurations
-1. **Vite Config:** 
-   - Configured with `allowedHosts: true` to work with Replit's proxy system
-   - **Vite Proxy:** All `/api` requests are forwarded to backend on `localhost:3000`
-2. **CORS:** Backend allows Replit domains and localhost origins
-3. **Database:** Uses MongoDB Atlas (cloud) with connection string in .env
-4. **Backend Server:** Binds to `0.0.0.0:3000` (accessible from frontend via Vite proxy)
-5. **Frontend Server:** Runs on `0.0.0.0:5000` (public-facing port)
-
-### Workflows
-- **Backend:** Starts MongoDB (if needed) and runs Express server with nodemon
-- **Frontend:** Runs Vite dev server on port 5000 with HMR enabled
-
-## Features
-- User authentication & role-based access control
-- Water meter reading management
-- Automated billing generation
-- Online payment processing (PayMongo integration)
-- Incident reporting system
-- Task scheduling and assignment
-- Water connection management
-- Financial reports and analytics
-- SMS notifications for overdue bills
-
-## Working Credentials
-- **Username:** `replitadmin`
-- **Password:** `replit2025`
-
-**Note:** Your original database users exist but may have different passwords. Use the credentials above or check your database for other valid accounts.
-
-## Design System
-- **Premium Frosted Glass Design** (November 1, 2025):
-  - **Gradient Background:** `bg-gradient-to-br from-blue-50 via-white to-cyan-50` on all pages
-  - **Decorative Elements:** Two blurry water drop overlays (`blur-3xl`) for visual depth
-  - **Frosted Glass Cards:** `bg-white/70 backdrop-blur-md border-white/30` with semi-transparency
-  - **Sidebar:** Solid white background (not transparent) with organized menu sections
-  - **Header Text:** Standardized `text-3xl font-bold text-gray-900` titles + `text-gray-600` subtitles
-  - **Layering:** Content uses `relative z-10` to properly layer above blur backgrounds
-  - Consistent across ALL 50+ pages and ALL 6 user roles
-  
-- **Modern Healthcare-Inspired UI** (October 28, 2025):
-  - Dark navy sidebar (#2C3E50) with organized menu sections
-  - Clean white header with search and notifications
-  - Rounded icon badges in stat cards
-  - Inline mini bar charts for trends
-  - Professional spacing and typography
-  - Consistent across ALL user roles
-
-## Recent Changes
-- **November 1, 2025 (Late Evening):**
-  - 🎨 **MAJOR DESIGN UPDATE:** Applied premium frosted glass aesthetic to entire application
-    - Updated ALL 50+ pages across all 6 user roles (Admin, Secretary, Treasurer, Meter Reader, Maintenance, Resident)
-    - Gradient background: `from-blue-50 via-white to-cyan-50` replaces solid gray backgrounds
-    - Frosted glass cards: 70% opacity white cards with `backdrop-blur-md` effect
-    - Decorative blur elements: Two positioned blur overlays for modern depth effect
-    - Standardized header text styling matching login page consistency
-    - Fixed invalid Tailwind class `backdrop-blur-md/70` in resident-bill-payment-card.jsx
-    - Fixed JSX syntax error with orphaned decorations in admin-billing.jsx
-    - Frontend running without errors, all pages styled consistently
-  - 📝 **Architect Review Recommendations:**
-    - Consider consolidating decorative blur backgrounds into shared layout for performance
-    - Verify WCAG compliance on translucent cards for accessibility
-    - All critical issues resolved, styling successfully implemented
-- **November 1, 2025 (Evening):**
-  - 🔧 **CRITICAL BUG FIX:** Resolved backend crash issue
-    - **Root cause:** Nodemon was watching all files (including Frontend builds), causing constant restarts
-    - **Solution:** Created `Backend/nodemon.json` to limit watch scope to Backend files only
-    - **Watch directories:** controller, middleware, routes, model, server.js
-    - **Ignored directories:** Frontend, logs, tmp, node_modules
-    - Backend now stable and handles multiple concurrent requests without crashing
-  - 🔒 **Security fix:** Removed JWT secret logging from authentication middleware
-    - JWT_SECRET was being printed to console logs (security vulnerability)
-    - Now verifies tokens silently without exposing secrets
-  - ✅ **Stability verified:** Backend successfully handled 9+ consecutive API requests without crashes
-    - Zone-based filtering working correctly for multiple users
-    - Both Zone 2 and Zone 3 meter readers tested successfully
-
-- **November 1, 2025 (Morning):**
-  - 🔒 **CRITICAL SECURITY FIX:** Implemented zone-based filtering for meter readers
-    - Fixed major security vulnerability where meter readers could see ALL residents
-    - Backend now enforces zone-based filtering in `getLatestReadings` API
-    - Fixed Personnel lookup to use `user_id` field instead of `_id` (was causing "null" error)
-    - Meter readers with `assigned_zone=2` can now ONLY see residents with `zone=2`
-    - Zone is stored in Resident model, filtering applied after joining residents
-    - Added zone field to API response for debugging and display
-    - Treasurers can still see all zones (no filter applied)
-  - ✅ Unified all Meter Reader pages with consistent header design
-    - All 6 meter-reader pages now use `MeterReaderTopHeader` component
-    - Moved page titles from custom headers to main content area
-    - Consistent layout structure across: Readings, History, Zones, Schedule, Issues, Settings
-  - 🎨 **UX Improvement:** Combined search and select into single searchable dropdown
-    - Removed separate search bar on Meter Readings page
-    - Search input now appears inside the resident selection dropdown
-    - Cleaner, more intuitive interface for selecting residents
-    - Sticky search bar stays at top while scrolling through residents
-  - 📅 **NEW FEATURE:** Monthly Reading Progress Tracker
-    - Backend tracks which residents have been read in the current month (UTC-based)
-    - Frontend displays check icon (✓) for residents with readings this month
-    - "Read" badge (green) vs "Not Read" badge (gray) for each resident
-    - Monthly progress card shows: "X of Y residents read this month (Z%)"
-    - Progress bar visualization for quick status overview
-    - **Automatic monthly reset:** Readings reset to "Not Read" at UTC month boundaries
-    - Uses UTC timezone to prevent misclassification across different server timezones
-    - Helps meter readers track their monthly reading completion progress
-
-- **October 28, 2025:**
-  - ✅ Migrated from GitHub to Replit successfully
-  - ✅ Configured Vite to allow Replit proxy domains
-  - ✅ Set up MongoDB Atlas cloud database connection
-  - ✅ Removed unused Stripe dependency (system uses PayMongo)
-  - ✅ Configured backend CORS for Replit environment
-  - ✅ **Implemented Vite proxy** to forward API requests from frontend to backend
-  - ✅ Created test admin account: `replitadmin` / `replit2025`
-  - ✅ Verified login functionality and database connectivity
-  - ✅ Set up deployment configuration for autoscale deployment
-  
-  **Admin Dashboard Integration (100% Complete):**
-  - ✅ All backend APIs implemented (Dashboard, Personnel, Reports, Incidents, Users, Connections, Billing, Scheduling)
-  - ✅ Comprehensive adminApi service created for all admin endpoints
-  - ✅ All 7 admin pages integrated with real data (no mock data):
-    - Dashboard Overview with real statistics
-    - Admin Users page (search, filter, manage residents)
-    - Admin Personnel page (full CRUD operations)
-    - Admin Connections page (status updates, search, filter)
-    - Admin Billing page (billing & payment data)
-    - Admin Incidents page (status updates, resolution)
-    - Admin Scheduling page (task management, status updates)
-    - Admin Reports page (real report generation)
-  - ✅ All pages use React Query (useQuery, useMutation)
-  - ✅ All buttons fully functional (delete, update, resolve, etc.)
-  - ✅ Proper loading states with Skeleton components
-  - ✅ Toast notifications for success/error
-  - ✅ Query invalidation for real-time updates
-  - ✅ **Modern Dashboard Design** - Redesigned with:
-    - Modern stats cards with inline trend charts
-    - **Pending Announcements** section (replaces revenue overview):
-      - Shows announcements created by Secretary awaiting Admin approval
-      - Approve/Reject buttons for each announcement
-      - Category badges (Maintenance, Event, Information, Billing, Alert)
-      - Priority indicators (high, normal, low)
-      - Real-time updates using React Query
-    - Connection status donut chart breakdown
-    - **System Overview** section (replaces today's schedule):
-      - Overdue payments tracker
-      - Pending connections count
-      - Unresolved incidents alert
-      - Pending announcements count
-      - Active connections status
-      - Pending payments summary
-      - Real-time system status indicator
-    - Recent activities with avatar displays
-    - Clean, professional layout inspired by modern healthcare dashboards
-  
-  **Chapter 3 Requirements Implementation (85% Complete):**
-  - ✅ All 9 backend models updated/created
-  - ✅ All 6 connection statuses implemented
-  - ✅ Approval workflow APIs (announcements & schedules)
-  - ✅ Notification system (SMS via PhilSMS, Email)
-  - ✅ Receipt generation (temporary & official)
-  - ✅ Voluntary disconnection & archive request APIs
-  - ✅ Delinquency tracking & auto-task scheduling
-  - ⏳ Secretary, Treasurer, Meter Reader, Maintenance, Resident dashboards
-  - ⏳ End-to-end testing and bug fixes
-
-## Development
-- Frontend runs with hot module replacement (HMR)
-- Backend uses nodemon for automatic restarts on file changes
-- MongoDB Atlas provides cloud database access
-
-## Deployment
-Configured for Replit Autoscale deployment:
-- Build command: `npm run build` (Frontend)
-- Run command: Starts backend and serves frontend build
+## External Dependencies
+-   **Database:** MongoDB Atlas (Cloud)
+-   **Payment Gateway:** PayMongo
+-   **SMS Service:** PhilSMS
