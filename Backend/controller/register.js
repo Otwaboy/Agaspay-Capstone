@@ -8,6 +8,7 @@ const Resident = require('../model/Resident')
 const Personnel = require('../model/Personnel')
 const WaterConnection = require('../model/WaterConnection')
 const ScheduleTask = require('../model/Schedule-task')
+const Assignment = require('../model/Assignment')
 const bcrypt = require('bcrypt')
 
 const registerResident = async (req, res) => {
@@ -53,8 +54,10 @@ const registerResident = async (req, res) => {
   const waterConnection = await createWaterConnection(resident._id, tempMeterNo, type);
   
   let installationTask = null;
+  let assignment = null;
 
   if (schedule_installation) {
+    // 1. Create the ScheduleTask
     installationTask = await ScheduleTask.create({
       connection_id: waterConnection._id,
       schedule_date,
@@ -64,6 +67,15 @@ const registerResident = async (req, res) => {
       schedule_type: 'Meter Installation',
       scheduled_by: secretary._id,
     });
+
+    // 2. Create the Assignment (links task to personnel) - just like assignment controller
+    assignment = await Assignment.create({
+      task_id: installationTask._id,
+      assigned_to: assigned_personnel,
+    });
+
+    console.log('✅ Created ScheduleTask:', installationTask._id);
+    console.log('✅ Created Assignment:', assignment._id);
   }
 
   const token = user.createJWT();
@@ -84,6 +96,11 @@ const registerResident = async (req, res) => {
     responseData.task_id = installationTask._id;
     responseData.scheduled_date = installationTask.schedule_date;
     responseData.scheduled_time = installationTask.schedule_time;
+    
+    // Add assignment info if created
+    if (assignment) {
+      responseData.assignment_id = assignment._id;
+    }
   }
 
   res.status(201).json(responseData);

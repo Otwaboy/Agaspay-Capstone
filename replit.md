@@ -85,9 +85,11 @@ This design is applied consistently across all pages and user roles.
     - **Backend Changes (register.js):**
       - Accepts optional scheduling fields: `schedule_installation`, `schedule_date`, `schedule_time`, `assigned_personnel`
       - Validates scheduling fields if scheduling requested
-      - Creates ScheduleTask with status 'Assigned' if scheduling data provided
+      - Creates **both ScheduleTask AND Assignment** if scheduling data provided (complete workflow)
+        - ScheduleTask: Links task to water connection with date/time
+        - Assignment: Links task to assigned personnel (same as assignment controller)
       - Returns contextual success message based on whether scheduling was done
-      - Response includes task metadata if scheduled
+      - Response includes task_id, assignment_id, and scheduling metadata
     - **Two Workflow Options:**
       1. **Schedule Now:** Secretary checks box → fills date/time/personnel → creates account with scheduled installation in one step
       2. **Schedule Later:** Secretary unchecks box → creates account only → manually schedules later via Assignments page
