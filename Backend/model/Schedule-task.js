@@ -17,8 +17,14 @@ const ScheduleTaskSchema = new mongoose.Schema(
       required: [true, 'Please provide a schedule date'],
     },
     schedule_time: {
-      type: String,
+      type: String, 
       required: [true, 'Please provide a schedule time'],
+    },
+    schedule_type: {
+      type: String,
+      enum: ['Meter Installation'],
+      default: 'Meter Installation',
+      required: false
     },
     task_status: {
       type: String,

@@ -148,6 +148,7 @@ const getTasks = async (req, res) => {
       return {
         ...task,
         task_type: task.report_id?.type || 'N/A',
+         schedule_type: task.schedule_type || 'N/A', // ✅ Include schedule_type here
         assigned_to: assignment?.assigned_to
           ? {
               _id: assignment.assigned_to._id,

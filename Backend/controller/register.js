@@ -11,105 +11,85 @@ const ScheduleTask = require('../model/Schedule-task')
 const bcrypt = require('bcrypt')
 
 const registerResident = async (req, res) => {
+  if (!req.user || !req.user.userId) {
+    throw new BadRequestError('Authentication required. Please log in as Secretary or Admin.');
+  }
+
+  const secretary = await Personnel.findOne({ user_id: req.user.userId });
+  if (!secretary) {
+    throw new BadRequestError('Personnel record not found. Only Secretary or Admin can create residents.');
+  }
+
+  const { 
+    username, 
+    password, 
+    first_name, 
+    last_name, 
+    zone,
+    email, 
+    purok, 
+    contact_no, 
+    type,
+    schedule_installation,
+    schedule_date,
+    schedule_time,
+    assigned_personnel
+  } = req.body;
+
+  if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type) {
+    throw new BadRequestError('Please provide all required fields');
+  }
+
+  if (schedule_installation) {
+    if (!schedule_date || !schedule_time || !assigned_personnel) {
+      throw new BadRequestError('Scheduling requires date, time, and assigned personnel');
+    }
+  }
+
+  const user = await createUser(username, password, 'resident');
+  const resident = await createResident(user._id, first_name, last_name, email, zone, purok, contact_no);
   
-    // CRITICAL: Validate authentication FIRST before any database operations
-    if (!req.user || !req.user.userId) {
-      throw new BadRequestError('Authentication required. Please log in as Secretary or Admin.');
-    }
+  const tempMeterNo = `PENDING-${Date.now()}`;
+  const waterConnection = await createWaterConnection(resident._id, tempMeterNo, type);
+  
+  let installationTask = null;
 
-    // Verify secretary/admin personnel record exists
-    const secretary = await Personnel.findOne({ user_id: req.user.userId });
-    if (!secretary) {
-      throw new BadRequestError('Personnel record not found. Only Secretary or Admin can create residents.');
-    }
-
-    // Validate required fields from request body
-    const { 
-           username, 
-           password, 
-           first_name, 
-           last_name, 
-           zone,
-           email, 
-           purok, 
-           contact_no, 
-           type,
-           // Optional scheduling fields
-           schedule_installation,
-           schedule_date,
-           schedule_time,
-           assigned_personnel
-        } = req.body;
-
-    if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type) {
-      throw new BadRequestError('Please provide all required fields');
-    }
-
-    // Validate scheduling fields if scheduling is requested
-    if (schedule_installation) {
-      console.log('📥 Received scheduling data:', {
-        schedule_date,
-        schedule_time,
-        assigned_personnel
-      });
-      
-      if (!schedule_date || !schedule_time || !assigned_personnel) {
-        console.error('❌ Scheduling validation failed:', {
-          has_date: !!schedule_date,
-          has_time: !!schedule_time,
-          has_personnel: !!assigned_personnel
-        });
-        throw new BadRequestError('Scheduling requires date, time, and assigned personnel');
-      }
-    }
-
-    // Now safe to create records after authentication and validation
-    const user = await createUser(username, password, 'resident');
-    const resident = await createResident(user._id, first_name, last_name, email, zone, purok, contact_no, );
-    
-    // Generate temporary meter number (will be assigned by maintenance during installation)
-    const tempMeterNo = `PENDING-${Date.now()}`;
-    const waterConnection = await createWaterConnection(resident._id, tempMeterNo, type);
-    
-    let installationTask = null;
-    
-    // Create installation task if scheduling was requested
-    if (schedule_installation) {
-      installationTask = await ScheduleTask.create({
-        connection_id: waterConnection._id,
-        schedule_date: schedule_date,
-        schedule_time: schedule_time,
-        task_status: 'Assigned',
-        assigned_personnel: assigned_personnel,
-        scheduled_by: secretary._id,
-      });
-    }
-
-    const token = user.createJWT();
-
-    const responseData = {
-      message: schedule_installation 
-        ? `Resident was successfully registered. Meter installation scheduled for ${schedule_date} at ${schedule_time}.`
-        : 'Resident was successfully registered. Please schedule meter installation through the Assignments page.',
-      user_id: user._id,
-      resident_id: resident._id,
-      username: user.username,
+  if (schedule_installation) {
+    installationTask = await ScheduleTask.create({
       connection_id: waterConnection._id,
-      connection_status: waterConnection.connection_status,
-      token
-    };
+      schedule_date,
+      schedule_time,
+      task_status: 'Scheduled',
+      assigned_personnel,
+      schedule_type: 'Meter Installation',
+      scheduled_by: secretary._id,
+    });
+  }
 
-    // Add task info if scheduling was done
-    if (installationTask) {
-      responseData.task_id = installationTask._id;
-      responseData.scheduled_date = installationTask.schedule_date;
-      responseData.scheduled_time = installationTask.schedule_time;
-    }
+  const token = user.createJWT();
 
-    res.status(201).json(responseData);
+  const responseData = {
+    message: schedule_installation 
+      ? `Resident was successfully registered. Meter installation scheduled for ${schedule_date} at ${schedule_time}.`
+      : 'Resident was successfully registered. Please schedule meter installation through the Assignments page.',
+    user_id: user._id,
+    resident_id: resident._id,
+    username: user.username,
+    connection_id: waterConnection._id,
+    connection_status: waterConnection.connection_status,
+    token
+  };
+
+  if (installationTask) {
+    responseData.task_id = installationTask._id;
+    responseData.scheduled_date = installationTask.schedule_date;
+    responseData.scheduled_time = installationTask.schedule_time;
+  }
+
+  res.status(201).json(responseData);
+};
 
 
-}
  
 // e register and mga brgy personnel ani
 const registerPersonnel = async (req, res) => {
