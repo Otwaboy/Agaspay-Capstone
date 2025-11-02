@@ -195,19 +195,38 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Generate time slots from 8 AM to 5 PM (same as incident report UX)
+  // Generate time slots as 1-hour windows (grid-style like incident report)
   const timeSlots = [];
-  for (let hour = 8; hour <= 17; hour++) {
-    for (let minute of ['00', '30']) {
-      const time = `${hour.toString().padStart(2, '0')}:${minute}`;
-      const displayTime = new Date(`2024-01-01T${time}`).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-      timeSlots.push({ value: time, label: displayTime });
-    }
-  }
+  const slots = [
+    { start: '08:00', end: '09:00' },
+    { start: '09:00', end: '10:00' },
+    { start: '10:00', end: '11:00' },
+    { start: '11:00', end: '12:00' },
+    { start: '13:00', end: '14:00' },
+    { start: '14:00', end: '15:00' },
+    { start: '15:00', end: '16:00' },
+    { start: '16:00', end: '17:00' }
+  ];
+
+  slots.forEach(slot => {
+    const startTime = new Date(`2024-01-01T${slot.start}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    const endTime = new Date(`2024-01-01T${slot.end}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    timeSlots.push({
+      id: slot.start,
+      start: slot.start,
+      end: slot.end,
+      label: `${startTime} - ${endTime}`,
+      duration: 60
+    });
+  });
 
 
 
@@ -452,26 +471,35 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="scheduleTime">
+                    <Label>
                       <Clock className="inline h-4 w-4 mr-2" />
-                      Installation Time
+                      Select Time Slot <span className="text-red-500">*</span>
                     </Label>
-                    <Select
-                      value={schedulingData.scheduleTime}
-                      onValueChange={(value) => setSchedulingData(prev => ({ ...prev, scheduleTime: value }))}
-                      required={scheduleInstallation}
-                    >
-                      <SelectTrigger data-testid="select-schedule-time">
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {timeSlots.map((slot) => (
-                          <SelectItem key={slot.value} value={slot.value}>
-                            {slot.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                      {timeSlots.map((slot) => (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          onClick={() => setSchedulingData(prev => ({ ...prev, scheduleTime: slot.start }))}
+                          className={`relative flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                            schedulingData.scheduleTime === slot.start
+                              ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                              : 'border-gray-200 bg-white/70 backdrop-blur-sm hover:border-blue-300'
+                          }`}
+                          data-testid={`time-slot-${slot.id}`}
+                        >
+                          <div className="text-left">
+                            <div className="font-semibold text-gray-900">{slot.label}</div>
+                            <div className="text-sm text-gray-600">Duration: {slot.duration} min</div>
+                          </div>
+                          <div>
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Available
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
