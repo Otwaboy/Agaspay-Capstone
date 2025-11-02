@@ -134,8 +134,15 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         accountData.schedule_date = schedulingData.scheduleDate;
         accountData.schedule_time = schedulingData.scheduleTime;
         accountData.assigned_personnel = schedulingData.assignedPersonnel;
+        
+        console.log('📤 Sending scheduling data:', {
+          schedule_date: accountData.schedule_date,
+          schedule_time: accountData.schedule_time,
+          assigned_personnel: accountData.assigned_personnel
+        });
       }
 
+      console.log('📤 Full account data:', accountData);
       await authManager.createResidentAccount(accountData);
       
       const successMessage = scheduleInstallation

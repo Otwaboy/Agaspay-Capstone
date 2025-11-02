@@ -47,7 +47,18 @@ const registerResident = async (req, res) => {
 
     // Validate scheduling fields if scheduling is requested
     if (schedule_installation) {
+      console.log('📥 Received scheduling data:', {
+        schedule_date,
+        schedule_time,
+        assigned_personnel
+      });
+      
       if (!schedule_date || !schedule_time || !assigned_personnel) {
+        console.error('❌ Scheduling validation failed:', {
+          has_date: !!schedule_date,
+          has_time: !!schedule_time,
+          has_personnel: !!assigned_personnel
+        });
         throw new BadRequestError('Scheduling requires date, time, and assigned personnel');
       }
     }
