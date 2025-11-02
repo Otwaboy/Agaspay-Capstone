@@ -144,7 +144,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   return (
 
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-white sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Resident</DialogTitle>
           <DialogDescription>
@@ -192,24 +192,73 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               />
             </div>
 
-        {/* selecting purok para sa resident*/}
+            {/* assigning  zone */}
+
           <div className="space-y-2">
-            <Label htmlFor="purok">Purok</Label>
-            <Select  onValueChange={handleChange("purok")} required>
-              <SelectTrigger data-testid="select-purok">
-                <SelectValue placeholder="Select Purok" />
+            <Label htmlFor="zone">Zone</Label>
+            <Select onValueChange={handleChange("zone")} required>
+              <SelectTrigger data-testid="select-zone">
+                <SelectValue placeholder="Select Zone" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Purok 1</SelectItem>
-                <SelectItem value="2">Purok 2</SelectItem>
-                <SelectItem value="3">Purok 3</SelectItem>
-                <SelectItem value="4">Purok 4</SelectItem>
-                <SelectItem value="5">Purok 5</SelectItem>
-                <SelectItem value="6">Purok 6</SelectItem>
-                <SelectItem value="7">Purok 7</SelectItem>
+                <SelectItem value="1">Biking 1</SelectItem>
+                <SelectItem value="2">Biking 2</SelectItem>
+                <SelectItem value="3">Biking 3</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+
+        {/* selecting purok para sa resident*/}
+       
+          <div className="space-y-2">
+            {formData.zone === "1" && (
+              <>
+                <Label htmlFor="purok">Purok</Label>
+                <Select onValueChange={handleChange("purok")} required>
+                  <SelectTrigger data-testid="select-purok">
+                    <SelectValue placeholder="Select Purok" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="4">Purok 4</SelectItem>
+                    <SelectItem value="5">Purok 5</SelectItem>
+                    <SelectItem value="6">Purok 6</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+            {/* zone 2 */}
+             {formData.zone === "2" && (
+              <>
+                <Label htmlFor="purok">Purok</Label>
+                <Select onValueChange={handleChange("purok")} required>
+                  <SelectTrigger data-testid="select-purok">
+                    <SelectValue placeholder="Select Purok" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Purok 1</SelectItem>
+                    <SelectItem value="2">Purok 2</SelectItem>
+                    <SelectItem value="3">Purok 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+            {/* zone 3 */}
+             {formData.zone === "3" && (
+              <>
+                <Label htmlFor="purok">Purok</Label>
+                <Select onValueChange={handleChange("purok")} required>
+                  <SelectTrigger data-testid="select-purok">
+                    <SelectValue placeholder="Select Purok" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">Purok 7</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+          </div>
+          
   
 
           <div className="space-y-2">
@@ -219,8 +268,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               type="email"
               value={formData.email}
               onChange={(e) => handleChange("email")(e.target.value)}
-              placeholder="Enter email address"
-              required
+              placeholder="Enter email address (Optional)"
               data-testid="input-email"
             />
           </div>
@@ -236,23 +284,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               data-testid="input-phone"
             />
           </div>
-
-{/* assigning  zone */}
-
-          <div className="space-y-2">
-            <Label htmlFor="zone">Zone</Label>
-            <Select onValueChange={handleChange("zone")} required>
-              <SelectTrigger data-testid="select-zone">
-                <SelectValue placeholder="Select zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Biking 1</SelectItem>
-                <SelectItem value="2">Biking 2</SelectItem>
-                <SelectItem value="3">Biking 3</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="type">Type</Label>
             <Select onValueChange={handleChange("type")} required>
@@ -272,20 +303,20 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   {/* Account Creation Section */}
           <div className="border-t pt-4 mt-4">
             <div className="flex items-center space-x-2 mb-4">
-              <Checkbox
+              {/* <Checkbox
                 id="createAccount"
                 checked={formData.createAccount}
                 onCheckedChange={(checked) => handleChange("createAccount")(checked)}
                 data-testid="checkbox-create-account"
-              />
+              /> */}
               <Label htmlFor="createAccount" className="text-sm font-medium">
-                Create login account for this personnel
+                Create login account for this resident
               </Label>
             </div>
            
 
       {/* this line of code mo render sya if formData.createAccount is true */}
-            {formData.createAccount && (
+            {/* {formData.createAccount && ( */}
               <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
@@ -331,7 +362,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   </p>
                 </div>
               </div>
-            )}
+            {/* )} */}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

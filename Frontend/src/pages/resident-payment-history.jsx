@@ -207,17 +207,6 @@ No signature required.
           <div className="max-w-7xl mx-auto">
             {/* Page Header with Back Button */}
             <div className="mb-8">
-              <Link href="/resident/bills">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="mb-4"
-                  data-testid="button-back-to-bills"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Bills
-                </Button>
-              </Link>
               <h1 className="text-3xl font-bold text-gray-900" data-testid="text-payment-history-title">
                 Payment History
               </h1>

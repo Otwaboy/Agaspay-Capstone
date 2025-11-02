@@ -10,7 +10,7 @@ const Rate = require("../model/Rate")
 const Payment = require("../model/Payment")
 const {sendOverdueReminder} = require("../utils/sms")
 
- 
+  
 const getBilling = async (req, res) => {
   const user = req.user;
   let filter = {};
