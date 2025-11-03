@@ -65,10 +65,15 @@ const getBilling = async (req, res) => {
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : 'unknown',
         meter_no: connection?.meter_no,
         purok_no: resident?.purok ?? 'unknownss',
-        total_amount: billing?.total_amount,  // ✅ fixed
+        
+        // 💰 CUMULATIVE BILLING BREAKDOWN
+        previous_balance: billing?.previous_balance ?? 0,    // Unpaid balance from previous months
+        current_charges: billing?.current_charges ?? 0,      // This month's consumption charges
+        total_amount: billing?.total_amount,                 // Total = previous + current
+        
         status: billing?.status ?? 'unknown',
 
-        // ✅ Add these fields
+        // ✅ Meter reading details
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
@@ -132,25 +137,46 @@ const createBilling = async (req, res) => {
       });
     }
 
-    // ✅ Compute total amount
-    const total_amount = reading.calculated * rate.amount;
+    // ✅ Calculate current month's charges
+    const current_charges = reading.calculated * rate.amount;
 
-    // ✅ Create billing and save directly with computed total_amount
+    // 💰 CUMULATIVE BILLING: Find all unpaid bills for this connection
+    const unpaidBills = await Billing.find({
+      connection_id: reading.connection_id,
+      status: { $in: ['unpaid', 'partial', 'overdue'] }
+    });
+
+    // 💰 Sum up all unpaid amounts to get previous balance
+    const previous_balance = unpaidBills.reduce((sum, bill) => {
+      return sum + (bill.total_amount || 0);
+    }, 0);
+
+    // 💰 Total amount = previous unpaid balance + current month charges
+    const total_amount = previous_balance + current_charges;
+
+    // ✅ Create billing and save with cumulative amounts
     const billing = await Billing.create({
       connection_id: reading.connection_id,
       reading_id: reading._id,
       rate_id: rate._id,
       due_date,
       generated_by: user.userId,
-      total_amount, // <-- now saved
+      previous_balance,      // ← unpaid balance from previous months
+      current_charges,       // ← this month's consumption charges
+      total_amount,          // ← total = previous + current
     });
 
-    console.log("🧾 Billing created successfully:");
+    console.log("🧾 Billing created successfully with cumulative amounts:");
     console.log("- reading_id:", reading._id.toString());
     console.log("- rate_id:", rate._id.toString());
     console.log("- consumption:", reading.calculated);
     console.log("- rate amount:", rate.amount);
+    console.log("- current_charges:", current_charges);
+    console.log("- previous_balance:", previous_balance);
     console.log("- total_amount:", total_amount);
+    if (previous_balance > 0) {
+      console.log(`💡 ${unpaidBills.length} unpaid bill(s) accumulated in previous_balance`);
+    }
 
     return res.status(StatusCodes.CREATED).json({ billing });
 

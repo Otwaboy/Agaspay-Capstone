@@ -16,9 +16,20 @@ const BillingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Rate',  
   },
+  previous_balance: {
+    type: Number,
+    default: 0,
+    comment: 'Sum of all unpaid bills before this one'
+  },
+  current_charges: {
+    type: Number,
+    required: true,
+    comment: 'Current month water consumption charges'
+  },
   total_amount: {
     type: Number,
-     required: true
+    required: true,
+    comment: 'previous_balance + current_charges'
   },
   status: {
     type: String,
@@ -57,11 +68,23 @@ const BillingSchema = new mongoose.Schema({
 
 
 BillingSchema.pre('save', async function(next) {
-  const reading = await mongoose.model('MeterReading').findById(this.reading_id);
-  const rate = await mongoose.model('Rate').findById(this.rate_id);
+  // ✅ Only calculate if values are not already set (for backward compatibility)
+  if (!this.current_charges && !this.previous_balance) {
+    const reading = await mongoose.model('MeterReading').findById(this.reading_id);
+    const rate = await mongoose.model('Rate').findById(this.rate_id);
 
-  if (reading && rate) {
-    this.total_amount = reading.calculated * rate.amount;
+    if (reading && rate) {
+      // Old behavior: simple calculation without cumulative billing
+      this.current_charges = reading.calculated * rate.amount;
+      this.previous_balance = 0;
+      this.total_amount = this.current_charges;
+    }
+  } else {
+    // ✅ New behavior: preserve cumulative calculation from controller
+    // Ensure total_amount = previous_balance + current_charges
+    if (this.previous_balance !== undefined && this.current_charges !== undefined) {
+      this.total_amount = this.previous_balance + this.current_charges;
+    }
   }
   next();
 })
