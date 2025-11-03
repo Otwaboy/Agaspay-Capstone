@@ -20,6 +20,7 @@ import {
 } from "../components/ui/dropdown-menu";
 import Sidebar from "../components/layout/sidebar";
 import TopHeader from "../components/layout/top-header";
+import CreatePersonnelModal from "../components/modals/create-personnel-modal";
 import {
   UserPlus,
   Search,
@@ -38,6 +39,7 @@ import { useToast } from "../hooks/use-toast";
 export default function AdminPersonnel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -177,7 +179,7 @@ export default function AdminPersonnel() {
                   </div>
                 </div>
                 <Button 
-                  onClick={() => window.dispatchEvent(new Event("openPersonnelModal"))}
+                  onClick={() => setIsModalOpen(true)}
                   data-testid="button-add-personnel"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -350,6 +352,14 @@ export default function AdminPersonnel() {
           </div>
         </main>
       </div>
+
+      <CreatePersonnelModal 
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          queryClient.invalidateQueries(['personnel']);
+        }}
+      />
     </div>
   );
 }
