@@ -30,6 +30,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     phone: "",
     zone: "",
     type: "",
+    meterNumber: "",
     username: "",
     password: ""
   });
@@ -124,6 +125,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         contact_no: formData.phone,
         zone: formData.zone,
         type: formData.type,
+        meter_no: formData.meterNumber,
         username: formData.username,
         password: formData.password,
       };
@@ -164,6 +166,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         phone: "",
         zone: "",
         type: "",
+        meterNumber: "",
         username: "",
         password: ""
       });
@@ -356,6 +359,18 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                  <SelectItem value="others">Others</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="meterNumber">Meter Number</Label>
+            <Input
+              id="meterNumber"
+              value={formData.meterNumber}
+              onChange={(e) => handleChange("meterNumber")(e.target.value)}
+              placeholder="Enter water meter number"
+              required
+              data-testid="input-meter-number"
+            />
           </div>
 
 

@@ -31,14 +31,15 @@ const registerResident = async (req, res) => {
     purok, 
     contact_no, 
     type,
+    meter_no,
     schedule_installation,
     schedule_date,
     schedule_time,
     assigned_personnel
   } = req.body;
 
-  if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type) {
-    throw new BadRequestError('Please provide all required fields');
+  if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type || !meter_no) {
+    throw new BadRequestError('Please provide all required fields including meter number');
   }
 
   if (schedule_installation) {
@@ -50,8 +51,7 @@ const registerResident = async (req, res) => {
   const user = await createUser(username, password, 'resident');
   const resident = await createResident(user._id, first_name, last_name, email, zone, purok, contact_no);
   
-  const tempMeterNo = `PENDING-${Date.now()}`;
-  const waterConnection = await createWaterConnection(resident._id, tempMeterNo, type);
+  const waterConnection = await createWaterConnection(resident._id, meter_no, type);
   
   let installationTask = null;
   let assignment = null;
