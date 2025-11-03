@@ -63,6 +63,35 @@ This design is applied consistently across all pages and user roles.
 -   **SMS Service:** PhilSMS
 
 ## Recent Changes
+- **November 3, 2025 (Morning - Latest Update):**
+  - ✅ **CUMULATIVE BILLING SYSTEM:** Bills now automatically accumulate unpaid balances from previous months
+    - **User Requirement:** When generating new bills, all unpaid/overdue amounts should be added to current month charges
+    - **Problem Solved:** Previously, if resident owed ₱20 from October and new bill was ₱12 in November, system only showed ₱12 instead of ₱32 total
+    - **Backend Changes (Billing.js model):**
+      - Added `previous_balance` field to track sum of all unpaid bills
+      - Added `current_charges` field to track current month consumption charges
+      - Updated `total_amount` calculation: previous_balance + current_charges
+      - Fixed pre-save hook to preserve cumulative calculations from controller
+    - **Backend Changes (billing.js controller):**
+      - Modified `createBilling()` to find all unpaid bills (status: unpaid, partial, overdue)
+      - Sums total_amount from all unpaid bills to calculate previous_balance
+      - Calculates current_charges from current reading (consumption × rate)
+      - Stores all three values: previous_balance, current_charges, total_amount
+      - Enhanced logging shows breakdown when creating bills with accumulated balances
+      - Updated `getBilling()` response to include previous_balance and current_charges breakdown
+    - **Example Workflow:**
+      1. Resident has ₱20 unpaid from October (status: unpaid)
+      2. November reading: 10 cubic meters × ₱2/m³ = ₱20 current charges
+      3. System generates bill: previous_balance = ₱20, current_charges = ₱20, **total_amount = ₱40**
+      4. If November remains unpaid and December charges are ₱15:
+         - previous_balance = ₱40 (Oct + Nov), current_charges = ₱15, **total_amount = ₱55**
+    - **Benefits:**
+      - Automatic accumulation of all unpaid balances (no manual tracking needed)
+      - Clear breakdown shows residents what they owe from previous months vs current month
+      - Works with partial payments (status: partial)
+      - Handles multiple months of unpaid bills correctly
+    - **Architect Review:** ✅ Passed - Cumulative totals persist correctly, pre-save hook preserves controller calculations, backward compatible
+
 - **November 2, 2025 (Afternoon - Latest Update):**
   - ✅ **INTEGRATED SCHEDULING IN CREATE RESIDENT FORM:** Secretary can now optionally schedule meter installation when creating resident accounts
     - **User Requirement:** User requested scheduling option directly in create resident form instead of separate steps
