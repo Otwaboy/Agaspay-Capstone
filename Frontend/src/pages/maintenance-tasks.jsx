@@ -60,8 +60,8 @@ export default function MaintenanceTasks() {
   const tasksData = assignmentsResponse?.assignments?.map(assignment => ({
     id: assignment.id,
     assignmentId: assignment.id,
-    type: assignment.task?.task_type || 'N/A',
-    location: assignment.task?.location || 'N/A',
+    type: assignment.task?.type || 'N/As',
+    location: assignment.task?.location || 'Biking',
     resident: assignment.personnel?.name || 'N/A',
     connectionId: assignment.task?.connection_id || 'N/A',
     status: assignment.task?.task_status?.toLowerCase() || 'scheduled',
