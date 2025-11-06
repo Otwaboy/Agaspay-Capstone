@@ -158,7 +158,7 @@ Reference #: ${payment.payment_id}
 Date: ${payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric' 
       }) : 'N/A'}
 
 ================================
@@ -381,7 +381,9 @@ No signature required.
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <p className="font-semibold text-gray-900">
-                                  {payment.payment_type || 'Water Bill Payment'}
+                                {payment.payment_type 
+                                    ? `${payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)} Payment`
+                                    : 'Water Bill Payment'}
                                 </p>
                                 <Badge className={statusConfig.className}>
                                   <StatusIcon className="h-3 w-3 mr-1" />
@@ -413,8 +415,14 @@ No signature required.
                               <p className="text-2xl font-bold text-gray-900">
                                 ₱{payment.amount_paid?.toFixed(2) || '0.00'}
                               </p>
-                              <p className="text-xs text-gray-500">
-                                {payment.billing_period || 'N/A'}
+                              <p className="flex items-center text-xs text-gray-500">
+                                 <Calendar className="h-3 w-3 mr-1" />Bill Period: <span className="ml-1">
+                                    {payment.payment_date ? new Date(payment.billPeriod).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  }) : 'N/A'}
+                                  </span> 
                               </p>
                             </div>
                             

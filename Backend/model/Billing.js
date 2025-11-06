@@ -64,7 +64,11 @@ const BillingSchema = new mongoose.Schema({
   current_payment_intent: {
   type: String,
   default: null,
-},
+  },
+current_checkout_session: {
+  type: String,
+  default: null 
+  },
   pending_amount: {
   type: Number,
   default: 0,

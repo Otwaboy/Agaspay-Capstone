@@ -8,12 +8,12 @@ const Resident = require('../model/Resident');
 const WaterConnection = require('../model/WaterConnection');
 
 
+
 const payPayment = async (req, res) => {
   try {
     const user = req.user;
     const { bill_id, payment_method, amount } = req.body;
 
-    // 🔹 Validate required fields
     if (!bill_id || !payment_method) {
       return res.status(400).json({
         success: false,
@@ -21,7 +21,6 @@ const payPayment = async (req, res) => {
       });
     }
 
-    // 🔹 Validate PayMongo secret key
     if (!process.env.PAYMONGO_SECRET_KEY) {
       return res.status(500).json({
         success: false,
@@ -29,13 +28,10 @@ const payPayment = async (req, res) => {
       });
     }
 
-    // 🔹 Get full resident info via Billing (not Payment)
+    // Fetch billing and resident info
     const billingInfo = await Billing.findById(bill_id).populate({
       path: "connection_id",
-      populate: {
-        path: "resident_id",
-        select: "first_name last_name email contact_no",
-      },
+      populate: { path: "resident_id", select: "first_name last_name email contact_no" },
     });
 
     if (!billingInfo) {
@@ -45,9 +41,7 @@ const payPayment = async (req, res) => {
       });
     }
 
-    // ✅ Extract resident details
-    const connection = billingInfo.connection_id;
-    const resident = connection?.resident_id;
+    const resident = billingInfo.connection_id?.resident_id;
     const fullName = resident ? `${resident.first_name} ${resident.last_name}` : "Unknown Resident";
     const email = resident?.email || null;
     const phone = resident?.contact_no || null;
@@ -56,21 +50,19 @@ const payPayment = async (req, res) => {
 
     const amountToPay = amount ?? billingInfo.total_amount;
 
-    // 🔹 Prepare PayMongo request
     const paymongoAuth = Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64");
-
     const headers = {
       Authorization: `Basic ${paymongoAuth}`,
       "Content-Type": "application/json",
     };
 
-    // 🔹 Create Payment Intent
+    // 1️⃣ Create Payment Intent
     const paymentIntentResponse = await axios.post(
       "https://api.paymongo.com/v1/payment_intents",
       {
         data: {
           attributes: {
-            amount: Math.round(amountToPay * 100), // PayMongo uses centavos
+            amount: Math.round(amountToPay * 100),
             currency: "PHP",
             payment_method_allowed: ["gcash", "paymaya", "qrph"],
             capture_type: "automatic",
@@ -82,28 +74,14 @@ const payPayment = async (req, res) => {
 
     const paymentIntent = paymentIntentResponse.data.data;
 
-    // 🔹 IMPORTANT: Store payment_intent_id in Billing for webhook lookup
-    // This allows the webhook to find the correct billing record
-billingInfo.current_payment_intent = paymentIntent.id;
-billingInfo.pending_amount = amountToPay;
-await billingInfo.save();
-
-    console.log("✅ Billing updated with payment_intent:", paymentIntent.id);
-
-    // 🔹 Build frontend URLs
+    // 2️⃣ Create Checkout Session
     const baseUrl = req.headers.origin || "http://localhost:5173";
-
-    // 🔹 Create Checkout Session (with email receipt)
     const checkoutResponse = await axios.post(
       "https://api.paymongo.com/v1/checkout_sessions",
       {
         data: {
           attributes: {
-            billing: {
-              name: fullName,
-              phone: phone,
-              email: email,
-            },
+            billing: { name: fullName, phone: phone, email: email },
             line_items: [
               {
                 name: `AGASPAY WATER BILL - ${fullName}`,
@@ -125,8 +103,15 @@ await billingInfo.save();
 
     const checkoutSession = checkoutResponse.data.data;
 
-    // 🔹 Respond to frontend (NO PAYMENT RECORD CREATED YET)
-    // Payment will be created by webhook after successful payment
+    // 3️⃣ Save temporary fields to billing for webhook
+    billingInfo.current_payment_intent = paymentIntent.id;
+    billingInfo.current_checkout_session = checkoutSession.id;
+    billingInfo.pending_amount = amountToPay;
+    await billingInfo.save();
+
+    console.log("✅ Billing updated with payment_intent & checkout_session:", paymentIntent.id, checkoutSession.id);
+
+    // 4️⃣ Respond to frontend
     res.status(200).json({
       success: true,
       msg: "Payment initialized",
@@ -151,7 +136,7 @@ await billingInfo.save();
       error: error.message,
     });
   }
-};
+}
 
 
 const verifyPayment = async (req, res) => {

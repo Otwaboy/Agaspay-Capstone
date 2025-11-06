@@ -1,4 +1,3 @@
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -8,16 +7,13 @@ import { CreditCard, Download, Eye } from "lucide-react";
 import apiClient from "../../lib/api";
 
 export default function ResidentRecentTransactions() {
-
-
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['/api/resident/transactions'],
-    queryFn: async ()=>   {
-      const res = await apiClient.getRecentPayment()
-      const paymentHistory  = res.data
+    queryFn: async () => {
+      const res = await apiClient.getRecentPayment();
+      const paymentHistory = res.data;
 
-        return paymentHistory.map((ph) => ({
-          
+      return paymentHistory.map((ph) => ({
         id: ph.payment_id,
         date: ph.payment_date,
         amount: ph.amount_paid,
@@ -25,10 +21,9 @@ export default function ResidentRecentTransactions() {
         status: ph.payment_status,
         paymentMethod: ph.payment_method,
         billPeriod: ph.billPeriod,
-        reference: ph.payment_reference
-        }))
+        reference: ph.payment_reference,
+      }));
     },
-   
   });
 
   const getStatusColor = (status) => {
@@ -38,7 +33,7 @@ export default function ResidentRecentTransactions() {
       case "failed": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
-  }; 
+  };
 
   const getTypeColor = (type) => {
     switch (type.toLowerCase()) {
@@ -80,6 +75,10 @@ export default function ResidentRecentTransactions() {
     );
   }
 
+  // ✅ Calculate total paid and total transactions
+  const totalPaid = transactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  const totalTransactions = transactions?.length || 0;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -105,18 +104,16 @@ export default function ResidentRecentTransactions() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className={`text-sm font-medium truncate ${getTypeColor(transaction.type)}`}>
-                      {
-                        (transaction?.type || 'Water Bill Payment')
-                          .toLowerCase()
-                          .split(' ')
-                          .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '')
-                          .join(' ')
-                      }
+                      {(transaction?.type || 'Water Bill Payment')
+                        .toLowerCase()
+                        .split(' ')
+                        .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '')
+                        .join(' ')}
                     </p>
                     <p className="text-xs text-gray-500 ml-2">{transaction.id}</p>
                   </div>
                   <p className="text-sm text-gray-600 truncate">
-                    {transaction.billPeriod && 
+                    {transaction.billPeriod &&
                       `Billing Period: ${new Date(transaction.billPeriod).toLocaleDateString('en-US', {
                         month: 'long',
                         day: 'numeric',
@@ -142,20 +139,10 @@ export default function ResidentRecentTransactions() {
                   </Badge>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="p-2"
-                    data-testid={`button-view-${transaction.id}`}
-                  >
+                  <Button variant="outline" size="sm" className="p-2">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="p-2"
-                    data-testid={`button-download-${transaction.id}`}
-                  >
+                  <Button variant="outline" size="sm" className="p-2">
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>
@@ -163,17 +150,17 @@ export default function ResidentRecentTransactions() {
             </div>
           ))}
         </div>
-        
+
         {/* Summary */}
         <div className="mt-6 pt-4 border-t">
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="text-center p-3 bg-green-50 rounded-lg">
               <p className="text-sm text-green-700 font-medium">Total Paid This Year</p>
-              <p className="text-xl font-bold text-green-900">₱5,240.00</p>
+              <p className="text-xl font-bold text-green-900">₱{totalPaid.toFixed(2)}</p>
             </div>
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-700 font-medium">Transactions This Year</p>
-              <p className="text-xl font-bold text-blue-900">12</p>
+              <p className="text-xl font-bold text-blue-900">{totalTransactions}</p>
             </div>
           </div>
           <Button variant="outline" className="w-full">

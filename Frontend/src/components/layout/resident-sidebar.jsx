@@ -12,7 +12,7 @@ import {
   Settings,
   LogOut,
   Menu,
-  Droplets,
+  Droplets, 
   Receipt,
   AlertTriangle
 } from "lucide-react";

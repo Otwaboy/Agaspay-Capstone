@@ -12,12 +12,13 @@ import ResidentQuickActions from "../components/dashboard/resident-quick-actions
 import PayBillModal from "../components/modals/pay-bill-modal";
 import ReportIssueModal from "../components/modals/report-issue-modal";
 import { Loader2 } from "lucide-react";
+import ResidentBottomBar from "../components/layout/resident-downbar";
 
 export default function ResidentDashboard() {
   const [isPayBillModalOpen, setIsPayBillModalOpen] = useState(false);
   const [isReportIssueModalOpen, setIsReportIssueModalOpen] = useState(false);
 
-  useEffect(() => {
+  useEffect(() => { 
     const handleOpenPayBillModal = () => setIsPayBillModalOpen(true);
     const handleOpenReportIssueModal = () => setIsReportIssueModalOpen(true);
 
@@ -48,7 +49,7 @@ export default function ResidentDashboard() {
   }
 
   if (!isAuthenticated) {
-    return null;
+    return null; 
   }
 
   return (
@@ -64,16 +65,16 @@ export default function ResidentDashboard() {
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="text-dashboard-title">
-                My Dashboard
+              <h1 className="text-2xl font-bold text-gray-750 mb-[-17px]" data-testid="text-dashboard-title">
+               Accounts
               </h1>
-              <p className="text-gray-600">
+              {/* <p className="text-gray-600">
                 Welcome to AGASPAY - Manage your water service account
-              </p>
+              </p> */}
             </div>
 
             {/* Modern Stats Cards */}
-            <ResidentModernStats />
+            {/* <ResidentModernStats /> */}
 
             {/* Bill Payment and Usage Chart */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -87,18 +88,19 @@ export default function ResidentDashboard() {
 
             {/* Recent Transactions and Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-4">
                 <ResidentRecentTransactions />
               </div>
-              <div className="lg:col-span-1">
+              {/* <div className="lg:col-span-1">
                 <ResidentQuickActions />
-              </div>
+              </div> */}
             </div>
 
             {/* Announcements */}
             <ResidentModernAnnouncements />
           </div>
         </main>
+        <ResidentBottomBar />
       </div>
       
       <PayBillModal 

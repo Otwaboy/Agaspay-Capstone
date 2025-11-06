@@ -10,117 +10,76 @@ const Billing = require("../model/Billing");
 router.post("/", async (req, res) => {
   try {
     const event = req.body;
-    const type = event.data?.attributes?.type; // get the checkout_session.payment.paid webhook event sa paymongo 
-    const data = event.data?.attributes?.data; // getting the data or the information or data of the user
+    const type = event.data?.attributes?.type;
+    const data = event.data?.attributes?.data;
 
     console.log("📥 Webhook received:", type);
 
+    // Only process successful payments
+    if (type !== "payment.paid" && type !== "checkout_session.payment.paid") {
+      console.log("ℹ️ Ignoring event type:", type);
+      return res.status(200).json({ success: true });
+    }
 
+    let billing;
 
-    let paymentIntentId = null;
-    // 🔹 Only process payment success events
-   // payment.paid event
     if (type === "payment.paid") {
-      paymentIntentId = data?.attributes?.payment_intent?.id;
+      const paymentIntent = data?.attributes?.payment_intent?.id;
+      if (!paymentIntent) {
+        console.log("⚠️ No payment_intent found in webhook");
+        return res.status(200).json({ success: true });
+      }
+
+      billing = await Billing.findOne({ current_payment_intent: paymentIntent });
     }
 
-    // checkout_session.payment.paid event
     if (type === "checkout_session.payment.paid") {
-      paymentIntentId = data?.attributes?.payment_intent?.id;
+      const checkoutSessionId = data?.id;
+      if (!checkoutSessionId) {
+        console.log("⚠️ No checkout_session found in webhook");
+        return res.status(200).json({ success: true });
+      }
+
+      billing = await Billing.findOne({ current_checkout_session: checkoutSessionId });
     }
 
-      if (!paymentIntentId) {
-    console.log("⚠️ No payment_intent found in webhook");
-    return res.status(200).json({ success: true });
-  }
-
-  
-    // 🔹 Extract payment_intent_id from the webhook payload
-    const paymentIntent = data?.attributes?.payment_intent?.id 
-  || data?.attributes?.payments?.[0]?.attributes?.payment_intent_id;
-    
-    if (!paymentIntent) {
-      console.log("⚠️ No payment_intent found in webhook");
-      return res.status(200).json({ success: true });
-    }
-
-    console.log("✅ Payment confirmed:", paymentIntent);
-
-    // 🔹 Check if payment already recorded (prevent duplicates)
-    const existingPayment = await Payment.findOne({ 
-      payment_reference: paymentIntent 
-    });
-
-    if (existingPayment) {
-      console.log("⚠️ Payment already recorded:", paymentIntent);
-      return res.status(200).json({ 
-        success: true, 
-        msg: "Already processed" 
-      });
-    }
-
-    // 🔹 Look up billing via current_payment_intent
-    // This was set in the payPayment controller when payment was initiated
-    const billing = await Billing.findOne({ 
-      current_payment_intent: paymentIntent 
-    });
-    
     if (!billing) {
-      console.log("⚠️ No billing found for payment_intent:", paymentIntent);
+      console.log("⚠️ No billing found for this payment");
       return res.status(200).json({ success: true });
     }
 
-    console.log("📋 Found billing record:", billing._id);
-
-    // 🔹 Get amount from billing.pending_amount (set during payment initialization)
     const amountPaid = billing.pending_amount || billing.total_amount;
     const isPartial = amountPaid < billing.total_amount;
 
-    // 🔹 Get payment method from PayMongo event data
-    const paymentMethodUsed = data?.attributes?.payment_method_used || 
-                              data?.attributes?.payments?.[0]?.attributes?.source?.type || 
-                              "gcash";
+    const paymentMethodUsed =
+      data?.attributes?.payment_method_used ||
+      data?.attributes?.payments?.[0]?.attributes?.source?.type ||
+      "gcash";
 
-    console.log("💰 Amount paid:", amountPaid, "Method:", paymentMethodUsed);
-
-    // ✅ NOW create payment record (ONLY AFTER SUCCESSFUL PAYMENT)
+    // Create payment record
     const payment = await Payment.create({
       bill_id: billing._id,
       amount_paid: amountPaid,
       payment_method: paymentMethodUsed,
       payment_type: isPartial ? "partial" : "full",
       payment_status: "pending",
-      payment_reference: paymentIntent
+      payment_reference: billing.current_payment_intent,
     });
 
-    console.log("💾 Payment record created:", payment._id);
-
-    // ✅ Update billing status
-    billing.status = isPartial ? "partial" : "paid";
+    // Update billing
+    billing.status = isPartial ? "partially_paid" : "paid";
     billing.amount_paid = (billing.amount_paid || 0) + amountPaid;
-    
-    // 🔹 Clear temporary fields
     billing.current_payment_intent = null;
+    billing.current_checkout_session = null;
     billing.pending_amount = null;
-    
     await billing.save();
 
-    console.log("✅ Billing updated:", billing._id, "Status:", billing.status);
+    console.log("✅ Payment processed and billing updated:", payment._id, billing._id);
 
-    return res.status(200).json({ 
-      success: true, 
-      msg: "Payment processed successfully",
-      payment_id: payment._id,
-      billing_id: billing._id
-    });
-
+    res.status(200).json({ success: true, payment_id: payment._id, billing_id: billing._id });
   } catch (err) {
     console.error("❌ WEBHOOK ERROR:", err.message);
-    console.error(err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
