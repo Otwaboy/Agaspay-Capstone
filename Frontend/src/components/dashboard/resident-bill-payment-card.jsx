@@ -8,7 +8,7 @@ import { apiClient } from "../../lib/api";
 
 export default function ResidentBillPaymentCard() {
   const { data: billingData, isLoading } = useQuery({
-    queryKey: ["resident-current-bill"],
+    queryKey: ["resident-current-bill"], 
     queryFn: async () => {
       const res = await apiClient.getCurrentBill();
       const bills = res.data;

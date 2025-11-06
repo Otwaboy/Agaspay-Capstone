@@ -86,7 +86,7 @@ const getBilling = async (req, res) => {
   res.status(StatusCodes.OK).json({
     msg: 'Billing records retrieved successfully',
     data: billingDetails
-  });
+  }); 
 };
 
 

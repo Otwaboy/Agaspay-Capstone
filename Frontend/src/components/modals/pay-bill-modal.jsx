@@ -18,105 +18,6 @@ import { apiClient } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
 
 
-// PayMongo test environment function
-// const createPayMongoTestCheckout = async (paymentData, billingData) => {
-//   try {
-//     // PayMongo public test key (safe to use in frontend for testing)
-//     const PAYMONGO_PUBLIC_KEY = 'pk_test_2GpBbJLfHbFdLDKO4dWddPhc';
-    
-//     console.log('Creating PayMongo test checkout session...');
-    
-//     // Step 1: Create Payment Intent using PayMongo test API
-//     const paymentIntentResponse = await fetch('https://api.paymongo.com/v1/payment_intents', {
-//       method: 'POST',
-//       headers: {
-//         'Authorization': `Basic ${btoa(PAYMONGO_PUBLIC_KEY + ':')}`,
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({
-//         data: {
-//           attributes: {
-//             amount: Math.round(paymentData.amount * 100), // Convert to cents
-//             currency: 'PHP',
-//             payment_method_allowed: ['gcash', 'paymaya'],
-//             capture_type: 'automatic',
-//             description: `AGASPAY Water Bill Payment - ${billingData.accountNumber}`
-//           }
-//         }
-//       })
-//     });
-
-//     if (!paymentIntentResponse.ok) {
-//       throw new Error('Failed to create PayMongo payment intent');
-//     }
-
-//     const paymentIntentData = await paymentIntentResponse.json();
-//     const paymentIntentId = paymentIntentData.data.id;
-    
-//     console.log('PayMongo Payment Intent created:', paymentIntentId);
-
-//     // Step 2: Create Checkout Session
-//     const checkoutResponse = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
-//       method: 'POST',
-//       headers: {
-//         'Authorization': `Basic ${btoa(PAYMONGO_PUBLIC_KEY + ':')}`,
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({
-//         data: {
-//           attributes: {
-//             line_items: [
-//               {
-//                 name: `Water Bill Payment - ${billingData.accountNumber}`,
-//                 amount: Math.round(paymentData.amount * 100),
-//                 currency: 'PHP',
-//                 quantity: 1
-//               }
-//             ],
-//             payment_intent_id: paymentIntentId,
-//             payment_method_types: [paymentData.payment_method],
-//             success_url: `${window.location.origin}/payment/success?payment_intent_id=${paymentIntentId}&status=succeeded`,
-//             cancel_url: `${window.location.origin}/payment/cancel?payment_intent_id=${paymentIntentId}&status=failed`,
-//             description: 'AGASPAY Water Bill Payment'
-//           }
-//         }
-//       })
-//     });
-
-//     if (!checkoutResponse.ok) {
-//       throw new Error('Failed to create PayMongo checkout session');
-//     }
-
-//     const checkoutData = await checkoutResponse.json();
-//     const checkoutUrl = checkoutData.data.attributes.checkout_url;
-    
-//     console.log('PayMongo Test Checkout URL created:', checkoutUrl);
-
-//     return {
-//       msg: "PayMongo test payment initialized",
-//       paymentId: 'test-payment-' + Date.now(),
-//       payment_intent_id: paymentIntentId,
-//       payment_method: paymentData.payment_method,
-//       payment_type: 'pending',
-//       checkoutUrl: checkoutUrl
-//     };
-
-//   } catch (error) {
-//     console.error('PayMongo test checkout error:', error);
-    
-//     // Fallback to local demo if PayMongo API fails
-//     const baseUrl = window.location.origin;
-//     return {
-//       msg: "Local demo payment initialized",
-//       paymentId: 'demo-payment-' + Date.now(),
-//       payment_method: paymentData.payment_method,
-//       payment_type: 'pending',
-//       checkoutUrl: `${baseUrl}/payment/demo-checkout?amount=${paymentData.amount}&method=${paymentData.payment_method}&account=${billingData.accountNumber}`
-//     };
-//   }
-// };
-
-
 
 export default function PayBillModal({ isOpen, onClose }) {
 
@@ -214,6 +115,7 @@ export default function PayBillModal({ isOpen, onClose }) {
       color: "text-green-600",
       description: "Pay using PayMaya digital wallet via PayMongo"
     }
+    
   ];
 
  const handleSubmit = async (e) => {
@@ -237,7 +139,7 @@ export default function PayBillModal({ isOpen, onClose }) {
     console.log('✅ Payment created successfully:', result);
 
     if (result.checkoutUrl) {
-      localStorage.setItem('pending_payment', JSON.stringify({
+        localStorage.setItem('pending_payment', JSON.stringify({
         paymentId: result.paymentId,
         amount: billingData.amount,
         method: formData.paymentMethod,
@@ -417,7 +319,7 @@ export default function PayBillModal({ isOpen, onClose }) {
               You will be redirected to PayMongo's secure payment page to complete your {formData.paymentMethod.toUpperCase()} transaction.
             </p>
           </div>
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="phoneNumber">Mobile Number (Optional)</Label>
             <Input
               id="phoneNumber"
@@ -429,11 +331,11 @@ export default function PayBillModal({ isOpen, onClose }) {
             <p className="text-xs text-gray-500">
               This will be used for payment confirmation SMS
             </p>
-          </div>
+          </div> */}
         </div>
       )}
 
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <Label htmlFor="email">Email Address (for receipt)</Label>
         <Input
           id="email"
@@ -444,7 +346,7 @@ export default function PayBillModal({ isOpen, onClose }) {
           required
           data-testid="input-email"
         />
-      </div>
+      </div> */}
 
       <Card className="bg-gray-50">
         <CardContent className="pt-4">

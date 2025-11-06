@@ -8,7 +8,7 @@ import {apiClient} from "../../lib/api";
   
 
 export default function ResidentBillingSummary() {
-   
+    
     
   const { data: billingData, isLoading } = useQuery({
     queryKey: ['accountOverview'],

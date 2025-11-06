@@ -14,7 +14,6 @@ const payPayment = async (req, res) => {
     const user = req.user;
     const { bill_id, payment_method, amount } = req.body;
 
-    // 🔹 Validate required fields
     if (!bill_id || !payment_method) {
       return res.status(400).json({
         success: false,
@@ -22,144 +21,93 @@ const payPayment = async (req, res) => {
       });
     }
 
-    // 🔹 Validate PayMongo secret key
-    if (!process.env.PAYMONGO_SECRET_KEY) {
-      return res.status(500).json({
-        success: false,
-        message: "PAYMONGO_SECRET_KEY not found in environment variables",
-      });
-    }
-
-    // 🔹 Get full resident info via Billing (not Payment)
     const billingInfo = await Billing.findById(bill_id).populate({
       path: "connection_id",
-      populate: {
-        path: "resident_id",
-        select: "first_name last_name email contact_no",
-      },
+      populate: { path: "resident_id", select: "first_name last_name email contact_no" }
     });
 
-    if (!billingInfo) {
-      return res.status(404).json({
-        success: false,
-        message: "Billing record not found",
-      });
-    }
+    if (!billingInfo) return res.status(404).json({ success: false, message: "Billing not found" });
 
-    // ✅ Extract resident details
-    const connection = billingInfo.connection_id;
-    const resident = connection?.resident_id;
-    const fullName = resident ? `${resident.first_name} ${resident.last_name}` : "Unknown Resident";
+    const resident = billingInfo.connection_id?.resident_id;
+    const fullName = resident ? `${resident.first_name} ${resident.last_name}` : "Unknown";
     const email = resident?.email || null;
     const phone = resident?.contact_no || null;
 
-    console.log("Resident Info:", { fullName, email, phone });
-
     const amountToPay = amount ?? billingInfo.total_amount;
 
-    // 🔹 Create local Payment record (before PayMongo)
-    const payment = await Payment.create({
-      bill_id,
-      amount_paid: amountToPay,
-      payment_method,
-      payment_type: amountToPay < billingInfo.total_amount ? "partial" : "full",
-      payment_status: "pending",
-      payment_reference: null,
-    });
-
-    // 🔹 Prepare PayMongo request
     const paymongoAuth = Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64");
-
     const headers = {
       Authorization: `Basic ${paymongoAuth}`,
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     };
 
-    // 🔹 Create Payment Intent
+    // ✅ Create PayMongo Payment Intent
     const paymentIntentResponse = await axios.post(
       "https://api.paymongo.com/v1/payment_intents",
       {
         data: {
           attributes: {
-            amount: Math.round(amountToPay * 100), // PayMongo uses centavos
+            amount: Math.round(amountToPay * 100),
             currency: "PHP",
-            payment_method_allowed: ["gcash", "paymaya"],
-            capture_type: "automatic",
-          },
-        },
+            payment_method_allowed: ["gcash", "paymaya", "qrph"],
+            capture_type: "automatic"
+          }
+        }
       },
       { headers }
     );
 
     const paymentIntent = paymentIntentResponse.data.data;
 
-    // 🔹 Build frontend URLs
     const baseUrl = req.headers.origin || "http://localhost:5173";
 
-    // 🔹 Create Checkout Session (with email receipt)
+    // ✅ Checkout Session
     const checkoutResponse = await axios.post(
       "https://api.paymongo.com/v1/checkout_sessions",
       {
         data: {
           attributes: {
-            billing: {
-              name: fullName,
-              phone: phone,
-              email: email,
-            },
+            billing: { name: fullName, phone, email },
             line_items: [
               {
                 name: `AGASPAY WATER BILL - ${fullName}`,
                 amount: Math.round(amountToPay * 100),
                 currency: "PHP",
-                quantity: 1,
-              },
+                quantity: 1
+              }
             ],
             payment_intent_id: paymentIntent.id,
             payment_method_types: [payment_method],
-            success_url: `${baseUrl}/payment/success?payment_intent_id=${paymentIntent.id}&status=succeeded`,
-            cancel_url: `${baseUrl}/payment/cancel?payment_intent_id=${paymentIntent.id}&status=failed`,
-            send_email_receipt: true,
-          },
-        },
+            success_url: `${baseUrl}/payment/success`,
+            cancel_url: `${baseUrl}/payment/cancel`,
+            send_email_receipt: false,
+          }
+        }
       },
       { headers }
     );
 
     const checkoutSession = checkoutResponse.data.data;
 
-    // 🔹 Save PayMongo Payment Intent ID as reference
-    payment.payment_reference = checkoutSession.attributes.payment_intent.id;
-    await payment.save();
-
-    // 🔹 Respond to frontend
-    res.status(200).json({
+    // ✅ Return checkout URL (NO DB SAVE YET)
+    return res.json({
       success: true,
-      msg: "Payment initialized",
-      paymentId: payment._id,
-      payment_reference: payment.payment_reference,
-      payment_method: payment.payment_method,
-      payment_type: payment.payment_type,
-      checkoutUrl: checkoutSession.attributes.checkout_url,
+      message: "Proceed to payment",
+      bill_id,
+      payment_intent_id: paymentIntent.id,
+      checkout_url: checkoutSession.attributes.checkout_url
     });
+
   } catch (error) {
     console.error("PayMongo Error:", error.response?.data || error.message);
-
-    if (error.response?.data) {
-      return res.status(400).json({
-        success: false,
-        message: "PayMongo API Error",
-        error: error.response.data,
-      });
-    }
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Payment processing failed",
-      error: error.message,
+      message: "Payment initialization failed",
+      error: error.response?.data || error.message
     });
   }
 };
+
 
 
 

@@ -8,48 +8,46 @@ const Billing = require("../model/Billing");
 router.post("/", async (req, res) => {
   try {
     const event = req.body;
-
-    console.log("🔔 Webhook received:", JSON.stringify(event, null, 2));
-
     const type = event.data?.attributes?.type;
     const data = event.data?.attributes?.data;
 
-    // Extract payment reference ID depending on event type
-    let paymentReference = null;
-    if (type === "payment.paid") {
-      paymentReference = data?.id;
-    } else if (type === "checkout_session.payment.paid") {
-      paymentReference = data?.attributes?.payment_intent?.id;
-    }
-
-    if (!paymentReference) {
-      console.log("⚠️ Could not find payment reference in event");
+    if (type !== "payment.paid" && type !== "checkout_session.payment.paid") {
       return res.status(200).json({ success: true });
     }
 
-    console.log(`✅ Payment reference: ${paymentReference}, Event type: ${type}`);
+    const paymentIntent = data?.attributes?.payment_intent?.id;
+    if (!paymentIntent) return res.status(200).json({ success: true });
 
-    // Find payment record
-    const payment = await Payment.findOne({ payment_reference: paymentReference });
-    if (payment) {
-      // Update Payment status
-      payment.payment_status = "pending";
-      await payment.save();
+    console.log("✅ Payment confirmed:", paymentIntent);
 
-      // Update Billing status
-      await Billing.findByIdAndUpdate(payment.bill_id, { status: "paid" });
+    // Look up billing via metadata (YOU MUST ADD THIS IN PAYINTENT LATER)
+    const billing = await Billing.findOne({ current_payment_intent: paymentIntent });
+    if (!billing) return res.status(200).json({ success: true });
 
-      console.log(`💰 Payment ${paymentReference} and Billing ${payment.bill_id} marked as PAID`);
-    } else {
-      console.log(`⚠️ Payment with reference ${paymentReference} not found in database`);
-    }
+    const amountPaid = billing.total_amount; // or get from event if needed
+    const isPartial = false; // Update if needed
 
-    // Respond immediately to avoid retries
-    res.status(200).json({ success: true });
+    // ✅ Now create payment record
+    await Payment.create({
+      bill_id: billing._id,
+      amount_paid: amountPaid,
+      payment_method: "gcash",
+      payment_type: isPartial ? "partial" : "full",
+      payment_status: isPartial ? "partially_paid" : "fully_paid",
+      payment_reference: paymentIntent
+    });
+
+    // ✅ Update billing status
+    billing.status = "paid";
+    await billing.save();
+
+    return res.status(200).json({ success: true });
+
   } catch (err) {
-    console.error("⚠️ Webhook error:", err.message);
-    res.status(500).json({ success: false, error: err.message });
+    console.error("WEBHOOK ERROR:", err.message);
+    res.status(500).json({ success: false });
   }
 });
+
 
 module.exports = router;
