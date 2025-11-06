@@ -12,7 +12,7 @@ import ResidentQuickActions from "../components/dashboard/resident-quick-actions
 import PayBillModal from "../components/modals/pay-bill-modal";
 import ReportIssueModal from "../components/modals/report-issue-modal";
 import { Loader2 } from "lucide-react";
-import ResidentBottomBar from "../components/layout/resident-downbar";
+
 
 export default function ResidentDashboard() {
   const [isPayBillModalOpen, setIsPayBillModalOpen] = useState(false);
@@ -100,7 +100,7 @@ export default function ResidentDashboard() {
             <ResidentModernAnnouncements />
           </div>
         </main>
-        <ResidentBottomBar />
+    
       </div>
       
       <PayBillModal 

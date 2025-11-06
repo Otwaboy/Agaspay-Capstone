@@ -75,98 +75,104 @@ export default function ResidentRecentTransactions() {
     );
   }
 
-  // ✅ Calculate total paid and total transactions
   const totalPaid = transactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
   const totalTransactions = transactions?.length || 0;
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      {/* Updated CardHeader */}
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
         <div>
-          <CardTitle className="flex items-center">
-            <CreditCard className="h-5 w-5 mr-2 text-green-600" />
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-green-600" />
             Recent Transactions
           </CardTitle>
-          <CardDescription>Your payment history and transactions</CardDescription>
+          {/* Hide description on mobile */}
+          <CardDescription className="hidden sm:block">
+            Your payment history and transactions
+          </CardDescription>
         </div>
         <Button variant="outline" size="sm">
-          View All Transactions
+          View All
         </Button>
       </CardHeader>
+
       <CardContent>
-        <div className="space-y-4">
-          {transactions?.map((transaction) => (
-            <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="flex items-center space-x-4 flex-1">
-                <div className="bg-green-100 p-2 rounded-lg">
-                  <CreditCard className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className={`text-sm font-medium truncate ${getTypeColor(transaction.type)}`}>
-                      {(transaction?.type || 'Water Bill Payment')
-                        .toLowerCase()
-                        .split(' ')
-                        .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '')
-                        .join(' ')}
-                    </p>
-                    <p className="text-xs text-gray-500 ml-2">{transaction.id}</p>
+        {/* Horizontal scroll wrapper */}
+        <div className="overflow-x-auto">
+          <div className="min-w-[720px] space-y-4">
+            {transactions?.map((transaction) => (
+              <div
+                key={transaction.id}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors min-w-[700px]"
+              >
+                <div className="flex items-center space-x-4 flex-1 min-w-0">
+                  <div className="bg-green-100 p-2 rounded-lg flex-shrink-0">
+                    <CreditCard className="h-6 w-6 text-green-600" />
                   </div>
-                  <p className="text-sm text-gray-600 truncate">
-                    {transaction.billPeriod &&
-                      `Billing Period: ${new Date(transaction.billPeriod).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}`}
-                  </p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <p className="text-xs text-gray-500">{transaction.paymentMethod}</p>
-                    <span className="text-gray-400">•</span>
-                    <p className="text-xs text-gray-500">
-                      {new Date(transaction.date).toLocaleDateString()}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className={`text-sm font-medium truncate ${getTypeColor(transaction.type)}`}>
+                        {(transaction?.type || 'Water Bill Payment')
+                          .toLowerCase()
+                          .split(' ')
+                          .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '')
+                          .join(' ')}
+                      </p>
+                      <p className="text-xs text-gray-500 ml-2">{transaction.id}</p>
+                    </div>
+                    <p className="text-sm text-gray-600 truncate">
+                      {transaction.billPeriod &&
+                        `Billing Period: ${new Date(transaction.billPeriod).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}`}
                     </p>
-                    <span className="text-gray-400">•</span>
-                    <p className="text-xs text-gray-500">Ref: {transaction.reference}</p>
+                    <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
+                      <span>{transaction.paymentMethod}</span>
+                      <span className="text-gray-400">•</span>
+                      <span>{new Date(transaction.date).toLocaleDateString()}</span>
+                      <span className="text-gray-400">•</span>
+                      <span>Ref: {transaction.reference}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 ml-4 flex-shrink-0">
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-gray-900">₱{transaction.amount.toFixed(2)}</p>
+                    <Badge className={getStatusColor(transaction.status)}>
+                      {transaction.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Button variant="outline" size="sm" className="p-2">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" className="p-2">
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 ml-4">
-                <div className="text-right">
-                  <p className="text-lg font-bold text-gray-900">₱{transaction.amount.toFixed(2)}</p>
-                  <Badge className={getStatusColor(transaction.status)}>
-                    {transaction.status}
-                  </Badge>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Button variant="outline" size="sm" className="p-2">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" className="p-2">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Summary */}
-        <div className="mt-6 pt-4 border-t">
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-700 font-medium">Total Paid This Year</p>
-              <p className="text-xl font-bold text-green-900">₱{totalPaid.toFixed(2)}</p>
-            </div>
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700 font-medium">Transactions This Year</p>
-              <p className="text-xl font-bold text-blue-900">{totalTransactions}</p>
-            </div>
+        <div className="mt-6 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <p className="text-sm text-green-700 font-medium">Total Paid This Year</p>
+            <p className="text-xl font-bold text-green-900">₱{totalPaid.toFixed(2)}</p>
           </div>
-          <Button variant="outline" className="w-full">
-            Download Payment History
-          </Button>
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-700 font-medium">Transactions This Year</p>
+            <p className="text-xl font-bold text-blue-900">{totalTransactions}</p>
+          </div>
         </div>
+        <Button variant="outline" className="w-full">
+          Download Payment History
+        </Button>
       </CardContent>
     </Card>
   );

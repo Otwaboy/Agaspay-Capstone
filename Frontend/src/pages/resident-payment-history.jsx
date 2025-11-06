@@ -118,7 +118,6 @@ export default function ResidentPaymentHistory() {
     const paymentDate = payment.payment_date ? new Date(payment.payment_date) : null;
     const now = new Date();
     
-    // Calculate last month properly handling year boundaries
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthYear = lastMonth.getFullYear();
     const lastMonthMonth = lastMonth.getMonth();
@@ -136,7 +135,6 @@ export default function ResidentPaymentHistory() {
     return matchesSearch && matchesStatus && matchesMethod && matchesDate;
   }) || [];
 
-  // Calculate summary statistics
   const totalPaid = filteredPayments
     .filter(p => p.payment_status?.toLowerCase() === 'confirmed' || p.payment_status?.toLowerCase() === 'paid')
     .reduce((sum, p) => sum + (p.amount_paid || 0), 0);
@@ -147,7 +145,6 @@ export default function ResidentPaymentHistory() {
 
   const handleDownloadReceipt = async (payment) => {
     try {
-      // Generate receipt content
       const receiptContent = `
 AGASPAY WATER SERVICES
 Barangay Biking, Dauis, Bohol
@@ -177,7 +174,6 @@ This is a computer-generated receipt.
 No signature required.
       `.trim();
 
-      // Create a blob and download
       const blob = new Blob([receiptContent], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -189,7 +185,6 @@ No signature required.
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading receipt:', error);
-      // You could show a toast notification here if needed
     }
   };
 
@@ -205,11 +200,9 @@ No signature required.
 
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-7xl mx-auto">
-            {/* Page Header with Back Button */}
+            {/* Page Header */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-payment-history-title">
-                Payment History
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">Payment History</h1>
               <p className="text-gray-600 mt-2">
                 View all your payment transactions and download receipts
               </p>
@@ -217,6 +210,7 @@ No signature required.
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              {/* Total Payments Card */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-gray-600">
@@ -231,6 +225,7 @@ No signature required.
                 </CardContent>
               </Card>
 
+              {/* Total Paid Card */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-gray-600">
@@ -245,6 +240,7 @@ No signature required.
                 </CardContent>
               </Card>
 
+              {/* Pending Amount Card */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-gray-600">
@@ -259,6 +255,7 @@ No signature required.
                 </CardContent>
               </Card>
 
+              {/* This Month Card */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-gray-600">
@@ -279,7 +276,7 @@ No signature required.
               </Card>
             </div>
 
-            {/* Filters and Search */}
+            {/* Filters */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -289,7 +286,7 @@ No signature required.
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {/* Search */}
+                  {/* Search Input */}
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
@@ -297,13 +294,12 @@ No signature required.
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-9"
-                      data-testid="input-search-payments"
                     />
                   </div>
 
                   {/* Status Filter */}
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger data-testid="select-status-filter">
+                    <SelectTrigger>
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -316,7 +312,7 @@ No signature required.
 
                   {/* Payment Method Filter */}
                   <Select value={methodFilter} onValueChange={setMethodFilter}>
-                    <SelectTrigger data-testid="select-method-filter">
+                    <SelectTrigger>
                       <SelectValue placeholder="Payment Method" />
                     </SelectTrigger>
                     <SelectContent>
@@ -329,7 +325,7 @@ No signature required.
 
                   {/* Date Filter */}
                   <Select value={dateFilter} onValueChange={setDateFilter}>
-                    <SelectTrigger data-testid="select-date-filter">
+                    <SelectTrigger>
                       <SelectValue placeholder="Date Range" />
                     </SelectTrigger>
                     <SelectContent>
@@ -345,117 +341,115 @@ No signature required.
 
             {/* Payment History Table */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Receipt className="h-5 w-5 mr-2 text-green-600" />
-                  Payment Transactions
-                </CardTitle>
-                <CardDescription>
-                  {filteredPayments.length} {filteredPayments.length === 1 ? 'transaction' : 'transactions'} found
-                </CardDescription>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-green-600" />
+                    Payment Transactions
+                  </CardTitle>
+                  <CardDescription className="hidden sm:block">
+                    {filteredPayments.length} {filteredPayments.length === 1 ? 'transaction' : 'transactions'} found
+                  </CardDescription>
+                </div>
               </CardHeader>
               <CardContent>
-                {paymentsLoading ? (
-                  <div className="space-y-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-24 w-full" />
-                    ))}
-                  </div>
-                ) : filteredPayments.length > 0 ? (
-                  <div className="space-y-3">
-                    {filteredPayments.map((payment) => {
-                      const statusConfig = getStatusConfig(payment.payment_status);
-                      const StatusIcon = statusConfig.icon;
-                      const PaymentIcon = getPaymentMethodIcon(payment.payment_method);
-                      
-                      return (
-                        <div
-                          key={payment.payment_id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                          data-testid={`payment-history-item-${payment.payment_id}`}
-                        >
-                          <div className="flex items-center space-x-4 flex-1">
-                            <div className="bg-blue-100 p-3 rounded-lg">
-                              <PaymentIcon className="h-6 w-6 text-blue-600" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <p className="font-semibold text-gray-900">
-                                {payment.payment_type 
-                                    ? `${payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)} Payment`
-                                    : 'Water Bill Payment'}
-                                </p>
-                                <Badge className={statusConfig.className}>
-                                  <StatusIcon className="h-3 w-3 mr-1" />
-                                  {statusConfig.label}
-                                </Badge>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[700px] space-y-3">
+                    {paymentsLoading ? (
+                      [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
+                    ) : filteredPayments.length > 0 ? (
+                      filteredPayments.map((payment) => {
+                        const statusConfig = getStatusConfig(payment.payment_status);
+                        const StatusIcon = statusConfig.icon;
+                        const PaymentIcon = getPaymentMethodIcon(payment.payment_method);
+                        return (
+                          <div
+                            key={payment.payment_id}
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors min-w-[680px]"
+                          >
+                            <div className="flex items-center space-x-4 flex-1 min-w-0">
+                              <div className="bg-blue-100 p-3 rounded-lg flex-shrink-0">
+                                <PaymentIcon className="h-6 w-6 text-blue-600" />
                               </div>
-                              <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
-                                <span className="flex items-center">
-                                  <Calendar className="h-3 w-3 mr-1" />
-                                  {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric'
-                                  }) : 'N/A'}
-                                </span>
-                                <span className="flex items-center">
-                                  <CreditCard className="h-3 w-3 mr-1" />
-                                  {payment.payment_method || 'N/A'}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  Ref: {payment.payment_id}
-                                </span>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <p className="font-semibold text-gray-900">
+                                    {payment.payment_type 
+                                      ? `${payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)} Payment`
+                                      : 'Water Bill Payment'}
+                                  </p>
+                                  <Badge className={statusConfig.className}>
+                                    <StatusIcon className="h-3 w-3 mr-1" />
+                                    {statusConfig.label}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
+                                  <span className="flex items-center">
+                                    <Calendar className="h-3 w-3 mr-1" />
+                                    {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    }) : 'N/A'}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <CreditCard className="h-3 w-3 mr-1" />
+                                    {payment.payment_method || 'N/A'}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    Ref: {payment.payment_id}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <div className="flex items-center space-x-4">
-                            <div className="text-right">
-                              <p className="text-2xl font-bold text-gray-900">
-                                ₱{payment.amount_paid?.toFixed(2) || '0.00'}
-                              </p>
-                              <p className="flex items-center text-xs text-gray-500">
-                                 <Calendar className="h-3 w-3 mr-1" />Bill Period: <span className="ml-1">
-                                    {payment.payment_date ? new Date(payment.billPeriod).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric'
-                                  }) : 'N/A'}
+                            <div className="flex items-center space-x-4 flex-shrink-0">
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-gray-900">
+                                  ₱{payment.amount_paid?.toFixed(2) || '0.00'}
+                                </p>
+                                <p className="flex items-center text-xs text-gray-500">
+                                   <Calendar className="h-3 w-3 mr-1" />Bill Period: <span className="ml-1">
+                                      {payment.payment_date ? new Date(payment.billPeriod).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    }) : 'N/A'}
                                   </span> 
-                              </p>
+                                </p>
+                              </div>
+                              
+                              {(payment.payment_status?.toLowerCase() === 'confirmed' || 
+                                payment.payment_status?.toLowerCase() === 'paid') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownloadReceipt(payment)}
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Receipt
+                                </Button>
+                              )}
                             </div>
-                            
-                            {(payment.payment_status?.toLowerCase() === 'confirmed' || 
-                              payment.payment_status?.toLowerCase() === 'paid') && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDownloadReceipt(payment)}
-                                data-testid={`button-download-receipt-${payment.payment_id}`}
-                              >
-                                <Download className="h-4 w-4 mr-2" />
-                                Receipt
-                              </Button>
-                            )}
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-12">
+                        <Receipt className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500 text-lg font-medium">No payments found</p>
+                        <p className="text-gray-400 text-sm mt-1">
+                          {searchTerm || statusFilter !== 'all' || methodFilter !== 'all' || dateFilter !== 'all'
+                            ? 'Try adjusting your filters'
+                            : 'Your payment history will appear here'}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Receipt className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg font-medium">No payments found</p>
-                    <p className="text-gray-400 text-sm mt-1">
-                      {searchTerm || statusFilter !== 'all' || methodFilter !== 'all' || dateFilter !== 'all'
-                        ? 'Try adjusting your filters'
-                        : 'Your payment history will appear here'}
-                    </p>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
+
           </div>
         </main>
       </div>
