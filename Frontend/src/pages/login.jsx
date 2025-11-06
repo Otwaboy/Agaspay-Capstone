@@ -14,7 +14,11 @@ import {
   Users,
   BarChart3,
   FileText,
-  Bell
+  Bell,
+  X,
+  FileCheck,
+  Wallet,
+  Wrench
 } from "lucide-react";
 
 export default function Login() {
@@ -26,6 +30,7 @@ export default function Login() {
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -41,7 +46,7 @@ export default function Login() {
     try {
       await login(formData);
     } catch (err) {
-      setError("Invalid username or password");
+      setError("Invalid username or password", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -110,7 +115,7 @@ export default function Login() {
             {/* Subtitle */}
             <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
               <Shield className="h-4 w-4" />
-              Comprehensive Care, Digitally Delivered
+             Reliable Water, Every Drop Counts
             </div>
 
             {/* Main Headline */}
@@ -129,8 +134,9 @@ export default function Login() {
                 size="lg"
                 className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-lg shadow-blue-200"
                 data-testid="button-get-started"
+                onClick={() => setShowRequirementsModal(true)}
               >
-                Book an Appointment
+                Connection Requirements
               </Button>
               <Button
                 size="lg"
@@ -150,11 +156,11 @@ export default function Login() {
               </div>
               <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100">
                 <div className="text-xs font-semibold text-blue-600 uppercase mb-1">UNIFIED</div>
-                <div className="text-sm text-gray-700">Integrated Health Records</div>
+                <div className="text-sm text-gray-700">Centralized Water Connections</div>
               </div>
               <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100">
                 <div className="text-xs font-semibold text-blue-600 uppercase mb-1">ENCRYPTED</div>
-                <div className="text-sm text-gray-700">Secure Patient Data</div>
+                <div className="text-sm text-gray-700">Secure Residents Data</div>
               </div>
             </div>
 
@@ -312,7 +318,7 @@ export default function Login() {
               <p>
                 Don't have an account?{" "}
                 <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold">
-                  Contact Admin
+                  Learn more
                 </a>
               </p>
               <p>
@@ -343,6 +349,221 @@ export default function Login() {
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-center text-xs text-gray-500 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
         © 2025 AGASPAY Waterworks Management System. All rights reserved.
       </div>
+
+      {/* Connection Requirements Modal */}
+      {showRequirementsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-6 text-white relative">
+              <button
+                onClick={() => setShowRequirementsModal(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-xl">
+                  <Droplets className="h-8 w-8" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Water Connection Requirements</h2>
+                  <p className="text-blue-100 text-sm mt-1">Step-by-step guide for new water connection</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="space-y-6">
+                {/* Introduction */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    To apply for a new water connection in Barangay Biking, Dauis, Bohol, please follow these requirements and procedures:
+                  </p>
+                </div>
+
+                {/* Step 1 */}
+                <div className="border border-gray-200 rounded-lg p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
+                      <FileCheck className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 1</span>
+                        <h3 className="font-bold text-gray-900">Submit Required Documents</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-3">
+                        Visit the Barangay Hall and submit all necessary documents for your water connection application.
+                      </p>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Required Documents:</p>
+                        <ul className="text-sm text-gray-600 space-y-1 ml-4">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>Valid ID (Government-issued)</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>Proof of Residence (Barangay Certificate or similar)</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>Completed Application Form</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="border border-gray-200 rounded-lg p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
+                      <Wrench className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 2</span>
+                        <h3 className="font-bold text-gray-900">Provide Your Own Water Meter</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-3">
+                        Applicants must purchase and provide their own water meter. The meter will be registered in the system during account creation.
+                      </p>
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <p className="text-xs font-semibold text-amber-900 mb-1">Important Note:</p>
+                        <p className="text-xs text-amber-800">
+                          Ensure the water meter is of good quality and properly functioning. The meter number will be recorded in the system.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="border border-gray-200 rounded-lg p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
+                      <Wallet className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 3</span>
+                        <h3 className="font-bold text-gray-900">Pay Connection Fee</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-3">
+                        Pay the connection fee to the Barangay Treasurer at the barangay hall. The Treasurer will process the payment and record the transaction.
+                      </p>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Payment Details:</p>
+                        <ul className="text-sm text-gray-600 space-y-1 ml-4">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>Connection fee amount (consult with Barangay Treasurer)</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>Official receipt will be issued upon payment</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="border border-gray-200 rounded-lg p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
+                      <Users className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 4</span>
+                        <h3 className="font-bold text-gray-900">Account Creation & Registration</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-3">
+                        Once all requirements are met, the Barangay Secretary will create your account, encode your records, and register your water meter into the AGASPAY system.
+                      </p>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <p className="text-xs font-semibold text-green-900 mb-1">What happens next:</p>
+                        <p className="text-xs text-green-800">
+                          Your account will be assigned a "Pending Installation" status, indicating that your application has been approved and installation is scheduled.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 5 */}
+                <div className="border border-gray-200 rounded-lg p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
+                      <Clock className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 5</span>
+                        <h3 className="font-bold text-gray-900">Installation Scheduling</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-3">
+                        The Barangay Secretary will schedule your water meter installation using the Schedule Task feature. You will be notified of the installation date and time.
+                      </p>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Installation Process:</p>
+                        <ul className="text-sm text-gray-600 space-y-1 ml-4">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>Maintenance team will be assigned to your installation</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>You will receive notification about the scheduled date</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>After installation, your status will change to "Active"</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final Note */}
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-blue-900 mb-1">Important Information</p>
+                      <p className="text-xs text-blue-800">
+                        Once your water connection is active, you can access the AGASPAY system to view your water bills, make online payments, report incidents, and receive important announcements from the barangay.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 p-4 bg-gray-50">
+              <div className="flex justify-between items-center">
+                <p className="text-xs text-gray-600">
+                  For more information, visit the Barangay Hall or contact the Barangay Secretary.
+                </p>
+                <Button
+                  onClick={() => setShowRequirementsModal(false)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

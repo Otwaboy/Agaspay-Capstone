@@ -4,7 +4,7 @@ class AuthManager {
     this.tokenKey = 'agaspay_token';
     this.userKey = 'agaspay_user';
     // Use relative URL - Vite proxy will forward to backend
-    this.backendURL = '';
+     this.backendURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
   }
 
   async login(credentials) {
@@ -49,36 +49,36 @@ class AuthManager {
         return userData;
       }
       
-      throw new Error('MongoDB backend connection failed');
+      // throw new Error('MongoDB backend connection failed');
       
     } catch (error) {
       console.log('MongoDB backend error:', error.message);
       
-      try {
-        // Try Replit server as fallback
-        const fallbackResponse = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials),
-        });
+      // try {
+      //   // Try Replit server as fallback
+      //   const fallbackResponse = await fetch('/api/auth/login', {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify(credentials),
+      //   });
 
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
+      //   if (fallbackResponse.ok) {
+      //     const data = await fallbackResponse.json();
           
-          // Store token and user data
-          localStorage.setItem(this.tokenKey, data.token);
-          localStorage.setItem(this.userKey, JSON.stringify(data.user));
+      //     // Store token and user data
+      //     localStorage.setItem(this.tokenKey, data.token);
+      //     localStorage.setItem(this.userKey, JSON.stringify(data.user));
           
-          return data;
-        }
+      //     return data;
+      //   }
         
-        throw new Error('Replit server failed');
-      } catch (fallbackError) {
-        console.log('Replit server error:', fallbackError.message);
+      //   throw new Error('Replit server failed');
+      // } catch (fallbackError) {
+      //   console.log('Replit server error:', fallbackError.message);
      
-      }
+      // }
     }
   }
 

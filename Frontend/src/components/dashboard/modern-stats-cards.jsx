@@ -16,7 +16,7 @@ export default function ModernStatsCards() {
     queryKey: ["inactive-connections"],
     queryFn: () => apiClient.getInactiveWaterConnections(),
   });
-
+ 
    const { data: overdueData, isLoading: overdueLoading } = useQuery({
     queryKey: ["overdue-billing"],
     queryFn: () => apiClient.getOverdueBilling(),
@@ -29,6 +29,7 @@ export default function ModernStatsCards() {
 
   console.log("Active Connections:", activeData?.data);
   console.log("Inactive Connections:", inactiveData?.data);
+    console.log("Ovedue:", overdueData?.data);
 
   // ✅ Loading state skeleton
   // if (activeLoading || inactiveLoading || overdueLoading) {

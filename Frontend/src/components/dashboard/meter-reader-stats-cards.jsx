@@ -12,7 +12,7 @@ export default function MeterReaderStatsCards() {
   // Mock data structure for development
   const mockStats = {
     totalAssigned: {
-      count: 45,
+      count: 45, 
       target: 50,
       percentage: 90
     },

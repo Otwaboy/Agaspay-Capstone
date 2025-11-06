@@ -10,7 +10,7 @@ router.route('/')
 .get(authMiddleware, roleMiddleware('resident' , 'treasurer', 'admin'), getBilling)
 
 router.route('/overdue-billing')
-.get(authMiddleware, roleMiddleware('treasurer'), getOverdueBilling)
+.get(authMiddleware,  getOverdueBilling)
 
 router.route('/send-reminder')
 .post(authMiddleware, roleMiddleware('treasurer'), sendReminderSMS)

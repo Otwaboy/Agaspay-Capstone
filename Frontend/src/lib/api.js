@@ -4,10 +4,7 @@
 
 // Use relative URL - Vite proxy will forward to backend in development
 // In production, update this to your actual backend domain
-const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://agaspay-backend-xxxx.vercel.app' 
-  : '';
-
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 class ApiClient {
   constructor() {

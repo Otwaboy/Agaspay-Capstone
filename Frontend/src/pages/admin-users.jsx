@@ -46,6 +46,8 @@ export default function AdminUsers() {
   });
 
   const users = data?.users || [];
+  console.log(users);
+  
 
   // Filter users based on search
   const filteredUsers = users.filter(user => {
