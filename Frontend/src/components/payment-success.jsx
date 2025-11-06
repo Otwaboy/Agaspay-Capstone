@@ -2,14 +2,18 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { CheckCircle, AlertTriangle, Clock } from "lucide-react";
+import { CheckCircle, AlertTriangle, Clock, Loader2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 
 export default function PaymentSuccess() {
   const [, setLocation] = useLocation();
-  const [paymentStatus, setPaymentStatus] = useState('processing');
+  const [paymentStatus, setPaymentStatus] = useState('checking'); // checking, processing, success, failed
   const [paymentDetails, setPaymentDetails] = useState(null);
+  const [attempts, setAttempts] = useState(0);
+  const [verificationDetails, setVerificationDetails] = useState(null);
   const { toast } = useToast();
+  
+  const maxAttempts = 15; // Try for 45 seconds (15 attempts x 3 seconds)
 
   useEffect(() => {
     const pendingPayment = localStorage.getItem('pending_payment');
@@ -21,58 +25,114 @@ export default function PaymentSuccess() {
     const status = urlParams.get('status');
     const paymentIntentId = urlParams.get('payment_intent_id');
 
-    if (status === 'succeeded') {
-      setPaymentStatus('success');
-      toast({
-        title: "Payment Successful",
-        description: "Your water bill payment has been processed successfully",
-        variant: "default"
-      });
-      
-      localStorage.removeItem('pending_payment');
-      
-    } else if (status === 'failed') {
+    console.log('🔍 URL Params:', { status, paymentIntentId });
+
+    if (status === 'failed') {
       setPaymentStatus('failed');
       toast({
         title: "Payment Failed", 
         description: "Your payment could not be processed. Please try again.",
         variant: "destructive"
       });
-      
+      return;
+    }
+
+    // Start verification process
+    if (paymentIntentId) {
+      verifyPaymentInDatabase(paymentIntentId);
     } else {
-      if (paymentIntentId && pendingPayment) {
-        checkPaymentStatus(paymentIntentId);
-      }
+      setPaymentStatus('failed');
     }
   }, [toast]);
 
-  const checkPaymentStatus = async (paymentIntentId) => {
+  const verifyPaymentInDatabase = async (paymentIntentId, attemptNumber = 0) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/payments/status/${paymentIntentId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('agaspay_token')}`,
-          'Content-Type': 'application/json'
+      console.log(`🔄 Verification attempt ${attemptNumber + 1}/${maxAttempts}`);
+      
+      const response = await fetch(
+        `http://localhost:3000/api/v1/payment/verify?payment_intent_id=${paymentIntentId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('agaspay_token')}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
       
       const result = await response.json();
-      
-      if (response.ok) {
-        if (result.status === 'succeeded' || result.payment_status === 'completed') {
-          setPaymentStatus('success');
-          localStorage.removeItem('pending_payment');
-        } else if (result.status === 'failed' || result.payment_status === 'failed') {
-          setPaymentStatus('failed');
+      console.log('📊 Verification result:', result);
+
+      if (result.payment_recorded) {
+        // ✅ Payment successfully saved in database by webhook!
+        console.log('✅ Payment verified and saved in database!');
+        setPaymentStatus('success');
+        setVerificationDetails(result.payment_details);
+        localStorage.removeItem('pending_payment');
+        
+        toast({
+          title: "Payment Successful",
+          description: "Your water bill payment has been processed successfully",
+          variant: "default"
+        });
+      } else if (result.status === 'succeeded') {
+        // ⏳ PayMongo says succeeded but webhook hasn't processed yet
+        console.log('⏳ Payment succeeded on PayMongo, waiting for webhook...');
+        
+        if (attemptNumber < maxAttempts) {
+          setPaymentStatus('processing');
+          setAttempts(attemptNumber + 1);
+          
+          // Wait 3 seconds and try again
+          setTimeout(() => {
+            verifyPaymentInDatabase(paymentIntentId, attemptNumber + 1);
+          }, 3000);
+        } else {
+          // Webhook is taking too long
+          console.log('⚠️ Webhook taking too long, showing pending status');
+          setPaymentStatus('processing');
+          toast({
+            title: "Payment Processing",
+            description: "Your payment is being processed. Please check your account in a few minutes.",
+            variant: "default"
+          });
         }
+      } else {
+        // Payment not succeeded on PayMongo
+        setPaymentStatus('failed');
       }
     } catch (error) {
-      console.error('Error checking payment status:', error);
-      setPaymentStatus('failed');
+      console.error('❌ Error verifying payment:', error);
+      
+      // Retry on error
+      if (attemptNumber < maxAttempts) {
+        setAttempts(attemptNumber + 1);
+        setTimeout(() => {
+          verifyPaymentInDatabase(paymentIntentId, attemptNumber + 1);
+        }, 3000);
+      } else {
+        setPaymentStatus('failed');
+        toast({
+          title: "Verification Failed",
+          description: "Unable to verify payment. Please contact support.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
   const handleReturnToDashboard = () => {
     setLocation('/resident-dashboard');
+  };
+
+  const handleRetry = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentIntentId = urlParams.get('payment_intent_id');
+    
+    if (paymentIntentId) {
+      setPaymentStatus('checking');
+      setAttempts(0);
+      verifyPaymentInDatabase(paymentIntentId);
+    }
   };
 
   const renderStatusIcon = () => {
@@ -81,6 +141,10 @@ export default function PaymentSuccess() {
         return <CheckCircle className="h-16 w-16 text-green-600" />;
       case 'failed':
         return <AlertTriangle className="h-16 w-16 text-red-600" />;
+      case 'processing':
+        return <Clock className="h-16 w-16 text-blue-600" />;
+      case 'checking':
+        return <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />;
       default:
         return <Clock className="h-16 w-16 text-blue-600" />;
     }
@@ -91,12 +155,22 @@ export default function PaymentSuccess() {
       case 'success':
         return {
           title: "Payment Successful!",
-          description: "Your water bill payment has been processed successfully. Your account has been updated."
+          description: "Your water bill payment has been processed and saved successfully. Your account has been updated."
         };
       case 'failed':
         return {
           title: "Payment Failed",
           description: "We were unable to process your payment. Please try again or contact support if the issue persists."
+        };
+      case 'processing':
+        return {
+          title: "Payment Processing",
+          description: "Your payment was received by PayMongo and is being processed in our system. This usually takes less than a minute."
+        };
+      case 'checking':
+        return {
+          title: "Verifying Payment",
+          description: "Please wait while we verify your payment with PayMongo..."
         };
       default:
         return {
@@ -117,10 +191,42 @@ export default function PaymentSuccess() {
           </div>
           <CardTitle className="text-xl">{statusMessage.title}</CardTitle>
           <p className="text-gray-600 text-sm">{statusMessage.description}</p>
+          
+          {paymentStatus === 'checking' && (
+            <p className="text-xs text-gray-500 mt-2">
+              Verification attempt {attempts + 1} of {maxAttempts}
+            </p>
+          )}
         </CardHeader>
         
         <CardContent>
-          {paymentDetails && (
+          {/* Show verification details if payment is confirmed */}
+          {verificationDetails && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm font-medium text-green-800 mb-2">✅ Payment Confirmed</p>
+              <div className="space-y-2 text-xs text-green-700">
+                <div className="flex justify-between">
+                  <span>Payment ID:</span>
+                  <span className="font-mono">{verificationDetails._id?.slice(-8)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Amount:</span>
+                  <span>₱{verificationDetails.amount_paid?.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Method:</span>
+                  <span className="capitalize">{verificationDetails.payment_method}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Status:</span>
+                  <span className="font-medium">Paid</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Show pending payment details */}
+          {paymentDetails && !verificationDetails && (
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Account Number:</span>
@@ -140,23 +246,75 @@ export default function PaymentSuccess() {
               </div>
             </div>
           )}
+
+          {/* Info box for processing status */}
+          {paymentStatus === 'processing' && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm font-medium text-blue-800 mb-2">What's happening?</p>
+              <ul className="text-xs text-blue-700 space-y-1">
+                <li>✓ Payment received by PayMongo</li>
+                <li>⏳ Being recorded in our database</li>
+                <li>• You'll receive a confirmation shortly</li>
+                <li>• Check your transaction history</li>
+              </ul>
+            </div>
+          )}
           
           <div className="space-y-3">
-            <Button 
-              onClick={handleReturnToDashboard} 
-              className="w-full"
-              data-testid="button-return-dashboard"
-            >
-              Return to Dashboard
-            </Button>
+            {paymentStatus === 'success' && (
+              <Button 
+                onClick={handleReturnToDashboard} 
+                className="w-full"
+                data-testid="button-return-dashboard"
+              >
+                Return to Dashboard
+              </Button>
+            )}
+
+            {paymentStatus === 'processing' && (
+              <>
+                <Button 
+                  onClick={handleRetry}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Check Status Again
+                </Button>
+                <Button 
+                  onClick={handleReturnToDashboard} 
+                  className="w-full"
+                >
+                  Continue to Dashboard
+                </Button>
+              </>
+            )}
             
             {paymentStatus === 'failed' && (
+              <>
+                <Button 
+                  onClick={handleReturnToDashboard}
+                  className="w-full"
+                  data-testid="button-return-dashboard"
+                >
+                  Return to Dashboard
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLocation('/resident-dashboard')}
+                  className="w-full"
+                >
+                  Try Payment Again
+                </Button>
+              </>
+            )}
+
+            {paymentStatus === 'checking' && (
               <Button 
-                variant="outline" 
-                onClick={() => setLocation('/resident-dashboard')}
+                onClick={handleReturnToDashboard} 
+                variant="outline"
                 className="w-full"
               >
-                Try Payment Again
+                Continue to Dashboard
               </Button>
             )}
           </div>

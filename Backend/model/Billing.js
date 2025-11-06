@@ -60,7 +60,15 @@ const BillingSchema = new mongoose.Schema({
   marked_for_disconnection: {
     type: Boolean,
     default: false
-  }
+  },
+  current_payment_intent: {
+  type: String,
+  default: null,
+},
+  pending_amount: {
+  type: Number,
+  default: 0,
+},
 }, {
   collection: 'Billing',
   timestamps: true

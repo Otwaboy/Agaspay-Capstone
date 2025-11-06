@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { useToast } from "../../hooks/use-toast";
-import { CreditCard, Smartphone, Building, Wallet, CheckCircle, Clock } from "lucide-react";
+import { CreditCard, Smartphone, Building, Wallet, CheckCircle, Clock, Barcode } from "lucide-react";
 import { apiClient } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
 
@@ -114,6 +114,13 @@ export default function PayBillModal({ isOpen, onClose }) {
       icon: CreditCard,
       color: "text-green-600",
       description: "Pay using PayMaya digital wallet via PayMongo"
+    },
+     {
+      id: "orph",
+      name: "QRPH",
+      icon: Barcode,
+      color: "text-green-600",
+      description: "Pay using QRPH digital wallet via PayMongo"
     }
     
   ];
@@ -139,12 +146,12 @@ export default function PayBillModal({ isOpen, onClose }) {
     console.log('✅ Payment created successfully:', result);
 
     if (result.checkoutUrl) {
-        localStorage.setItem('pending_payment', JSON.stringify({
-        paymentId: result.paymentId,
-        amount: billingData.amount,
-        method: formData.paymentMethod,
-        accountNumber: billingData.accountNumber
-      }));
+      localStorage.setItem('pending_payment', JSON.stringify({
+      payment_intent_id: result.payment_intent_id,
+      amount: billingData.billDetails.totalAmount,
+      method: formData.paymentMethod,
+      accountName: billingData.billDetails.accountName
+}));
 
       window.location.href = result.checkoutUrl;
       setStep(3);
