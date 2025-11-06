@@ -346,16 +346,16 @@ export default function Login() {
       </div>
 
       {/* Footer Note */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-center text-xs text-gray-500 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-center text-xs text-gray-500 bg-white/80 backdrop-blur-xs px-4 py-2 rounded-full shadow-sm">
         © 2025 AGASPAY Waterworks Management System. All rights reserved.
       </div>
 
       {/* Connection Requirements Modal */}
       {showRequirementsModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-6 text-white relative">
+            <div className="bg-blue-600  p-6 text-white relative">
               <button
                 onClick={() => setShowRequirementsModal(false)}
                 className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
@@ -363,11 +363,8 @@ export default function Login() {
                 <X className="h-6 w-6" />
               </button>
               <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-xl">
-                  <Droplets className="h-8 w-8" />
-                </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Water Connection Requirements</h2>
+                  <h2 className="text-1xl font-bold">Water Connection Requirements</h2>
                   <p className="text-blue-100 text-sm mt-1">Step-by-step guide for new water connection</p>
                 </div>
               </div>
@@ -386,9 +383,6 @@ export default function Login() {
                 {/* Step 1 */}
                 <div className="border border-gray-200 rounded-lg p-5">
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
-                      <FileCheck className="h-6 w-6 text-blue-600" />
-                    </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 1</span>
@@ -421,13 +415,11 @@ export default function Login() {
                 {/* Step 2 */}
                 <div className="border border-gray-200 rounded-lg p-5">
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
-                      <Wrench className="h-6 w-6 text-blue-600" />
-                    </div>
+                    
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 2</span>
-                        <h3 className="font-bold text-gray-900">Provide Your Own Water Meter</h3>
+                        <h3 className="font-bold text-gray-900">Provide Your Own Meter</h3>
                       </div>
                       <p className="text-sm text-gray-700 mb-3">
                         Applicants must purchase and provide their own water meter. The meter will be registered in the system during account creation.
@@ -445,9 +437,7 @@ export default function Login() {
                 {/* Step 3 */}
                 <div className="border border-gray-200 rounded-lg p-5">
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
-                      <Wallet className="h-6 w-6 text-blue-600" />
-                    </div>
+                    
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 3</span>
@@ -476,13 +466,11 @@ export default function Login() {
                 {/* Step 4 */}
                 <div className="border border-gray-200 rounded-lg p-5">
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
-                      <Users className="h-6 w-6 text-blue-600" />
-                    </div>
+                   
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 4</span>
-                        <h3 className="font-bold text-gray-900">Account Creation & Registration</h3>
+                        <h3 className="font-bold text-gray-900">Account Registration</h3>
                       </div>
                       <p className="text-sm text-gray-700 mb-3">
                         Once all requirements are met, the Barangay Secretary will create your account, encode your records, and register your water meter into the AGASPAY system.
@@ -500,9 +488,7 @@ export default function Login() {
                 {/* Step 5 */}
                 <div className="border border-gray-200 rounded-lg p-5">
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
-                      <Clock className="h-6 w-6 text-blue-600" />
-                    </div>
+                    
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">STEP 5</span>
@@ -548,17 +534,12 @@ export default function Login() {
             </div>
 
             {/* Modal Footer */}
-            <div className="border-t border-gray-200 p-4 bg-gray-50">
-              <div className="flex justify-between items-center">
-                <p className="text-xs text-gray-600">
+            <div className="border-t border-gray-200 p-4  bg-gray-50 ">
+              <div className="flex justify-between items-center  ">
+                <p className="text-xs text-gray-600 ">
                   For more information, visit the Barangay Hall or contact the Barangay Secretary.
                 </p>
-                <Button
-                  onClick={() => setShowRequirementsModal(false)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Close
-                </Button>
+                
               </div>
             </div>
           </div>
