@@ -59,7 +59,7 @@ app.use(cors(corsOptions));
 //extra packages 
 app.use(express.json())
  
-
+app.get('/', (req, res) => {res.status(200).json({message: 'Hello Vercel!'})})
 //routes
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/meter-reader', meterReadingRoutes) 
