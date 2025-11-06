@@ -43,3 +43,4 @@ Frontend/coverage/
 # Backend specific
 Backend/dist/
 Backend/coverage/
+.vercel
