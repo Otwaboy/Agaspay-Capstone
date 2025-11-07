@@ -8,83 +8,67 @@ import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
-import { User, Mail, Phone, MapPin, Droplets, Calendar, Edit, Save, X } from "lucide-react";
+import { User, Mail, Phone, Droplets, Edit, Save, X } from "lucide-react";
 import { useAuth } from "../hooks/use-auth";
 import { useToast } from "../hooks/use-toast";
-import apiClient from "../lib/api";
+import apiClient from "../lib/api"; 
 
 export default function ResidentProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { data: connectionData, isLoading: connectionLoading } = useQuery({
+  const { data: connectionData } = useQuery({
     queryKey: ['/api/v1/water-connection'],
     queryFn: async () => {
-      const res = await apiClient.getWaterConnections();
+      const res = await apiClient.getAllWaterConnections();
       return res.data?.[0] || null;
     },
     retry: 1
   });
 
-  const { data: profileData, isLoading: profileLoading } = useQuery({
-    queryKey: ['/api/v1/resident/profile'],
-    queryFn: async () => {
-      try {
-        const res = await fetch('/api/v1/resident/profile');
-        if (res.ok) {
-          return await res.json();
-        }
-        return null;
-      } catch (error) {
-        console.log('Profile endpoint not available yet');
-        return null;
-      }
-    },
-    retry: 1
-  });
-
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
     email: "",
-    phone: "",
-    purok: "",
-    zone: ""
+    phone: ""
   });
 
-  // Update form data when profile or connection data loads
   useEffect(() => {
-    if (profileData || connectionData || user) {
+    if (connectionData || user) {
       setFormData({
-        firstName: profileData?.firstName || user?.firstName || "",
-        lastName: profileData?.lastName || user?.lastName || "",
-        email: profileData?.email || "",
-        phone: profileData?.phone || "",
-        purok: profileData?.purok || connectionData?.purok_no || "",
-        zone: profileData?.zone || ""
+        email: connectionData?.email || "",
+        phone: connectionData?.contact_no || ""
       });
     }
-  }, [profileData, connectionData, user]);
+  }, [connectionData, user]);
 
-  const handleSave = () => {
-    // Here you would call the API to update profile
+ const handleSave = async () => {
+  try {
+    await apiClient.updateUserContact({
+      email: formData.email,
+      contact_no: formData.phone,
+    });
+
     toast({
       title: "Profile Updated",
-      description: "Your profile information has been updated successfully",
+      description: "Your contact information has been updated successfully",
     });
+
     setIsEditing(false);
-  };
+
+  } catch (error) {
+    toast({
+      title: "Update Failed",
+      description: error?.message || "Something went wrong.",
+      variant: "destructive",
+    });
+  }
+};
+
 
   const handleCancel = () => {
-    // Restore original values from API data
     setFormData({
-      firstName: profileData?.firstName || user?.firstName || "",
-      lastName: profileData?.lastName || user?.lastName || "",
-      email: profileData?.email || "",
-      phone: profileData?.phone || "",
-      purok: profileData?.purok || connectionData?.purok_no || "",
-      zone: profileData?.zone || ""
+      email: connectionData?.email || "",
+      phone: connectionData?.contact_no || ""
     });
     setIsEditing(false);
   };
@@ -96,136 +80,173 @@ export default function ResidentProfile() {
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
         <div className="absolute bottom-20 left-20 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
-        
+
         <ResidentTopHeader />
 
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-5xl mx-auto">
-            <div className="mb-8 flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900" data-testid="text-profile-title">
-                  My Profile
-                </h1>
-                <p className="text-gray-600 mt-2">
-                  Manage your personal information and account details
-                </p>
-              </div>
-              {!isEditing ? (
-                <Button onClick={() => setIsEditing(true)} data-testid="button-edit-profile">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleCancel} data-testid="button-cancel">
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700" data-testid="button-save">
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </Button>
-                </div>
-              )}
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+            <p className="text-gray-600 mt-2 mb-8">Manage your personal information and account details</p>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Profile Card */}
+              
+              {/* LEFT SIDE */}
               <div className="lg:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <User className="h-5 w-5 mr-2 text-blue-600" />
-                      Personal Information
-                    </CardTitle>
-                    <CardDescription>Your personal details and contact information</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="firstName">First Name</Label>
-                          <Input
-                            id="firstName"
-                            value={formData.firstName}
-                            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                            disabled={!isEditing}
-                            data-testid="input-first-name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="lastName">Last Name</Label>
-                          <Input
-                            id="lastName"
-                            value={formData.lastName}
-                            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                            disabled={!isEditing}
-                            data-testid="input-last-name"
-                          />
-                        </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            id="email"
-                            type="email"
-                            placeholder="your.email@example.com"
-                            value={formData.email}
-                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                            disabled={!isEditing}
-                            className="pl-10"
-                            data-testid="input-email"
-                          />
-                        </div>
-                      </div>
+                {/* Personal Info Card */}
+             
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2 text-blue-600" />
+                  Personal Information
+                </CardTitle>
+                <CardDescription>Your personal details</CardDescription>
+              </CardHeader>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            id="phone"
-                            type="tel"
-                            placeholder="+63 XXX XXX XXXX"
-                            value={formData.phone}
-                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                            disabled={!isEditing}
-                            className="pl-10"
-                            data-testid="input-phone"
-                          />
-                        </div>
-                      </div>
+              <CardContent>
+                <div className="space-y-4">
 
-                      <Separator />
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="purok">Purok</Label>
-                          <Input
-                            id="purok"
-                            value={formData.purok || connectionData?.purok_no || ""}
-                            onChange={(e) => setFormData({...formData, purok: e.target.value})}
-                            disabled={!isEditing}
-                            data-testid="input-purok"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="zone">Zone</Label>
-                          <Input
-                            id="zone"
-                            value={formData.zone}
-                            onChange={(e) => setFormData({...formData, zone: e.target.value})}
-                            disabled={!isEditing}
-                            data-testid="input-zone"
-                          />
-                        </div>
-                      </div>
+                  {/* Name */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>First Name</Label>
+                      <Input
+                        value={connectionData?.first_name || ""}
+                        disabled
+                        className="text-black disabled:text-black disabled:opacity-100 bg-gray-50"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="space-y-2">
+                      <Label>Last Name</Label>
+                      <Input
+                        value={connectionData?.last_name || ""}
+                        disabled
+                        className="text-black disabled:text-black disabled:opacity-100 bg-gray-50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Purok</Label>
+                      <Input
+                        value={connectionData?.purok || ""}
+                        disabled
+                        className="text-black disabled:text-black disabled:opacity-100 bg-gray-50"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Zone</Label>
+                      <Input
+                        value={connectionData?.zone || ""}
+                        disabled
+                        className="text-black disabled:text-black disabled:opacity-100 bg-gray-50"
+                      />
+                    </div>
+                  </div>
+
+                </div>
+              </CardContent>
+            </Card>
+
+
+                {/* Contact Information Card */}
+    <Card className="relative">
+  <CardHeader>
+    <div>
+      <CardTitle className="flex items-center">
+        <Phone className="h-5 w-5 mr-2 text-blue-600" />
+        Contact Information
+      </CardTitle>
+      <CardDescription>Update your contact details</CardDescription>
+    </div>
+  </CardHeader>
+
+  <CardContent>
+    <div className="space-y-4">
+
+      {/* Email Field */}
+      <div className="space-y-2">
+        <Label>Email Address</Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            disabled={!isEditing}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      {/* Phone Field */}
+      <div className="space-y-2">
+        <Label>Phone Number</Label>
+        <div className="relative">
+          <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            disabled={!isEditing}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      {/* ✅ Buttons */}
+      {!isEditing ? (
+        <Button
+          onClick={() => setIsEditing(true)}
+          size="sm"
+          className="
+            w-full
+            sm:w-auto
+            sm:absolute sm:top-4 sm:right-4
+          "
+        >
+          <Edit className="h-3 w-3 mr-2" />
+          Edit
+        </Button>
+      ) : (
+        <div
+          className="
+            flex flex-col gap-2 w-full
+            sm:w-auto sm:flex-row
+            sm:absolute sm:top-4 sm:right-4
+          "
+        >
+          <Button
+            onClick={handleSave}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            size="sm"
+            className="w-full sm:w-auto"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+        </div>
+      )}
+
+    </div>
+  </CardContent>
+</Card>
+
+
 
                 {/* Water Connection Info */}
                 <Card>
@@ -240,81 +261,65 @@ export default function ResidentProfile() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-gray-600">Connection ID</Label>
+                          <Label>Connection ID</Label>
                           <p className="font-medium mt-1">{connectionData?.connection_id || "N/A"}</p>
                         </div>
                         <div>
-                          <Label className="text-gray-600">Meter Number</Label>
+                          <Label>Meter Number</Label>
                           <p className="font-medium mt-1">{connectionData?.meter_no || "N/A"}</p>
                         </div>
                         <div>
-                          <Label className="text-gray-600">Connection Type</Label>
-                          <p className="font-medium mt-1">{connectionData?.connection_type || "Residential"}</p>
+                          <Label>Connection Type</Label>
+                          <p className="font-medium mt-1">{connectionData?.type || "Residential"}</p>
                         </div>
                         <div>
-                          <Label className="text-gray-600">Status</Label>
-                          <div className="mt-1">
-                            <Badge className="bg-green-100 text-green-800">
-                              {connectionData?.connection_status || "Active"}
-                            </Badge>
-                          </div>
+                          <Label>Status</Label>
+                          <Badge className="bg-green-100 text-green-800 mt-1">
+                            {connectionData?.connection_status || "Active"}
+                          </Badge>
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
+
               </div>
 
-              {/* Sidebar Info */}
+              {/* RIGHT SIDE */}
               <div className="space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Account Summary</CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle className="text-sm">Account Summary</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label className="text-gray-600">Account Status</Label>
+                      <Label>Account Status</Label>
                       <p className="font-semibold text-green-600 mt-1">Active</p>
                     </div>
                     <Separator />
                     <div>
-                      <Label className="text-gray-600">Member Since</Label>
+                      <Label>Member Since</Label>
                       <p className="font-medium mt-1">
                         {connectionData?.created_at 
-                          ? new Date(connectionData.created_at).toLocaleDateString('en-PH', {
-                              month: 'long',
-                              year: 'numeric'
-                            })
+                          ? new Date(connectionData.created_at).toLocaleDateString('en-PH', { month: 'long', year: 'numeric'})
                           : "N/A"}
                       </p>
                     </div>
                     <Separator />
                     <div>
-                      <Label className="text-gray-600">Username</Label>
+                      <Label>Username</Label>
                       <p className="font-medium mt-1">{user?.username || "N/A"}</p>
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Security</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full" data-testid="button-change-password">
-                      Change Password
-                    </Button>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-blue-50 border-blue-200">
                   <CardContent className="pt-6">
                     <p className="text-sm text-blue-800">
-                      <strong>Note:</strong> To update your address or water connection details, please contact the barangay office.
+                      <strong>Note:</strong> To update your address or water connection details, please visit the barangay office.
                     </p>
                   </CardContent>
                 </Card>
               </div>
+
             </div>
           </div>
         </main>

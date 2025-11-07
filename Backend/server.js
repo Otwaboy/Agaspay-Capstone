@@ -21,6 +21,7 @@ const errorHandlerMiddleware = require('./middleware/error-handler')
 const allowedOrigins = [
   'http://localhost:5173', // Vite dev server
   'http://localhost:3000', // Local backend if needed
+  'http://localhost:5000',
   'https://agaspay-frontend.vercel.app', // Main production alias
   // Add the newest one explicitly just in case the regex fails
   'https://agaspay-frontend-pyad6f4fw-otwaboys-projects.vercel.app', 

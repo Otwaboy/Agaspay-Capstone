@@ -178,6 +178,13 @@ class ApiClient {
     });
   }
 
+ async updateUserContact(updateData) {
+  return await this.request(`/api/v1/water-connection/contacts-update`, {
+    method: 'PATCH',
+    body: JSON.stringify(updateData),
+  });
+}
+
   // ======================================================
   // 👤 USER MANAGEMENT
   // ======================================================

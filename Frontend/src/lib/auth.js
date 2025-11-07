@@ -4,9 +4,9 @@ class AuthManager {
     this.tokenKey = 'agaspay_token';
     this.userKey = 'agaspay_user';
     // Use relative URL - Vite proxy will forward to backend
-     this.backendURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+     this.backendURL = import.meta.env.VITE_BACKEND_URL 
   }
-
+ 
   async login(credentials) {
     try {
       // Debug: Log the backend URL being used

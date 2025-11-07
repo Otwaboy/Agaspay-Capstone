@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Bell, Search, User, ChevronDown, MapPin, Clock } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 import {
@@ -16,7 +15,7 @@ import { useLocation } from "wouter";
 
 export default function MeterReaderTopHeader() {
   const { user, logout} = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
+  // const [searchQuery, setSearchQuery] = useState("");
  const [, setLocation] = useLocation();
 
   const handleLogout = () => {

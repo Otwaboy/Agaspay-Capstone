@@ -67,6 +67,12 @@ const getAllWaterConnections = async (req, res) => {
           status: conn.resident_id?.status || "N/A",
           previous_reading: lastReading?.previous_reading || 0,
           present_reading: lastReading?.present_reading || 0,
+
+          // payload for the user information
+          first_name: conn.resident_id.first_name,
+          last_name: conn.resident_id.last_name,
+          purok: conn.resident_id.purok,
+          zone: conn.resident_id.zone
         };
       })
     );
@@ -251,9 +257,57 @@ const editResidentAccount = async (req, res) => {
       message: error.message || "Failed to update resident account" 
     });
   }
-};;
+};
+
+
+const updateUserContact = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Ensure user exists
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized: User not logged in" });
+    }
+
+    const { email, contact_no } = req.body;
+
+    // Validate
+    if (!email && !contact_no) {
+      return res.status(400).json({ 
+        message: "Nothing to update. Please provide email or contact_no." 
+      });
+    }
+
+    // Find resident using user_id reference
+    const resident = await Resident.findOne({ user_id: user.userId });
+
+    if (!resident) {
+      return res.status(404).json({ message: "Resident not found" });
+    }
+
+    // Update only fields allowed
+    if (email) resident.email = email;
+    if (contact_no) resident.contact_no = contact_no;
+
+    await resident.save();
+
+    res.status(200).json({
+      message: "Contact information updated successfully",
+      data: {
+        email: resident.email,
+        contact_no: resident.contact_no,
+        updated_at: new Date()
+      }
+    });
+
+  } catch (error) {
+    console.error("Error updating contact info:", error);
+    res.status(500).json({ message: "Failed to update contact information" });
+  }
+};
 
 
 
 
-module.exports = { getLatestConnections, getAllWaterConnections, getActiveWaterConnections,getInactiveWaterConnections, editResidentAccount };
+
+module.exports = { getLatestConnections, getAllWaterConnections, getActiveWaterConnections,getInactiveWaterConnections, editResidentAccount, updateUserContact };
