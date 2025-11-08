@@ -94,13 +94,13 @@ export default function SecretaryIncidentReports() {
   ];
 
   // Task types from backend schema
-  const taskTypes = [
-    "Meter Reading",
-    "Maintenance",
-    "Billing Preparation",
-    "Inspection",
-    "Other"
-  ];
+  // const taskTypes = [
+  //   "Meter Reading",
+  //   "Maintenance",
+  //   "Billing Preparation",
+  //   "Inspection",
+  //   "Other"
+  // ];
 
   // Generate time slots - all 1 hour duration
   const generateTimeSlots = () => {
@@ -345,7 +345,7 @@ export default function SecretaryIncidentReports() {
               <p className="text-gray-600 mt-2">
                 Monitor and manage water service incident reports from residents
               </p>
-            </div>
+            </div> 
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">

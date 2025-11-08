@@ -76,44 +76,44 @@ export default function MaintenanceTasks() {
     description: `${assignment.task?.task_type || 'Task'} scheduled`,
     personnelName: assignment.personnel?.name,
     personnelContact: assignment.personnel?.contact_no,
-  })) || [];
+  })) || []; 
 
-  const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, status, remarks }) => {
-      // Replace with actual API call
-      console.log('Updating task:', { taskId, status, remarks });
-      return { success: true };
-    },
-    onSuccess: () => {
-      toast({
-        title: "Task Updated",
-        description: "Task status has been updated successfully.",
-      });
-      setIsUpdateModalOpen(false);
-      setSelectedTask(null);
-      setNewStatus("");
-      setRemarks("");
-      refetch();
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update task status. Please try again.",
-        variant: "destructive",
-      });
-    }
-  });
+    const updateTaskMutation = useMutation({
+        mutationFn: async ({ taskId, status, remarks }) => {
+          return await apiClient.updateTaskStatus(taskId, { status, remarks });
+        },
+        onSuccess: () => { 
+          toast({
+            title: "Task Updated",
+            description: "Task status has been updated successfully.",
+          });
+          setIsUpdateModalOpen(false);
+          setSelectedTask(null);
+          setNewStatus("");
+          setRemarks("");
+          refetch();
+        },
+        onError: (error) => {
+          toast({
+            title: "Error",
+            description: error?.message || "Failed to update task status.",
+            variant: "destructive",
+          });
+        }
+});
 
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
-      case 'unassigned':
+      case 'Unassigned':
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Unassigned</Badge>;
-      case 'scheduled':
+      case 'Scheduled':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Scheduled</Badge>;
-      case 'completed':
+      case 'Completed':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completed</Badge>;
-      case 'cancelled':
+      case 'Cancelled':
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Cancelled</Badge>;
+      case 'Pending':
+        return <Badge className="bg-red-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
       default:
         return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">{status}</Badge>;
     }
@@ -160,7 +160,7 @@ export default function MaintenanceTasks() {
     }
     updateTaskMutation.mutate({
       taskId: selectedTask.id,
-      status: newStatus,
+      task_status: newStatus,
       remarks: remarks
     });
   };
@@ -214,10 +214,11 @@ export default function MaintenanceTasks() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="Unassigned">Unassigned</SelectItem>
+                      <SelectItem value="Scheduled">Scheduled</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -294,11 +295,11 @@ export default function MaintenanceTasks() {
                             <p className="text-xs text-gray-500 mt-1">Connection ID: {task.connectionId}</p>
                           </div>
 
-                          {task.status !== 'completed' && task.status !== 'cancelled' && (
+                          {task.status !== 'Completed' && task.status !== 'Cancelled' && (
                             <Button
                               onClick={() => {
                                 setSelectedTask(task);
-                                setNewStatus('completed');
+                                setNewStatus('Completed');
                                 setIsUpdateModalOpen(true);
                               }}
                               data-testid={`button-update-task-${task.id}`}
@@ -345,8 +346,8 @@ export default function MaintenanceTasks() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>

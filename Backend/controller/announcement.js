@@ -36,7 +36,7 @@ const createAnnouncement = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
+ 
 // Get all announcements (filtered by role)
 const getAnnouncements = async (req, res) => {
   try {

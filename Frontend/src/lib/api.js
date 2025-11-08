@@ -224,22 +224,22 @@ class ApiClient {
     return await this.request('/api/v1/schedule-task', {
       method: 'POST',
       body: JSON.stringify(taskData),
-    });
+    }); 
   }
 
   async getScheduleTasks() {
-    return await this.request('/api/v1/schedule-tasks');
+    return await this.request('/api/v1/schedule-task');
   }
 
   async updateTaskStatus(taskId, statusData) {
-    return await this.request(`/api/v1/schedule-tasks/${taskId}/status`, {
+    return await this.request(`/api/v1/schedule-task/${taskId}/status`, {
       method: 'PATCH',
       body: JSON.stringify(statusData),
     });
   }
 
   async deleteScheduleTask(taskId) {
-    return await this.request(`/api/v1/schedule-tasks/${taskId}`, {
+    return await this.request(`/api/v1/schedule-task/${taskId}`, {
       method: 'DELETE',
     });
   }

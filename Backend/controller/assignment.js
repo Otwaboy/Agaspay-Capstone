@@ -9,7 +9,7 @@ const { StatusCodes } = require('http-status-codes');
  * 
  * Purpose: Assign a scheduled task to a maintenance personnel
  * Access: Secretary only
- * 
+ *  
  * Request Body:
  * - task_id: ID of the scheduled task
  * - assigned_to: ID of the maintenance personnel
@@ -79,7 +79,7 @@ const createAssignment = async (req, res) => {
     });
 
     // ✅ Update task status to 'Scheduled' (assigned and ready)
-    await ScheduleTask.findByIdAndUpdate(task_id, { task_status: 'Scheduled' });
+    await ScheduleTask.findByIdAndUpdate(task_id, { task_status: 'Assigned' });
 
     // ✅ Populate assignment details
     const populatedAssignment = await Assignment.findById(assignment._id)

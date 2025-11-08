@@ -1,7 +1,6 @@
 const ScheduleTask = require('../model/Schedule-task');
-const Assignment = require('../model/Assignment')
-IncidentReport = require('../model/Incident-reports')
-
+const Assignment = require('../model/Assignment');
+const IncidentReports = require('../model/Incident-reports');
 
 const createTask = async (req, res) => {
   const user = req.user;
@@ -47,7 +46,7 @@ const createTask = async (req, res) => {
     // 🔹 Update the incident report status to "Scheduled"
     if (report_id) {
       await IncidentReport.findByIdAndUpdate(report_id, {
-        reported_issue_status: 'Scheduled'
+        reported_issue_status: 'Assigned'
       });
     }
 
@@ -57,7 +56,7 @@ const createTask = async (req, res) => {
       message: 'Schedule task created successfully',
       task: newTask
     });
-
+ 
   } catch (error) {
     console.error('❌ Error creating schedule task:', error);
     res.status(500).json({
@@ -142,7 +141,7 @@ const getTasks = async (req, res) => {
       .sort({ schedule_date: -1, createdAt: -1 })
       .lean();
 
-    // 🔹 Step 5: Fetch all assignments
+    // 🔹 Step 5: Fetch all assignments 
     const allAssignments = await Assignment.find({})
       .populate('assigned_to', 'first_name last_name role')
       .lean();
@@ -204,6 +203,7 @@ const getTasks = async (req, res) => {
 
 
 // Update task status
+// Update task status
 const updateTaskStatus = async (req, res) => {
   const user = req.user;
   const { taskId } = req.params;
@@ -216,11 +216,11 @@ const updateTaskStatus = async (req, res) => {
     });
   }
 
-  const validStatuses = ['Unassigned', 'Scheduled', 'Completed', 'Cancelled'];
+  const validStatuses = ['Unassigned', 'Assigned', 'Completed', 'Cancelled', 'Pending'];
   if (!validStatuses.includes(task_status)) {
     return res.status(400).json({
       success: false,
-      message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      message: `Invalidxxx status. Must be one of: ${validStatuses.join(', ')}`
     });
   }
 
@@ -234,8 +234,18 @@ const updateTaskStatus = async (req, res) => {
       });
     }
 
+    // ✅ Update task status
     task.task_status = task_status;
     await task.save();
+
+    // ✅ If task is completed and it is linked to an incident report, update report status too
+    if (task.report_id && task_status === 'Completed') {
+      await IncidentReports.findByIdAndUpdate(task.report_id, {
+        reported_issue_status: 'Completed',
+        date_handled: new Date()
+      });
+      console.log(`✅ Incident report ${task.report_id} marked as Completed`);
+    }
 
     console.log('✅ Task status updated:', taskId);
 
@@ -254,6 +264,7 @@ const updateTaskStatus = async (req, res) => {
     });
   }
 };
+
 
 // Delete task
 const deleteTask = async (req, res) => {

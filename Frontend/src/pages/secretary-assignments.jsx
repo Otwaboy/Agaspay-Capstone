@@ -277,7 +277,7 @@ export default function SecretaryAssignments() {
 
   const statusConfig = {
     Unassigned: { color: "bg-gray-100 text-gray-700", label: "Unassigned" },
-    Scheduled: { color: "bg-blue-100 text-blue-700", label: "Scheduled" },
+    Assigned: { color: "bg-blue-100 text-blue-700", label: "Assigned" },
     Completed: { color: "bg-green-100 text-green-700", label: "Completed" },
     Cancelled: { color: "bg-red-100 text-red-700", label: "Cancelled" },
   };

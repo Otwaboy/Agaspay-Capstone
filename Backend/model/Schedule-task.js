@@ -22,13 +22,13 @@ const ScheduleTaskSchema = new mongoose.Schema(
     },
     schedule_type: {
       type: String,
-      enum: ['Meter Installation'],
+      enum: ['Meter Installation'], 
       default: 'Meter Installation',
       required: false
     },
     task_status: {
       type: String,
-      enum: ['Unassigned', 'Scheduled', 'Completed', 'Cancelled', 'Pending'],
+      enum: ['Unassigned', 'Assigned', 'Completed', 'Cancelled', 'Pending'],
       default: 'Unassigned',  // Match the enum!
     },
     scheduled_by: {

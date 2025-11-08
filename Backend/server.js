@@ -76,7 +76,7 @@ const reportsRoutes = require('./routes/reports')
 
 //extra packages 
 app.use(express.json())
- 
+
 app.get('/', (req, res) => {res.status(200).json({message: 'Hello Vercel!'})})
 //routes
 app.use('/api/v1/auth', authRoutes)
@@ -109,15 +109,14 @@ app.use(errorHandlerMiddleware)
 //port
 const port = process.env.PORT || 3000
 
-const start  = async ()=> {
+const start = async ()=> {
 
-        try {
-            await connectDB(process.env.MONGO_URI)
-            app.listen(port, ()=> {console.log(`Server is listening on :${port}`);})
-        } catch (error) {
-            console.log(error);
-            
-        }
+     try {
+         await connectDB(process.env.MONGO_URI)
+            app.listen(port, ()=> {console.log(`Server is listening on :${port}`);})
+        } catch (error) {
+          console.log(error);
+            }
 }
 
 start()

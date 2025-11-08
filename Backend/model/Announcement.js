@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+ 
 const AnnouncementSchema = new mongoose.Schema({
   title: { 
     type: String,
@@ -8,7 +8,7 @@ const AnnouncementSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: [true, 'Content is required']
+    required: [true, 'Content is required'] 
   },
   category: {
     type: String,

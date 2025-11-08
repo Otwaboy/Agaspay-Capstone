@@ -11,7 +11,7 @@ import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import {
   Select,
-  SelectContent,
+  SelectContent, 
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -64,7 +64,7 @@ console.log(announcements);
     onSuccess: () => {
       toast({
         title: "Announcement Created",
-        description: "Your announcement has been submitted for approval.",
+        description: "Your announcement has been submitted please wait for admin approval.",
       });
       queryClient.invalidateQueries(["announcements"]);
       setCreateModalOpen(false);
@@ -422,7 +422,7 @@ console.log(announcements);
               Cancel
             </Button>
             <Button onClick={handleCreateAnnouncement} disabled={createAnnouncement.isLoading}>
-              {createAnnouncement.isLoading ? "Publishing..." : "Publish Announcement"}
+              {createAnnouncement.isLoading ? "Publishing..." : "Send to Admin"}
             </Button>
           </DialogFooter>
         </DialogContent>
