@@ -15,39 +15,58 @@ import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
 import { AlertTriangle, MapPin, Camera, Send } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
+import apiClient from "../lib/api";
 
 export default function ResidentReportIssue() {
+
   const [formData, setFormData] = useState({
-    category: "",
+    type: "",
     location: "",
     description: "",
-    severity: "medium"
+    urgency_level: "", 
   });
+
+
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.category || !formData.location || !formData.description) {
+
+    if (!formData.type || !formData.location || !formData.description || !formData.urgency_level) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    toast({
-      title: "Issue Reported",
-      description: "Your issue has been reported successfully. We'll investigate and respond soon.",
-    });
+    setIsLoading(true);
+    try {
+      await apiClient.createIncidentReport(formData);
+      toast({
+        title: "Issue Reported",
+        description:
+          "Your issue has been reported successfully. We'll investigate and respond soon.",
+      });
 
-    setFormData({
-      category: "",
-      location: "",
-      description: "",
-      severity: "medium"
-    });
+      setFormData({
+        type: "",
+        location: "",
+        description: "",
+        urgency_level: "",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to Report Issue",
+        description:
+          error?.response?.data?.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -57,21 +76,18 @@ export default function ResidentReportIssue() {
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
         <div className="absolute bottom-20 left-20 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
-        
+
         <ResidentTopHeader />
 
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-report-issue-title">
-                Report an Issue
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Report water service issues in your area
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900">Report an Issue</h1>
+              <p className="text-gray-600 mt-2">Report water service issues in your area</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Form Card */}
               <div className="lg:col-span-2">
                 <Card>
                   <CardHeader>
@@ -79,34 +95,39 @@ export default function ResidentReportIssue() {
                       <AlertTriangle className="h-5 w-5 mr-2 text-orange-600" />
                       Issue Report Form
                     </CardTitle>
-                    <CardDescription>
-                      Provide details about the issue you're experiencing
-                    </CardDescription>
+                    <CardDescription>Provide details about the issue you're experiencing</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
                       <div className="space-y-2">
-                        <Label htmlFor="category">Issue Category *</Label>
-                        <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                          <SelectTrigger id="category" data-testid="select-category">
+                        <Label>Issue Category *</Label>
+                        <Select
+                          value={formData.type}
+                          onValueChange={(value) => setFormData({ ...formData, type: value })}
+                        >
+                          <SelectTrigger>
                             <SelectValue placeholder="Select issue category" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="no-water">No Water Supply</SelectItem>
-                            <SelectItem value="low-pressure">Low Water Pressure</SelectItem>
-                            <SelectItem value="pipe-leak">Pipe Leak</SelectItem>
-                            <SelectItem value="water-quality">Water Quality Issue</SelectItem>
-                            <SelectItem value="meter-issue">Meter Problem</SelectItem>
-                            <SelectItem value="damaged-infrastructure">Damaged Infrastructure</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="No Water Supply">No Water Supply</SelectItem>
+                            <SelectItem value="Low Water Pressure">Low Water Pressure</SelectItem>
+                            <SelectItem value="Pipe Leak">Pipe Leak</SelectItem>
+                            <SelectItem value="Water Quality Issue">Water Quality Issue</SelectItem>
+                            <SelectItem value="Meter Problem">Meter Problem</SelectItem>
+                            <SelectItem value="Damaged Infrastructure">Damaged Infrastructure</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="severity">Severity Level</Label>
-                        <Select value={formData.severity} onValueChange={(value) => setFormData({...formData, severity: value})}>
-                          <SelectTrigger id="severity" data-testid="select-severity">
+                        <Label>Urgencly Level</Label>
+                        <Select
+                          value={formData.urgency_level}
+                          onValueChange={(value) => setFormData({ ...formData, urgency_level: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select urgency level" />
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -119,29 +140,25 @@ export default function ResidentReportIssue() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="location">Location *</Label>
+                        <Label>Location *</Label>
                         <div className="relative">
                           <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                           <Input
-                            id="location"
                             placeholder="e.g., Purok 3, Zone 1"
                             value={formData.location}
-                            onChange={(e) => setFormData({...formData, location: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                             className="pl-10"
-                            data-testid="input-location"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="description">Issue Description *</Label>
+                        <Label>Issue Description *</Label>
                         <Textarea
-                          id="description"
                           placeholder="Describe the issue in detail..."
                           value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           rows={6}
-                          data-testid="textarea-description"
                         />
                         <p className="text-xs text-gray-500">
                           Include relevant details like when the issue started, how often it occurs, and any other observations
@@ -158,18 +175,21 @@ export default function ResidentReportIssue() {
                       </div>
 
                       <div className="flex gap-3">
-                        <Button 
-                          type="submit" 
+                        <Button
+                          type="submit"
                           className="flex-1 bg-orange-600 hover:bg-orange-700"
-                          data-testid="button-submit-issue"
+                          disabled={isLoading}
                         >
                           <Send className="h-4 w-4 mr-2" />
-                          Submit Report
+                          {isLoading ? "Submitting..." : "Submit Report"}
                         </Button>
-                        <Button 
-                          type="button" 
+                        <Button
+                          type="button"
                           variant="outline"
-                          onClick={() => setFormData({ category: "", location: "", description: "", severity: "medium" })}
+                          onClick={() =>
+                            setFormData({ category: "", location: "", description: "", severity: "medium" })
+                          }
+                          disabled={isLoading}
                         >
                           Clear
                         </Button>
@@ -179,6 +199,7 @@ export default function ResidentReportIssue() {
                 </Card>
               </div>
 
+              {/* Right Side Cards */}
               <div className="space-y-6">
                 <Card>
                   <CardHeader>

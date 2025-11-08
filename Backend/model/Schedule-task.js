@@ -11,7 +11,7 @@ const ScheduleTaskSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'IncidentReport',
       required: false, // not all tasks come from reports 
-    },
+    }, 
     schedule_date: {
       type: Date,
       required: [true, 'Please provide a schedule date'],

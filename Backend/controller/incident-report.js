@@ -13,9 +13,9 @@ const createReports = async (req, res) => {
   // ✅ Fix: Correct role checking
   if (user.role !== 'meter_reader' && user.role !== 'resident' && user.role !== 'admin' && user.role !== 'secretary') {
     throw new UnauthorizedError('Only meter readers and residents can create reports.');
-  }
+  } 
 
-  // ✅ Validate required fields
+  // ✅ Validate required fields 
   if (!type || !location || !description) {
     throw new BadRequestError('Please provide all required fields: type, location, and description.');
   }
@@ -77,18 +77,27 @@ const getReports = async (req, res) => {
         ]
       };
     }
+
     console.log('📋 Query filter:', filter);
+
+    // this part is the one who exlcude those task is being scheduled
+    
     // ✅ Get all report IDs that have scheduled tasks
-    const scheduledReportIds = await ScheduleTask.find({
-      report_id: { $exists: true, $ne: null }
-    })
-      .distinct('report_id')
-      .lean();
-    console.log(`🗓️ Found ${scheduledReportIds.length} reports with scheduled tasks`);
+    // const scheduledReportIds = await ScheduleTask.find({
+    //   report_id: { $exists: true, $ne: null }
+    // })
+    //   .distinct('report_id')
+    //   .lean();
+    // console.log(`🗓️ Found ${scheduledReportIds.length} reports with scheduled tasks`);
+    
     // ✅ Exclude reports that already have scheduled tasks
-    filter._id = { $nin: scheduledReportIds };
-    console.log('📋 Updated filter (excluding scheduled reports):', filter);
+
+
+    // filter._id = { $nin: scheduledReportIds };
+    // console.log('📋 Updated filter (excluding scheduled reports):', filter);
     // ✅ Fetch incident reports
+
+
     const reports = await IncidentReport.find(filter)
       .sort({ createdAt: -1 })
       .lean();
@@ -269,4 +278,4 @@ const getAllIncidents = async (req, res) => {
   }
 };
 
-module.exports = { createReports, getReports, updateIncidentStatus, getAllIncidents };
+module.exports = { createReports, getReports, updateIncidentStatus, getAllIncidents }; 

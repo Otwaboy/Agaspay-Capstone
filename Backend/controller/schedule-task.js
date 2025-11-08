@@ -1,17 +1,19 @@
 const ScheduleTask = require('../model/Schedule-task');
 const Assignment = require('../model/Assignment')
+IncidentReport = require('../model/Incident-reports')
 
- 
 
 const createTask = async (req, res) => {
-  const user = req.user; // using user.userId
-  // Validate user role - only authorized personnel can create tasks
+  const user = req.user;
+
+  // Validate user role
   if (!['admin', 'secretary', 'meter_reader', 'maintenance'].includes(user.role)) {
     return res.status(403).json({
       success: false,
       message: 'Only authorized personnel can create schedule tasks.'
     });
   }
+
   const {
     connection_id,
     report_id,
@@ -21,36 +23,41 @@ const createTask = async (req, res) => {
     description,
     assigned_to
   } = req.body;
-  if (!schedule_date) {
+
+  if (!schedule_date || !schedule_time) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide a schedule date'
+      message: 'Please provide schedule date and time'
     });
   }
-  if (!schedule_time) {
-    return res.status(400).json({
-      success: false,
-      message: 'Please provide a schedule time'
-    });
-  }
+
   try {
-    // Create new schedule task
+    // 🔹 Create the schedule task
     const newTask = await ScheduleTask.create({
       connection_id: connection_id || null,
       report_id: report_id || null,
       schedule_date: new Date(schedule_date),
       schedule_time,
       task_status: task_status || 'Unassigned',
-      scheduled_by: user.userId, // ✅ Using user.userId
+      scheduled_by: user.userId,
       description: description || '',
       assigned_to: assigned_to || null
     });
+
+    // 🔹 Update the incident report status to "Scheduled"
+    if (report_id) {
+      await IncidentReport.findByIdAndUpdate(report_id, {
+        reported_issue_status: 'Scheduled'
+      });
+    }
+
     console.log('✅ Schedule task created:', newTask._id);
     res.status(201).json({
       success: true,
       message: 'Schedule task created successfully',
       task: newTask
     });
+
   } catch (error) {
     console.error('❌ Error creating schedule task:', error);
     res.status(500).json({
@@ -60,6 +67,7 @@ const createTask = async (req, res) => {
     });
   }
 };
+
 
 
 
@@ -191,7 +199,7 @@ const getTasks = async (req, res) => {
   }
 };
 
-
+ 
 
 
 

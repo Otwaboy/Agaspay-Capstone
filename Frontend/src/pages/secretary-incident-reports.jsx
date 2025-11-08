@@ -16,7 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
+} from "../components/ui/select"; 
 import {
   Table,
   TableBody,
@@ -304,9 +304,9 @@ export default function SecretaryIncidentReports() {
   // Status configuration
   const statusConfig = {
     Pending: { color: "bg-yellow-100 text-yellow-700", label: "Pending" },
-    "In Progress": { color: "bg-blue-100 text-blue-700", label: "In Progress" },
+    Cancelled: { color: "bg-red-100 text-blue-700", label: "Cancelled" },
     Completed: { color: "bg-green-100 text-green-700", label: "Completed" },
-    Resolved: { color: "bg-green-100 text-green-700", label: "Resolved" },
+    Scheduled: { color: "bg-blue-100 text-green-700", label: "Scheduled" },
   };
 
   // Urgency configuration
@@ -319,10 +319,10 @@ export default function SecretaryIncidentReports() {
 
   // Task status configuration
   const taskStatusConfig = {
-    Pending: { color: "bg-yellow-100 text-yellow-700", label: "Pending" },
-    "In Progress": { color: "bg-blue-100 text-blue-700", label: "In Progress" },
+     Pending: { color: "bg-yellow-100 text-yellow-700", label: "Pending" },
+    Cancelled: { color: "bg-red-100 text-blue-700", label: "Cancelled" },
     Completed: { color: "bg-green-100 text-green-700", label: "Completed" },
-    Cancelled: { color: "bg-gray-100 text-gray-700", label: "Cancelled" },
+    Scheduled: { color: "bg-blue-100 text-green-700", label: "Scheduled" },
   };
 
   return (

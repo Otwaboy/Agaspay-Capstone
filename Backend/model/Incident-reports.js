@@ -17,17 +17,17 @@ const IncidentReportSchema = new mongoose.Schema(
         required: [true, 'Please indicated and urgency level']
     },
     description: {
-      type: String,
+      type: String, 
       required: [true, 'Please provide a short description or remarks'],
     },
     reported_issue_status: {
       type: String,
-      enum: ['Pending','Completed', 'Cancelled'],
+      enum: ['Pending','Completed', 'Scheduled','Cancelled'],
       default: 'Pending',
     },
     reported_at: {
       type: Date,
-      default: Date.now,
+      default: Date.now, 
     },
     date_handled: {
       type: Date,

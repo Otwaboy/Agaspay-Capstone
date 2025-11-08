@@ -1,71 +1,62 @@
 const mongoose = require('mongoose');
- 
+
 const ResidentSchema = new mongoose.Schema(
   {
-    user_id:
-     {
+    user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'please provide a user']
+      required: [true, 'Please provide a user']
     },
-    first_name: 
-    {
+    first_name: {
       type: String,
       required: [true, 'First name cannot be empty']
     },
-    last_name: 
-    {
+    last_name: {
       type: String,
       required: [true, 'Last name cannot be empty']
     },
-    zone: 
-    {
+    zone: {
       type: String,
       enum: ["1", "2", "3"],
       required: [true, 'Zone is required']
     },
-    purok: 
-    {
+    purok: {
       type: String,
       enum: ["1", "2", "3", "4", "5", "6", "7"],
       required: [true, 'Purok is required']
-    }, 
+    },
     email: {
-    type: String,
-    required: false,
-    match: [
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-      'Please provide a valid email',
-    ],
-    unique: true,
-  },
-    contact_no: 
-    {
+      type: String,
+      required: false,
+      match: [
+        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+        'Please provide a valid email'
+      ],
+      unique: true
+    },
+    contact_no: {
       type: String,
       required: [true, 'Contact number cannot be empty'],
       match: [/^09\d{9}$/, 'Please enter a valid PH number (e.g., 09XXXXXXXXX)']
     },
-    status: 
-    {
+    status: {
       type: String,
       enum: ['active', 'inactive'],
-      // required: [true, 'Status of water connection is required'],
       default: 'active'
     },
-    // voluntary_disconnection: {
-    //   type: Boolean,
-    //   default: false,
-    //   required: false
-    // },
-    // archive_requested: {
-    //   type: Boolean,
-    //   default: false,
-    //   required: false
-    // },
-    // archive_request_date: {
-    //   type: Date,
-    //   required: false
-    // },
+    // ✅ Fields for email update verification
+    pending_email: {
+      type: String,
+      default: null
+    },
+    email_verification_code: {
+      type: String,
+      default: null
+    },
+    email_verification_expires: {
+      type: Date,
+      default: null
+    },
     created_at: {
       type: Date,
       default: Date.now

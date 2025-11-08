@@ -4,66 +4,62 @@ import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import {
   Home,
-  CreditCard,
-  FileText,
-  Wrench,
+  Receipt,
+  Droplets,
+  AlertTriangle,
   MessageSquare,
   User,
   Settings,
   LogOut,
   Menu,
-  Droplets, 
-  Receipt,
-  AlertTriangle
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
- 
+
 const residentMenuItems = [
   {
+    title: "Dashboard",
     icon: Home,
-    label: "Dashboard",
     href: "/resident-dashboard",
     color: "text-blue-600"
   },
-  // {
-  //   icon: CreditCard,
-  //   label: "Bills & Payments",
-  //   href: "/resident-dashboard/bills",
-  //   color: "text-green-600"
-  // },
   {
+    title: "Payment History",
     icon: Receipt,
-    label: "Payment History",
     href: "/resident-dashboard/payment-history",
     color: "text-purple-600"
   },
   {
+    title: "Water Usage",
     icon: Droplets,
-    label: "Water Usage",
     href: "/resident-dashboard/usage",
     color: "text-blue-500"
   },
   {
+    title: "Service Request",
     icon: AlertTriangle,
-    label: "Reported Issue ",
-    href: "/resident-dashboard/report-issue",
-    color: "text-red-600"
+    color: "text-red-600",
+    subItems: [
+      { title: "Report Issue", href: "/resident-dashboard/report-issue" },
+      { title: "Report History", href: "/resident-dashboard/service-requests" },
+    ]
   },
   {
+    title: "Announcements",
     icon: MessageSquare,
-    label: "Announcements",
     href: "/resident-dashboard/announcements",
     color: "text-indigo-600"
   },
   {
+    title: "Profile",
     icon: User,
-    label: "Profile",
     href: "/resident-dashboard/profile",
     color: "text-gray-600"
   },
   {
+    title: "Settings",
     icon: Settings,
-    label: "Settings",
     href: "/resident-dashboard/settings",
     color: "text-gray-600"
   }
@@ -72,6 +68,20 @@ const residentMenuItems = [
 function ResidentSidebarContent() {
   const [location, setLocation] = useLocation();
   const { logout, user } = useAuth();
+  const [expandedItems, setExpandedItems] = useState({});
+
+  const toggleExpanded = (title) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }));
+  };
+
+  const isActive = (href) =>
+    location === href || (href !== "/resident-dashboard" && location.startsWith(href));
+
+  const isParentActive = (subItems) =>
+    subItems?.some(item => isActive(item.href));
 
   const handleLogout = () => {
     logout();
@@ -80,8 +90,8 @@ function ResidentSidebarContent() {
 
   return (
     <div className="flex flex-col h-full bg-white shadow-lg">
-      {/* Logo Section */}
-      <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
+      {/* Logo */}
+      <div className="flex items-center px-6 py-5.5 border-b border-gray-200">
         <div className="flex items-center">
           <div className="bg-blue-600 p-2 rounded-lg">
             <Droplets className="h-6 w-6 text-white" />
@@ -95,50 +105,74 @@ function ResidentSidebarContent() {
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2">
-        {residentMenuItems.map((item) => {
-          const isActive = location === item.href;
+        {residentMenuItems.map(item => {
           const Icon = item.icon;
-          
-          return (
+          const active = isActive(item.href);
+
+          return item.subItems ? (
+            <div key={item.title}>
+              <button
+                onClick={() => toggleExpanded(item.title)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isParentActive(item.subItems)
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <div className="flex items-center">
+                  <Icon className={`mr-3 h-5 w-5 ${isParentActive(item.subItems) ? "text-blue-600" : item.color}`} />
+                  <span>{item.title}</span>
+                </div>
+                {expandedItems[item.title] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+
+              {expandedItems[item.title] && (
+                <div className="ml-6 mt-2 space-y-1">
+                  {item.subItems.map(sub => (
+                    <Link key={sub.href} href={sub.href}>
+                      <span className={`block px-3 py-2 text-sm rounded-md transition-colors ${
+                        isActive(sub.href)
+                          ? "bg-blue-50 text-blue-700 font-medium"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}>
+                        {sub.title}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
             <Link key={item.href} href={item.href}>
               <Button
-                variant={isActive ? "default" : "ghost"}
-                className={`w-full justify-start h-11 px-4 ${
-                  isActive 
-                    ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                }`}
-                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-').replace('&', 'and')}`}
+                variant={active ? "secondary" : "ghost"}
+                className={`w-full justify-start h-12 ${active ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600" : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"}`}
               >
-                <Icon className={`mr-3 h-5 w-5 ${isActive ? "text-white" : item.color}`} />
-                <span className="font-medium">{item.label}</span>
+                <Icon className={`mr-3 h-5 w-5 ${active ? "text-blue-600" : item.color}`} />
+                <span className="font-medium">{item.title}</span>
               </Button>
             </Link>
           );
         })}
       </nav>
 
-      {/* User Info and Logout */}
+      {/* User & Logout */}
       <div className="px-4 py-4 border-t border-gray-200">
-        <div className="flex items-center mb-3 px-2">
+        <div className="flex items-center px-2 mb-3">
           <div className="bg-blue-100 p-2 rounded-full">
             <User className="h-4 w-4 text-blue-600" />
           </div>
           <div className="ml-3 min-w-0 flex-1">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.firstName && user?.lastName 
-                ? `${user.firstName} ${user.lastName}` 
-                : user?.username || 'Resident'
-              }
+              {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.username || 'Resident'}
             </p>
             <p className="text-xs text-gray-500 truncate">Water Service Customer</p>
           </div>
-        </div> 
+        </div>
         <Button
           variant="ghost"
           onClick={handleLogout}
           className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-          data-testid="button-logout"
         >
           <LogOut className="mr-3 h-4 w-4" />
           Sign Out
@@ -153,16 +187,11 @@ export default function ResidentSidebar() {
 
   return (
     <>
-      {/* Mobile sidebar */}
+      {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="lg:hidden fixed top-4 left-4 z-40"
-            data-testid="button-mobile-menu"
-          >
-            <Menu className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="lg:hidden fixed top-4 left-4 z-40">
+            <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-72">
@@ -170,7 +199,7 @@ export default function ResidentSidebar() {
         </SheetContent>
       </Sheet>
 
-      {/* Desktop sidebar */}
+      {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-72">
           <ResidentSidebarContent />

@@ -21,7 +21,7 @@ import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { useAuth } from "../../hooks/use-auth";
 
 const menuItems = [
-  {
+  { 
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/treasurer-dashboard",
