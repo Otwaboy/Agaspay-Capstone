@@ -54,7 +54,7 @@ const BillingSchema = new mongoose.Schema({
     default: 0
   },
   is_delinquent: {
-    type: Boolean,
+    type: Boolean, 
     default: false
   },
   marked_for_disconnection: {

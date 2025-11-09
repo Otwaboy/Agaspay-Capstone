@@ -55,22 +55,23 @@ const getBilling = async (req, res) => {
     billings.map(async (billing) => {
       const connection = billing.connection_id;
       const resident = connection.resident_id;
- 
+
       // ✅ Find latest reading for this connection
-     const reading = await MeterReading.findById(billing.reading_id);
+      const reading = await MeterReading.findById(billing.reading_id);
 
       return {
         bill_id: billing?._id ?? 'unknown',
         connection_id: connection?._id,
+        connection_status: connection?.connection_status ?? 'unknown', // <-- added
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : 'unknown',
         meter_no: connection?.meter_no,
         purok_no: resident?.purok ?? 'unknownss',
-        
+
         // 💰 CUMULATIVE BILLING BREAKDOWN
         previous_balance: billing?.previous_balance ?? 0,    // Unpaid balance from previous months
         current_charges: billing?.current_charges ?? 0,      // This month's consumption charges
         total_amount: billing?.total_amount,                 // Total = previous + current
-        
+
         status: billing?.status ?? 'unknown',
 
         // ✅ Meter reading details
@@ -90,7 +91,8 @@ const getBilling = async (req, res) => {
 };
 
 
-/**
+
+/*
  * Controller: createBilling
  *
  * What it does:
@@ -194,14 +196,17 @@ const createBilling = async (req, res) => {
 const getOverdueBilling = async (req, res) => {
   try {
     const user = req.user;
-    // ✅ Only treasurer can access overdue accounts
+
+    // Only treasurer or admin can access overdue accounts
     if (user.role !== 'treasurer' && user.role !== 'admin') {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         msg: 'Unauthorized. Only treasurer can access overdue accounts.',
       });
     }
+
     const currentDate = new Date();
-    // ✅ Find all overdue billings
+
+    // Find all overdue billings
     const overdueBillings = await Billing.find({
       $or: [
         { status: 'overdue' },
@@ -220,32 +225,29 @@ const getOverdueBilling = async (req, res) => {
       }
     })
     .sort({ due_date: 1 });
-    // ✅ Process each overdue billing
+
     const overdueAccounts = await Promise.all(
       overdueBillings.map(async (billing) => {
         const connection = billing.connection_id;
         const resident = connection?.resident_id;
-        if (!resident || !connection) {
-          return null;
-        }
-        // ✅ Calculate months overdue
+
+        if (!resident || !connection) return null;
+
         const dueDate = new Date(billing.due_date);
         const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
         const monthsOverdue = Math.max(1, monthsDiff);
-        // ✅ Find last payment
+
         const lastPayment = await Payment.findOne({ 
           connection_id: connection._id,
           payment_status: 'confirmed'
         })
         .sort({ payment_date: -1 })
         .limit(1);
-        // ✅ Determine status
+
         let status = 'moderate';
-        if (monthsOverdue >= 3) {
-          status = 'critical';
-        } else if (monthsOverdue >= 2) {
-          status = 'warning';
-        }
+        if (monthsOverdue >= 3) status = 'critical';
+        else if (monthsOverdue >= 2) status = 'warning';
+
         return {
           id: billing._id,
           residentName: `${resident.first_name} ${resident.last_name}`,
@@ -253,28 +255,55 @@ const getOverdueBilling = async (req, res) => {
           meterNo: connection.meter_no,
           purok: resident.purok || connection.purok || 'N/A',
           totalDue: billing.total_amount,
-          monthsOverdue: monthsOverdue,
+          monthsOverdue,
           lastPayment: lastPayment ? lastPayment.payment_date : null,
           dueDate: billing.due_date,
-          status: status,
+          status,
           contactNo: resident.contact_no || 'N/A',
           billPeriod: billing.generated_at
         };
       })
     );
+
     const validAccounts = overdueAccounts.filter(account => account !== null);
-    // ✅ Calculate summary
-    const totalOutstanding = validAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
-    const criticalCount = validAccounts.filter(acc => acc.status === 'critical').length;
-    res.status(StatusCodes.OK).json({
+
+    // GROUP BY meterNo so each resident shows only once
+    const groupedAccounts = Object.values(
+      validAccounts.reduce((acc, curr) => {
+        const key = curr.meterNo;
+
+        if (!acc[key]) {
+          acc[key] = { ...curr };
+        } else {
+          // Sum total due
+          acc[key].totalDue += curr.totalDue;
+
+          // Take highest months overdue
+          acc[key].monthsOverdue = Math.max(acc[key].monthsOverdue, curr.monthsOverdue);
+
+          // Recalculate final status
+          if (acc[key].monthsOverdue >= 3) acc[key].status = 'critical';
+          else if (acc[key].monthsOverdue >= 2) acc[key].status = 'warning';
+          else acc[key].status = 'moderate';
+        }
+        return acc;
+      }, {})
+    );
+
+    // Summary
+    const totalOutstanding = groupedAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
+    const criticalCount = groupedAccounts.filter(acc => acc.status === 'critical').length;
+
+    return res.status(StatusCodes.OK).json({
       msg: 'Overdue accounts retrieved successfully',
-      data: validAccounts,
+      data: groupedAccounts,
       summary: {
-        totalOutstanding: totalOutstanding,
-        criticalCount: criticalCount,
-        totalAccounts: validAccounts.length
+        totalOutstanding,
+        criticalCount,
+        totalAccounts: groupedAccounts.length
       }
     });
+
   } catch (error) {
     console.error('🔥 getOverdueBilling error:', error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -285,12 +314,77 @@ const getOverdueBilling = async (req, res) => {
 };
 
 
-/**
- * Controller: sendReminderSMS
- * 
- * Purpose: Send SMS reminder to a resident about their overdue balance
- * Access: Treasurer only
- */
+
+
+const UpdateWaterConnectionStatus = async (req, res) => {
+  try {
+    const user = req.user;
+    const { connection_id } = req.body;
+
+    // ✅ Only treasurer or admin can perform disconnection evaluation
+    if (user.role !== "treasurer" && user.role !== "admin") {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        msg: "Unauthorized. Only treasurer or admin can update connection status."
+      });
+    }
+
+    if (!connection_id) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ msg: "connection_id is required." });
+    }
+
+    // ✅ Get all unpaid, overdue or partial bills sorted from oldest to newest
+    const unpaidBills = await Billing.find({
+      connection_id,
+      status: { $in: ["unpaid", "partial", "overdue"] }
+    }).sort({ due_date: 1 });
+
+    if (unpaidBills.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        msg: "No unpaid bills found. Connection remains active."
+      });
+    }
+
+    // ✅ Determine consecutive overdue months
+    const currentDate = new Date();
+    let consecutiveMonths = 0;
+
+    unpaidBills.forEach(bill => {
+      const dueDate = new Date(bill.due_date);
+      const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
+      if (monthsDiff >= 1) {
+        consecutiveMonths++;
+      }
+    });
+
+    // ✅ If 3 or more consecutive months overdue → Mark for disconnection
+    if (consecutiveMonths >= 3) {
+      await WaterConnection.findByIdAndUpdate(connection_id, {
+        $set: { connection_status: "for_disconnection" }
+      });
+
+      return res.status(StatusCodes.OK).json({
+        msg: `Connection marked for disconnection. (${consecutiveMonths} consecutive unpaid months detected)`,
+        connection_id
+      });
+    }
+
+    // ✅ Otherwise keep active
+    return res.status(StatusCodes.OK).json({
+      msg: `Connection remains active. Only ${consecutiveMonths} consecutive unpaid month(s) detected.`,
+      connection_id
+    });
+
+  } catch (error) {
+    console.error("🔥 UpdateWaterConnectionStatus error:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: "Failed to update connection status",
+      error: error.message
+    });
+  }
+};
+
+
+
 const sendReminderSMS = async (req, res) => {
   try {
     const user = req.user;
@@ -380,4 +474,4 @@ const sendReminderSMS = async (req, res) => {
 
 
 
-module.exports = {createBilling, getBilling, getOverdueBilling, sendReminderSMS} 
+module.exports = {createBilling, getBilling, getOverdueBilling, sendReminderSMS, UpdateWaterConnectionStatus} 

@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { createBilling, getBilling, getOverdueBilling, sendReminderSMS} = require('../controller/billing')
+const { createBilling, getBilling, getOverdueBilling, sendReminderSMS, UpdateWaterConnectionStatus} = require('../controller/billing')
 
 const authMiddleware = require('../middleware/authentication')
 const roleMiddleware = require('../middleware/roleMiddleware')
@@ -14,5 +14,7 @@ router.route('/overdue-billing')
 
 router.route('/send-reminder')
 .post(authMiddleware, roleMiddleware('treasurer'), sendReminderSMS)
+
+router.route('/update-connection-status').patch(authMiddleware, UpdateWaterConnectionStatus);
 
 module.exports = router   

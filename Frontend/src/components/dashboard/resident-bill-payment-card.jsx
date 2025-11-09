@@ -1,4 +1,3 @@
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -10,10 +9,10 @@ export default function ResidentBillPaymentCard() {
   const { data: billingData, isLoading } = useQuery({
     queryKey: ["resident-current-bill"], 
     queryFn: async () => {
-      const res = await apiClient.getCurrentBill();
+      const res = await apiClient.getCurrentBill(); // this calls your getBilling controller
       const bills = res.data;
       if (!bills || bills.length === 0) return null;
-      const currentBill = bills[bills.length - 1];
+      const currentBill = bills[bills.length - 1]; 
       
       const dueDate = new Date(currentBill.due_date);
       const today = new Date();
@@ -23,6 +22,7 @@ export default function ResidentBillPaymentCard() {
         amount: currentBill.total_amount,
         dueDate: currentBill.due_date,
         status: currentBill.payment_status || currentBill.status || "unpaid",
+        connection_status: currentBill.connection_status || "active",
         consumption: currentBill.calculated,
         presentReading: currentBill.present_reading,
         previousReading: currentBill.previous_reading || 0,
@@ -61,6 +61,7 @@ export default function ResidentBillPaymentCard() {
   const isPaid = billingData.status === "paid";
   const isOverdue = billingData.daysUntilDue < 0;
   const isDueSoon = billingData.daysUntilDue <= 3 && billingData.daysUntilDue >= 0;
+  const isForDisconnection = billingData.connection_status === "for_disconnection";
 
   return (
     <Card className="bg-white/70 backdrop-blur-md border border-white/30 shadow-sm hover:shadow-md transition-shadow">
@@ -74,11 +75,12 @@ export default function ResidentBillPaymentCard() {
           </CardTitle>
           <Badge className={
             isPaid ? 'bg-green-100 text-green-700 border border-green-200' : 
+            isForDisconnection ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
             isOverdue ? 'bg-red-100 text-red-700 border border-red-200' : 
             isDueSoon ? 'bg-orange-100 text-orange-700 border border-orange-200' : 
             'bg-blue-100 text-blue-700 border border-blue-200'
           }>
-            {isPaid ? 'Paid' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
+            {isPaid ? 'Paid' : isForDisconnection ? 'For Disconnection' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
           </Badge>
         </div>
         <p className="text-sm text-gray-500 mt-2">Billing Period: {billingData.billingPeriod}</p>
@@ -86,7 +88,9 @@ export default function ResidentBillPaymentCard() {
       <CardContent className="space-y-4 pt-6">
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
           <p className="text-sm text-gray-600 mb-1">Amount Due</p>
-          <p className={`text-4xl font-bold ${isPaid ? 'text-green-600' : isOverdue ? 'text-red-600' : 'text-blue-600'}`}>
+          <p className={`text-4xl font-bold ${
+            isPaid ? 'text-green-600' : isForDisconnection ? 'text-yellow-600' : isOverdue ? 'text-red-600' : 'text-blue-600'
+          }`}>
             ₱{billingData.amount.toFixed(2)}
           </p>
         </div>
@@ -113,7 +117,7 @@ export default function ResidentBillPaymentCard() {
           </div>
         </div>
 
-        {!isPaid && isOverdue && (
+        {!isPaid && isOverdue && !isForDisconnection && (
           <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
@@ -125,7 +129,7 @@ export default function ResidentBillPaymentCard() {
           </div>
         )}
 
-        {!isPaid && isDueSoon && (
+        {!isPaid && isDueSoon && !isForDisconnection && (
           <div className="flex items-start gap-2 p-4 bg-orange-50 border border-orange-200 rounded-lg">
             <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <div>
@@ -135,16 +139,37 @@ export default function ResidentBillPaymentCard() {
           </div>
         )}
 
+        {isForDisconnection && (
+          <div className="flex items-start gap-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-yellow-900">Account Scheduled for Disconnection</p>
+              <p className="text-xs text-yellow-700 mt-1">
+                Please visit the barangay hall office to settle your account and restore service.
+              </p>
+            </div>
+          </div>
+        )}
+
         <Button 
-          className={`w-full ${isPaid ? 'bg-gray-300 hover:bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'} text-white font-semibold shadow-sm`}
+          className={`w-full ${
+            isPaid || isForDisconnection
+              ? 'bg-gray-300 hover:bg-gray-300 cursor-not-allowed'
+              : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'
+          } text-white font-semibold shadow-sm`}
           size="lg"
-          onClick={() => !isPaid && window.dispatchEvent(new Event("openPayBillModal"))}
-          disabled={isPaid}
+          onClick={() => !isPaid && !isForDisconnection && window.dispatchEvent(new Event("openPayBillModal"))}
+          disabled={isPaid || isForDisconnection}
         >
           {isPaid ? (
             <>
               <CheckCircle2 className="h-5 w-5 mr-2" />
               Payment Confirmed
+            </>
+          ) : isForDisconnection ? (
+            <>
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Payment Disabled - Scheduled for Disconnection
             </>
           ) : (
             <>
