@@ -17,7 +17,7 @@ router.get('/', authMiddleware, roleMiddleware('admin'), getAllPersonnel);
 router.get('/:id', authMiddleware, roleMiddleware('admin'), getPersonnel);
 
 // Create personnel (Admin only)
-router.post('/', authMiddleware, roleMiddleware('admin'), createPersonnel);
+router.post('/', authMiddleware, createPersonnel);
 
 // Update personnel (Admin only)
 router.patch('/:id', authMiddleware, roleMiddleware('admin'), updatePersonnel);

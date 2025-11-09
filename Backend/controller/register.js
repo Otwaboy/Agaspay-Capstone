@@ -11,100 +11,95 @@ const ScheduleTask = require('../model/Schedule-task')
 const Assignment = require('../model/Assignment')
 const bcrypt = require('bcrypt')
 
+const mongoose = require("mongoose");
+
 const registerResident = async (req, res) => {
-  if (!req.user || !req.user.userId) {
-    throw new BadRequestError('Authentication required. Please log in as Secretary or Admin.');
-  }
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  const secretary = await Personnel.findOne({ user_id: req.user.userId });
-  if (!secretary) {
-    throw new BadRequestError('Personnel record not found. Only Secretary or Admin can create residents.');
-  }
+  try {
+    if (!req.user || !req.user.userId) {
+      throw new BadRequestError('Authentication required. Please log in as Secretary or Admin.');
+    }
 
-  const { 
-    username, 
-    password, 
-    first_name, 
-    last_name, 
-    zone,
-    email, 
-    purok, 
-    contact_no, 
-    type,
-    meter_no,
-    schedule_installation,
-    schedule_date,
-    schedule_time,
-    assigned_personnel
-  } = req.body;
+    const secretary = await Personnel.findOne({ user_id: req.user.userId });
+    if (!secretary) {
+      throw new BadRequestError('Personnel record not found. Only Secretary or Admin can create residents.');
+    }
 
-  if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type || !meter_no) {
-    throw new BadRequestError('Please provide all required fields including meter number');
-  }
+    const { 
+      username, password, first_name, last_name, zone, email, purok, contact_no,
+      type, meter_no, schedule_installation, schedule_date, schedule_time, assigned_personnel
+    } = req.body;
 
-  if (schedule_installation) {
-    if (!schedule_date || !schedule_time || !assigned_personnel) {
+    if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type || !meter_no) {
+      throw new BadRequestError('Please provide all required fields including meter number');
+    }
+
+    // ✅ Check duplicate full name
+    const existingResident = await Resident.findOne(
+          { first_name: first_name.trim(), last_name: last_name.trim() }
+        );
+        if (existingResident) {
+          throw new BadRequestError('A resident with the same full name already exists.');
+        }
+
+    if (schedule_installation && (!schedule_date || !schedule_time || !assigned_personnel)) {
       throw new BadRequestError('Scheduling requires date, time, and assigned personnel');
     }
-  }
 
-  const user = await createUser(username, password, 'resident');
-  const resident = await createResident(user._id, first_name, last_name, email, zone, purok, contact_no);
-  
-  const waterConnection = await createWaterConnection(resident._id, meter_no, type);
-  
-  let installationTask = null;
-  let assignment = null;
+    // ✅ All DB write operations must be attached to the session:
+    const user = await User.create([{ username, password, role: 'resident' }], { session });
+    const resident = await Resident.create([{ user_id: user[0]._id, first_name, last_name, email, zone, purok, contact_no }], { session });
+    const waterConnection = await WaterConnection.create([{ resident_id: resident[0]._id, meter_no, type }], { session });
 
-  if (schedule_installation) {
-    // 1. Create the ScheduleTask
-    installationTask = await ScheduleTask.create({
-      connection_id: waterConnection._id,
-      schedule_date,
-      schedule_time,
-      task_status: 'Scheduled',
-      assigned_personnel,
-      schedule_type: 'Meter Installation',
-      scheduled_by: secretary._id,
-    });
+    let installationTask = null;
+    let assignment = null;
 
-    // 2. Create the Assignment (links task to personnel) - just like assignment controller
-    assignment = await Assignment.create({
-      task_id: installationTask._id,
-      assigned_to: assigned_personnel,
-    });
+    if (schedule_installation) {
+      installationTask = await ScheduleTask.create([{
+        connection_id: waterConnection[0]._id,
+        schedule_date,
+        schedule_time,
+        task_status: 'Assigned',
+        assigned_personnel,
+        schedule_type: 'Meter Installation', 
+        scheduled_by: secretary._id,
+      }], { session });
 
-    console.log('✅ Created ScheduleTask:', installationTask._id);
-    console.log('✅ Created Assignment:', assignment._id);
-  }
-
-  const token = user.createJWT();
-
-  const responseData = {
-    message: schedule_installation 
-      ? `Resident was successfully registered. Meter installation scheduled for ${schedule_date} at ${schedule_time}.`
-      : 'Resident was successfully registered. Please schedule meter installation through the Assignments page.',
-    user_id: user._id,
-    resident_id: resident._id,
-    username: user.username,
-    connection_id: waterConnection._id,
-    connection_status: waterConnection.connection_status,
-    token
-  };
-
-  if (installationTask) {
-    responseData.task_id = installationTask._id;
-    responseData.scheduled_date = installationTask.schedule_date;
-    responseData.scheduled_time = installationTask.schedule_time;
-    
-    // Add assignment info if created
-    if (assignment) {
-      responseData.assignment_id = assignment._id;
+      assignment = await Assignment.create([{
+        task_id: installationTask[0]._id,
+        assigned_to: assigned_personnel,
+      }], { session });
     }
-  }
 
-  res.status(201).json(responseData);
+    await session.commitTransaction();
+    session.endSession();
+
+    const token = user[0].createJWT();
+
+    res.status(201).json({
+      message: schedule_installation 
+        ? `Resident was successfully registered. Meter installation scheduled for ${schedule_date} at ${schedule_time}.`
+        : 'Resident was successfully registered. Please schedule meter installation through the Assignments page.',
+      user_id: user[0]._id,
+      resident_id: resident[0]._id,
+      username: user[0].username,
+      connection_id: waterConnection[0]._id,
+      connection_status: waterConnection[0].connection_status,
+      token,
+      task_id: installationTask?.[0]?._id,
+      assignment_id: assignment?.[0]?._id
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("❌ Registration failed, all changes rolled back:", error);
+    res.status(400).json({ error: error.message });
+  }
 };
+
 
 
  
@@ -160,7 +155,7 @@ const registerPersonnel = async (req, res) => {
 
 }
 
-
+ 
 //login field
 const login = async (req, res) => {
     const {username, password} = req.body

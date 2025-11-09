@@ -95,7 +95,7 @@ app.use('/api/v1/receipts', receiptRoutes)
 app.use('/api/v1/archive', archiveRoutes)
 app.use('/api/v1/connection-management', connectionManagementRoutes)
 app.use('/api/v1/dashboard', dashboardRoutes)
-app.use('/api/v1/personnel', personnelRoutes)
+app.use('/api/v1/personnel', personnelRoutes) 
 app.use('/api/v1/reports', reportsRoutes)
 
 

@@ -123,7 +123,7 @@ const createAssignment = async (req, res) => {
  * - List of assignments with task and personnel details
  */
 const getAssignments = async (req, res) => {
-  try {
+  try { 
     const user = req.user;
     // ✅ Allow secretary, admin, and maintenance to access
     if (!['secretary', 'admin', 'maintenance'].includes(user.role)) {
@@ -172,7 +172,7 @@ const getAssignments = async (req, res) => {
         task: {
           id: task?._id,
           type: report?.type || task.schedule_type,
-
+          urgency_lvl: report?.urgency_level, 
           schedule_date: task?.schedule_date,
           schedule_time: task?.schedule_time,
           task_status: task?.task_status,

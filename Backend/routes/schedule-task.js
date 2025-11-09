@@ -19,4 +19,4 @@ router.route('/:taskId/status')
 router.route('/:taskId')
   .delete(authMiddleware, rolemiddleware('admin', 'secretary'), deleteTask)
 
-module.exports = router 
+module.exports = router  

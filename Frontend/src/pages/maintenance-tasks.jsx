@@ -56,31 +56,34 @@ export default function MaintenanceTasks() {
     retry: 1
   });
 
+  console.log(assignmentsResponse);
+  
+
   // Transform backend data to match UI format
-  const tasksData = assignmentsResponse?.assignments?.map(assignment => ({
-    id: assignment.id,
-    assignmentId: assignment.id,
-    type: assignment.task?.type || 'N/As',
-    location: assignment.task?.location || 'Biking',
-    resident: assignment.personnel?.name || 'N/A',
-    connectionId: assignment.task?.connection_id || 'N/A',
-    status: assignment.task?.task_status?.toLowerCase() || 'scheduled',
-    priority: 'medium', // Not available in current backend response
-    scheduledDate: assignment.task?.schedule_date 
-      ? new Date(assignment.task.schedule_date).toLocaleDateString() 
-      : 'N/A',
-    scheduledTime: assignment.task?.schedule_time || 'N/A',
-    assignedDate: assignment.assigned_at 
-      ? new Date(assignment.assigned_at).toLocaleDateString() 
-      : 'N/A',
-    description: `${assignment.task?.task_type || 'Task'} scheduled`,
-    personnelName: assignment.personnel?.name,
-    personnelContact: assignment.personnel?.contact_no,
-  })) || []; 
+const tasksData = assignmentsResponse?.assignments?.map(assignment => ({
+  id: assignment.task?.id,   
+  assignmentId: assignment.id,
+  type: assignment.task?.type || 'N/A',
+  location: assignment.task?.location || 'Biking', 
+  resident: assignment.personnel?.name || 'N/A',
+  connectionId: assignment.task?.connection_id || 'N/A',
+  status: assignment.task?.task_status || 'Assigned',
+  priority: assignment.task?.urgency_lvl || 'Medium',
+  scheduledDate: assignment.task?.schedule_date  
+    ? new Date(assignment.task.schedule_date).toLocaleDateString() 
+    : 'N/A',
+  scheduledTime: assignment.task?.schedule_time || 'N/A',
+  assignedDate: assignment.assigned_at 
+    ? new Date(assignment.assigned_at).toLocaleDateString() 
+    : 'N/A',
+  description: `${assignment.task?.type || 'Task'} scheduled`,
+  personnelName: assignment.personnel?.name,
+  personnelContact: assignment.personnel?.contact_no,
+}));
 
     const updateTaskMutation = useMutation({
-        mutationFn: async ({ taskId, status, remarks }) => {
-          return await apiClient.updateTaskStatus(taskId, { status, remarks });
+        mutationFn: async ({ taskId, task_status, remarks }) => {
+          return await apiClient.updateTaskStatus(taskId, { task_status, remarks });
         },
         onSuccess: () => { 
           toast({
@@ -103,7 +106,7 @@ export default function MaintenanceTasks() {
 });
 
   const getStatusBadge = (status) => {
-    switch (status?.toLowerCase()) {
+    switch (status) {
       case 'Unassigned':
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Unassigned</Badge>;
       case 'Scheduled':
@@ -158,11 +161,11 @@ export default function MaintenanceTasks() {
       });
       return;
     }
-    updateTaskMutation.mutate({
-      taskId: selectedTask.id,
-      task_status: newStatus,
-      remarks: remarks
-    });
+updateTaskMutation.mutate({
+  taskId: selectedTask.id,
+  task_status: newStatus,
+  remarks
+});
   };
 
   return (

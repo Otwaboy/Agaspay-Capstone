@@ -9,7 +9,7 @@ import {
 
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { Label } from "../ui/label"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Checkbox } from "../ui/checkbox";
 import { useToast } from "../../hooks/use-toast";
@@ -19,9 +19,6 @@ import { apiClient } from "../../lib/api";
 
 export default function CreateResidentModal({ isOpen, onClose }) {
   
-     
-
-
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -34,6 +31,9 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     username: "",
     password: ""
   });
+  
+  // Validation errors state
+  const [errors, setErrors] = useState({});
   
   // Scheduling state
   const [scheduleInstallation, setScheduleInstallation] = useState(false);
@@ -76,31 +76,45 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     fetchPersonnel();
   }, [scheduleInstallation, schedulingData.scheduleDate, schedulingData.scheduleTime]);
 
+  // Parse MongoDB duplicate key error
+  const parseDuplicateKeyError = (errorMessage) => {
+    const newErrors = {};
+    
+    // Check for MongoDB duplicate key error
+    if (errorMessage.includes('E11000 duplicate key error')) {
+      // Extract the field name from the error
+      if (errorMessage.includes('username_1')) {
+        newErrors.username = "This username is already taken. Please choose a different username.";
+      } else if (errorMessage.includes('email_1')) {
+        newErrors.email = "This email is already registered. Please use a different email.";
+      } else if (errorMessage.includes('meter_no_1') || errorMessage.includes('meterNumber')) {
+        newErrors.meterNumber = "This meter number is already registered. Please check and enter a different meter number.";
+      } else if (errorMessage.includes('contact_no_1') || errorMessage.includes('phone')) {
+        newErrors.phone = "This phone number is already registered. Please use a different phone number.";
+      }
+    }
+    
+    return newErrors;
+  };
+
   // functions when submmiting the button
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({}); // Clear previous errors
 
     try {
-      // Validate required fields
-      if (!formData.username || !formData.password) {
-        toast({
-          title: "Validation Error",
-          description: "Username and password are required",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
+      // Client-side validation
+      const validationErrors = {};
+      
+      if (!formData.username || formData.username.trim() === "") {
+        validationErrors.username = "Username is required";
       }
-
-      if (formData.password.length < 6) {
-        toast({
-          title: "Validation Error", 
-          description: "Password must be at least 6 characters long",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
+      
+      if (!formData.password || formData.password.trim() === "") {
+        validationErrors.password = "Password is required";
+      } else if (formData.password.length < 6) {
+        validationErrors.password = "Password must be at least 6 characters long";
       }
 
       // Validate scheduling if enabled
@@ -116,12 +130,19 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         }
       }
 
+      // If there are validation errors, show them
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        setIsLoading(false);
+        return;
+      }
+
       // Create resident account with optional scheduling data
       const accountData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         purok: formData.purok,
-        email: formData.email,
+        email: formData.email.trim() || null,
         contact_no: formData.phone,
         zone: formData.zone,
         type: formData.type,
@@ -179,30 +200,73 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         assignedPersonnel: ""
       });
       setMaintenancePersonnel([]);
+      setErrors({});
       
       onClose();
 
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create personnel. Please try again.",
-        variant: "destructive"
-      });
+      console.error('❌ Error creating resident:', error);
+      
+      let errorMessage = error.message || "Failed to create resident. Please try again.";
+      let parsedErrors = {};
+
+      // Try to parse the error response
+      if (error.response) {
+        // If backend sends structured errors
+        if (error.response.data && error.response.data.errors) {
+          const backendErrors = error.response.data.errors;
+          
+          if (backendErrors.username) {
+            parsedErrors.username = backendErrors.username;
+          }
+          if (backendErrors.email) {
+            parsedErrors.email = backendErrors.email;
+          }
+          if (backendErrors.meter_no || backendErrors.meterNumber) {
+            parsedErrors.meterNumber = backendErrors.meter_no || backendErrors.meterNumber;
+          }
+          if (backendErrors.contact_no || backendErrors.phone) {
+            parsedErrors.phone = backendErrors.contact_no || backendErrors.phone;
+          }
+        } 
+        // If backend sends error message string
+        else if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+          parsedErrors = parseDuplicateKeyError(errorMessage);
+        }
+      } 
+      // Parse error message directly if no response object
+      else if (errorMessage) {
+        parsedErrors = parseDuplicateKeyError(errorMessage);
+      }
+
+      // Set the parsed errors to show below fields
+      if (Object.keys(parsedErrors).length > 0) {
+        setErrors(parsedErrors);
+        // Don't show toast if we're showing field-specific errors
+      } else {
+        // Only show toast if we couldn't parse specific field errors
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-
-  // handleChange takes a parameter field (the name of the form field you want to update).
-  //It returns another function that takes value (the new value for that field).
-  //handleChange("firstName")("Joshua");
-  //setFormData(prev => ({ ...prev, firstName: "Joshua" }));
-
-  //This code is a reusable state updater for multiple input fields.
-
   const handleChange = (field) => (value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   // Generate time slots - exactly 4 slots matching the screenshot
@@ -213,10 +277,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     { start: '15:30', end: '16:30', label: '15:30 - 16:30', duration: 60 }
   ];
 
-
-
   return (
-
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -228,7 +289,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
               <Input
@@ -238,7 +298,14 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 placeholder="Enter first name"
                 required
                 data-testid="input-first-name"
+                className={errors.firstName ? "border-red-500 focus:ring-red-500" : ""}
               />
+              {errors.firstName && (
+                <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{errors.firstName}</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -250,16 +317,22 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 placeholder="Enter last name"
                 required
                 data-testid="input-last-name"
+                className={errors.lastName ? "border-red-500 focus:ring-red-500" : ""}
               />
+              {errors.lastName && (
+                <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{errors.lastName}</span>
+                </div>
+              )}
             </div>
           </div>
 
-            {/* assigning  zone */}
-
+          {/* assigning zone */}
           <div className="space-y-2">
             <Label htmlFor="zone">Zone</Label>
             <Select onValueChange={handleChange("zone")} required>
-              <SelectTrigger data-testid="select-zone">
+              <SelectTrigger data-testid="select-zone" className={errors.zone ? "border-red-500 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select Zone" />
               </SelectTrigger>
               <SelectContent>
@@ -268,17 +341,21 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 <SelectItem value="3">Biking 3</SelectItem>
               </SelectContent>
             </Select>
+            {errors.zone && (
+              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{errors.zone}</span>
+              </div>
+            )}
           </div>
 
-
-        {/* selecting purok para sa resident*/}
-       
+          {/* selecting purok para sa resident*/}
           <div className="space-y-2">
             {formData.zone === "1" && (
               <>
                 <Label htmlFor="purok">Purok</Label>
                 <Select onValueChange={handleChange("purok")} required>
-                  <SelectTrigger data-testid="select-purok">
+                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
                   <SelectContent>
@@ -287,14 +364,20 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     <SelectItem value="6">Purok 6</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.purok && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{errors.purok}</span>
+                  </div>
+                )}
               </>
             )}
             {/* zone 2 */}
-             {formData.zone === "2" && (
+            {formData.zone === "2" && (
               <>
                 <Label htmlFor="purok">Purok</Label>
                 <Select onValueChange={handleChange("purok")} required>
-                  <SelectTrigger data-testid="select-purok">
+                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
                   <SelectContent>
@@ -303,25 +386,35 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     <SelectItem value="3">Purok 3</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.purok && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{errors.purok}</span>
+                  </div>
+                )}
               </>
             )}
             {/* zone 3 */}
-             {formData.zone === "3" && (
+            {formData.zone === "3" && (
               <>
                 <Label htmlFor="purok">Purok</Label>
                 <Select onValueChange={handleChange("purok")} required>
-                  <SelectTrigger data-testid="select-purok">
+                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="7">Purok 7</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.purok && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{errors.purok}</span>
+                  </div>
+                )}
               </>
             )}
           </div>
-          
-  
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -332,7 +425,14 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               onChange={(e) => handleChange("email")(e.target.value)}
               placeholder="Enter email address (Optional)"
               data-testid="input-email"
+              className={errors.email ? "border-red-500 focus:ring-red-500" : ""}
             />
+            {errors.email && (
+              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{errors.email}</span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -344,21 +444,35 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               placeholder="Enter phone number"
               required
               data-testid="input-phone"
+              className={errors.phone ? "border-red-500 focus:ring-red-500" : ""}
             />
+            {errors.phone && (
+              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{errors.phone}</span>
+              </div>
+            )}
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="type">Type</Label>
             <Select onValueChange={handleChange("type")} required>
-              <SelectTrigger data-testid="select-type">
+              <SelectTrigger data-testid="select-type" className={errors.type ? "border-red-500 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="household">Household</SelectItem>
                 <SelectItem value="restaurant">Restaurant</SelectItem>
                 <SelectItem value="establishment">Establishment</SelectItem>
-                 <SelectItem value="others">Others</SelectItem>
+                <SelectItem value="others">Others</SelectItem>
               </SelectContent>
             </Select>
+            {errors.type && (
+              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{errors.type}</span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -370,11 +484,17 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               placeholder="Enter water meter number"
               required
               data-testid="input-meter-number"
+              className={errors.meterNumber ? "border-red-500 focus:ring-red-500" : ""}
             />
+            {errors.meterNumber && (
+              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{errors.meterNumber}</span>
+              </div>
+            )}
           </div>
 
-
-  {/* Account Creation Section */}
+          {/* Account Creation Section */}
           <div className="border-t pt-4 mt-4">
             <div className="flex items-center space-x-2 mb-4">
               <Label htmlFor="createAccount" className="text-sm font-medium">
@@ -382,52 +502,67 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               </Label>
             </div>
            
-              <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={(e) => handleChange("username")(e.target.value)}
-                    placeholder="Enter username for login"
-                    required
-                    data-testid="input-username"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) => handleChange("password")(e.target.value)}
-                      placeholder="Enter password (min 6 characters)"
-                      required
-                      data-testid="input-password"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                      data-testid="button-toggle-password"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </Button>
+            <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={formData.username}
+                  onChange={(e) => handleChange("username")(e.target.value)}
+                  placeholder="Enter username for login"
+                  required
+                  data-testid="input-username"
+                  className={errors.username ? "border-red-500 focus:ring-red-500" : ""}
+                />
+                {errors.username && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{errors.username}</span>
                   </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => handleChange("password")(e.target.value)}
+                    placeholder="Enter password (min 6 characters)"
+                    required
+                    data-testid="input-password"
+                    className={errors.password ? "border-red-500 focus:ring-red-500" : ""}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                    data-testid="button-toggle-password"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
+                {errors.password && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{errors.password}</span>
+                  </div>
+                )}
+                {!errors.password && (
                   <p className="text-xs text-gray-500">
                     This account will allow the personnel to log into the system
                   </p>
-                </div>
+                )}
               </div>
-            {/* )} */}
+            </div>
           </div>
 
           {/* Meter Installation Scheduling Section */}
@@ -466,7 +601,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                       data-testid="input-schedule-date"
                     />
                   </div>
-
                 </div>
 
                 {/* Time Slot Selection - Below Date */}
@@ -592,7 +726,5 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         </form>
       </DialogContent>
     </Dialog>
-
-    
   );
-}   
+}

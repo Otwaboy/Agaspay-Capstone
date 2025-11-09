@@ -45,7 +45,7 @@ const createTask = async (req, res) => {
 
     // 🔹 Update the incident report status to "Scheduled"
     if (report_id) {
-      await IncidentReport.findByIdAndUpdate(report_id, {
+      await IncidentReports.findByIdAndUpdate(report_id, {
         reported_issue_status: 'Assigned'
       });
     }
@@ -223,7 +223,7 @@ const updateTaskStatus = async (req, res) => {
       message: `Invalidxxx status. Must be one of: ${validStatuses.join(', ')}`
     });
   }
-
+ 
   try {
     const task = await ScheduleTask.findById(taskId);
 
