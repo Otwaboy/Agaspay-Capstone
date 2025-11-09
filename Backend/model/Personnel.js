@@ -70,12 +70,6 @@ const PersonnelSchema = new mongoose.Schema(
 );
 
 
-PersonnelSchema.pre('save', async function(next){
-  if (!this.isModified('email')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.email = await bcrypt.hash(this.email, salt);
-  next();
-});
 
 
 module.exports = mongoose.model('Personnel', PersonnelSchema);

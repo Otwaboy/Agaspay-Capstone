@@ -25,8 +25,6 @@ export default function TreasurerOutstandingBalances() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [sendingReminder, setSendingReminder] = useState(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
 
   const { data: balances, isLoading } = useQuery({
     queryKey: ['/api/v1/treasurer/outstanding-balances', filterStatus],
@@ -61,63 +59,6 @@ export default function TreasurerOutstandingBalances() {
     }
   });
 
-  // const mockBalances = [
-  //   {
-  //     id: "BAL-001",
-  //     residentName: "Juan Dela Cruz",
-  //     accountNo: "ACC-12345",
-  //     totalDue: 1350.00,
-  //     monthsOverdue: 3,
-  //     lastPayment: "2024-05-15",
-  //     dueDate: "2024-08-15",
-  //     status: "critical",
-  //     contactNo: "+63 912 345 6789"
-  //   },
-  //   {
-  //     id: "BAL-002",
-  //     residentName: "Maria Santos",
-  //     accountNo: "ACC-12346",
-  //     totalDue: 640.00,
-  //     monthsOverdue: 2,
-  //     lastPayment: "2024-06-20",
-  //     dueDate: "2024-08-20",
-  //     status: "warning",
-  //     contactNo: "+63 923 456 7890"
-  //   },
-  //   {
-  //     id: "BAL-003",
-  //     residentName: "Pedro Reyes",
-  //     accountNo: "ACC-12347",
-  //     totalDue: 2890.00,
-  //     monthsOverdue: 5,
-  //     lastPayment: "2024-03-10",
-  //     dueDate: "2024-08-10",
-  //     status: "critical",
-  //     contactNo: "+63 934 567 8901"
-  //   },
-  //   {
-  //     id: "BAL-004",
-  //     residentName: "Ana Garcia",
-  //     accountNo: "ACC-12348",
-  //     totalDue: 450.00,
-  //     monthsOverdue: 1,
-  //     lastPayment: "2024-07-15",
-  //     dueDate: "2024-08-15",
-  //     status: "moderate",
-  //     contactNo: "+63 945 678 9012"
-  //   },
-  //   {
-  //     id: "BAL-005",
-  //     residentName: "Roberto Luna",
-  //     accountNo: "ACC-12349",
-  //     totalDue: 1820.00,
-  //     monthsOverdue: 4,
-  //     lastPayment: "2024-04-25",
-  //     dueDate: "2024-08-25",
-  //     status: "critical",
-  //     contactNo: "+63 956 789 0123"
-  //   }
-  // ];
 
   const balanceData = balances || [];
 
@@ -141,7 +82,7 @@ export default function TreasurerOutstandingBalances() {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return 'No payment yet';
     return new Date(dateString).toLocaleDateString('en-PH', {
       month: 'short',
       day: 'numeric',
@@ -164,7 +105,7 @@ export default function TreasurerOutstandingBalances() {
           color: "text-orange-600"
         };
       case "moderate":
-        return {
+        return { 
           label: "Moderate",
           className: "bg-yellow-100 text-yellow-800",
           color: "text-yellow-600"
@@ -329,7 +270,7 @@ export default function TreasurerOutstandingBalances() {
                           Resident
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Total Due
+                          Total Amount
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Months Overdue
@@ -383,13 +324,7 @@ export default function TreasurerOutstandingBalances() {
                             </td>
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  data-testid={`button-view-${balance.id}`}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
+                              
                                 <Button
                                   variant="outline"
                                   size="sm"

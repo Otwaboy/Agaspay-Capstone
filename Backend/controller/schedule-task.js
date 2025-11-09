@@ -1,6 +1,7 @@
 const ScheduleTask = require('../model/Schedule-task');
 const Assignment = require('../model/Assignment');
 const IncidentReports = require('../model/Incident-reports');
+const WaterConnection = require('../model/WaterConnection')
 
 const createTask = async (req, res) => {
   const user = req.user;
@@ -220,10 +221,10 @@ const updateTaskStatus = async (req, res) => {
   if (!validStatuses.includes(task_status)) {
     return res.status(400).json({
       success: false,
-      message: `Invalidxxx status. Must be one of: ${validStatuses.join(', ')}`
+      message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
     });
   }
- 
+
   try {
     const task = await ScheduleTask.findById(taskId);
 
@@ -238,7 +239,18 @@ const updateTaskStatus = async (req, res) => {
     task.task_status = task_status;
     await task.save();
 
-    // ✅ If task is completed and it is linked to an incident report, update report status too
+    // ✅ If task is a meter installation and completed, update resident's water connection status
+    if (task.task_status === 'Completed' && task.schedule_type === 'Meter Installation') {
+      // Fetch the water connection linked to this task
+      const connection = await WaterConnection.findById(task.connection_id);
+      if (connection) {
+        connection.connection_status ='active';
+        await connection.save();
+        console.log(`✅ Water connection ${connection._id} status set to active`);
+      }
+    }
+
+    // ✅ If task is linked to an incident report, update report status
     if (task.report_id && task_status === 'Completed') {
       await IncidentReports.findByIdAndUpdate(task.report_id, {
         reported_issue_status: 'Completed',
@@ -264,6 +276,7 @@ const updateTaskStatus = async (req, res) => {
     });
   }
 };
+
 
 
 // Delete task

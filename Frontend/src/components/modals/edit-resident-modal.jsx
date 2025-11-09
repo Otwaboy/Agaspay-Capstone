@@ -20,8 +20,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
     lastName: "",
     meterNo: "",
     purok: "",
-    email: "",
-    phone: "",
     zone: "",
     type: "",
     status: "",
@@ -48,8 +46,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
         lastName: lastName,
         meterNo: resident.meter_no || "",
         purok: purokPart,
-        email: resident.email || "",
-        phone: resident.contactNo || "",
         zone: zonePart,
         type: resident.type || "",
         status: resident.status || "",
@@ -69,8 +65,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
         last_name: formData.lastName,
         meter_no: formData.meterNo,
         purok: formData.purok,
-        email: formData.email,
-        contact_no: formData.phone,
         zone: formData.zone,
         type: formData.type,
         status: formData.status,
@@ -112,7 +106,7 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-white sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Resident Information</DialogTitle>
           <DialogDescription>
@@ -176,32 +170,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
               </SelectContent>
             </Select>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleChange("email")(e.target.value)}
-              placeholder="Enter email address"
-              required
-              data-testid="input-edit-email"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => handleChange("phone")(e.target.value)}
-              placeholder="Enter phone number"
-              required
-              data-testid="input-edit-phone"
-            />
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="zone">Zone</Label>
             <Select value={formData.zone} onValueChange={handleChange("zone")} required>

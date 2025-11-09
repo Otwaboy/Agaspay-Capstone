@@ -110,7 +110,7 @@ class ApiClient {
   // ======================================================
   // 📏 RATE MANAGEMENT (Treasurer / Admin)
   // ======================================================
-  async getRate() {
+  async getRate() { 
     try {
       return await this.request('/api/v1/rate');
     } catch (error) {

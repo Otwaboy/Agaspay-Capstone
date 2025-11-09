@@ -22,7 +22,7 @@ import Sidebar from "../components/layout/sidebar";
 import TopHeader from "../components/layout/top-header";
 import CreatePersonnelModal from "../components/modals/create-personnel-modal";
 import {
-  UserPlus,
+  UserPlus, 
   Search,
   Filter,
   Plus,
@@ -89,8 +89,8 @@ export default function AdminPersonnel() {
 
   const getStatusBadge = (status) => {
     return status === "active" 
-      ? { label: "Active", className: "bg-green-100 text-green-800" }
-      : { label: "Inactive", className: "bg-gray-100 text-gray-800" };
+      ? { label: "Inactive", className: "bg-green-100 text-green-800" }
+      : { label: "Active", className: "bg-gray-100 text-gray-800" };
   };
 
   const handleDelete = (id) => {
@@ -256,9 +256,6 @@ export default function AdminPersonnel() {
                           Role
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Department
-                        </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Assigned Zone
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
@@ -299,7 +296,7 @@ export default function AdminPersonnel() {
                                 {roleConfig.label}
                               </Badge>
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-900">{person.department || 'N/A'}</td>
+                         
                             <td className="py-4 px-6 text-sm text-gray-900">{person.assigned_zone || 'All Zones'}</td>
                             <td className="py-4 px-6">
                               <Badge className={statusConfig.className}>
