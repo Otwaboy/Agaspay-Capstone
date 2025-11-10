@@ -10,7 +10,7 @@ const BillingSchema = new mongoose.Schema({
   reading_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'MeterReading',
-    required: true
+    required: true 
   },  
   rate_id: { 
     type: mongoose.Schema.Types.ObjectId,

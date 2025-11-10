@@ -139,19 +139,26 @@ const createBilling = async (req, res) => {
       });
     }
 
-    // ✅ Calculate current month's charges
+    // ✅ so the value of the current_charges is to multipy the calculated and the amount rate
+    //ex: calculated is 2 and the the rate is 1 so 2x1 = 2 so the current_charges is 2
     const current_charges = reading.calculated * rate.amount;
 
     // 💰 CUMULATIVE BILLING: Find all unpaid bills for this connection
+    //ex: so it will get the all billing with status of unpaid
+
     const unpaidBills = await Billing.find({
       connection_id: reading.connection_id,
       status: { $in: ['unpaid', 'partial', 'overdue'] }
     });
 
     // 💰 Sum up all unpaid amounts to get previous balance
+    //accumalator method  hahaha
+    //summing all the array into a one final value
+    //sum started at zero so basically 0 + 2 = 2 then 2 + 4 = 6 , 6+ 12 = 18
+
     const previous_balance = unpaidBills.reduce((sum, bill) => {
-      return sum + (bill.total_amount || 0);
-    }, 0);
+      return sum + (bill.current_charges || 0);
+    }, 0); 
 
     // 💰 Total amount = previous unpaid balance + current month charges
     const total_amount = previous_balance + current_charges;
@@ -232,8 +239,16 @@ const getOverdueBilling = async (req, res) => {
         const resident = connection?.resident_id;
 
         if (!resident || !connection) return null;
+        // Fetch ALL unpaid bills for this connection
+  const unpaidBills = await Billing.find({
+            connection_id: connection._id,
+            status: 'unpaid'
+          }).sort({ due_date: 1 }); // ascending, earliest first
 
-        const dueDate = new Date(billing.due_date);
+      // Earliest unpaid bill determines true overdue duration
+      const earliestUnpaidBill = unpaidBills[0];
+      const dueDate = new Date(earliestUnpaidBill.due_date);
+      
         const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
         const monthsOverdue = Math.max(1, monthsDiff);
 
@@ -268,37 +283,46 @@ const getOverdueBilling = async (req, res) => {
     const validAccounts = overdueAccounts.filter(account => account !== null);
 
     // GROUP BY meterNo so each resident shows only once
-    const groupedAccounts = Object.values(
+    //Think of reduce() as a way to take a whole array and combine it into one final value.
+    // so basically iyang e group tapos e combine all into a one value
+
+      const groupedAccounts = Object.values(
       validAccounts.reduce((acc, curr) => {
         const key = curr.meterNo;
 
         if (!acc[key]) {
           acc[key] = { ...curr };
-        } else {
-          // Sum total due
-          acc[key].totalDue += curr.totalDue;
+        } else { 
+          // Keep only the latest billing (based on dueDate)
+          const existingDueDate = new Date(acc[key].dueDate);
+          const currentDueDate = new Date(curr.dueDate);
+
+          if (currentDueDate > existingDueDate) {
+            acc[key] = { ...curr };
+          }
 
           // Take highest months overdue
           acc[key].monthsOverdue = Math.max(acc[key].monthsOverdue, curr.monthsOverdue);
 
-          // Recalculate final status
+          // Recalculate final status based on final monthsOverdue
           if (acc[key].monthsOverdue >= 3) acc[key].status = 'critical';
           else if (acc[key].monthsOverdue >= 2) acc[key].status = 'warning';
           else acc[key].status = 'moderate';
         }
+
         return acc;
       }, {})
     );
 
     // Summary
-    const totalOutstanding = groupedAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
+    const totalOutstandingBalance = groupedAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
     const criticalCount = groupedAccounts.filter(acc => acc.status === 'critical').length;
 
     return res.status(StatusCodes.OK).json({
       msg: 'Overdue accounts retrieved successfully',
       data: groupedAccounts,
       summary: {
-        totalOutstanding,
+        totalOutstandingBalance,
         criticalCount,
         totalAccounts: groupedAccounts.length
       }

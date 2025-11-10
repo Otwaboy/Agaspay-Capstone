@@ -1,6 +1,14 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation} from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
@@ -9,11 +17,9 @@ import {
   Search, 
   Download,
   Send,
-  Eye,
-  Calendar,
+  Loader2,
   DollarSign,
   Users,
-  Loader2
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
@@ -24,6 +30,7 @@ export default function TreasurerOutstandingBalances() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sendingReminder, setSendingReminder] = useState(null);
+  const [disconnectionModal, setDisconnectionModal] = useState(null); // <-- for modal
   const { toast } = useToast();
 
   const { data: balances, isLoading } = useQuery({
@@ -32,16 +39,11 @@ export default function TreasurerOutstandingBalances() {
     queryFn: async () => {
       const res = await apiClient.getOverdueBilling();
       return res.data;
-
-      
     }
   });
- 
 
   const sendReminderMutation = useMutation({
-    mutationFn: async (billingId) => {
-      return await apiClient.sendOverdueReminder(billingId);
-    },
+    mutationFn: async (billingId) => apiClient.sendOverdueReminder(billingId),
     onSuccess: (data) => {
       toast({
         title: "SMS Reminder Sent",
@@ -58,7 +60,6 @@ export default function TreasurerOutstandingBalances() {
       setSendingReminder(null);
     }
   });
-
 
   const balanceData = balances || [];
 
@@ -127,10 +128,14 @@ export default function TreasurerOutstandingBalances() {
         variant: "destructive",
       });
       return;
-    }
+    } 
 
     setSendingReminder(balance.id);
     sendReminderMutation.mutate(balance.id);
+  };
+
+  const handleMarkForDisconnection = (balance) => {
+    setDisconnectionModal(balance); // open modal
   };
 
   return (
@@ -152,7 +157,7 @@ export default function TreasurerOutstandingBalances() {
                   <AlertTriangle className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900" data-testid="text-outstanding-balances-title">
+                  <h1 className="text-3xl font-bold text-gray-900">
                     Outstanding Balances
                   </h1>
                   <p className="text-gray-600">Monitor and manage overdue accounts</p>
@@ -167,7 +172,7 @@ export default function TreasurerOutstandingBalances() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
-                      <p className="text-2xl font-bold text-red-600" data-testid="text-total-outstanding">
+                      <p className="text-2xl font-bold text-red-600">
                         {formatCurrency(totalOutstanding)}
                       </p>
                     </div>
@@ -181,7 +186,7 @@ export default function TreasurerOutstandingBalances() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Critical Accounts</p>
-                      <p className="text-2xl font-bold text-orange-600" data-testid="text-critical-count">
+                      <p className="text-2xl font-bold text-orange-600">
                         {criticalCount}
                       </p>
                     </div>
@@ -195,7 +200,7 @@ export default function TreasurerOutstandingBalances() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Accounts</p>
-                      <p className="text-2xl font-bold text-blue-600" data-testid="text-total-accounts">
+                      <p className="text-2xl font-bold text-blue-600">
                         {totalAccounts}
                       </p>
                     </div>
@@ -218,7 +223,6 @@ export default function TreasurerOutstandingBalances() {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
-                        data-testid="input-search-balance"
                       />
                     </div>
                   </div>
@@ -226,25 +230,22 @@ export default function TreasurerOutstandingBalances() {
                     <Button
                       variant={filterStatus === "all" ? "default" : "outline"}
                       onClick={() => setFilterStatus("all")}
-                      data-testid="button-filter-all"
                     >
                       All
                     </Button>
                     <Button
                       variant={filterStatus === "critical" ? "default" : "outline"}
                       onClick={() => setFilterStatus("critical")}
-                      data-testid="button-filter-critical"
                     >
                       Critical
                     </Button>
                     <Button
                       variant={filterStatus === "warning" ? "default" : "outline"}
                       onClick={() => setFilterStatus("warning")}
-                      data-testid="button-filter-warning"
                     >
                       Warning
                     </Button>
-                    <Button variant="outline" data-testid="button-export">
+                    <Button variant="outline">
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>
@@ -286,13 +287,15 @@ export default function TreasurerOutstandingBalances() {
                         </th>
                       </tr>
                     </thead>
+
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredData.map((balance) => {
                         const statusConfig = getStatusConfig(balance.status);
                         const isReminding = sendingReminder === balance.id;
-                        
+                        const showDisconnection = balance.monthsOverdue >= 3;
+
                         return (
-                          <tr key={balance.id} data-testid={`balance-row-${balance.id}`}>
+                          <tr key={balance.id}>
                             <td className="py-4 px-6 text-sm font-medium text-gray-900">
                               {balance.accountNo || balance.meterNo}
                             </td>
@@ -324,13 +327,11 @@ export default function TreasurerOutstandingBalances() {
                             </td>
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-2">
-                              
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleSendReminder(balance)}
-                                  disabled={isReminding || !balance.contactNo || balance.contactNo === 'N/A'}
-                                  data-testid={`button-remind-${balance.id}`}
+                                  disabled={isReminding || !balance.contactNo || balance.contactNo === 'N/A' || balance.status !== 'critical'}
                                 >
                                   {isReminding ? (
                                     <>
@@ -344,6 +345,16 @@ export default function TreasurerOutstandingBalances() {
                                     </>
                                   )}
                                 </Button>
+
+                                {showDisconnection && (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleMarkForDisconnection(balance)}
+                                  >
+                                    Mark for Disconnection
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -354,6 +365,69 @@ export default function TreasurerOutstandingBalances() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Modal for Mark for Disconnection */}
+              <Dialog 
+                open={!!disconnectionModal} 
+                onOpenChange={(open) => !open && setDisconnectionModal(null)}
+              >
+                <DialogContent data-testid="dialog-mark-disconnection">
+                  <DialogHeader>
+                    <DialogTitle>Mark for Disconnection</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to mark <strong>{disconnectionModal?.residentName}</strong> for disconnection?
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="py-4">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <p className="text-sm text-red-800">
+                        This will mark this account as <span className="font-semibold">For Disconnection</span>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDisconnectionModal(null)}
+                      data-testid="button-cancel-disconnection"
+                    >
+                      Cancel
+                    </Button>
+                   <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        if (!disconnectionModal) return;
+                        try {
+                          const response = await apiClient.markForDisconnection(disconnectionModal.connection_id); // pass connection_id
+                          setDisconnectionModal(null);
+                          toast({
+                            title: "Marked for Disconnection",
+                            description: response.msg || `${disconnectionModal.residentName} has been marked for disconnection.`,
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: error.message || "Failed to mark for disconnection",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      disabled={
+                        !disconnectionModal || 
+                        disconnectionModal.monthsOverdue < 3 || 
+                        disconnectionModal.connection_status === "for_disconnection"
+                      }
+                      data-testid="button-confirm-disconnection"
+                    >
+                      Confirm
+                    </Button>
+
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
           </div>
         </main>
       </div>

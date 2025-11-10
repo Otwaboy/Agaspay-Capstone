@@ -25,7 +25,7 @@ import {
   Search, 
   Filter, 
   Download,
-  CheckCircle,
+  CheckCircle, 
   Clock,
   XCircle,
   Eye,
@@ -430,6 +430,8 @@ export default function TreasurerPaymentCollection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      
     </div>
   );
 }

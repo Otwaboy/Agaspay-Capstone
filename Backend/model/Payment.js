@@ -42,7 +42,7 @@ const PaymentSchema = new mongoose.Schema({
     default: 'temporary_receipt'
   },
 
-  payment_reference: {
+  payment_reference: { 
   type: String, // from PayMongo API response
   },
 

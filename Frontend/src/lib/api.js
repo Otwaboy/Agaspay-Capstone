@@ -107,6 +107,21 @@ class ApiClient {
     });
   }
 
+  async markForDisconnection(connection_id) {
+  try {
+    return await this.request('/api/v1/billing/update-connection-status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connection_id }),
+    });
+  } catch (error) {
+    console.error("Failed to mark connection for disconnection:", error);
+    throw error;
+  }
+}
+
+
+
   // ======================================================
   // 📏 RATE MANAGEMENT (Treasurer / Admin)
   // ======================================================
