@@ -45,15 +45,7 @@ export default function ResidentTopHeader() {
         {/* Right Side Actions */}
         <div className="flex items-center space-x-2 md:space-x-4 ml-auto md:ml-0">
           {/* Quick Pay Button */}
-          <Button 
-            variant="outline" 
-            className="hidden md:flex items-center space-x-2 text-green-600 border-green-200 hover:bg-green-50"
-            onClick={() => window.dispatchEvent(new Event("openPayBillModal"))}
-            data-testid="button-quick-pay"
-          >
-            <CreditCard className="h-4 w-4" />
-            <span>Quick Pay</span>
-          </Button>
+          
 
           {/* Notifications */}
           <DropdownMenu>

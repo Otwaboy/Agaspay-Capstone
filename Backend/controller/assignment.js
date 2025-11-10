@@ -255,6 +255,7 @@ const getUnassignedTasks = async (req, res) => {
           id: report?._id,
           type: report?.type,
           description: report?.description,
+          location: report?.location,
           urgency_level: report?.urgency_level,
         },
         created_at: task.createdAt,

@@ -225,7 +225,7 @@ const getOverdueBilling = async (req, res) => {
     })
     .populate({
       path: 'connection_id',
-      select: 'connection_id meter_no purok resident_id',
+      select: 'connection_id meter_no purok resident_id connection_status',
       populate: {
         path: 'resident_id',
         select: 'first_name last_name contact_no purok'
@@ -263,20 +263,22 @@ const getOverdueBilling = async (req, res) => {
         if (monthsOverdue >= 3) status = 'critical';
         else if (monthsOverdue >= 2) status = 'warning';
 
-        return {
-          id: billing._id,
-          residentName: `${resident.first_name} ${resident.last_name}`,
-          accountNo: connection.connection_id || connection.meter_no,
-          meterNo: connection.meter_no,
-          purok: resident.purok || connection.purok || 'N/A',
-          totalDue: billing.total_amount,
-          monthsOverdue,
-          lastPayment: lastPayment ? lastPayment.payment_date : null,
-          dueDate: billing.due_date,
-          status,
-          contactNo: resident.contact_no || 'N/A',
-          billPeriod: billing.generated_at
-        };
+     return {
+            id: billing._id,
+            connection_id: connection._id, // for API calls
+            residentName: `${resident.first_name} ${resident.last_name}`,
+            accountNo: connection.connection_id || connection.meter_no,
+            meterNo: connection.meter_no,
+            purok: resident.purok || connection.purok || 'N/A',
+            totalDue: billing.total_amount,
+            monthsOverdue,
+            lastPayment: lastPayment ? lastPayment.payment_date : null,
+            dueDate: billing.due_date,
+            status,
+            connection_status: connection.connection_status || 'N/A', // ✅ actual status
+            contactNo: resident.contact_no || 'N/A',
+            billPeriod: billing.generated_at
+          };
       })
     );
 

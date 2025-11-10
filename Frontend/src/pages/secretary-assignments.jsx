@@ -105,7 +105,7 @@ export default function SecretaryAssignments() {
     ...unassignedTasks.map(task => ({
       id: task.id,
       type: task.report.type,
-      location: task.report?.description || 'N/A',
+      location: task.report?.location|| 'N/A',
       scheduledDate: task.schedule_date,
       timeSlot: task.schedule_time,
       priority: task.report?.urgency_level?.toLowerCase() || 'medium',

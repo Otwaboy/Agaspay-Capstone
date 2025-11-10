@@ -91,7 +91,7 @@ function ResidentSidebarContent() {
   return (
     <div className="flex flex-col h-full bg-white shadow-lg">
       {/* Logo */}
-      <div className="flex items-center px-6 py-5.5 border-b border-gray-200">
+      <div className="flex items-center px-6 py-5.5 border-gray-200">
         <div className="flex items-center">
           <div className="bg-blue-600 p-2 rounded-lg">
             <Droplets className="h-6 w-6 text-white" />
@@ -101,7 +101,7 @@ function ResidentSidebarContent() {
             <p className="text-xs text-gray-500">Resident Portal</p>
           </div>
         </div>
-      </div>
+      </div> 
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2">

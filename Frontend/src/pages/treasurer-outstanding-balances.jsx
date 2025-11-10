@@ -292,7 +292,10 @@ export default function TreasurerOutstandingBalances() {
                       {filteredData.map((balance) => {
                         const statusConfig = getStatusConfig(balance.status);
                         const isReminding = sendingReminder === balance.id;
-                        const showDisconnection = balance.monthsOverdue >= 3;
+                        const showDisconnection =
+                                                balance.monthsOverdue >= 3 //&&
+                                                // balance.connection_status !== "for_disconnection" &&
+                                                // balance.connection_status !== "disconnection";
 
                         return (
                           <tr key={balance.id}>
@@ -395,34 +398,35 @@ export default function TreasurerOutstandingBalances() {
                     >
                       Cancel
                     </Button>
-                   <Button
-                      variant="destructive"
-                      onClick={async () => {
-                        if (!disconnectionModal) return;
-                        try {
-                          const response = await apiClient.markForDisconnection(disconnectionModal.connection_id); // pass connection_id
-                          setDisconnectionModal(null);
-                          toast({
-                            title: "Marked for Disconnection",
-                            description: response.msg || `${disconnectionModal.residentName} has been marked for disconnection.`,
-                          });
-                        } catch (error) {
-                          toast({
-                            title: "Error",
-                            description: error.message || "Failed to mark for disconnection",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      disabled={
-                        !disconnectionModal || 
-                        disconnectionModal.monthsOverdue < 3 || 
-                        disconnectionModal.connection_status === "for_disconnection"
+                <Button
+                    variant="destructive"
+                    onClick={async () => {
+                      if (!disconnectionModal) return;
+                      try {
+                        const response = await apiClient.markForDisconnection(disconnectionModal.connection_id); // pass connection_id
+                        setDisconnectionModal(null);
+                        toast({
+                          title: "Marked for Disconnection",
+                          description: response.msg || `${disconnectionModal.residentName} has been marked for disconnection.`,
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: error.message || "Failed to mark for disconnection",
+                          variant: "destructive",
+                        });
                       }
-                      data-testid="button-confirm-disconnection"
-                    >
-                      Confirm
-                    </Button>
+                    }}
+                    disabled={
+                      !disconnectionModal || 
+                      disconnectionModal.monthsOverdue < 3 || 
+                      disconnectionModal.connection_status === "for_disconnection" || 
+                      disconnectionModal.connection_status === "disconnection"
+                    }
+                    data-testid="button-confirm-disconnection"
+                  >
+                    Confirm
+                  </Button>
 
                   </DialogFooter>
                 </DialogContent>
