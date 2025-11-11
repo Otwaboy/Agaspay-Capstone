@@ -171,10 +171,6 @@ const submitReading = async (req, res) => {
   });
 };
 
-
- 
-
-
 // ✅ Get latest reading per water connection
 /**
  * Controller: getLatestReadings
@@ -426,9 +422,37 @@ const updateReadings = async (req, res) => {
   });
 };
 
+const approveReading = async (req, res) => {
+  const user = req.user;
+
+  // Only treasurer can approve readings
+  if (user.role !== 'treasurer') {
+    return res.status(403).json({ msg: 'Unauthorized. Only treasurer can approve readings.' });
+  }
+
+  // Get all readings that are submitted
+  const readingsToApprove = await MeterReading.find({ reading_status: 'submitted' });
+
+  if (readingsToApprove.length === 0) {
+    return res.status(400).json({ msg: 'No submitted readings found to approve.' });
+  }
+
+  // Bulk update
+  const result = await MeterReading.updateMany(
+    { reading_status: 'submitted' },
+    { $set: { reading_status: 'approved' } }
+  );
+
+  res.status(200).json({
+    msg: 'All submitted readings have been approved successfully',
+    total_approved: result.modifiedCount
+  });
+};
 
 
 
 
 
-module.exports = { getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings};
+
+
+module.exports = { getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading};

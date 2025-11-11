@@ -177,6 +177,20 @@ async bulkSubmitReadings(readingIds = []) {
     body: JSON.stringify({ reading_ids: readingIds }),
   });
 }
+async updateReadings(reading_id, data) {
+  try {
+    return await this.request(`/api/v1/meter-reader/${reading_id}/update-readings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    console.error("Updating reading failed:", error);
+    throw error;
+  }
+}
+
+
 
 
   // ======================================================
