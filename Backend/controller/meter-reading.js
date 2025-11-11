@@ -4,7 +4,7 @@ const WaterConnection = require('../model/WaterConnection');
 const Personnel = require('../model/Personnel');
 
 const {UnauthorizedError, BadRequestError} = require('../errors')
-
+ 
  
 const getAllConnectionIDs = async (req, res) => {
 
@@ -69,13 +69,32 @@ const inputReading = async (req, res) => {
     throw new BadRequestError('Please porvice inclusive start date and end date');
   }
 
-  // Optional: Validate if connection exists
-  const connection = await WaterConnection.findById(connection_id);
-  if (!connection) {
+
+  const connection = await WaterConnection.findById(connection_id)
+  .populate('resident_id'); // <-- add this
+   if (!connection) {
     throw new BadRequestError('Water connection not found.');
   }
 
+    // ✅ Check if meter reader's assigned zone matches resident's zone
+  const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
+  if (!personnel || !personnel.assigned_zone) {
+    throw new BadRequestError('Meter reader has no assigned zone.');
+  } 
 
+  const resident = connection.resident_id; // populated resident
+  if (!resident) {
+    throw new BadRequestError('Resident data not found for this connection.');
+  }
+
+  console.log('zone', resident.zone);
+  
+
+  if (resident.zone !== personnel.assigned_zone) {
+    throw new UnauthorizedError(
+      `You are only allowed to input readings for zone ${personnel.assigned_zone}.`
+    );
+  }
 
  // Find the last reading for this connection
   const lastReading = await MeterReading.findOne({connection_id}).sort({created_at: -1});
@@ -105,9 +124,56 @@ const inputReading = async (req, res) => {
   });
 };
 
+const submitReading = async (req, res) => {
+  const user = req.user;
+
+  // Only meter readers can submit readings
+  if (user.role !== 'meter_reader') {
+    throw new UnauthorizedError('Only meter readers can submit readings.');
+  }
+
+  // Get meter reader's assigned zone
+  const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
+  if (!personnel || !personnel.assigned_zone) {
+    throw new BadRequestError('Meter reader has no assigned zone.');
+  }
+  const assignedZone = personnel.assigned_zone;
+
+  // Find all active connections in this zone
+  const connections = await WaterConnection.find({ connection_status: 'active' })
+    .populate('resident_id', 'zone');
+
+  // Filter connections that belong to meter reader's zone
+  const zoneConnections = connections.filter(c => c.resident_id?.zone === assignedZone);
+
+  // Check if all connections in this zone have a reading in progress
+  const readingsInZone = await MeterReading.find({
+    connection_id: { $in: zoneConnections.map(c => c._id) },
+    reading_status: 'inprogress'
+  });
+
+  if (readingsInZone.length !== zoneConnections.length) {
+    return res.status(400).json({
+      message: 'Cannot submit readings. Some residents do not have readings recorded yet.',
+      missing: zoneConnections.length - readingsInZone.length
+    });
+  }
+
+  // Update all readings in this zone to "submitted"
+  await MeterReading.updateMany(
+    { _id: { $in: readingsInZone.map(r => r._id) } },
+    { $set: { reading_status: 'submitted' } }
+  );
+
+  res.status(200).json({
+    message: `All readings for zone ${assignedZone} have been submitted for approval.`,
+    total_submitted: readingsInZone.length
+  });
+};
+
+
  
 
-//fetch
 
 // ✅ Get latest reading per water connection
 /**
@@ -158,100 +224,84 @@ const getLatestReadings = async (req, res) => {
     }
     // Treasurer can see all zones, so no filter needed
     
-    const readings = await WaterConnection.aggregate([
-      // 1️⃣ Attach resident info FIRST (we need this to filter by zone)
-      {
-        $lookup: {
-          from: "residents",
-          localField: "resident_id",
-          foreignField: "_id",
-          as: "resident"
-        }
-      },
-      { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
+  const readings = await WaterConnection.aggregate([
+              // 1️⃣ Filter only active connections
+              { $match: { connection_status: "active" } },
 
-      // 2️⃣ FILTER BY ZONE (zone is in resident, not connection)
-      ...(Object.keys(zoneFilter).length > 0 ? [{ 
-        $match: { 
-          "resident.zone": zoneFilter.zone 
-        } 
-      }] : []),
-      
-      // 3️⃣ Get the latest meterreading for each connection
-      {
-        $lookup: {
-          from: "meterreadings",
-          let: { connId: "$_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$connection_id", "$$connId"] } } },
-            { $sort: { created_at: -1 } },
-            { $limit: 1 }
-          ],
-          as: "latestReading"
-        }
-      },
-      { $unwind: { path: "$latestReading", preserveNullAndEmptyArrays: true } },
+              // 2️⃣ Attach resident info
+              {
+                $lookup: {
+                  from: "residents",
+                  localField: "resident_id",
+                  foreignField: "_id",
+                  as: "resident"
+                }
+              },
+              { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
 
-      // 4️⃣ Check if billing exists for that reading
-      //    We do two lookups because collection might be named "Billing" or "billings"
-      {
-        $lookup: {
-          from: "Billing",
-          let: { readingId: "$latestReading._id" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [
-                    { $toString: "$reading_id" }, // convert both sides to string
-                    { $toString: "$$readingId" }
-                  ]
+              // 3️⃣ Filter by meter reader zone (if applicable)
+              ...(Object.keys(zoneFilter).length > 0
+                ? [{ $match: { "resident.zone": zoneFilter.zone } }]
+                : []),
+
+              // 4️⃣ Latest reading lookup
+              {
+                $lookup: {
+                  from: "meterreadings",
+                  let: { connId: "$_id" },
+                  pipeline: [
+                    { $match: { $expr: { $eq: ["$connection_id", "$$connId"] } } },
+                    { $sort: { created_at: -1 } },
+                    { $limit: 1 }
+                  ],
+                  as: "latestReading"
+                }
+              },
+              { $unwind: { path: "$latestReading", preserveNullAndEmptyArrays: true } },
+
+              // 5️⃣ Billing lookups...
+              {
+                $lookup: {
+                  from: "Billing",
+                  let: { readingId: "$latestReading._id" },
+                  pipeline: [
+                    { $match: { $expr: { $eq: [{ $toString: "$reading_id" }, { $toString: "$$readingId" }] } } },
+                    { $limit: 1 }
+                  ],
+                  as: "billingA"
+                }
+              },
+              {
+                $lookup: {
+                  from: "billings",
+                  let: { readingId: "$latestReading._id" },
+                  pipeline: [
+                    { $match: { $expr: { $eq: [{ $toString: "$reading_id" }, { $toString: "$$readingId" }] } } },
+                    { $limit: 1 }
+                  ],
+                  as: "billingB"
+                }
+              },
+
+              // 6️⃣ Flag if billed
+              {
+                $addFields: {
+                  is_billed: {
+                    $gt: [{ $add: [{ $size: "$billingA" }, { $size: "$billingB" }] }, 0]
+                  }
                 }
               }
-            },
-            { $limit: 1 }
-          ],
-          as: "billingA"
-        }
-      },
-      {
-        $lookup: {
-          from: "billings",
-          let: { readingId: "$latestReading._id" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [
-                    { $toString: "$reading_id" },
-                    { $toString: "$$readingId" }
-                  ]
-                }
-              }
-            },
-            { $limit: 1 }
-          ],
-          as: "billingB"
-        }
-      },
+            ]);
 
-      // 4️⃣ Add a flag (true if billing found in either collection)
-      {
-        $addFields: {
-          is_billed: {
-            $gt: [
-              { $add: [ { $size: "$billingA" }, { $size: "$billingB" } ] },
-              0
-            ]
-          }
-        }
-      }
-    ]);
+
+
 
     // 5️⃣ Format the response to make it frontend-friendly
     const connectionDetails = readings.map(item => {
       const reading = item.latestReading;
       const resident = item.resident;
+     
+     
 
       // 📅 Check if reading was done in the current month (UTC-based to avoid timezone issues)
       let read_this_month = false;
@@ -269,6 +319,7 @@ const getLatestReadings = async (req, res) => {
 
       return {
         reading_id: reading?._id ? reading._id.toString() : null,
+        connection_status: item.connection_status, // ✅ now correct
         connection_id: item._id ? item._id.toString() : null,
         connection_type: item.type || "Unknown", // ✅ Fetch from WaterConnection
         inclusive_date: reading?.inclusive_date || null,
@@ -278,6 +329,7 @@ const getLatestReadings = async (req, res) => {
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
+        reading_status: reading?.reading_status,
         is_billed: !!item.is_billed,
         read_this_month: read_this_month, // ✅ Monthly status tracker
         last_read_date: reading?.created_at || null // For reference
@@ -316,9 +368,67 @@ const getLatestReadings = async (req, res) => {
   }
 };
 
+const updateReadings = async (req, res) => {
+  const { reading_id } = req.params;
+  const { present_reading, inclusive_date, remarks } = req.body;
+  const user = req.user;
+
+  // ✅ Only meter readers can update
+  if (user.role !== 'meter_reader') {
+    throw new UnauthorizedError('Only meter readers can update readings.');
+  }
+
+  // ✅ Validate input
+  if (!reading_id) throw new BadRequestError('Reading ID is required.');
+  if (present_reading === undefined && !inclusive_date && !remarks) {
+    throw new BadRequestError('At least one field (present_reading, inclusive_date, remarks) is required.');
+  }
+
+  // ✅ Fetch the reading
+  const reading = await MeterReading.findById(reading_id).populate({
+    path: 'connection_id',
+    populate: { path: 'resident_id', select: 'zone' }
+  });
+
+  if (!reading) throw new BadRequestError('Reading not found.');
+
+  // ✅ Check status
+  if (reading.reading_status === 'approved') {
+    throw new BadRequestError('Cannot update reading. Reading has already been approved.');
+  }
+
+  // ✅ Check if meter reader is allowed to update this reading (zone match)
+  const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
+  if (!personnel || !personnel.assigned_zone) {
+    throw new BadRequestError('Meter reader has no assigned zone.');
+  }
+
+  const residentZone = reading.connection_id.resident_id?.zone;
+  if (residentZone !== personnel.assigned_zone) {
+    throw new UnauthorizedError(`You can only update readings in your assigned zone (${personnel.assigned_zone}).`);
+  }
+
+  // ✅ If present_reading is being updated, ensure it's >= previous_reading
+  if (present_reading !== undefined && present_reading < reading.previous_reading) {
+    throw new BadRequestError('Present reading cannot be less than previous reading.');
+  }
+
+  // ✅ Update fields
+  if (present_reading !== undefined) reading.present_reading = present_reading;
+  if (inclusive_date) reading.inclusive_date = inclusive_date;
+  if (remarks) reading.remarks = remarks;
+
+  await reading.save(); // pre-save hook recalculates "calculated"
+
+  res.status(StatusCodes.OK).json({
+    message: 'Reading updated successfully.',
+    data: reading
+  });
+};
 
 
 
 
 
-module.exports = { getAllConnectionIDs, inputReading, getLatestReadings };
+
+module.exports = { getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings};

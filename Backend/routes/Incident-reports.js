@@ -18,6 +18,6 @@ router.get('/all', authMiddleware, roleMiddleware('admin', 'secretary', 'mainten
 // Update incident status (Admin, Secretary, Maintenance)
 router.patch('/:id/status', authMiddleware, roleMiddleware('admin', 'secretary', 'maintenance'), updateIncidentStatus)
 
-module.exports = router
+module.exports = router 
 
 

@@ -17,7 +17,7 @@ export default function MeterReaderReadings() {
   const [formData, setFormData] = useState({
     connection_id: "",
     present_reading: "",
-    inclusive_date: {
+    inclusive_date: { 
       start: "",
       end: ""
     },
@@ -37,13 +37,16 @@ export default function MeterReaderReadings() {
   const { data: authUser } = useQuery({
     queryKey: ["auth-user"],
     queryFn: async () => {
-      const response = await apiClient.get("/auth/me");
-      return response.data;
-    }
+      const response = await apiClient.getUserAccount();
+      return response.user ;
+    } 
   });
+ 
+  console.log('user', authUser);
+  
 
   const connectionList = connectionsResponse?.connection_details || [];
-  const meterReaderZone = authUser?.user?.assigned_zone;
+  const meterReaderZone = authUser?.assigned_zone;
 
   const filteredConnections = connectionList.filter((conn) => {
     const matchesZone = meterReaderZone ? conn.zone === meterReaderZone : true;
@@ -52,7 +55,10 @@ export default function MeterReaderReadings() {
         conn.purok_no?.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
     return matchesZone && matchesSearch;
-  });
+  }).sort((a, b) => Number(a.purok_no) - Number(b.purok_no))
+
+  console.log('filtter', filteredConnections);
+  
 
   // 📊 Calculate monthly reading progress
   const readCount = filteredConnections.filter(conn => conn.read_this_month).length;
@@ -62,6 +68,8 @@ export default function MeterReaderReadings() {
   const selectedConnectionData = filteredConnections.find(
     (conn) => String(conn.connection_id) === String(formData.connection_id)
   );
+
+  console.log('selected bitch', selectedConnectionData);
 
   const previousReading = selectedConnectionData?.present_reading || 0;
   const presentReading = parseFloat(formData.present_reading) || 0;
@@ -92,6 +100,36 @@ export default function MeterReaderReadings() {
       });
     }
   });
+
+  // Add this after your existing recordReadingMutation
+const submitAllReadingsMutation = useMutation({
+  mutationFn: async () => {
+    // Collect all reading IDs that are "in progress"
+    const readingIds = filteredConnections
+      .filter(conn => conn.read_this_month && conn.reading_status !== 'submitted')
+      .map(conn => conn.reading_id);
+
+    if (readingIds.length === 0) {
+      throw new Error('No readings available to submit.');
+    }
+
+    return await apiClient.bulkSubmitReadings(readingIds);
+  },
+  onSuccess: (data) => {
+    toast({
+      title: "Success",
+      description: data.message || "All readings submitted successfully",
+    });
+    queryClient.invalidateQueries({ queryKey: ["connections"] });
+  },
+  onError: (error) => {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to submit readings",
+      variant: "destructive"
+    });
+  }
+})
 
   const handleInputChange = (field, value) => {
     if (field.includes(".")) {
@@ -156,6 +194,8 @@ export default function MeterReaderReadings() {
       remarks: formData.remarks
     };
 
+    
+    
     recordReadingMutation.mutate(payload);
   };
 
@@ -169,16 +209,16 @@ export default function MeterReaderReadings() {
         
         <MeterReaderTopHeader />
 
-        <main className="flex-1 overflow-auto p-6 relative z-10">
+        <main className="flex-1 overflow-auto p-2 relative z-10">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">Record Meter Reading</h1>
-              <p className="text-gray-600 mt-2">Zone {meterReaderZone} - {filteredConnections.length} Connections Available</p>
+              <h1 className="text-3xl font-bold text-gray-900 ml-4">Record Meter Reading</h1>
+              <p className="text-gray-600 mt-2 ml-4">Zone {meterReaderZone} - {filteredConnections.length} Connections Available</p>
             </div>
 
             <div className="space-y-4">
             <Card className="shadow-md">
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-3 sm:p-6">
                 {meterReaderZone && (
                   <div className="mb-6 space-y-3">
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -254,7 +294,8 @@ export default function MeterReaderReadings() {
                             />
                           </div>
                         </div>
-                        <div className="max-h-[300px] overflow-y-auto">
+                        {/* main */}
+                        <div className="max-h-[300px] overflow-y-auto  ">
                           {connectionsLoading ? (
                             <SelectItem value="loading" disabled>
                               Loading connections...
@@ -269,14 +310,14 @@ export default function MeterReaderReadings() {
                                 key={connection.connection_id}
                                 value={String(connection.connection_id)}
                               >
-                                <div className="flex items-center justify-between w-full gap-2">
+                                <div className="-ml-4 flex items-center justify-between w-full gap-2">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     {connection.read_this_month ? (
                                       <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
                                     ) : (
                                       <div className="h-4 w-4 flex-shrink-0" />
                                     )}
-                                    <span className="truncate">{connection.full_name || "Unnamed"}</span>
+                                    <span className="truncate text-lg ">{connection.full_name || "Unnamed"}</span>
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     <Badge variant="secondary" className="text-xs">Purok {connection.purok_no}</Badge>
@@ -285,6 +326,7 @@ export default function MeterReaderReadings() {
                                     ) : (
                                       <Badge variant="outline" className="text-gray-500 text-xs">Not Read</Badge>
                                     )}
+                                  
                                   </div>
                                 </div>
                               </SelectItem>
@@ -294,8 +336,31 @@ export default function MeterReaderReadings() {
                       </SelectContent>
                     </Select>
                   </div>
+           
+                 {selectedConnectionData && selectedConnectionData.reading_status !== "inprogress" && (
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-white p-3 rounded-lg">
+                        <span className="font-medium text-gray-600 block mb-1">Customer</span>
+                        <p className="text-gray-900 font-semibold">{selectedConnectionData.full_name}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg">
+                        <span className="font-medium text-gray-600 block mb-1">Purok</span>
+                        <p className="text-gray-900 font-semibold">Purok {selectedConnectionData.purok_no}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg">
+                        <span className="font-medium text-gray-600 block mb-1">Previous Reading</span>
+                        <p className="text-blue-600 font-bold text-lg">{previousReading} m³</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg">
+                        <span className="font-medium text-gray-600 block mb-1">Consumption</span>
+                        <p className="text-green-600 font-bold text-lg">{consumption.toFixed(2)} m³</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                  {selectedConnectionData && (
+                  {selectedConnectionData?.reading_status === "inprogress" && (
                     <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div className="bg-white p-3 rounded-lg">
@@ -307,12 +372,16 @@ export default function MeterReaderReadings() {
                           <p className="text-gray-900 font-semibold">Purok {selectedConnectionData.purok_no}</p>
                         </div>
                         <div className="bg-white p-3 rounded-lg">
+                          <span className="font-medium text-gray-600 block mb-1">Present Reading</span>
+                          <p className="text-blue-600 font-bold text-lg">{selectedConnectionData.present_reading} m³</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg">
                           <span className="font-medium text-gray-600 block mb-1">Previous Reading</span>
-                          <p className="text-blue-600 font-bold text-lg">{previousReading} m³</p>
+                          <p className="text-blue-600 font-bold text-lg">{selectedConnectionData.previous_reading} m³</p>
                         </div>
                         <div className="bg-white p-3 rounded-lg">
                           <span className="font-medium text-gray-600 block mb-1">Consumption</span>
-                          <p className="text-green-600 font-bold text-lg">{consumption.toFixed(2)} m³</p>
+                          <p className="text-green-600 font-bold text-lg">{selectedConnectionData.calculated.toFixed(2)} m³</p>
                         </div>
                       </div>
                     </div>
@@ -331,6 +400,7 @@ export default function MeterReaderReadings() {
                       value={formData.present_reading}
                       onChange={(e) => handleInputChange("present_reading", e.target.value)}
                       className="h-12 text-base text-lg font-semibold"
+                      disabled={!selectedConnectionData || selectedConnectionData.reading_status === "inprogress" }
                       data-testid="input-present-reading"
                     />
                   </div>
@@ -402,7 +472,7 @@ export default function MeterReaderReadings() {
                       data-testid="button-cancel"
                     >
                       Clear Form
-                    </Button>
+                    </Button> 
                     <Button
                       type="submit"
                       disabled={recordReadingMutation.isPending}
@@ -411,7 +481,20 @@ export default function MeterReaderReadings() {
                     >
                       {recordReadingMutation.isPending ? "Recording..." : "Record Reading"}
                     </Button>
+
+                     {/* Submit All Readings Button */}
+                 {filteredConnections.length > 0 && filteredConnections.every(conn => conn.reading_status === 'inprogress') && (
+                    <Button
+                      className="flex-1 h-12 text-base bg-blue-600 hover:bg-blue-700"
+                      onClick={() => submitAllReadingsMutation.mutate()}
+                      disabled={submitAllReadingsMutation.isPending} // disable while submitting
+                    >
+                      {submitAllReadingsMutation.isPending ? "Submitting..." : "Submit All Readings"}
+                    </Button>
+                  )}
                   </div>
+
+                
                 </form>
               </CardContent>
             </Card>

@@ -48,6 +48,7 @@ const getAllResidents = async (req, res) => {
 };
 
 const getUserAccount = async (req, res) => {
+  
   const user = req.user  // this comes from your auth middleware
 
   if (!user) {
@@ -83,7 +84,7 @@ const getUserAccount = async (req, res) => {
     const personnel = await Personnel.findOne({user_id: user.userId})
     if (!personnel) {
       throw new BadRequestError('Personnel not found')
-    }
+    } 
 
     userData = {
       id: personnel._id,

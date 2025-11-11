@@ -51,7 +51,7 @@ const MeterReadingSchema = new mongoose.Schema({
   // can_edit: {
   //   type: Boolean,
   //   default: true
-  // },
+  // }, 
   recorded_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Personnel',

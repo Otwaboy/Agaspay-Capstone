@@ -90,7 +90,7 @@ class ApiClient {
       console.error("YAWA RA Billing creation failed:", error);
       throw error;
     }
-  }
+  } 
 
   async getCurrentBill() {
     return await this.request('/api/v1/billing');
@@ -170,6 +170,14 @@ class ApiClient {
   async getCurrentReading() {
     return await this.request(`/api/v1/meter-reader}`);
   }
+
+async bulkSubmitReadings(readingIds = []) {
+  return this.request('/api/v1/meter-reader/submit-readings', {
+    method: 'POST',
+    body: JSON.stringify({ reading_ids: readingIds }),
+  });
+}
+
 
   // ======================================================
   // 💧 WATER CONNECTION (Secretary / Admin)

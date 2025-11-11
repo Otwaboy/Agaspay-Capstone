@@ -8,7 +8,7 @@ const WaterConnectionSchema = new mongoose.Schema({
     ref: 'Resident',
     required: true
   },
-  meter_no: 
+  meter_no:  
   {
     type: String, 
     required: [true, 'Meter number is required'],
