@@ -13,18 +13,13 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "../../hooks/use-toast";
+import { AlertCircle } from "lucide-react";
+import { authManager } from "../../lib/auth";
 
-export default function ScheduleAppointmentModal({ isOpen, onClose }) {
+export default function ScheduleAppointmentModal({ isOpen, onClose, reportId, connectionId }) {
   const [formData, setFormData] = useState({
-    residentName: "",
-    residentPhone: "",
-    residentEmail: "",
-    appointmentType: "",
-    appointmentDate: "",
-    appointmentTime: "",
-    purpose: "",
-    notes: "",
-    priority: "normal"
+    description: "",
+    scheduleType: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -34,44 +29,47 @@ export default function ScheduleAppointmentModal({ isOpen, onClose }) {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`);
-      const formattedDateTime = appointmentDateTime.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit'
+      // Call backend API to create task with automatic scheduling
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/schedule-task/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authManager.getToken()}`
+        },
+        body: JSON.stringify({
+          connection_id: connectionId || null,
+          report_id: reportId || null,
+          description: formData.description,
+          schedule_type: formData.scheduleType
+        })
       });
 
-      toast({
-        title: "Appointment Scheduled Successfully",
-        description: `Appointment for ${formData.residentName} scheduled on ${formattedDateTime}`,
-        variant: "default"
-      });
+      const data = await response.json();
 
-      // Reset form
-      setFormData({
-        residentName: "",
-        residentPhone: "",
-        residentEmail: "",
-        appointmentType: "",
-        appointmentDate: "",
-        appointmentTime: "",
-        purpose: "",
-        notes: "",
-        priority: "normal"
-      });
-      
-      onClose();
+      if (response.ok) {
+        toast({
+          title: "Task Scheduled Successfully",
+          description: data.message || "Task has been automatically scheduled with available personnel",
+          variant: "default",
+          duration: 6000
+        });
+
+        // Reset form
+        setFormData({
+          description: "",
+          scheduleType: ""
+        });
+
+        onClose();
+      } else {
+        throw new Error(data.message || 'Failed to schedule task');
+      }
+
     } catch (error) {
-      console.error('Appointment scheduling error:', error);
+      console.error('Task scheduling error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to schedule appointment. Please try again.",
+        description: error.message || "Failed to schedule task. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -83,161 +81,59 @@ export default function ScheduleAppointmentModal({ isOpen, onClose }) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Generate time slots from 8 AM to 5 PM
-  const timeSlots = [];
-  for (let hour = 8; hour <= 17; hour++) {
-    for (let minute of ['00', '30']) {
-      const time = `${hour.toString().padStart(2, '0')}:${minute}`;
-      const displayTime = new Date(`2024-01-01T${time}`).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-      timeSlots.push({ value: time, label: displayTime });
-    }
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-white sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Schedule Appointment</DialogTitle>
+          <DialogTitle>Schedule Maintenance Task</DialogTitle>
           <DialogDescription>
-            Schedule a meeting with a resident for barangay services.
+            Create a maintenance task with automatic personnel assignment.
           </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Resident Information */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-gray-900">Resident Information</h4>
-            
-            <div className="space-y-2">
-              <Label htmlFor="residentName">Resident Name</Label>
-              <Input
-                id="residentName"
-                value={formData.residentName}
-                onChange={(e) => handleChange("residentName")(e.target.value)}
-                placeholder="Enter resident full name"
-                required
-                data-testid="input-resident-name"
-              />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="residentPhone">Phone Number</Label>
-                <Input
-                  id="residentPhone"
-                  value={formData.residentPhone}
-                  onChange={(e) => handleChange("residentPhone")(e.target.value)}
-                  placeholder="Enter phone number"
-                  required
-                  data-testid="input-resident-phone"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="residentEmail">Email (Optional)</Label>
-                <Input
-                  id="residentEmail"
-                  type="email"
-                  value={formData.residentEmail}
-                  onChange={(e) => handleChange("residentEmail")(e.target.value)}
-                  placeholder="Enter email address"
-                  data-testid="input-resident-email"
-                />
-              </div>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Task Type */}
+          <div className="space-y-2">
+            <Label htmlFor="scheduleType">Task Type</Label>
+            <Select onValueChange={handleChange("scheduleType")} required>
+              <SelectTrigger data-testid="select-schedule-type">
+                <SelectValue placeholder="Select task type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Meter Installation">Meter Installation</SelectItem>
+                <SelectItem value="Meter Repair">Meter Repair</SelectItem>
+                <SelectItem value="Pipe Leak Repair">Pipe Leak Repair</SelectItem>
+                <SelectItem value="Maintenance">General Maintenance</SelectItem>
+                <SelectItem value="Inspection">Inspection</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Appointment Details */}
-          <div className="border-t pt-4 space-y-4">
-            <h4 className="font-medium text-gray-900">Appointment Details</h4>
-            
-            <div className="space-y-2">
-              <Label htmlFor="appointmentType">Appointment Type</Label>
-              <Select onValueChange={handleChange("appointmentType")} required>
-                <SelectTrigger data-testid="select-appointment-type">
-                  <SelectValue placeholder="Select appointment type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="document_processing">Document Processing</SelectItem>
-                  <SelectItem value="water_connection">Water Connection Request</SelectItem>
-                  <SelectItem value="business_permit">Business Permit</SelectItem>
-                  <SelectItem value="barangay_clearance">Barangay Clearance</SelectItem>
-                  <SelectItem value="complaint">Complaint Filing</SelectItem>
-                  <SelectItem value="general_inquiry">General Inquiry</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Task Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleChange("description")(e.target.value)}
+              placeholder="Describe the task details..."
+              rows={4}
+              required
+              data-testid="textarea-description"
+            />
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="appointmentDate">Date</Label>
-                <Input
-                  id="appointmentDate"
-                  type="date"
-                  value={formData.appointmentDate}
-                  onChange={(e) => handleChange("appointmentDate")(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  required
-                  data-testid="input-appointment-date"
-                />
+          {/* Auto-scheduling Info */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-900">Automatic Scheduling</p>
+                <p className="text-xs text-blue-700 mt-1">
+                  The system will automatically assign this task to the next available maintenance personnel and schedule it for the next business day.
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="appointmentTime">Time</Label>
-                <Select onValueChange={handleChange("appointmentTime")} required>
-                  <SelectTrigger data-testid="select-appointment-time">
-                    <SelectValue placeholder="Select time" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {timeSlots.map((slot) => (
-                      <SelectItem key={slot.value} value={slot.value}>
-                        {slot.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="purpose">Purpose of Appointment</Label>
-              <Textarea
-                id="purpose"
-                value={formData.purpose}
-                onChange={(e) => handleChange("purpose")(e.target.value)}
-                placeholder="Describe the purpose of this appointment"
-                required
-                data-testid="textarea-purpose"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority Level</Label>
-              <Select onValueChange={handleChange("priority")} defaultValue="normal">
-                <SelectTrigger data-testid="select-priority">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes")(e.target.value)}
-                placeholder="Any additional notes or special requirements"
-                data-testid="textarea-notes"
-              />
             </div>
           </div>
 
@@ -251,12 +147,12 @@ export default function ScheduleAppointmentModal({ isOpen, onClose }) {
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               data-testid="button-schedule"
             >
-              {isLoading ? "Scheduling..." : "Schedule Appointment"}
+              {isLoading ? "Scheduling..." : "Schedule Task"}
             </Button>
           </div>
         </form>

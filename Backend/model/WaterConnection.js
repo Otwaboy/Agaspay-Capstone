@@ -19,7 +19,7 @@ const WaterConnectionSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'active', 'for_disconnection', 'scheduled_for_disconnection', 'disconnected', 'scheduled_for_reconnection'],
     default: 'pending'
-  },
+  }, 
   // purok: 
   // {
   //   type: String, 

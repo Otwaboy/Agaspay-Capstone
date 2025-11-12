@@ -31,7 +31,7 @@ const createReports = async (req, res) => {
     urgency_level,
     reported_issue_status: reported_issue_status || 'Pending',
     reported_by: user.userId,
-    reported_by_model: user.role === 'resident' ? 'Resident' : 'meter_reader'
+    reported_by_model: reported_by_model
   });
 
   // ✅ Respond with success
@@ -41,7 +41,7 @@ const createReports = async (req, res) => {
     data: report,
   });
 };
-
+ 
 const getReports = async (req, res) => {
   const user = req.user;
   if (!user) {

@@ -1,5 +1,3 @@
-
-
 const {createUser, createResident, createWaterConnection, createPesonnel} = require('./auth/auth')
 const { StatusCodes } = require('http-status-codes')
 const { BadRequestError, UnauthorizedError } = require('../errors')
@@ -27,9 +25,9 @@ const registerResident = async (req, res) => {
       throw new BadRequestError('Personnel record not found. Only Secretary or Admin can create residents.');
     }
 
-    const { 
+    const {
       username, password, first_name, last_name, zone, email, purok, contact_no,
-      type, meter_no, schedule_installation, schedule_date, schedule_time, assigned_personnel
+      type, meter_no
     } = req.body;
 
     if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type || !meter_no) {
@@ -44,33 +42,115 @@ const registerResident = async (req, res) => {
           throw new BadRequestError('A resident with the same full name already exists.');
         }
 
-    if (schedule_installation && (!schedule_date || !schedule_time || !assigned_personnel)) {
-      throw new BadRequestError('Scheduling requires date, time, and assigned personnel');
-    }
-
     // ✅ All DB write operations must be attached to the session:
     const user = await User.create([{ username, password, role: 'resident' }], { session });
     const resident = await Resident.create([{ user_id: user[0]._id, first_name, last_name, email, zone, purok, contact_no }], { session });
     const waterConnection = await WaterConnection.create([{ resident_id: resident[0]._id, meter_no, type }], { session });
 
+    // ✅ AUTOMATIC SCHEDULING: Find available maintenance personnel
     let installationTask = null;
     let assignment = null;
+    let autoScheduledMessage = '';
 
-    if (schedule_installation) {
-      installationTask = await ScheduleTask.create([{
-        connection_id: waterConnection[0]._id,
-        schedule_date,
-        schedule_time,
-        task_status: 'Assigned',
-        assigned_personnel,
-        schedule_type: 'Meter Installation', 
-        scheduled_by: secretary._id,
-      }], { session });
+    // Get all maintenance personnel
+    const maintenancePersonnel = await Personnel.find({ role: 'maintenance' }).session(session);
 
-      assignment = await Assignment.create([{
-        task_id: installationTask[0]._id,
-        assigned_to: assigned_personnel,
-      }], { session });
+    if (maintenancePersonnel.length > 0) {
+      // Define available time slots
+      const timeSlots = ['09:30', '10:30', '13:30', '14:30'];
+
+      // Calculate next business day (tomorrow)
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0, 0);
+
+      const scheduleDate = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD
+      console.log(`[Register] 📅 Current date: ${now.toISOString().split('T')[0]}, Schedule date: ${scheduleDate}`);
+      let scheduleTime = null;
+      let selectedPersonnel = null;
+
+      // Try to find an available personnel for each time slot
+      for (const slot of timeSlots) {
+        // Find maintenance personnel who are AVAILABLE (not already assigned) at this date and time
+        const availablePersonnel = [];
+        const targetDate = new Date(scheduleDate);
+        targetDate.setHours(0, 0, 0, 0);
+
+        for (const personnel of maintenancePersonnel) {
+          // Check if this personnel has any existing assignment at this exact date and time
+          const existingAssignment = await ScheduleTask.findOne({
+            assigned_personnel: personnel._id,
+            schedule_time: slot
+          }).session(session);
+
+          // If assignment exists, check if it's for the same date
+          let isBusy = false;
+          if (existingAssignment && existingAssignment.schedule_date) {
+            const existingDate = new Date(existingAssignment.schedule_date);
+
+            // Compare dates (year, month, day only)
+            if (existingDate.getFullYear() === targetDate.getFullYear() &&
+                existingDate.getMonth() === targetDate.getMonth() &&
+                existingDate.getDate() === targetDate.getDate()) {
+              isBusy = true;
+            }
+          }
+
+          // Only include personnel who have NO assignments at this time (conflict-free)
+          if (!isBusy) {
+            availablePersonnel.push(personnel);
+          }
+        }
+
+        console.log(`[Register] Time slot ${slot}: ${availablePersonnel.length}/${maintenancePersonnel.length} personnel available`);
+
+        // If ALL personnel are available for this time slot, use it (best option - no conflicts)
+        if (availablePersonnel.length === maintenancePersonnel.length) {
+          selectedPersonnel = availablePersonnel[0];
+          scheduleTime = slot;
+          console.log(`[Register] ✅ Using time slot ${slot} - all personnel available`);
+          break;
+        }
+
+        // If SOME personnel are available, remember this slot as a fallback
+        if (availablePersonnel.length > 0 && !selectedPersonnel) {
+          selectedPersonnel = availablePersonnel[0];
+          scheduleTime = slot;
+          console.log(`[Register] ⚠️  Partial availability at ${slot}, continuing to check for better slots...`);
+          // Don't break - keep checking for a time slot where ALL personnel are free
+        }
+      }
+
+      // Check if we found an available slot
+      if (!selectedPersonnel) {
+        // All personnel are busy at all time slots - warn user but still register resident
+        autoScheduledMessage = `All maintenance personnel are fully booked for ${scheduleDate}. Please manually schedule meter installation through the Assignments page.`;
+      }
+
+      // Only create installation task if we found available personnel
+      if (selectedPersonnel) {
+        // Create automatic installation task
+        installationTask = await ScheduleTask.create([{
+          connection_id: waterConnection[0]._id,
+          schedule_date: scheduleDate,
+          schedule_time: scheduleTime,
+          task_status: 'Assigned',
+          assigned_personnel: selectedPersonnel._id,
+          schedule_type: 'Meter Installation',
+          scheduled_by: secretary._id,
+        }], { session });
+
+        assignment = await Assignment.create([{
+          task_id: installationTask[0]._id,
+          assigned_to: selectedPersonnel._id,
+        }], { session });
+
+        autoScheduledMessage = `Meter installation automatically scheduled for ${scheduleDate} at ${scheduleTime} with ${selectedPersonnel.first_name} ${selectedPersonnel.last_name}.`;
+      }
+      // If no personnel available, message was already set above
+    } else {
+      autoScheduledMessage = 'No maintenance personnel available. Please schedule meter installation manually through the Assignments page.';
     }
 
     await session.commitTransaction();
@@ -79,9 +159,7 @@ const registerResident = async (req, res) => {
     const token = user[0].createJWT();
 
     res.status(201).json({
-      message: schedule_installation 
-        ? `Resident was successfully registered. Meter installation scheduled for ${schedule_date} at ${schedule_time}.`
-        : 'Resident was successfully registered. Please schedule meter installation through the Assignments page.',
+      message: `Resident was successfully registered. ${autoScheduledMessage}`,
       user_id: user[0]._id,
       resident_id: resident[0]._id,
       username: user[0].username,
@@ -89,7 +167,8 @@ const registerResident = async (req, res) => {
       connection_status: waterConnection[0].connection_status,
       token,
       task_id: installationTask?.[0]?._id,
-      assignment_id: assignment?.[0]?._id
+      assignment_id: assignment?.[0]?._id,
+      auto_scheduled: maintenancePersonnel.length > 0
     });
 
   } catch (error) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "../hooks/use-auth";
@@ -9,7 +9,6 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -50,14 +49,7 @@ export default function SecretaryIncidentReports() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [updateStatusOpen, setUpdateStatusOpen] = useState(false);
 
-  // Task form state
-  const [taskForm, setTaskForm] = useState({
-    task_type: "Maintenance",
-    schedule_date: "",
-    schedule_time: "",
-    description: "",
-    selected_slot: null
-  });
+  // No task form state needed - will use incident report data directly
 
   // Status update state
   const [newStatus, setNewStatus] = useState("");
@@ -93,95 +85,6 @@ export default function SecretaryIncidentReports() {
     "Other"
   ];
 
-  // Task types from backend schema
-  // const taskTypes = [
-  //   "Meter Reading",
-  //   "Maintenance",
-  //   "Billing Preparation",
-  //   "Inspection",
-  //   "Other"
-  // ];
-
-  // Generate time slots - all 1 hour duration
-  const generateTimeSlots = () => {
-    const slots = [];
-    const startHour = 9;
-    const startMinute = 30;
-    const duration = 60; // Always 1 hour for all urgency levels
-    
-    // Generate 5 time slot options throughout the day
-    for (let i = 0; i < 5; i++) {
-      const offsetMinutes = i * 120; // 2-hour intervals between options
-      const startTotalMinutes = startHour * 60 + startMinute + offsetMinutes;
-      const endTotalMinutes = startTotalMinutes + duration;
-      
-      // Don't go past 5 PM (17:00)
-      if (endTotalMinutes > 17 * 60) break;
-      
-      const startH = Math.floor(startTotalMinutes / 60);
-      const startM = startTotalMinutes % 60;
-      const endH = Math.floor(endTotalMinutes / 60);
-      const endM = endTotalMinutes % 60;
-      
-      const startTime = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`;
-      const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-      
-      slots.push({
-        start: startTime,
-        end: endTime,
-        display: `${startTime} - ${endTime}`,
-        duration: duration
-      });
-    }
-    
-    return slots;
-  };
-
-  // Check if a time slot conflicts with existing tasks on a specific date
-  const isTimeSlotOccupied = (date, startTime, endTime) => {
-    if (!date || !startTime || !endTime) return false;
-    
-    return tasks.some(task => {
-      // Only check tasks on the same date
-      if (task.schedule_date !== date) return false;
-      
-      const taskTime = task.schedule_time;
-      if (!taskTime) return false;
-      
-      // Parse times for comparison
-      const [slotStartH, slotStartM] = startTime.split(':').map(Number);
-      const [slotEndH, slotEndM] = endTime.split(':').map(Number);
-      const [taskH, taskM] = taskTime.split(':').map(Number);
-      
-      const slotStartMinutes = slotStartH * 60 + slotStartM;
-      const slotEndMinutes = slotEndH * 60 + slotEndM;
-      const taskMinutes = taskH * 60 + taskM;
-      
-      // Check if task time falls within this slot
-      return taskMinutes >= slotStartMinutes && taskMinutes < slotEndMinutes;
-    });
-  };
-
-  // Generate available time slots (filter out occupied ones)
-  const availableSlots = useMemo(() => {
-    if (!taskForm.schedule_date) return [];
-    
-    const allSlots = generateTimeSlots();
-    // Filter out occupied slots - only show available ones
-    return allSlots.filter(slot => 
-      !isTimeSlotOccupied(taskForm.schedule_date, slot.start, slot.end)
-    );
-  }, [taskForm.schedule_date, tasks]);
-
-  // Update schedule_time when a slot is selected
-  useEffect(() => {
-    if (taskForm.selected_slot) {
-      setTaskForm(prev => ({
-        ...prev,
-        schedule_time: taskForm.selected_slot.start
-      }));
-    }
-  }, [taskForm.selected_slot]);
 
   // Filter reports based on search and filters
   const filteredReports = reports.filter(report => {
@@ -198,25 +101,21 @@ export default function SecretaryIncidentReports() {
     return matchesSearch && matchesStatus && matchesType && matchesUrgency;
   });
 
-  // Create schedule task mutation
+  // Create schedule task mutation with automatic scheduling
   const createTaskMutation = useMutation({
     mutationFn: (taskData) => apiClient.createScheduleTask(taskData),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Success",
-        description: "Schedule task created successfully",
+        title: "Task Scheduled Successfully",
+        description: data.message || "Task has been automatically scheduled with available personnel",
+        variant: "default",
+        duration: 6000
       });
       queryClient.invalidateQueries({ queryKey: ['/api/v1/schedule-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/incident-reports'] });
       setCreateTaskOpen(false);
-      setTaskForm({
-        task_type: "Maintenance",
-        schedule_date: "",
-        schedule_time: "",
-        description: "",
-        selected_slot: null
-      });
     },
-    onError: (error) => {
+    onError: (error) => { 
       toast({
         title: "Error",
         description: error.message || "Failed to create schedule task",
@@ -262,21 +161,20 @@ export default function SecretaryIncidentReports() {
   };
 
   const submitCreateTask = () => {
-    if (!taskForm.task_type || !taskForm.schedule_date || !taskForm.schedule_time) {
+    if (!selectedReport) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: "Error",
+        description: "No report selected",
         variant: "destructive",
       });
       return;
     }
 
+    // Use incident report data directly for task creation
     createTaskMutation.mutate({
       report_id: selectedReport._id,
-      task_type: taskForm.task_type,
-      schedule_date: taskForm.schedule_date,
-      schedule_time: taskForm.schedule_time,
-      description: taskForm.description || `Task for ${selectedReport.type} - ${selectedReport.location}`,
+      // schedule_type: selectedReport.type, // Use the incident report type
+      description: `${selectedReport.type} reported at ${selectedReport.location}. ${selectedReport.description || ''}`.trim(),
     });
   };
 
@@ -709,140 +607,77 @@ export default function SecretaryIncidentReports() {
 
       {/* Create Schedule Task Dialog */}
       <Dialog open={createTaskOpen} onOpenChange={setCreateTaskOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Create Schedule Task</DialogTitle>
+            <DialogTitle>Schedule Maintenance Task</DialogTitle>
             <DialogDescription>
-              Schedule a task to address this incident report
+              Create a maintenance task with automatic personnel assignment
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {/* <div>
-              <Label htmlFor="task-type">Task Type *</Label>
-
-            </div> */}
-
-            <div>
-              <Label htmlFor="schedule-date">Schedule Date *</Label>
-              <Input
-                id="schedule-date"
-                type="date"
-                value={taskForm.schedule_date}
-                onChange={(e) => setTaskForm({ ...taskForm, schedule_date: e.target.value })}
-                data-testid="input-schedule-date"
-              />
-            </div>
-
-            {/* Time Slot Selection - Only show available slots */}
-            {taskForm.schedule_date && (
-              <div>
-                <Label>Select Time Slot *</Label>
-                {availableSlots.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 mt-2">
-                    {availableSlots.map((slot, index) => {
-                      const isSelected = taskForm.selected_slot?.start === slot.start;
-                      
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => {
-                            setTaskForm({ ...taskForm, selected_slot: slot });
-                          }}
-                          className={`
-                            p-3 rounded-lg border-2 transition-all text-left
-                            ${isSelected 
-                              ? 'bg-blue-50 border-blue-500' 
-                              : 'bg-white border-gray-200 hover:border-blue-300'
-                            }
-                          `}
-                          data-testid={`button-time-slot-${index}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <p className={`font-medium ${isSelected ? 'text-blue-700' : 'text-gray-900'}`}>
-                                {slot.display}
-                              </p>
-                              <p className="text-xs text-gray-600 mt-0.5">
-                                Duration: {slot.duration} min
-                              </p>
-                            </div>
-                            {isSelected ? (
-                              <Badge className="bg-blue-100 text-blue-700 text-xs">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Selected
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-green-100 text-green-700 text-xs">
-                                Available
-                              </Badge>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-2">
-                    <p className="text-sm text-yellow-800">
-                      All time slots are occupied for this date. Please select a different date.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <Label htmlFor="task-description">Description</Label>
-              <Textarea
-                id="task-description"
-                placeholder="Enter task description (optional)"
-                value={taskForm.description}
-                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
-                rows={3}
-                data-testid="textarea-task-description"
-              />
-            </div>
-
             {selectedReport && (
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-900">
-                  <strong>Related to:</strong> {selectedReport.type} - {selectedReport.location}
-                </p>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="font-semibold text-gray-900 mb-2">Incident Report Details</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Type:</span>
+                    <span className="font-medium text-gray-900">{selectedReport.type}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Location:</span>
+                    <span className="font-medium text-gray-900">{selectedReport.location}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Urgency:</span>
+                    <Badge className={urgencyConfig[selectedReport.urgency_level]?.color || "bg-gray-100 text-gray-700"}>
+                      {urgencyConfig[selectedReport.urgency_level]?.label || selectedReport.urgency_level}
+                    </Badge>
+                  </div>
+                  {selectedReport.description && (
+                    <div className="pt-2 border-t">
+                      <span className="text-gray-600 block mb-1">Description:</span>
+                      <p className="text-gray-900">{selectedReport.description}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
+
+            {/* Auto-scheduling Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Automatic Scheduling</p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    The system will automatically create a task based on this incident report, assign it to the next available maintenance personnel, and schedule it for the next business day.
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setCreateTaskOpen(false);
-                  setTaskForm({
-                    task_type: "Maintenance",
-                    schedule_date: "",
-                    schedule_time: "",
-                    description: "",
-                    selected_slot: null
-                  });
-                }}
+                onClick={() => setCreateTaskOpen(false)}
                 data-testid="button-cancel-task"
               >
                 Cancel
               </Button>
               <Button
                 onClick={submitCreateTask}
-                disabled={createTaskMutation.isPending || !taskForm.selected_slot}
+                disabled={createTaskMutation.isPending}
                 data-testid="button-submit-task"
               >
                 {createTaskMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
+                    Scheduling...
                   </>
                 ) : (
                   <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Task
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Schedule Task
                   </>
                 )}
               </Button>

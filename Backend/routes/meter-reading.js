@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const {getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading} = require('../controller/meter-reading')
+const {getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading, getSubmittedReadings, getApprovalStats} = require('../controller/meter-reading')
 
 const authMiddleware = require('../middleware/authentication')
 const roleMiddleware = require('../middleware/roleMiddleware')
@@ -16,5 +16,16 @@ router.route('/submit-readings').post(authMiddleware, roleMiddleware('meter_read
 router.route('/:reading_id/update-readings').patch(authMiddleware, roleMiddleware('meter_reader', 'treasurer'), updateReadings);
 router.route('/approve-readings').patch(authMiddleware, roleMiddleware('meter_reader', 'treasurer'), approveReading);
 
+
+// // Approve individual reading
+// router.route('/:id/approve')
+//   .patch(authMiddleware, roleMiddleware('treasurer'), approveSingleReading);
+
+router.route('/submitted-readings')
+  .get(authMiddleware, roleMiddleware('treasurer'), getSubmittedReadings);
+
+// Get approval statistics
+router.route('/approval-stats')
+  .get(authMiddleware, roleMiddleware('treasurer'), getApprovalStats);
 
 module.exports = router     

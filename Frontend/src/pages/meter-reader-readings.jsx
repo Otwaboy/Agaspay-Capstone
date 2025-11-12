@@ -7,11 +7,12 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useToast } from "../hooks/use-toast";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2,  } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
 import { Badge } from "../components/ui/badge";
+
 
 export default function MeterReaderReadings() {
   const [formData, setFormData] = useState({
@@ -58,8 +59,23 @@ export default function MeterReaderReadings() {
 
   console.log('filtter', filteredConnections);
 
+  const overallReadingStatus = (() => {
+  if (filteredConnections.length === 0) return "No Data";
+
+  const allApproved = filteredConnections.every(c => c.reading_status === "approved");
+  const anySubmitted = filteredConnections.some(c => c.reading_status === "submitted");
+  const allInProgress = filteredConnections.every(c => c.reading_status === "inprogress");
+
+  if (allApproved) return "Approved";
+  if (anySubmitted) return "Submitted";
+  if (allInProgress) return "In Progress";
+  return "In Progress"; // fallback
+})();
+
   // Monthly progress
   const readCount = filteredConnections.filter(conn => conn.read_this_month).length;
+  console.log('read count', readCount);
+  
   const totalCount = filteredConnections.length;
   const progressPercentage = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
 
@@ -205,10 +221,13 @@ export default function MeterReaderReadings() {
         <MeterReaderTopHeader />
 
         <main className="flex-1 overflow-auto p-2 relative z-10">
+         
           <div className="max-w-7xl mx-auto">
+            
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 ml-4">Record Meter Reading</h1>
               <p className="text-gray-600 mt-2 ml-4">Zone {meterReaderZone} - {filteredConnections.length} Connections Available</p>
+               {/* place the stats card here with the reading_status  total resident in the zone the meter reader assigned and the meter reader assignex */}
             </div>
 
             <div className="space-y-4">
@@ -216,7 +235,18 @@ export default function MeterReaderReadings() {
                 <CardContent className="p-3 sm:p-6">
                   {meterReaderZone && (
                     <div className="mb-6 space-y-3">
+                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+                        
+                        <div className="flex items-center space-x-2">
+                          <MapPin className="h-5 w-5 text-green-600" />
+                          <div>
+                            <p className="text-sm font-semibold text-green-900">Reading Status</p>
+                            <p className="text-lg text-green-700">{overallReadingStatus}</p>
+                          </div>
+                        </div>
+                      </div>
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex justify-between items-center">
+                        
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-5 w-5 text-green-600" />
                           <div>
@@ -293,7 +323,10 @@ export default function MeterReaderReadings() {
                     </div>
 
                     {/* ------------------ SHORT-CIRCUIT RENDERING ------------------ */}
-                    {selectedConnectionData && selectedConnectionData.reading_status !== "inprogress" && (
+                   {selectedConnectionData &&
+                                    selectedConnectionData.reading_status !== "inprogress" &&
+                                    selectedConnectionData.reading_status !== "submitted" &&
+                                    selectedConnectionData.reading_status !== "approved" && (
                       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div className="bg-white p-3 rounded-lg">
@@ -316,7 +349,7 @@ export default function MeterReaderReadings() {
                       </div>
                     )}
 
-                    {selectedConnectionData?.reading_status === "inprogress" && (
+                  {["inprogress", "submitted"].includes(selectedConnectionData?.reading_status) &&(
                       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div className="bg-white p-3 rounded-lg">
@@ -379,8 +412,10 @@ export default function MeterReaderReadings() {
                         value={formData.present_reading}
                         onChange={(e) => handleInputChange("present_reading", e.target.value)}
                         className="h-12 text-base text-lg font-semibold"
-                        disabled={!selectedConnectionData}
-                      />
+                        disabled={
+                                  !selectedConnectionData ||
+                                  ["approved"].includes(selectedConnectionData?.reading_status)
+                                }/>
                     </div>
 
                     {/* Date and Remarks Inputs */}
@@ -407,14 +442,26 @@ export default function MeterReaderReadings() {
                         disabled={
                           recordReadingMutation.isPending ||
                           selectedConnectionData?.reading_status === "inprogress" ||
-                          selectedConnectionData?.reading_status === "submitted"
+                          selectedConnectionData?.reading_status === "submitted" ||
+                           selectedConnectionData?.reading_status === "approved"
                         }
                       >
                         {recordReadingMutation.isPending ? "Recording..." : "Record Reading"}
                       </Button>
-                      <Button type="button" className="bg-green-600 hover:bg-green-700 text-white h-12" onClick={() => submitAllReadingsMutation.mutate()}>
-                        {submitAllReadingsMutation.isPending ? "Submitting..." : "Submit All Readings"}
-                      </Button>
+                      {/* i want here to disabled the button if the reading.status is submitted my current style is im using the selectedConnectionData but what i want is not only the selected but all data that have readingstatus of submitted */}
+                       <Button
+                          type="button"
+                          disabled={
+                            submitAllReadingsMutation.isPending ||
+                            filteredConnections.every(conn =>
+                               conn.reading_status === "submitted"
+                            || conn.reading_status === "approved")
+                          }
+                          className="bg-green-600 hover:bg-green-700 text-white h-12"
+                          onClick={() => submitAllReadingsMutation.mutate()}
+                        >
+                          {submitAllReadingsMutation.isPending ? "Submitting..." : "Submit All Readings"}
+                        </Button>
                     </div>
                   </form>
                 </CardContent>

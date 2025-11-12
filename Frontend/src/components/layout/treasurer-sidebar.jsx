@@ -14,7 +14,8 @@ import {
   LogOut,
   ChevronDown,
   ChevronRight,
-  Menu
+  Menu,
+  CheckCircle2  // ✅ Added for Approve Readings icon
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -26,6 +27,12 @@ const menuItems = [
     icon: LayoutDashboard,
     href: "/treasurer-dashboard",
     color: "text-blue-600"
+  },
+  { 
+    title: "Approve Readings",  // ✅ Fixed
+    icon: CheckCircle2,         // ✅ Changed icon
+    href: "/treasurer-dashboard/approve-readings",  // ✅ Correct path
+    color: "text-green-600"     // ✅ Changed color
   },
   {
     title: "Revenue Management",

@@ -12,7 +12,7 @@ const ScheduleTaskSchema = new mongoose.Schema(
       ref: 'IncidentReport',
       required: false, // not all tasks come from reports 
     }, 
-    schedule_date: {
+    schedule_date: { 
       type: Date,
       required: [true, 'Please provide a schedule date'],
     },
@@ -35,6 +35,15 @@ const ScheduleTaskSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Personnel',
       required: [true, 'Please provide the user who scheduled the task'],
+    },
+    assigned_personnel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Personnel',
+      required: false, // Optional because tasks can be unassigned initially
+    },
+    description: {
+      type: String,
+      required: false, // Optional task description
     },
   },
   { timestamps: true } 

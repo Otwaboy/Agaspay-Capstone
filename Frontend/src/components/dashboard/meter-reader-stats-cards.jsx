@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 
 export default function MeterReaderStatsCards() {
-  const { data: readerStats, isLoading } = useQuery({
+  const { data: readerStats } = useQuery({
     queryKey: ['/api/v1/meter-reader/daily-stats'],
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -61,7 +61,7 @@ export default function MeterReaderStatsCards() {
       testId: "card-pending-readings"
     },
     {
-      title: "Issues Reported",
+      title: "Reading Status",
       value: (stats.issuesReported?.count || 0).toString(),
       subtitle: `${stats.issuesReported?.resolved || 0} resolved`,
       icon: AlertTriangle,
@@ -69,33 +69,6 @@ export default function MeterReaderStatsCards() {
       iconColor: "text-red-600",
       testId: "card-issues-reported"
     },
-    {
-      title: "Route Progress",
-      value: `${stats.routeProgress?.percentage || 0}%`,
-      subtitle: `ETA: ${stats.routeProgress?.estimatedCompletion || 'N/A'}`,
-      icon: Route,
-      bgColor: "bg-blue-50",
-      iconColor: "text-blue-600",
-      testId: "card-route-progress"
-    },
-    {
-      title: "Reading Accuracy",
-      value: `${stats.accuracy?.percentage || 0}%`,
-      subtitle: `${stats.accuracy?.errors || 0} errors`,
-      icon: Target,
-      bgColor: "bg-purple-50",
-      iconColor: "text-purple-600",
-      testId: "card-reading-accuracy"
-    },
-    {
-      title: "Daily Target",
-      value: `${stats.totalAssigned?.percentage || 0}%`,
-      subtitle: `${stats.totalAssigned?.count || 0} of ${stats.totalAssigned?.target || 0}`,
-      icon: Gauge,
-      bgColor: "bg-indigo-50",
-      iconColor: "text-indigo-600",
-      testId: "card-daily-target"
-    }
   ];
 
   // if (isLoading) {
@@ -118,16 +91,16 @@ export default function MeterReaderStatsCards() {
   // }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {statsCards.map((stat) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.title} data-testid={stat.testId}>
+          <Card  key={stat.title} data-testid={stat.testId}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 {stat.title}
               </CardTitle>
-              <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
+              <div className={`w-5 h-5 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
                 <Icon className={`h-5 w-5 ${stat.iconColor}`} />
               </div>
             </CardHeader>

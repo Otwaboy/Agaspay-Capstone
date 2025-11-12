@@ -190,6 +190,42 @@ async updateReadings(reading_id, data) {
   }
 }
 
+// ✅ Approve multiple readings
+async approveAllReadings(readingIds = []) {
+  try {
+    return await this.request('/api/v1/meter-reader/approve-readings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reading_ids: readingIds }),
+    });
+  } catch (error) {
+    console.error("Approving readings failed:", error);
+    throw error;
+  }
+}
+
+async getSubmittedReadings() {
+  try {
+    return await this.request('/api/v1/meter-reader/submitted-readings', {
+      method: 'GET',
+    });
+  } catch (error) {
+    console.error("Fetching submitted readings failed:", error);
+    throw error;
+  }
+}
+
+// ✅ Get approval statistics (for dashboard overview)
+async getApprovalStats() {
+  try {
+    return await this.request('/api/v1/meter-reader/approval-stats', {
+      method: 'GET',
+    });
+  } catch (error) {
+    console.error("Fetching approval stats failed:", error);
+    throw error;
+  }
+}
 
 
 

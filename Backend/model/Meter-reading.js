@@ -52,6 +52,10 @@ const MeterReadingSchema = new mongoose.Schema({
   //   type: Boolean,
   //   default: true
   // }, 
+  billing_month: {
+     type: String,
+      required: true },
+      
   recorded_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Personnel',

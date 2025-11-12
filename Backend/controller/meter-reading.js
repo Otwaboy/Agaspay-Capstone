@@ -50,9 +50,8 @@ const getAllConnectionIDs = async (req, res) => {
 };
 
 
-
 const inputReading = async (req, res) => {
-  const { connection_id, present_reading, inclusive_date, remarks} = req.body;
+  const { connection_id, present_reading, inclusive_date, remarks } = req.body;
   const user = req.user;
 
   // Validate role
@@ -61,34 +60,29 @@ const inputReading = async (req, res) => {
   }
 
   // Validate input
-  if (!connection_id || present_reading === undefined|| !inclusive_date ) {
+  if (!connection_id || present_reading === undefined || !inclusive_date) {
     throw new BadRequestError('All fields are required.');
   }
 
-   if (!inclusive_date.start || !inclusive_date.end) {
-    throw new BadRequestError('Please porvice inclusive start date and end date');
+  if (!inclusive_date.start || !inclusive_date.end) {
+    throw new BadRequestError('Please provide inclusive start date and end date');
   }
 
-
-  const connection = await WaterConnection.findById(connection_id)
-  .populate('resident_id'); // <-- add this
-   if (!connection) {
+  const connection = await WaterConnection.findById(connection_id).populate('resident_id');
+  if (!connection) {
     throw new BadRequestError('Water connection not found.');
   }
 
-    // ✅ Check if meter reader's assigned zone matches resident's zone
+  // Check meter reader's assigned zone
   const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
   if (!personnel || !personnel.assigned_zone) {
     throw new BadRequestError('Meter reader has no assigned zone.');
-  } 
+  }
 
-  const resident = connection.resident_id; // populated resident
+  const resident = connection.resident_id;
   if (!resident) {
     throw new BadRequestError('Resident data not found for this connection.');
   }
-
-  console.log('zone', resident.zone);
-  
 
   if (resident.zone !== personnel.assigned_zone) {
     throw new UnauthorizedError(
@@ -96,16 +90,22 @@ const inputReading = async (req, res) => {
     );
   }
 
- // Find the last reading for this connection
-  const lastReading = await MeterReading.findOne({connection_id}).sort({created_at: -1});
+  // 🔹 Determine current billing month
+  const today = new Date();
+  const billing_month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
- // If there's a last reading, use its present as new previous
+  // Find the last reading for this connection **for the current month**
+  const lastReading = await MeterReading.findOne({ 
+    connection_id,
+    billing_month 
+  }).sort({ created_at: -1 });
+
   const previous_reading = lastReading ? lastReading.present_reading : 0;
 
- // ✅ Validate present >= previous
-    if (present_reading < previous_reading) {
-     throw new BadRequestError('Present reading cannot be less than previous reading')
-    } 
+  // Validate present >= previous
+  if (present_reading < previous_reading) {
+    throw new BadRequestError('Present reading cannot be less than previous reading');
+  }
 
   // Create meter reading
   const reading = await MeterReading.create({
@@ -115,7 +115,8 @@ const inputReading = async (req, res) => {
     present_reading,
     calculated: present_reading - previous_reading,
     remarks,
-    recorded_by: user.userId, // assuming userId is stored in the JWT
+    recorded_by: user.userId,
+    billing_month // 🔹 save the billing month
   });
 
   res.status(StatusCodes.CREATED).json({
@@ -128,48 +129,89 @@ const submitReading = async (req, res) => {
   const user = req.user;
 
   // Only meter readers can submit readings
-  if (user.role !== 'meter_reader') {
-    throw new UnauthorizedError('Only meter readers can submit readings.');
+  if (user.role !== "meter_reader") {
+    throw new UnauthorizedError("Only meter readers can submit readings.");
   }
 
   // Get meter reader's assigned zone
-  const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
+  const personnel = await Personnel.findOne({ user_id: user.userId }).select("assigned_zone");
   if (!personnel || !personnel.assigned_zone) {
-    throw new BadRequestError('Meter reader has no assigned zone.');
+    throw new BadRequestError("Meter reader has no assigned zone.");
   }
   const assignedZone = personnel.assigned_zone;
 
+  // Get the current billing month
+  const today = new Date();
+  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
   // Find all active connections in this zone
-  const connections = await WaterConnection.find({ connection_status: 'active' })
-    .populate('resident_id', 'zone');
+  const connections = await WaterConnection.find({ connection_status: "active" })
+    .populate("resident_id", "zone");
 
   // Filter connections that belong to meter reader's zone
-  const zoneConnections = connections.filter(c => c.resident_id?.zone === assignedZone);
+  const zoneConnections = connections.filter((c) => c.resident_id?.zone === assignedZone);
 
-  // Check if all connections in this zone have a reading in progress
+  // Find readings that are in progress for the current billing month
   const readingsInZone = await MeterReading.find({
-    connection_id: { $in: zoneConnections.map(c => c._id) },
-    reading_status: 'inprogress'
+    connection_id: { $in: zoneConnections.map((c) => c._id) },
+    reading_status: "inprogress",
+    billing_month: currentMonth, // ✅ only for current month
   });
 
+  // Ensure all active connections in this zone have readings this month
   if (readingsInZone.length !== zoneConnections.length) {
     return res.status(400).json({
-      message: 'Cannot submit readings. Some residents do not have readings recorded yet.',
-      missing: zoneConnections.length - readingsInZone.length
+      message: `Cannot submit readings. Some residents in zone ${assignedZone} do not have readings recorded for ${currentMonth}.`,
+      missing: zoneConnections.length - readingsInZone.length,
     });
   }
 
-  // Update all readings in this zone to "submitted"
+  // Update all readings in this zone for the current month to "submitted"
   await MeterReading.updateMany(
-    { _id: { $in: readingsInZone.map(r => r._id) } },
-    { $set: { reading_status: 'submitted' } }
+    { _id: { $in: readingsInZone.map((r) => r._id) } },
+    { $set: { reading_status: "submitted" } }
   );
 
   res.status(200).json({
-    message: `All readings for zone ${assignedZone} have been submitted for approval.`,
-    total_submitted: readingsInZone.length
+    message: `All readings for zone ${assignedZone} in ${currentMonth} have been submitted for approval.`,
+    total_submitted: readingsInZone.length,
   });
 };
+
+const approveReading = async (req, res) => {
+  const user = req.user;
+
+  // Only treasurer can approve readings
+  if (user.role !== "treasurer") {
+    return res.status(403).json({ msg: "Unauthorized. Only treasurer can approve readings." });
+  }
+
+  // Get the current billing month
+  const today = new Date();
+  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
+  // Get all readings submitted for approval this month
+  const readingsToApprove = await MeterReading.find({
+    reading_status: "submitted",
+    billing_month: currentMonth, // ✅ only approve current month
+  });
+
+  if (readingsToApprove.length === 0) {
+    return res.status(400).json({ msg: `No submitted readings found for ${currentMonth}.` });
+  }
+
+  // Bulk update all submitted readings for the current month
+  const result = await MeterReading.updateMany(
+    { reading_status: "submitted", billing_month: currentMonth },
+    { $set: { reading_status: "approved" } }
+  );
+
+  res.status(200).json({
+    msg: `All submitted readings for ${currentMonth} have been approved successfully.`,
+    total_approved: result.modifiedCount,
+  });
+};
+
 
 // ✅ Get latest reading per water connection
 /**
@@ -422,31 +464,177 @@ const updateReadings = async (req, res) => {
   });
 };
 
-const approveReading = async (req, res) => {
-  const user = req.user;
+// const approveReading = async (req, res) => {
+//   const user = req.user;
 
-  // Only treasurer can approve readings
-  if (user.role !== 'treasurer') {
-    return res.status(403).json({ msg: 'Unauthorized. Only treasurer can approve readings.' });
+//   // Only treasurer can approve readings
+//   if (user.role !== 'treasurer') {
+//     return res.status(403).json({ msg: 'Unauthorized. Only treasurer can approve readings.' });
+//   }
+
+//   // Get all readings that are submitted
+//   const readingsToApprove = await MeterReading.find({ reading_status: 'submitted' });
+
+//   if (readingsToApprove.length === 0) {
+//     return res.status(400).json({ msg: 'No submitted readings found to approve.' });
+//   }
+
+//   // Bulk update
+//   const result = await MeterReading.updateMany(
+//     { reading_status: 'submitted' },
+//     { $set: { reading_status: 'approved' } }
+//   );
+
+//   res.status(200).json({
+//     msg: 'All submitted readings have been approved successfully',
+//     total_approved: result.modifiedCount
+//   });
+// };
+
+
+/**
+ * ✅ Get Submitted Readings (for treasurer approval page)
+ * GET /api/v1/meter-reader/submitted-readings
+ * Returns only readings with status 'submitted'
+ */
+const getSubmittedReadings = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Only treasurer can access
+    if (user.role !== 'treasurer') {
+      return res.status(403).json({ 
+        message: 'Unauthorized. Only treasurer can view submitted readings.' 
+      });
+    }
+
+    const readings = await WaterConnection.aggregate([
+      // 1️⃣ Filter only active connections
+      { $match: { connection_status: "active" } },
+
+      // 2️⃣ Attach resident info
+      {
+        $lookup: {
+          from: "residents",
+          localField: "resident_id",
+          foreignField: "_id",
+          as: "resident"
+        }
+      },
+      { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
+
+      // 3️⃣ Latest reading lookup
+      {
+        $lookup: {
+          from: "meterreadings",
+          let: { connId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$connection_id", "$$connId"] } } },
+            { $sort: { created_at: -1 } },
+            { $limit: 1 }
+          ],
+          as: "latestReading"
+        }
+      },
+      { $unwind: { path: "$latestReading", preserveNullAndEmptyArrays: true } },
+
+      // 4️⃣ Filter only submitted readings
+      { $match: { "latestReading.reading_status": "submitted" } }
+    ]);
+
+    // Format the response
+    const submittedReadings = readings.map(item => {
+      const reading = item.latestReading;
+      const resident = item.resident;
+
+      return {
+        reading_id: reading?._id ? reading._id.toString() : null,
+        connection_id: item._id ? item._id.toString() : null,
+        connection_status: item.connection_status,
+        connection_type: item.type || "Unknown",
+        inclusive_date: reading?.inclusive_date || null,
+        full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
+        purok_no: resident?.purok || "N/A",
+        zone: resident?.zone || null,
+        previous_reading: reading?.previous_reading ?? 0,
+        present_reading: reading?.present_reading ?? 0,
+        calculated: reading?.calculated ?? 0,
+        reading_status: reading?.reading_status,
+        remarks: reading?.remarks || "Normal Reading",
+        recorded_by: reading?.recorded_by || null,
+        created_at: reading?.created_at || null
+      };
+    });
+
+    return res.status(StatusCodes.OK).json({
+      message: "Submitted readings fetched successfully",
+      connection_details: submittedReadings,
+      total: submittedReadings.length
+    });
+
+  } catch (error) {
+    console.error('🔥 getSubmittedReadings error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to fetch submitted readings",
+      error: error.message
+    });
   }
+};
 
-  // Get all readings that are submitted
-  const readingsToApprove = await MeterReading.find({ reading_status: 'submitted' });
+/**
+ * ✅ Get Approval Statistics
+ * GET /api/v1/meter-reader/approval-stats
+ * Returns statistics for treasurer dashboard
+ */
+const getApprovalStats = async (req, res) => {
+  try {
+    const user = req.user;
 
-  if (readingsToApprove.length === 0) {
-    return res.status(400).json({ msg: 'No submitted readings found to approve.' });
+    if (user.role !== 'treasurer') {
+      return res.status(403).json({ 
+        message: 'Unauthorized. Only treasurer can view stats.' 
+      });
+    }
+
+    // Count readings by status
+    const stats = await MeterReading.aggregate([
+      {
+        $group: {
+          _id: "$reading_status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get readings approved today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const approvedToday = await MeterReading.countDocuments({
+      reading_status: 'approved',
+      updated_at: { $gte: today }
+    });
+
+    // Format stats
+    const formattedStats = {
+      inprogress: stats.find(s => s._id === 'inprogress')?.count || 0,
+      submitted: stats.find(s => s._id === 'submitted')?.count || 0,
+      approved: stats.find(s => s._id === 'approved')?.count || 0,
+      approved_today: approvedToday
+    };
+
+    res.status(200).json({
+      message: 'Statistics fetched successfully',
+      stats: formattedStats
+    });
+
+  } catch (error) {
+    console.error('🔥 getApprovalStats error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to fetch statistics",
+      error: error.message
+    });
   }
-
-  // Bulk update
-  const result = await MeterReading.updateMany(
-    { reading_status: 'submitted' },
-    { $set: { reading_status: 'approved' } }
-  );
-
-  res.status(200).json({
-    msg: 'All submitted readings have been approved successfully',
-    total_approved: result.modifiedCount
-  });
 };
 
 
@@ -455,4 +643,6 @@ const approveReading = async (req, res) => {
 
 
 
-module.exports = { getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading};
+module.exports = { getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading,
+                    getSubmittedReadings, getApprovalStats
+};

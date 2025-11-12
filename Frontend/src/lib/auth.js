@@ -152,7 +152,7 @@ class AuthManager {
 
   async createResidentAccount(credentials) {
     console.log('Creating account with data:', credentials);
-    
+
     try {
       const response = await fetch(`${this.backendURL}/api/v1/auth/register-resident`, {
         method: 'POST',
@@ -172,7 +172,7 @@ class AuthManager {
         console.log('Account created successfully:', data);
         return {
           success: true,
-          message: 'Personnel account created successfully',
+          message: data.message || 'Resident account created successfully',
           data: data
         };
       }

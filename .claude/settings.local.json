@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/migrate-assigned-personnel.js:*)",
+      "Bash(node scripts/check-tasks.js:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
