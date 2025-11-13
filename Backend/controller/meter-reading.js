@@ -95,12 +95,27 @@ const inputReading = async (req, res) => {
   const billing_month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   // Find the last reading for this connection **for the current month**
-  const lastReading = await MeterReading.findOne({ 
+  const currentMonthReading = await MeterReading.findOne({
     connection_id,
-    billing_month 
+    billing_month
   }).sort({ created_at: -1 });
 
-  const previous_reading = lastReading ? lastReading.present_reading : 0;
+  // 🔹 If no reading exists for current month, get the latest reading from ANY previous month
+  // This ensures reading continuity (previous month's present becomes this month's previous)
+  let previous_reading = 0;
+
+  if (currentMonthReading) {
+    // If current month already has a reading, use its present_reading as previous
+    previous_reading = currentMonthReading.present_reading;
+  } else {
+    // No reading for current month yet - get the most recent reading from any month
+    const lastReadingAnyMonth = await MeterReading.findOne({
+      connection_id
+    }).sort({ created_at: -1 });
+
+    // Use the present_reading from the most recent month (even if billed)
+    previous_reading = lastReadingAnyMonth ? lastReadingAnyMonth.present_reading : 0;
+  }
 
   // Validate present >= previous
   if (present_reading < previous_reading) {
@@ -256,18 +271,22 @@ const getLatestReadings = async (req, res) => {
         userId, 
         assigned_zone: personnel.assigned_zone,
         zoneFilter
-      });
+      }); 
     } else {
       console.log('💼 User is treasurer/admin - no zone filter applied');
     }
     // Treasurer can see all zones, so no filter needed
     
+    // 🔹 Determine current billing month
+    const today = new Date();
+    const currentBillingMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
   const readings = await WaterConnection.aggregate([
               // 1️⃣ Filter only active connections
               { $match: { connection_status: "active" } },
 
               // 2️⃣ Attach resident info
-              {
+              {  
                 $lookup: {
                   from: "residents",
                   localField: "resident_id",
@@ -282,13 +301,20 @@ const getLatestReadings = async (req, res) => {
                 ? [{ $match: { "resident.zone": zoneFilter.zone } }]
                 : []),
 
-              // 4️⃣ Latest reading lookup
+              // 4️⃣ Latest reading lookup for CURRENT BILLING MONTH
               {
                 $lookup: {
                   from: "meterreadings",
                   let: { connId: "$_id" },
                   pipeline: [
-                    { $match: { $expr: { $eq: ["$connection_id", "$$connId"] } } },
+                    { $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ["$connection_id", "$$connId"] },
+                          { $eq: ["$billing_month", currentBillingMonth] }
+                        ]
+                      }
+                    }},
                     { $sort: { created_at: -1 } },
                     { $limit: 1 }
                   ],
@@ -297,7 +323,7 @@ const getLatestReadings = async (req, res) => {
               },
               { $unwind: { path: "$latestReading", preserveNullAndEmptyArrays: true } },
 
-              // 5️⃣ Billing lookups...
+              // 5️⃣ Billing lookups to check if reading has been billed
               {
                 $lookup: {
                   from: "Billing",
@@ -321,7 +347,7 @@ const getLatestReadings = async (req, res) => {
                 }
               },
 
-              // 6️⃣ Flag if billed
+              // 6️⃣ Flag if current month's reading has been billed
               {
                 $addFields: {
                   is_billed: {
@@ -341,19 +367,10 @@ const getLatestReadings = async (req, res) => {
      
      
 
-      // 📅 Check if reading was done in the current month (UTC-based to avoid timezone issues)
-      let read_this_month = false;
-      if (reading?.created_at) {
-        const readingDate = new Date(reading.created_at);
-        const now = new Date();
-        
-        // Use UTC methods to ensure consistent month/year comparison across all timezones
-        // This prevents readings from being misclassified when server timezone != user timezone
-        read_this_month = (
-          readingDate.getUTCMonth() === now.getUTCMonth() &&
-          readingDate.getUTCFullYear() === now.getUTCFullYear()
-        );
-      }
+      // 📅 Check if reading exists for current billing month
+      // Since we're now filtering by billing_month in the lookup,
+      // if a reading exists, it means it's for the current month
+      const read_this_month = !!reading;
 
       return {
         reading_id: reading?._id ? reading._id.toString() : null,

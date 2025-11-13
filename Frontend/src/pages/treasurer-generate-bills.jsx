@@ -9,18 +9,28 @@ import { Badge } from "../components/ui/badge";
 import { Checkbox } from "../components/ui/checkbox";
 import { Skeleton } from "../components/ui/skeleton";
 import { useToast } from "../hooks/use-toast";
-import { 
-  Receipt, 
-  Users, 
-  Calculator, 
-  Search, 
-  Check, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import {
+  Receipt,
+  Users,
+  Calculator,
+  Search,
+  Check,
   Calendar,
   DollarSign,
   FileText,
   AlertCircle,
   CheckCircle2,
-  X
+  X,
+  Edit
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
@@ -35,6 +45,11 @@ export default function TreasurerGenerateBills() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedConnections, setSelectedConnections] = useState([]);
+
+  // Rate update modal states
+  const [isRateModalOpen, setIsRateModalOpen] = useState(false);
+  const [newRateAmount, setNewRateAmount] = useState("");
+  const [isUpdatingRate, setIsUpdatingRate] = useState(false);
 
 
   //bill generation data object
@@ -123,9 +138,14 @@ export default function TreasurerGenerateBills() {
   console.log(existingBillIds)
   
   const availableConnections = connectionList.filter(conn =>
-  !conn.is_billed && conn.present_reading > 0  // ani exclude tung already generated na nga bill so ag mo show ra katung wapa na generate ag bills
+  !conn.is_billed && conn.present_reading > 0 && conn.reading_status === 'approved'  // ✅ Only show approved readings
 );
-  
+
+  // ✅ Count pending approval readings (submitted but not yet approved)
+  const pendingApprovalCount = connectionList.filter(conn =>
+    conn.reading_status === 'submitted' && !conn.is_billed
+  ).length;
+
 
   //SEARCH PURPOSES
   // Filter connections based on search term
@@ -246,12 +266,17 @@ export default function TreasurerGenerateBills() {
       const failCount = results.filter(r => !r.success).length;
 
       console.log(`📊 Bulk Result → Success: ${successCount}, Failed: ${failCount}`, results);
-      
+
+      // ✅ Clear saved reading period from localStorage for meter readers
+      // This allows them to set a new period for the next billing cycle
+      localStorage.removeItem('meterReadingPeriod');
+      console.log('✅ Saved reading period cleared for next billing cycle');
+
       toast({
         title: "Bulk Generation Complete",
-        description: `${successCount} bills generated successfully. ${failCount > 0 ? `${failCount} failed.` : ''}`,
+        description: `${successCount} bills generated successfully. ${failCount > 0 ? `${failCount} failed.` : ''} Reading period reset for next cycle.`,
       });
-      
+
       setSelectedConnections([]);
       // Refresh data
       fetchConnections();
@@ -387,6 +412,55 @@ export default function TreasurerGenerateBills() {
     }
   };
 
+  // ✅ Handle rate update
+  const handleUpdateRate = async () => {
+    if (!newRateAmount || parseFloat(newRateAmount) <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid rate amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsUpdatingRate(true);
+
+      // Create new rate with status "active" (backend will deactivate old ones)
+      await apiClient.addRatingAmount({
+        amount: parseFloat(newRateAmount),
+        effective_date: new Date().toISOString(),
+        rate_status: "active"
+      });
+
+      toast({
+        title: "Success",
+        description: `Rate updated to ₱${newRateAmount} per m³`,
+      });
+
+      // Update local state
+      setFormData(prev => ({
+        ...prev,
+        rate_per_cubic: parseFloat(newRateAmount)
+      }));
+
+      // Close modal and reset
+      setIsRateModalOpen(false);
+      setNewRateAmount("");
+
+      // Refresh rate data
+      fetchConnections();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update rate",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingRate(false);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       <TreasurerSidebar />
@@ -474,6 +548,28 @@ export default function TreasurerGenerateBills() {
               </Card>
             </div>
 
+            {/* ✅ Pending Approval Alert */}
+            {pendingApprovalCount > 0 && (
+              <Card className="mb-8 border-orange-200 bg-orange-50">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-orange-900 mb-1">
+                        Readings Pending Approval
+                      </h3>
+                      <p className="text-sm text-orange-700">
+                        There are <strong>{pendingApprovalCount}</strong> meter reading(s) that have been submitted but not yet approved.
+                        Bills can only be generated for approved readings. Please go to the "Approve Readings" page to review and approve them.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
 
 
 
@@ -496,13 +592,75 @@ export default function TreasurerGenerateBills() {
                   {/* Common Settings */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                     <div className="space-y-2">
-                      <Label htmlFor="rate_per_cubic">Rate per m³ (₱)</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="rate_per_cubic">Rate per m³ (₱)</Label>
+                        <Dialog open={isRateModalOpen} onOpenChange={setIsRateModalOpen}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 hover:bg-purple-100"
+                              data-testid="button-edit-rate"
+                            >
+                              <Edit className="h-3.5 w-3.5 text-purple-600" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Update Water Rate</DialogTitle>
+                              <DialogDescription>
+                                Enter the new rate per cubic meter. This will create a new active rate and deactivate the previous one.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="new-rate">New Rate Amount (₱)</Label>
+                                <Input
+                                  id="new-rate"
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="Enter new rate"
+                                  value={newRateAmount}
+                                  onChange={(e) => setNewRateAmount(e.target.value)}
+                                  data-testid="input-new-rate"
+                                />
+                              </div>
+                              <div className="bg-blue-50 p-3 rounded-lg">
+                                <p className="text-sm text-blue-700">
+                                  <strong>Current Rate:</strong> ₱{formData.rate_per_cubic} per m³
+                                </p>
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setIsRateModalOpen(false);
+                                  setNewRateAmount("");
+                                }}
+                                disabled={isUpdatingRate}
+                                data-testid="button-cancel-rate"
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={handleUpdateRate}
+                                disabled={isUpdatingRate || !newRateAmount}
+                                data-testid="button-save-rate"
+                              >
+                                {isUpdatingRate ? "Updating..." : "Update Rate"}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                       <Input
                         id="rate_per_cubic"
                         type="number"
                         step="0.01"
                         value={formData.rate_per_cubic}
-                        onChange={(e) => handleInputChange('rate_per_cubic', parseFloat(e.target.value))}
+                        disabled
+                        className="bg-gray-100"
                         data-testid="input-rate-per-cubic"
                       />
                     </div>

@@ -23,6 +23,16 @@ const createTask = async (req, res) => {
   } = req.body;
 
   try {
+    // ✅ Check if this is a critical incident
+    let isCritical = false;
+    if (report_id) {
+      const incidentReport = await IncidentReports.findById(report_id);
+      if (incidentReport && incidentReport.urgency_level === 'critical') {
+        isCritical = true;
+        console.log('🚨 CRITICAL incident detected - prioritizing assignment');
+      }
+    }
+
     // ✅ AUTOMATIC SCHEDULING: Find available maintenance personnel
     let scheduleDate;
     let scheduleTime;
@@ -40,16 +50,51 @@ const createTask = async (req, res) => {
     }
 
     // Define available time slots
-    const timeSlots = ['09:30', '10:30', '13:30', '14:30'];
+    const allTimeSlots = ['09:30', '10:30', '13:30', '14:30'];
 
-    // Calculate next business day (tomorrow)
+    // Calculate schedule date based on urgency (using Philippine Time UTC+8)
     const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0, 0);
 
-    scheduleDate = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD
-    console.log(`📅 Current date: ${now.toISOString().split('T')[0]}, Schedule date: ${scheduleDate}`);
+    // Convert to Philippine Time by adding 8 hours to UTC
+    const philippineTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const currentHour = philippineTime.getUTCHours();
+    const currentMinute = philippineTime.getUTCMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+    console.log(`🇵🇭 Philippine Time: ${philippineTime.toISOString()} (${currentHour}:${String(currentMinute).padStart(2, '0')})`);
+    console.log(`📅 Philippine Date: ${philippineTime.getUTCFullYear()}-${String(philippineTime.getUTCMonth() + 1).padStart(2, '0')}-${String(philippineTime.getUTCDate()).padStart(2, '0')}`);
+
+    let targetDate = new Date(philippineTime);
+    let timeSlots = [...allTimeSlots];
+
+    if (isCritical) {
+      // Critical incidents: Schedule for TODAY if possible, otherwise tomorrow
+      targetDate.setUTCHours(0, 0, 0, 0);
+      console.log(`🚨 Critical incident - Current time: ${currentHour}:${String(currentMinute).padStart(2, '0')}`);
+
+      // Filter out past time slots for today
+      timeSlots = allTimeSlots.filter(slot => {
+        const [slotHour, slotMinute] = slot.split(':').map(Number);
+        const slotTimeInMinutes = slotHour * 60 + slotMinute;
+        return slotTimeInMinutes > currentTimeInMinutes;
+      });
+
+      if (timeSlots.length === 0) {
+        // All time slots for today have passed, schedule for tomorrow
+        console.log('⏰ All time slots for today have passed - scheduling for tomorrow');
+        targetDate.setUTCDate(philippineTime.getUTCDate() + 1);
+        timeSlots = [...allTimeSlots]; // Reset to all slots for tomorrow
+      } else {
+        console.log(`🚨 Critical incident - attempting to schedule for TODAY in available slots: ${timeSlots.join(', ')}`);
+      }
+    } else {
+      // Normal incidents: Schedule for tomorrow (Philippine Time)
+      targetDate.setUTCDate(philippineTime.getUTCDate() + 1);
+      targetDate.setUTCHours(0, 0, 0, 0);
+    }
+
+    scheduleDate = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
+    console.log(`📅 Schedule date: ${scheduleDate}, Available slots: ${timeSlots.join(', ')}`);
 
     // Try to find an available personnel for each time slot
     let foundSlot = false;
@@ -90,44 +135,64 @@ const createTask = async (req, res) => {
 
       // If ALL personnel are available for this time slot, use it (best option - no conflicts)
       if (availablePersonnel.length === maintenancePersonnel.length) {
-        // Load balancing: Find the personnel with the LEAST number of tasks
-        let leastBusyPersonnel = availablePersonnel[0];
-        let minTaskCount = await ScheduleTask.countDocuments({ assigned_personnel: leastBusyPersonnel._id });
+        // Load balancing: Get task counts for all available personnel
+        const personnelWithCounts = await Promise.all(
+          availablePersonnel.map(async (personnel) => ({
+            personnel,
+            taskCount: await ScheduleTask.countDocuments({ assigned_personnel: personnel._id })
+          }))
+        );
 
-        for (const personnel of availablePersonnel.slice(1)) {
-          const taskCount = await ScheduleTask.countDocuments({ assigned_personnel: personnel._id });
-          if (taskCount < minTaskCount) {
-            minTaskCount = taskCount;
-            leastBusyPersonnel = personnel;
-          }
+        // Find the minimum task count
+        const minTaskCount = Math.min(...personnelWithCounts.map(p => p.taskCount));
+
+        // Get all personnel with the minimum task count (could be multiple)
+        const leastBusyPersonnel = personnelWithCounts.filter(p => p.taskCount === minTaskCount);
+
+        // If multiple personnel have the same minimum task count, pick randomly
+        if (leastBusyPersonnel.length > 1) {
+          const randomIndex = Math.floor(Math.random() * leastBusyPersonnel.length);
+          selectedPersonnel = leastBusyPersonnel[randomIndex].personnel;
+          console.log(`🎲 Multiple personnel with ${minTaskCount} tasks - randomly selected ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} from ${leastBusyPersonnel.length} options`);
+        } else {
+          selectedPersonnel = leastBusyPersonnel[0].personnel;
+          console.log(`✅ Using time slot ${slot} - assigned to ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} (${minTaskCount} existing tasks)`);
         }
 
-        selectedPersonnel = leastBusyPersonnel;
         scheduleTime = slot;
         foundSlot = true;
-        console.log(`✅ Using time slot ${slot} - assigned to ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} (${minTaskCount} existing tasks)`);
         break;
       }
 
       // If SOME personnel are available, remember this slot as a fallback
       if (availablePersonnel.length > 0 && !selectedPersonnel) {
-        // Load balancing: Find the personnel with the LEAST number of tasks
-        let leastBusyPersonnel = availablePersonnel[0];
-        let minTaskCount = await ScheduleTask.countDocuments({ assigned_personnel: leastBusyPersonnel._id });
+        // Load balancing: Get task counts for all available personnel
+        const personnelWithCounts = await Promise.all(
+          availablePersonnel.map(async (personnel) => ({
+            personnel,
+            taskCount: await ScheduleTask.countDocuments({ assigned_personnel: personnel._id })
+          }))
+        );
 
-        for (const personnel of availablePersonnel.slice(1)) {
-          const taskCount = await ScheduleTask.countDocuments({ assigned_personnel: personnel._id });
-          if (taskCount < minTaskCount) {
-            minTaskCount = taskCount;
-            leastBusyPersonnel = personnel;
-          }
+        // Find the minimum task count
+        const minTaskCount = Math.min(...personnelWithCounts.map(p => p.taskCount));
+
+        // Get all personnel with the minimum task count (could be multiple)
+        const leastBusyPersonnel = personnelWithCounts.filter(p => p.taskCount === minTaskCount);
+
+        // If multiple personnel have the same minimum task count, pick randomly
+        if (leastBusyPersonnel.length > 1) {
+          const randomIndex = Math.floor(Math.random() * leastBusyPersonnel.length);
+          selectedPersonnel = leastBusyPersonnel[randomIndex].personnel;
+          console.log(`⚠️  Partial availability at ${slot} - randomly selected ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} (${minTaskCount} tasks) from ${leastBusyPersonnel.length} options, continuing to check for better slots...`);
+        } else {
+          selectedPersonnel = leastBusyPersonnel[0].personnel;
+          console.log(`⚠️  Partial availability at ${slot} - assigned to ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} (${minTaskCount} existing tasks), continuing to check for better slots...`);
         }
 
-        selectedPersonnel = leastBusyPersonnel;
         scheduleTime = slot;
         fallbackTime = slot;
         foundSlot = true;
-        console.log(`⚠️  Partial availability at ${slot} - assigned to ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} (${minTaskCount} existing tasks), continuing to check for better slots...`);
         // Don't break - keep checking for a time slot where ALL personnel are free
       }
     }
@@ -136,12 +201,40 @@ const createTask = async (req, res) => {
     // If we only found partial availability, selectedPersonnel and scheduleTime are already set
     // This ensures we use the earliest time slot with full availability, or fall back to partial
 
-    // If no personnel are available at any time slot, return error
+    // If no personnel are available at any time slot
     if (!foundSlot) {
-      return res.status(400).json({
-        success: false,
-        message: `All maintenance personnel are fully booked for ${scheduleDate}. Please try scheduling for a different date or contact admin to add more personnel.`
-      });
+      // 🚨 CRITICAL INCIDENTS: Force assignment even if all slots are full
+      if (isCritical) {
+        console.log('🚨 All personnel busy but incident is CRITICAL - forcing assignment to least busy personnel');
+
+        // Get task counts for all personnel
+        const personnelWithCounts = await Promise.all(
+          maintenancePersonnel.map(async (personnel) => ({
+            personnel,
+            taskCount: await ScheduleTask.countDocuments({ assigned_personnel: personnel._id })
+          }))
+        );
+
+        // Find the minimum task count
+        const minTaskCount = Math.min(...personnelWithCounts.map(p => p.taskCount));
+
+        // Get all personnel with the minimum task count
+        const leastBusyPersonnel = personnelWithCounts.filter(p => p.taskCount === minTaskCount);
+
+        // Pick randomly from least busy
+        const randomIndex = Math.floor(Math.random() * leastBusyPersonnel.length);
+        selectedPersonnel = leastBusyPersonnel[randomIndex].personnel;
+        scheduleTime = timeSlots[0]; // Use earliest time slot
+
+        console.log(`🚨 CRITICAL: Assigned to ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} (${minTaskCount} existing tasks) at ${scheduleTime}`);
+        autoScheduledMessage = `⚠️ CRITICAL incident assigned to ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} for ${scheduleDate} at ${scheduleTime}. Personnel schedule is full but this is a priority.`;
+      } else {
+        // Normal incidents: Return error
+        return res.status(400).json({
+          success: false,
+          message: `All maintenance personnel are fully booked for ${scheduleDate}. Please try scheduling for a different date or contact admin to add more personnel.`
+        });
+      }
     }
 
     // Create the schedule task with automatic assignment
@@ -170,7 +263,14 @@ const createTask = async (req, res) => {
       });
     }
 
-    autoScheduledMessage = `Task automatically scheduled for ${scheduleDate} at ${scheduleTime} with ${selectedPersonnel.first_name} ${selectedPersonnel.last_name}.`;
+    // Set auto-scheduled message if not already set (for critical incidents)
+    if (!autoScheduledMessage) {
+      if (isCritical) {
+        autoScheduledMessage = `🚨 CRITICAL incident - Task prioritized and scheduled for ${scheduleDate} at ${scheduleTime} with ${selectedPersonnel.first_name} ${selectedPersonnel.last_name}.`;
+      } else {
+        autoScheduledMessage = `Task automatically scheduled for ${scheduleDate} at ${scheduleTime} with ${selectedPersonnel.first_name} ${selectedPersonnel.last_name}.`;
+      }
+    }
 
     console.log('✅ Schedule task created with auto-assignment:', newTask._id);
     res.status(201).json({
@@ -195,8 +295,6 @@ const createTask = async (req, res) => {
     });
   }
 };
-
-
 
 
 // Get all schedule tasks (with filtering based on user role)

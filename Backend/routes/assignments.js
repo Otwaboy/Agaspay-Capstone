@@ -8,6 +8,8 @@ const {
   getMaintenancePersonnel,
   updateAssignment,
   deleteAssignment,
+  getPersonnelAvailability,
+  rescheduleAssignment,
 } = require('../controller/assignment')
 const authMiddleware = require('../middleware/authentication')
 // ❌ DON'T import roleMiddleware - controllers handle authorization themselves
@@ -24,6 +26,14 @@ router.route('/unassigned-tasks')
 // Get maintenance personnel
 router.route('/maintenance-personnel')
   .get(authMiddleware, getMaintenancePersonnel)  // ✅ Only authMiddleware
+
+// Check personnel availability for a specific date/time
+router.route('/availability/check')
+  .get(authMiddleware, getPersonnelAvailability)  // ✅ Only authMiddleware
+
+// Reschedule assignment
+router.route('/reschedule')
+  .put(authMiddleware, rescheduleAssignment)  // ✅ Only authMiddleware
 
 // Update or delete assignment
 router.route('/:id')

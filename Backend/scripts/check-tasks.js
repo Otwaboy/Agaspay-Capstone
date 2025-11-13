@@ -42,6 +42,30 @@ async function checkTasks() {
     const tasksWithPersonnel = tasks.filter(t => t.assigned_personnel);
     console.log(`\n✅ Tasks with assigned_personnel: ${tasksWithPersonnel.length}/${tasks.length}`);
 
+    // Task distribution per personnel
+    console.log('\n📊 Task Distribution:');
+    const taskCounts = {};
+    personnel.forEach(p => {
+      const pId = p._id.toString();
+      taskCounts[pId] = {
+        name: `${p.first_name} ${p.last_name}`,
+        count: 0
+      };
+    });
+
+    tasks.forEach(t => {
+      if (t.assigned_personnel) {
+        const pId = t.assigned_personnel.toString();
+        if (taskCounts[pId]) {
+          taskCounts[pId].count++;
+        }
+      }
+    });
+
+    Object.entries(taskCounts).forEach(([id, data]) => {
+      console.log(`   - ${data.name}: ${data.count} task(s)`);
+    });
+
   } catch (error) {
     console.error('❌ Error:', error);
   } finally {

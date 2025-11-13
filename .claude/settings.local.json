@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(node scripts/migrate-assigned-personnel.js:*)",
-      "Bash(node scripts/check-tasks.js:*)"
+      "Bash(node scripts/check-tasks.js:*)",
+      "Bash(node:*)",
+      "Bash(npm start)",
+      "Bash(taskkill:*)",
+      "Bash(timeout /t 2 /nobreak)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []

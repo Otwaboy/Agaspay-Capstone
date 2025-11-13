@@ -363,6 +363,24 @@ async getApprovalStats() {
     });
   }
 
+  async getPersonnelAvailability(date, time) {
+    return await this.request(`/api/v1/assignments/availability/check?date=${date}&time=${time}`, {
+      method: 'GET',
+    });
+  }
+
+  async rescheduleAssignment(assignmentId, newDate, newTime, newPersonnelId = null) {
+    return await this.request(`/api/v1/assignments/reschedule`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        assignment_id: assignmentId,
+        new_date: newDate,
+        new_time: newTime,
+        new_personnel_id: newPersonnelId,
+      }),
+    });
+  }
+
 
    // ======================================================
   // 📋 ANNOOUNCEMENT (Secretary / Admin)

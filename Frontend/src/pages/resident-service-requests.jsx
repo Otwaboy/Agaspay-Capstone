@@ -50,8 +50,8 @@ export default function ResidentServiceRequests() {
     switch (status) {
       case "Completed":
         return { label: "Completed", className: "bg-green-100 text-green-800", icon: CheckCircle, color: "text-green-600" };
-      case "Scheduled":
-        return { label: "Scheduled", className: "bg-blue-100 text-blue-800", icon: Wrench, color: "text-blue-600" };
+      case "Assigned":
+        return { label: "Assigned", className: "bg-blue-100 text-blue-800", icon: Wrench, color: "text-blue-600" };
       case "Pending":
         return { label: "Pending", className: "bg-yellow-100 text-yellow-800", icon: AlertCircle, color: "text-yellow-600" };
       case "Cancelled":
@@ -108,8 +108,8 @@ export default function ResidentServiceRequests() {
               </Card>
                <Card>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-blue-600">{mockRequests.filter(r => r.reported_issue_status === 'Scheduled').length}</div>
-                  <p className="text-sm text-gray-600">Scheduled</p>
+                  <div className="text-2xl font-bold text-blue-600">{mockRequests.filter(r => r.reported_issue_status === 'Assigned').length}</div> 
+                  <p className="text-sm text-gray-600">Assigned</p>
                 </CardContent>
               </Card>
               <Card>

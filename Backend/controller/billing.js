@@ -93,7 +93,7 @@ const getBilling = async (req, res) => {
 
 
 /*
- * Controller: createBilling
+ * Controller: createBilling 
  *
  * What it does:
  *  - Only the treasurer can generate a bill
@@ -116,6 +116,11 @@ const createBilling = async (req, res) => {
     const reading = await MeterReading.findById(reading_id);
     if (!reading) {
       throw new BadRequestError("Meter reading not found.");
+    }
+
+    // ✅ IMPORTANT: Only allow bill generation for approved readings
+    if (reading.reading_status !== 'approved') {
+      throw new BadRequestError(`Cannot generate bill. Reading must be approved first (current status: ${reading.reading_status}).`);
     }
 
     // ✅ Make sure the rate exists

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -7,7 +7,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useToast } from "../hooks/use-toast";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2,  } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2, Save } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
@@ -22,8 +22,26 @@ export default function MeterReaderReadings() {
     remarks: ""
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [savedPeriod, setSavedPeriod] = useState(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load saved reading period from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('meterReadingPeriod');
+    if (saved) {
+      try {
+        const period = JSON.parse(saved);
+        setSavedPeriod(period);
+        setFormData(prev => ({
+          ...prev,
+          inclusive_date: period
+        }));
+      } catch (error) {
+        console.error('Failed to load saved period:', error);
+      }
+    }
+  }, []);
 
   // Fetch connections
   const { data: connectionsResponse, isLoading: connectionsLoading } = useQuery({
@@ -44,6 +62,9 @@ export default function MeterReaderReadings() {
 
   const connectionList = connectionsResponse?.connection_details || [];
   const meterReaderZone = authUser?.assigned_zone;
+
+  console.log('all connection get in the latest reading', connectionList);
+  
 
   // Filtered connections by zone + search query
   const filteredConnections = connectionList
@@ -96,10 +117,12 @@ export default function MeterReaderReadings() {
     mutationFn: async (readingData) => apiClient.inputReading(readingData),
     onSuccess: () => {
       toast({ title: "Success", description: "Meter reading recorded successfully" });
+      // ✅ Keep saved period when resetting form
+      const currentPeriod = savedPeriod || { start: "", end: "" };
       setFormData({
         connection_id: "",
         present_reading: "",
-        inclusive_date: { start: "", end: "" },
+        inclusive_date: currentPeriod,
         remarks: ""
       });
       queryClient.invalidateQueries({ queryKey: ["connections"] });
@@ -151,6 +174,30 @@ export default function MeterReaderReadings() {
     }
   };
 
+  // ✅ Save reading period to localStorage
+  const handleSavePeriod = () => {
+    if (!formData.inclusive_date.start || !formData.inclusive_date.end) {
+      return toast({
+        title: "Validation Error",
+        description: "Please enter both start and end dates before saving",
+        variant: "destructive"
+      });
+    }
+
+    const period = {
+      start: formData.inclusive_date.start,
+      end: formData.inclusive_date.end
+    };
+
+    localStorage.setItem('meterReadingPeriod', JSON.stringify(period));
+    setSavedPeriod(period);
+
+    toast({
+      title: "Success",
+      description: "Reading period saved! It will be used for all future readings."
+    });
+  };
+
  const handleSubmit = (e) => {
   e.preventDefault();
 
@@ -184,7 +231,7 @@ export default function MeterReaderReadings() {
       title: "Validation Error",
       description: "Please enter both start and end dates",
       variant: "destructive"
-    });
+    }); 
   }
 
   const payload = {
@@ -307,12 +354,12 @@ export default function MeterReaderReadings() {
                               <SelectItem key={connection.connection_id} value={String(connection.connection_id)}>
                                 <div className="-ml-4 flex items-center justify-between w-full gap-2">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    {connection.read_this_month ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" /> : <div className="h-4 w-4 flex-shrink-0" />}
+                                    {(connection.read_this_month && !connection.is_billed) ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" /> : <div className="h-4 w-4 flex-shrink-0" />}
                                     <span className="truncate text-lg">{connection.full_name || "Unnamed"}</span>
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     <Badge variant="secondary" className="text-xs">Purok {connection.purok_no}</Badge>
-                                    {connection.read_this_month ? <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">Read</Badge> : <Badge variant="outline" className="text-gray-500 text-xs">Not Read</Badge>}
+                                    {(connection.read_this_month && !connection.is_billed) ? <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">Read</Badge> : <Badge variant="outline" className="text-gray-500 text-xs">Not Read</Badge>}
                                   </div>
                                 </div>
                               </SelectItem>
@@ -326,9 +373,9 @@ export default function MeterReaderReadings() {
                    {selectedConnectionData &&
                                     selectedConnectionData.reading_status !== "inprogress" &&
                                     selectedConnectionData.reading_status !== "submitted" &&
-                                    selectedConnectionData.reading_status !== "approved" && (
+                                   selectedConnectionData.reading_status !== "approved" && (
                       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Customer</span>
                             <p className="text-gray-900 font-semibold">{selectedConnectionData.full_name}</p>
@@ -345,13 +392,21 @@ export default function MeterReaderReadings() {
                             <span className="font-medium text-gray-600 block mb-1">Consumption</span>
                             <p className="text-green-600 font-bold text-lg">{consumption.toFixed(2)} m³</p>
                           </div>
+                          {selectedConnectionData.inclusive_date?.start && selectedConnectionData.inclusive_date?.end && (
+                            <div className="bg-white p-3 rounded-lg col-span-2 lg:col-span-1">
+                              <span className="font-medium text-gray-600 block mb-1">Previous Reading Period</span>
+                              <p className="text-gray-900 font-semibold text-xs">
+                                {new Date(selectedConnectionData.inclusive_date.start).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
 
                   {["inprogress", "submitted"].includes(selectedConnectionData?.reading_status) &&(
                       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Customer</span>
                             <p className="text-gray-900 font-semibold">{selectedConnectionData.full_name}</p>
@@ -372,6 +427,14 @@ export default function MeterReaderReadings() {
                             <span className="font-medium text-gray-600 block mb-1">Consumption</span>
                             <p className="text-green-600 font-bold text-lg">{selectedConnectionData.calculated.toFixed(2)} m³</p>
                           </div>
+                          {selectedConnectionData.inclusive_date?.start && selectedConnectionData.inclusive_date?.end && (
+                            <div className="bg-white p-3 rounded-lg col-span-2 lg:col-span-1">
+                              <span className="font-medium text-gray-600 block mb-1">Reading Period</span>
+                              <p className="text-gray-900 font-semibold text-xs">
+                                {new Date(selectedConnectionData.inclusive_date.start).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {/* EDIT BUTTON */}
@@ -414,16 +477,33 @@ export default function MeterReaderReadings() {
                         className="h-12 text-base text-lg font-semibold"
                         disabled={
                                   !selectedConnectionData ||
-                                  ["approved"].includes(selectedConnectionData?.reading_status)
+                                  (selectedConnectionData?.reading_status === "approved" && !selectedConnectionData?.is_billed)
                                 }/>
                     </div>
 
                     {/* Date and Remarks Inputs */}
                     <div className="space-y-4">
-                      <Label className="flex items-center space-x-2 text-base">
-                        <Calendar className="h-4 w-4" />
-                        <span>Reading Period</span>
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="flex items-center space-x-2 text-base">
+                          <Calendar className="h-4 w-4" />
+                          <span>Reading Period</span>
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSavePeriod}
+                          className="flex items-center gap-2"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          Save Period
+                        </Button>
+                      </div>
+                      {savedPeriod && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-sm text-blue-700">
+                          <span className="font-medium">Saved:</span> {new Date(savedPeriod.start).toLocaleDateString()} - {new Date(savedPeriod.end).toLocaleDateString()}
+                        </div>
+                      )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input type="date" value={formData.inclusive_date.start} onChange={(e) => handleInputChange("inclusive_date.start", e.target.value)} />
                         <Input type="date" value={formData.inclusive_date.end} onChange={(e) => handleInputChange("inclusive_date.end", e.target.value)} />

@@ -632,6 +632,224 @@ const deleteAssignment = async (req, res) => {
   }
 };
 
+/**
+ * Controller: getPersonnelAvailability
+ *
+ * Purpose: Check availability of all maintenance personnel for a specific date and time
+ * Access: Secretary only
+ *
+ * Query Parameters:
+ * - date: Schedule date (YYYY-MM-DD)
+ * - time: Schedule time (HH:MM)
+ *
+ * Returns:
+ * - List of personnel with availability status (available/busy)
+ */
+const getPersonnelAvailability = async (req, res) => {
+  try {
+    const user = req.user;
+    const { date, time } = req.query;
+
+    // ✅ Only secretary can check availability
+    if (user.role !== 'secretary') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized. Only secretary can check availability.',
+      });
+    }
+
+    // ✅ Validate required parameters
+    if (!date || !time) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Date and time are required',
+      });
+    }
+
+    // ✅ Get all maintenance personnel
+    const allPersonnel = await Personnel.find({ role: 'maintenance' });
+
+    // ✅ Check availability for each personnel
+    const personnelWithAvailability = await Promise.all(
+      allPersonnel.map(async (personnel) => {
+        // Check if personnel has assignment at this date and time
+        const existingAssignment = await ScheduleTask.findOne({
+          assigned_personnel: personnel._id,
+          schedule_time: time,
+        });
+
+        let isAvailable = true;
+        if (existingAssignment && existingAssignment.schedule_date) {
+          const existingDate = new Date(existingAssignment.schedule_date);
+          const targetDate = new Date(date);
+
+          // Compare dates
+          if (existingDate.getFullYear() === targetDate.getFullYear() &&
+              existingDate.getMonth() === targetDate.getMonth() &&
+              existingDate.getDate() === targetDate.getDate()) {
+            isAvailable = false;
+          }
+        }
+
+        return {
+          id: personnel._id,
+          name: `${personnel.first_name} ${personnel.last_name}`,
+          contact_no: personnel.contact_no,
+          assigned_zone: personnel.assigned_zone,
+          available: isAvailable,
+          status: isAvailable ? 'available' : 'busy',
+        };
+      })
+    );
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      personnel: personnelWithAvailability,
+      date,
+      time,
+    });
+
+  } catch (error) {
+    console.error('🔥 getPersonnelAvailability error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to check personnel availability',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Controller: rescheduleAssignment
+ *
+ * Purpose: Reschedule an existing assignment to a new date, time, and/or personnel
+ * Access: Secretary only
+ *
+ * Request Body:
+ * - assignment_id: ID of the assignment to reschedule
+ * - new_date: New schedule date (YYYY-MM-DD)
+ * - new_time: New schedule time (HH:MM)
+ * - new_personnel_id: (Optional) New personnel ID
+ *
+ * Returns:
+ * - Updated assignment details
+ */
+const rescheduleAssignment = async (req, res) => {
+  try {
+    const user = req.user;
+    const { assignment_id, new_date, new_time, new_personnel_id } = req.body;
+
+    // ✅ Only secretary can reschedule
+    if (user.role !== 'secretary') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized. Only secretary can reschedule assignments.',
+      });
+    }
+
+    // ✅ Validate required fields
+    if (!assignment_id || !new_date || !new_time) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Assignment ID, new date, and new time are required',
+      });
+    }
+
+    // ✅ Find the assignment
+    const assignment = await Assignment.findById(assignment_id);
+    if (!assignment) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Assignment not found',
+      });
+    }
+
+    // ✅ Find the associated task
+    const task = await ScheduleTask.findById(assignment.task_id);
+    if (!task) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Scheduled task not found',
+      });
+    }
+
+    // ✅ If changing personnel, validate new personnel
+    let targetPersonnelId = task.assigned_personnel;
+    if (new_personnel_id) {
+      const newPersonnel = await Personnel.findOne({
+        _id: new_personnel_id,
+        role: 'maintenance'
+      });
+
+      if (!newPersonnel) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'New personnel not found or not a maintenance worker',
+        });
+      }
+
+      // Check if new personnel is available at the new date/time
+      const conflict = await ScheduleTask.findOne({
+        assigned_personnel: new_personnel_id,
+        schedule_time: new_time,
+        _id: { $ne: task._id }, // Exclude current task
+      });
+
+      if (conflict && conflict.schedule_date) {
+        const conflictDate = new Date(conflict.schedule_date);
+        const targetDate = new Date(new_date);
+
+        if (conflictDate.getFullYear() === targetDate.getFullYear() &&
+            conflictDate.getMonth() === targetDate.getMonth() &&
+            conflictDate.getDate() === targetDate.getDate()) {
+          return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `Selected personnel is already assigned at ${new_time} on ${new_date}`,
+          });
+        }
+      }
+
+      targetPersonnelId = new_personnel_id;
+    }
+
+    // ✅ Update the task
+    task.schedule_date = new Date(new_date);
+    task.schedule_time = new_time;
+    task.assigned_personnel = targetPersonnelId;
+    await task.save();
+
+    // ✅ Update the assignment if personnel changed
+    if (new_personnel_id) {
+      assignment.assigned_to = new_personnel_id;
+      await assignment.save();
+    }
+
+    // ✅ Return updated assignment with populated data
+    const updatedAssignment = await Assignment.findById(assignment_id)
+      .populate({
+        path: 'task_id',
+        populate: { path: 'report_id' }
+      })
+      .populate('assigned_to');
+
+    console.log('✅ Assignment rescheduled:', assignment_id);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Assignment rescheduled successfully',
+      assignment: updatedAssignment,
+    });
+
+  } catch (error) {
+    console.error('🔥 rescheduleAssignment error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to reschedule assignment',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createAssignment,
   getAssignments,
@@ -639,4 +857,6 @@ module.exports = {
   getMaintenancePersonnel,
   updateAssignment,
   deleteAssignment,
+  getPersonnelAvailability,
+  rescheduleAssignment,
 };

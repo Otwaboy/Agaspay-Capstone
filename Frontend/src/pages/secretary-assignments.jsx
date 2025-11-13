@@ -56,7 +56,8 @@ export default function SecretaryAssignments() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
-  
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+
   // Data states
   const [unassignedTasks, setUnassignedTasks] = useState([]);
   const [assignments, setAssignments] = useState([]);
@@ -64,6 +65,13 @@ export default function SecretaryAssignments() {
   const [selectedPersonnel, setSelectedPersonnel] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Reschedule states
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [reschedulePersonnel, setReschedulePersonnel] = useState("");
+  const [availabilityData, setAvailabilityData] = useState([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   // Fetch data on mount
   useEffect(() => {
@@ -122,7 +130,7 @@ export default function SecretaryAssignments() {
       location: assignment.task.location || 'N/A',
       scheduledDate: assignment.task.schedule_date,
       timeSlot: assignment.task.schedule_time,
-      priority: 'medium',
+      priority: assignment.task.urgency_lvl?.toLowerCase() || 'medium',
       status: assignment.task.task_status,
       assignedTo: assignment.personnel.name,
       assignedToId: assignment.personnel.id,
@@ -264,6 +272,79 @@ export default function SecretaryAssignments() {
     }
   };
 
+  const handleRescheduleTask = async (task) => {
+    setSelectedTask(task);
+    // Initialize with current values
+    setRescheduleDate(task.scheduledDate?.split('T')[0] || "");
+    setRescheduleTime(task.timeSlot || "");
+    setReschedulePersonnel(task.assignedToId || "");
+    setRescheduleModalOpen(true);
+  };
+
+  const checkAvailability = async () => {
+    if (!rescheduleDate || !rescheduleTime) {
+      toast({
+        title: "Missing Information",
+        description: "Please select both date and time to check availability",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoadingAvailability(true);
+      const response = await apiClient.getPersonnelAvailability(rescheduleDate, rescheduleTime);
+      setAvailabilityData(response.personnel || []);
+    } catch (error) {
+      console.error('Availability check error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check personnel availability",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAvailability(false);
+    }
+  };
+
+  const handleConfirmReschedule = async () => {
+    if (!rescheduleDate || !rescheduleTime || !reschedulePersonnel) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await apiClient.rescheduleAssignment(
+        selectedTask.assignmentId,
+        rescheduleDate,
+        rescheduleTime,
+        reschedulePersonnel
+      );
+
+      toast({
+        title: "Success!",
+        description: "Task rescheduled successfully",
+      });
+
+      setRescheduleModalOpen(false);
+      await fetchAllData();
+    } catch (error) {
+      console.error('Reschedule error:', error);
+      toast({
+        title: "Reschedule Failed",
+        description: error.response?.data?.message || error.message || "Failed to reschedule task",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (!isAuthenticated) {
     setLocation("/login");
     return null;
@@ -272,7 +353,8 @@ export default function SecretaryAssignments() {
   const priorityConfig = {
     low: { color: "bg-blue-100 text-blue-700", label: "Low", icon: Clock },
     medium: { color: "bg-yellow-100 text-yellow-700", label: "Medium", icon: AlertTriangle },
-    high: { color: "bg-red-100 text-red-700", label: "High", icon: AlertTriangle },
+    high: { color: "bg-orange-100 text-orange-700", label: "High", icon: AlertTriangle },
+    critical: { color: "bg-red-100 text-red-700", label: "Critical", icon: AlertTriangle },
   };
 
   const statusConfig = {
@@ -284,7 +366,7 @@ export default function SecretaryAssignments() {
 
   const unassignedCount = allTasks.filter(t => t.status === "Unassigned").length;
   const assignedCount = allTasks.filter(t => t.status !== "Unassigned").length;
-  const urgentCount = allTasks.filter(t => t.priority === "high").length;
+  const urgentCount = allTasks.filter(t => t.priority === "high" || t.priority === "critical").length;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
@@ -409,6 +491,7 @@ export default function SecretaryAssignments() {
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -519,10 +602,10 @@ export default function SecretaryAssignments() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => handleUnassignTask(task)}
-                                        data-testid={`button-unassign-${task.id}`}
+                                        onClick={() => handleRescheduleTask(task)}
+                                        data-testid={`button-reschedule-${task.id}`}
                                       >
-                                        Unassign
+                                        Reschedule
                                       </Button>
                                     </>
                                   )}
@@ -748,6 +831,147 @@ export default function SecretaryAssignments() {
                   Close
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Modal */}
+      <Dialog open={rescheduleModalOpen} onOpenChange={setRescheduleModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Reschedule Task</DialogTitle>
+            <DialogDescription>
+              Update the schedule and assignment for this task
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTask && (
+            <div className="space-y-4">
+              {/* Current Task Info */}
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">Task Type</p>
+                      <p className="font-medium">{selectedTask.type}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Location</p>
+                      <p className="font-medium">{selectedTask.location}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Current Schedule</p>
+                      <p className="font-medium">
+                        {new Date(selectedTask.scheduledDate).toLocaleDateString()} at {selectedTask.timeSlot}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Currently Assigned To</p>
+                      <p className="font-medium">{selectedTask.assignedTo}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* New Schedule Form */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reschedule-date">New Date *</Label>
+                    <Input
+                      id="reschedule-date"
+                      type="date"
+                      value={rescheduleDate}
+                      onChange={(e) => setRescheduleDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reschedule-time">New Time *</Label>
+                    <Select value={rescheduleTime} onValueChange={setRescheduleTime}>
+                      <SelectTrigger id="reschedule-time">
+                        <SelectValue placeholder="Select time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="09:30">09:30 AM</SelectItem>
+                        <SelectItem value="10:30">10:30 AM</SelectItem>
+                        <SelectItem value="13:30">01:30 PM</SelectItem>
+                        <SelectItem value="14:30">02:30 PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Check Availability Button */}
+                <Button
+                  onClick={checkAvailability}
+                  disabled={!rescheduleDate || !rescheduleTime || loadingAvailability}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {loadingAvailability ? "Checking..." : "Check Personnel Availability"}
+                </Button>
+
+                {/* Personnel Selection with Availability */}
+                {availabilityData.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Select Personnel *</Label>
+                    <div className="grid gap-2 max-h-60 overflow-y-auto">
+                      {availabilityData.map((person) => (
+                        <Card
+                          key={person.id}
+                          className={`cursor-pointer transition-all ${
+                            reschedulePersonnel === person.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : person.available
+                                ? 'hover:border-gray-400'
+                                : 'opacity-60'
+                          }`}
+                          onClick={() => person.available && setReschedulePersonnel(person.id)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <User className="h-4 w-4 text-gray-400" />
+                                <div>
+                                  <p className="font-medium">{person.name}</p>
+                                  <p className="text-xs text-gray-500">Zone: {person.assigned_zone || 'N/A'}</p>
+                                </div>
+                              </div>
+                              <Badge
+                                className={
+                                  person.available
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                                }
+                              >
+                                {person.available ? "Available" : "Busy"}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setRescheduleModalOpen(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmReschedule}
+                  disabled={!rescheduleDate || !rescheduleTime || !reschedulePersonnel || submitting}
+                >
+                  {submitting ? "Rescheduling..." : "Confirm Reschedule"}
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>
