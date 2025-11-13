@@ -179,7 +179,9 @@ const registerResident = async (req, res) => {
 
       // Only create installation task if we found available personnel
       if (selectedPersonnel) {
-        // Create automatic installation task
+        // Create automatic installation task with resident's home address
+        const residentLocation = `Zone ${resident[0].zone}, Purok ${resident[0].purok}`;
+
         installationTask = await ScheduleTask.create([{
           connection_id: waterConnection[0]._id,
           schedule_date: scheduleDate,
@@ -188,6 +190,7 @@ const registerResident = async (req, res) => {
           assigned_personnel: selectedPersonnel._id,
           schedule_type: 'Meter Installation',
           scheduled_by: secretary._id,
+          location: residentLocation, // Set location to resident's home address
         }], { session });
 
         assignment = await Assignment.create([{

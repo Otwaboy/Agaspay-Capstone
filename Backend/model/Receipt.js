@@ -46,6 +46,7 @@ const ReceiptSchema = new mongoose.Schema({
   timestamps: true
 });
 
+
 // Auto-generate receipt numbers
 ReceiptSchema.pre('save', async function(next) {
   if (!this.receipt_number) {

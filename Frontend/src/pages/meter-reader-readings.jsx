@@ -83,9 +83,14 @@ export default function MeterReaderReadings() {
   const overallReadingStatus = (() => {
   if (filteredConnections.length === 0) return "No Data";
 
-  const allApproved = filteredConnections.every(c => c.reading_status === "approved");
-  const anySubmitted = filteredConnections.some(c => c.reading_status === "submitted");
-  const allInProgress = filteredConnections.every(c => c.reading_status === "inprogress");
+  // Only consider unbilled readings for status
+  const unbilledConnections = filteredConnections.filter(c => !c.is_billed);
+
+  if (unbilledConnections.length === 0) return "Ready to read"; // All billed, ready for new readings
+
+  const allApproved = unbilledConnections.every(c => c.reading_status === "approved");
+  const anySubmitted = unbilledConnections.some(c => c.reading_status === "submitted");
+  const allInProgress = unbilledConnections.every(c => c.reading_status === "inprogress");
 
   if (allApproved) return "Approved";
   if (anySubmitted) return "Submitted";
@@ -93,10 +98,10 @@ export default function MeterReaderReadings() {
   return "In Progress"; // fallback
 })();
 
-  // Monthly progress
-  const readCount = filteredConnections.filter(conn => conn.read_this_month).length;
+  // Monthly progress - only count unbilled readings
+  const readCount = filteredConnections.filter(conn => conn.read_this_month && !conn.is_billed).length;
   console.log('read count', readCount);
-  
+
   const totalCount = filteredConnections.length;
   const progressPercentage = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
 
@@ -373,7 +378,7 @@ export default function MeterReaderReadings() {
                    {selectedConnectionData &&
                                     selectedConnectionData.reading_status !== "inprogress" &&
                                     selectedConnectionData.reading_status !== "submitted" &&
-                                   selectedConnectionData.reading_status !== "approved" && (
+                                    (selectedConnectionData.reading_status !== "approved" || selectedConnectionData.is_billed) && (
                       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
                           <div className="bg-white p-3 rounded-lg">
@@ -523,7 +528,7 @@ export default function MeterReaderReadings() {
                           recordReadingMutation.isPending ||
                           selectedConnectionData?.reading_status === "inprogress" ||
                           selectedConnectionData?.reading_status === "submitted" ||
-                           selectedConnectionData?.reading_status === "approved"
+                          (selectedConnectionData?.reading_status === "approved" && !selectedConnectionData?.is_billed)
                         }
                       >
                         {recordReadingMutation.isPending ? "Recording..." : "Record Reading"}

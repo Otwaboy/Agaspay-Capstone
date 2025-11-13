@@ -45,6 +45,10 @@ const ScheduleTaskSchema = new mongoose.Schema(
       type: String,
       required: false, // Optional task description
     },
+    location: {
+      type: String,
+      required: false, // Location for the task (e.g., resident's address)
+    },
   },
   { timestamps: true } 
     

@@ -152,34 +152,51 @@ const getAssignments = async (req, res) => {
     const assignments = await Assignment.find(assignmentQuery)
       .populate({
         path: 'task_id',
-        populate: {
-          path: 'report_id',
-        },
+        populate: [
+          { path: 'report_id' },
+          {
+            path: 'connection_id',
+            populate: { path: 'resident_id', select: 'zone purok' }
+          }
+        ],
       })
       .populate({
         path: 'assigned_to',
         select: 'first_name last_name contact_no role assigned_zone',
       })
       .sort({ createdAt: -1 });
+
     // ✅ Format assignments for frontend
-    const formattedAssignments = assignments.map(assignment => {
+    const formattedAssignments = await Promise.all(assignments.map(async (assignment) => {
       const task = assignment.task_id;
       const personnel = assignment.assigned_to;
       const report = task?.report_id;
-      
+
+      // ✅ If task has no location and is a Meter Installation, get from populated resident
+      let taskLocation = task?.location || report?.location;
+
+      if (!taskLocation && task?.schedule_type === 'Meter Installation' && task?.connection_id?.resident_id) {
+        const resident = task.connection_id.resident_id;
+
+        if (resident?.zone && resident?.purok) {
+          taskLocation = `Zone ${resident.zone}, Purok ${resident.purok}`;
+          console.log(`✅ Found resident location: ${taskLocation}`);
+        }
+      }
+
       return {
         id: assignment._id,
         task: {
           id: task?._id,
           type: report?.type || task.schedule_type,
-          urgency_lvl: report?.urgency_level, 
+          urgency_lvl: report?.urgency_level,
           schedule_date: task?.schedule_date,
           schedule_time: task?.schedule_time,
           task_status: task?.task_status,
           connection_id: task?.connection_id,
           scheduled_by: task?.scheduled_by,
           report_id: report?._id,
-          location: report?.location || 'N/A', // ✅ Added location from incident report
+          location: taskLocation || 'N/Ass', // ✅ Check task location first, then report location, then fetch from resident
         },
         personnel: {
           id: personnel?._id,
@@ -190,7 +207,7 @@ const getAssignments = async (req, res) => {
         },
         assigned_at: assignment.createdAt,
       };
-    });
+    }));
     res.status(StatusCodes.OK).json({
       success: true,
       assignments: formattedAssignments,
@@ -236,12 +253,26 @@ const getUnassignedTasks = async (req, res) => {
       task_status: 'Unassigned', // Only unassigned tasks
     })
       .populate('report_id')
+      .populate({
+        path: 'connection_id',
+        populate: { path: 'resident_id', select: 'zone purok' }
+      })
       .sort({ schedule_date: 1, schedule_time: 1 });
 
     // ✅ Format tasks for frontend
-    const formattedTasks = unassignedTasks.map(task => {
+    const formattedTasks = await Promise.all(unassignedTasks.map(async (task) => {
       const report = task.report_id;
-      
+
+      // ✅ If task has no location and is a Meter Installation, get from populated resident
+      let taskLocation = task.location || report?.location;
+
+      if (!taskLocation && task.schedule_type === 'Meter Installation' && task.connection_id?.resident_id) {
+        const resident = task.connection_id.resident_id;
+
+        if (resident?.zone && resident?.purok) {
+          taskLocation = `Zone ${resident.zone}, Purok ${resident.purok}`;
+        }
+      }
 
       return {
         id: task._id,
@@ -253,14 +284,14 @@ const getUnassignedTasks = async (req, res) => {
         scheduled_by: task.scheduled_by,
         report: {
           id: report?._id,
-          type: report?.type,
+          type: report?.type || task.schedule_type,
           description: report?.description,
-          location: report?.location,
+          location: taskLocation || 'N/A', // ✅ Check task location first, then fetch from resident
           urgency_level: report?.urgency_level,
         },
         created_at: task.createdAt,
       };
-    });
+    }));
 
     res.status(StatusCodes.OK).json({
       success: true,

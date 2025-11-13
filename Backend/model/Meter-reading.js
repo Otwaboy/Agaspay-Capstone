@@ -38,20 +38,7 @@ const MeterReadingSchema = new mongoose.Schema({
     type: String,
     enum: ['inprogress', 'submitted', 'approved'],
     default: 'inprogress'
-  },
-  // monthly_status: {
-  //   type: String,
-  //   enum: ['pending', 'completed'],
-  //   default: 'pending'
-  // },
-  // reading_period: {
-  //   month: { type: Number, required: true },
-  //   year: { type: Number, required: true }
-  // },
-  // can_edit: {
-  //   type: Boolean,
-  //   default: true
-  // }, 
+  }, 
   billing_month: {
      type: String,
       required: true },
