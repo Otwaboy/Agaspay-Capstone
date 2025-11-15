@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
+import apiClient from "../lib/api";
 
 export default function TreasurerBillHistory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,72 +23,95 @@ export default function TreasurerBillHistory() {
   const { data: billHistory, isLoading } = useQuery({
     queryKey: ['/api/v1/treasurer/bill-history', filterStatus],
     staleTime: 2 * 60 * 1000,
+    queryFn: () => apiClient.getCurrentBill(),
   });
 
-  const mockBillHistory = [
-    {
-      id: "BILL-2408-001",
-      residentName: "Juan Dela Cruz",
-      accountNo: "ACC-12345",
-      billPeriod: "August 2024",
-      amount: 450.00,
-      dueDate: "2024-08-31",
-      status: "paid",
-      paidDate: "2024-08-15",
-      generatedDate: "2024-08-01"
-    },
-    {
-      id: "BILL-2408-002",
-      residentName: "Maria Santos",
-      accountNo: "ACC-12346",
-      billPeriod: "August 2024",
-      amount: 320.00,
-      dueDate: "2024-08-31",
-      status: "paid",
-      paidDate: "2024-08-20",
-      generatedDate: "2024-08-01"
-    },
-    {
-      id: "BILL-2408-003",
-      residentName: "Pedro Reyes",
-      accountNo: "ACC-12347",
-      billPeriod: "August 2024",
-      amount: 890.00,
-      dueDate: "2024-08-31",
-      status: "unpaid",
-      paidDate: null,
-      generatedDate: "2024-08-01"
-    },
-    {
-      id: "BILL-2407-015",
-      residentName: "Ana Garcia",
-      accountNo: "ACC-12348",
-      billPeriod: "July 2024",
-      amount: 275.00,
-      dueDate: "2024-07-31",
-      status: "overdue",
-      paidDate: null,
-      generatedDate: "2024-07-01"
-    },
-    {
-      id: "BILL-2408-004",
-      residentName: "Roberto Luna",
-      accountNo: "ACC-12349",
-      billPeriod: "August 2024",
-      amount: 520.00,
-      dueDate: "2024-08-31",
-      status: "paid",
-      paidDate: "2024-08-18",
-      generatedDate: "2024-08-01"
-    }
-  ];
+  console.log('bill history', billHistory);
 
-  const billData = billHistory || mockBillHistory;
+  // Transform backend data to match expected format
+  const transformedData = billHistory?.data?.map(bill => ({
+    _id: bill.bill_id,
+    full_name: bill.full_name,
+    meter_no: bill.meter_no,
+    purok_no: bill.purok_no,
+    connection_status: bill.connection_status,
+    previous_balance: bill.previous_balance,
+    current_charges: bill.current_charges,
+    total_amount: bill.total_amount,
+    status: bill.status,
+    previous_reading: bill.previous_reading,
+    present_reading: bill.present_reading,
+    calculated: bill.calculated,
+    due_date: bill.due_date,
+    created_at: bill.created_at,
+    paid_date: bill.paid_date || null, // Will be added to backend
+    bill_period: new Date(bill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  })) || [];
+
+  // const mockBillHistory = [
+  //   {
+  //     id: "BILL-2408-001",
+  //     residentName: "Juan Dela Cruz",
+  //     accountNo: "ACC-12345",
+  //     billPeriod: "August 2024",
+  //     amount: 450.00,
+  //     dueDate: "2024-08-31",
+  //     status: "paid",
+  //     paidDate: "2024-08-15",
+  //     generatedDate: "2024-08-01"
+  //   },
+  //   {
+  //     id: "BILL-2408-002",
+  //     residentName: "Maria Santos",
+  //     accountNo: "ACC-12346",
+  //     billPeriod: "August 2024",
+  //     amount: 320.00,
+  //     dueDate: "2024-08-31",
+  //     status: "paid",
+  //     paidDate: "2024-08-20",
+  //     generatedDate: "2024-08-01"
+  //   },
+  //   {
+  //     id: "BILL-2408-003",
+  //     residentName: "Pedro Reyes",
+  //     accountNo: "ACC-12347",
+  //     billPeriod: "August 2024",
+  //     amount: 890.00,
+  //     dueDate: "2024-08-31",
+  //     status: "unpaid",
+  //     paidDate: null,
+  //     generatedDate: "2024-08-01"
+  //   },
+  //   {
+  //     id: "BILL-2407-015",
+  //     residentName: "Ana Garcia",
+  //     accountNo: "ACC-12348",
+  //     billPeriod: "July 2024",
+  //     amount: 275.00,
+  //     dueDate: "2024-07-31",
+  //     status: "overdue",
+  //     paidDate: null,
+  //     generatedDate: "2024-07-01"
+  //   },
+  //   {
+  //     id: "BILL-2408-004",
+  //     residentName: "Roberto Luna",
+  //     accountNo: "ACC-12349",
+  //     billPeriod: "August 2024",
+  //     amount: 520.00,
+  //     dueDate: "2024-08-31",
+  //     status: "paid",
+  //     paidDate: "2024-08-18",
+  //     generatedDate: "2024-08-01"
+  //   }
+  // ];
+
+  const billData = transformedData;
 
   const filteredData = billData.filter(bill => {
-    const matchesSearch = bill.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         bill.accountNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         bill.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = bill.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         bill.meter_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         bill._id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === "all" || bill.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -266,62 +290,77 @@ export default function TreasurerBillHistory() {
                 <CardTitle>Billing Records</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Bill ID
-                        </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Resident
-                        </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Bill Period
-                        </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Amount
-                        </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Due Date
-                        </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Status
-                        </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Paid Date
-                        </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredData.map((bill) => {
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : filteredData.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No billing records found</h3>
+                    <p className="text-gray-600">
+                      {searchTerm || filterStatus !== "all"
+                        ? "Try adjusting your search or filters"
+                        : "No bills have been generated yet"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Bill ID
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Resident
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Bill Period
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Amount
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Due Date
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Status
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Paid Date
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredData.map((bill) => {
                         const statusConfig = getStatusConfig(bill.status);
                         return (
-                          <tr key={bill.id} data-testid={`bill-row-${bill.id}`}>
+                          <tr key={bill._id} data-testid={`bill-row-${bill._id}`}>
                             <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                              {bill.id}
+                              {bill._id}
                             </td>
                             <td className="py-4 px-6">
                               <div>
                                 <p className="text-sm font-medium text-gray-900">
-                                  {bill.residentName}
+                                  {bill.full_name}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  {bill.accountNo}
+                                  {bill.meter_no}
                                 </p>
                               </div>
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-600">
-                              {bill.billPeriod}
+                              {bill.bill_period}
                             </td>
                             <td className="py-4 px-6 text-sm font-semibold text-gray-900">
-                              {formatCurrency(bill.amount)}
+                              {formatCurrency(bill.total_amount)}
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-600">
-                              {formatDate(bill.dueDate)}
+                              {formatDate(bill.due_date)}
                             </td>
                             <td className="py-4 px-6">
                               <Badge className={statusConfig.className}>
@@ -329,7 +368,7 @@ export default function TreasurerBillHistory() {
                               </Badge>
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-600">
-                              {formatDate(bill.paidDate)}
+                              {bill.paid_date ? formatDate(bill.paid_date) : "N/A"}
                             </td>
                             <td className="py-4 px-6">
                               <Button
@@ -346,6 +385,7 @@ export default function TreasurerBillHistory() {
                     </tbody>
                   </table>
                 </div>
+                )}
               </CardContent>
             </Card>
           </div>

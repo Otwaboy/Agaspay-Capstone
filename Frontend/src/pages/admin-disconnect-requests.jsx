@@ -126,7 +126,7 @@ export default function AdminDisconnectRequests() {
 
     if (selectedRequest) {
       // Use water_connection_id if _id is not available
-      const connectionId = selectedRequest._id || selectedRequest.water_connection_id;
+      const connectionId = selectedRequest.connection_id || selectedRequest.water_connection_id;
 
       if (!connectionId) {
         toast.error("Cannot find connection ID");

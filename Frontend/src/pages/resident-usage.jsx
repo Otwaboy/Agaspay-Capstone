@@ -145,7 +145,7 @@ export default function ResidentUsage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-purple-600">
-                    {averageConsumption} m³
+                    {averageConsumption || 0 } m³
                   </div>
                   <p className="text-sm text-gray-600 mt-2">
                     Monthly average

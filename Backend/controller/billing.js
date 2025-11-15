@@ -15,9 +15,14 @@ const getBilling = async (req, res) => {
   const user = req.user;
   let filter = {};
 
-  console.log("Logged-in resident username:", user.username);
+  console.log("Logged-in user:", user.username, "Role:", user.role);
 
-  if (user.role === 'resident') {
+  // Treasurer, Secretary, and Admin can view all billings
+  if (user.role === 'treasurer' || user.role === 'secretary' || user.role === 'admin') {
+    // No filter applied - they can see all billing records
+    console.log(`${user.role} accessing all billing records`);
+  }
+  else if (user.role === 'resident') {
     // Step 1: Find resident record linked to this user
     const resident = await Resident.findOne({ user_id: user.userId });
 
@@ -40,6 +45,12 @@ const getBilling = async (req, res) => {
     // Step 3: Filter by that connection
     filter.connection_id = connection._id;
   }
+  else {
+    // Unauthorized role
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      msg: 'Unauthorized access to billing records'
+    });
+  }
 
   // Step 4: Get the billings
   const billings = await Billing.find(filter).populate({
@@ -54,23 +65,33 @@ const getBilling = async (req, res) => {
   const billingDetails = await Promise.all(
     billings.map(async (billing) => {
       const connection = billing.connection_id;
-      const resident = connection.resident_id;
+      const resident = connection?.resident_id;
 
       // ✅ Find latest reading for this connection
       const reading = await MeterReading.findById(billing.reading_id);
 
+      // ✅ Find payment date if bill is paid
+      let paid_date = null;
+      if (billing.status === 'paid') {
+        const payment = await Payment.findOne({
+          billing_id: billing._id,
+          payment_status: 'confirmed'
+        }).sort({ payment_date: -1 });
+        paid_date = payment?.payment_date ?? null;
+      }
+
       return {
         bill_id: billing?._id ?? 'unknown',
-        connection_id: connection?._id,
-        connection_status: connection?.connection_status ?? 'unknown', // <-- added
+        connection_id: connection?._id ?? 'unknown',
+        connection_status: connection?.connection_status ?? 'unknown',
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : 'unknown',
-        meter_no: connection?.meter_no,
-        purok_no: resident?.purok ?? 'unknownss',
+        meter_no: connection?.meter_no ?? 'unknown',
+        purok_no: resident?.purok ?? 'unknown',
 
         // 💰 CUMULATIVE BILLING BREAKDOWN
         previous_balance: billing?.previous_balance ?? 0,    // Unpaid balance from previous months
         current_charges: billing?.current_charges ?? 0,      // This month's consumption charges
-        total_amount: billing?.total_amount,                 // Total = previous + current
+        total_amount: billing?.total_amount ?? 0,            // Total = previous + current
 
         status: billing?.status ?? 'unknown',
 
@@ -78,8 +99,9 @@ const getBilling = async (req, res) => {
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
-        due_date: billing?.due_date ?? 0,
-        created_at: reading?.created_at
+        due_date: billing?.due_date ?? null,
+        created_at: reading?.created_at ?? null,
+        paid_date: paid_date  // ✅ Payment date for paid bills
       };
     })
   );
