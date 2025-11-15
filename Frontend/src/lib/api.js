@@ -258,6 +258,8 @@ async getApprovalStats() {
   });
 }
 
+
+
   // ======================================================
   // 👤 USER MANAGEMENT
   // ======================================================
@@ -436,6 +438,12 @@ async getApprovalStats() {
       });
     }
 
+  async approveDisconnection(connectionId) {
+  return await this.request(`/api/v1/disconnection/approve/${connectionId}`, {
+    method: 'PATCH',
+    })
+  };
+
     // ======================================================
     // 📦 ARCHIVE REQUEST (Resident)
     // ======================================================
@@ -456,6 +464,29 @@ async getApprovalStats() {
       });
     }
 
+    async approveArchive(connectionId) {
+      return await this.request(`/api/v1/archive-request/approve/${connectionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          archive_status: "archived",
+          archive_approved_date: new Date()
+        })
+      });
+    }
+
+    async rejectDisconnection(connectionId, reason) {
+      return await this.request(`/api/v1/disconnection/reject/${connectionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
+      });
+    }
+
+    async rejectArchive(connectionId, reason) {
+      return await this.request(`/api/v1/archive-request/reject/${connectionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
+      });
+    }
 }
 
 

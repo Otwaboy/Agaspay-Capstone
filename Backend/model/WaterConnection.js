@@ -6,7 +6,7 @@ const WaterConnectionSchema = new mongoose.Schema({
   {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Resident',
-    required: true
+    required: true 
   },
   meter_no:  
   {
@@ -17,10 +17,10 @@ const WaterConnectionSchema = new mongoose.Schema({
   connection_status: 
   {
     type: String,
-    enum: ['pending', 'active', 'for_disconnection', 'scheduled_for_disconnection', 'disconnected', 'scheduled_for_reconnection'],
+    enum: ['pending', 'active', 'request_for_disconnection', 'for_disconnection', 'scheduled_for_disconnection', 'scheduled_for_reconnection', 'disconnected', ],
     default: 'pending'
   }, 
-  type:
+  type: 
   {
     type: String,
     enum: ['household', 'restaurant', 'establishment', 'others'],

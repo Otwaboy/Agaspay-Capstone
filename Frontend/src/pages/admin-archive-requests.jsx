@@ -65,10 +65,9 @@ export default function AdminArchiveRequests() {
   const approveArchiveMutation = useMutation({
     mutationFn: async (connectionId) => {
       // Update archive status to archived
-      return await apiClient.updateResidentAccount(connectionId, {
-        archive_status: 'archived',
-        archive_approved_date: new Date()
-      });
+      return await apiClient.approveArchive(connectionId, {
+        
+      }); 
     },
     onSuccess: () => {
       toast.success("Archive request approved successfully!");
@@ -84,13 +83,8 @@ export default function AdminArchiveRequests() {
   // Reject archive mutation
   const rejectArchiveMutation = useMutation({
     mutationFn: async ({ connectionId, reason }) => {
-      // Clear archive status and set rejection reason
-      return await apiClient.updateResidentAccount(connectionId, {
-        archive_status: null,
-        archive_reason: null,
-        archive_requested_date: null,
-        archive_rejection_reason: reason
-      });
+      // Use the reject endpoint
+      return await apiClient.rejectArchive(connectionId, reason);
     },
     onSuccess: () => {
       toast.success("Archive request rejected");
@@ -121,7 +115,20 @@ export default function AdminArchiveRequests() {
 
   const confirmApproval = () => {
     if (selectedRequest) {
-      approveArchiveMutation.mutate(selectedRequest._id);
+      console.log('Selected request for approval:', selectedRequest);
+      console.log('Connection ID:', selectedRequest._id);
+      console.log('Water Connection ID:', selectedRequest.water_connection_id);
+
+      // Use water_connection_id if _id is not available
+      const connectionId = selectedRequest.connection_id || selectedRequest.water_connection_id;
+
+      if (!connectionId) {
+        toast.error("Cannot find connection ID");
+        console.error("Selected request object:", selectedRequest);
+        return;
+      }
+
+      approveArchiveMutation.mutate(connectionId);
     }
   };
 
@@ -132,8 +139,17 @@ export default function AdminArchiveRequests() {
     }
 
     if (selectedRequest) {
+      // Use water_connection_id if _id is not available
+      const connectionId = selectedRequest._id || selectedRequest.water_connection_id;
+
+      if (!connectionId) {
+        toast.error("Cannot find connection ID");
+        console.error("Selected request object:", selectedRequest);
+        return;
+      }
+
       rejectArchiveMutation.mutate({
-        connectionId: selectedRequest._id,
+        connectionId: connectionId,
         reason: rejectionReason.trim()
       });
     }

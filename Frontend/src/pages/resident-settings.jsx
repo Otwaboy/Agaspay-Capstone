@@ -81,6 +81,18 @@ export default function ResidentSettings() {
     }
   });
 
+  // Cancel Disconnection Mutation
+  const cancelDisconnectionMutation = useMutation({
+    mutationFn: () => apiClient.cancelDisconnectionRequest(),
+    onSuccess: () => {
+      toast.success("Disconnection request cancelled successfully!");
+      window.location.reload(); // Reload to update status
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to cancel disconnection request");
+    }
+  });
+
   // Request Archive Mutation
   const requestArchiveMutation = useMutation({
     mutationFn: (data) => apiClient.requestArchive(data),
@@ -92,6 +104,18 @@ export default function ResidentSettings() {
     },
     onError: (error) => {
       toast.error(error.message || "Failed to submit archive request");
+    }
+  });
+
+  // Cancel Archive Mutation
+  const cancelArchiveMutation = useMutation({
+    mutationFn: () => apiClient.cancelArchiveRequest(),
+    onSuccess: () => {
+      toast.success("Archive request cancelled successfully!");
+      window.location.reload(); // Reload to update status
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to cancel archive request");
     }
   });
 
@@ -409,19 +433,40 @@ export default function ResidentSettings() {
                     </Button>
 
                     {/* Disconnect Account Button */}
-                    {disconnectionStatus?.status === 'scheduled_for_disconnection' ? (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-yellow-900">Disconnection Pending</p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              Your disconnection request is awaiting admin approval.
-                            </p>
+                    {disconnectionStatus?.status === 'request_for_disconnection' ? (
+                      <div className="space-y-2">
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start space-x-2">
+                            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-yellow-900">Disconnection Pending</p>
+                              <p className="text-xs text-yellow-700 mt-1">
+                                Your disconnection request is awaiting admin approval.
+                              </p>
+                            </div>
                           </div>
                         </div>
+                        <Button
+                          variant="outline"
+                          className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to cancel your disconnection request?")) {
+                              cancelDisconnectionMutation.mutate();
+                            }
+                          }}
+                          disabled={cancelDisconnectionMutation.isPending}
+                        >
+                          {cancelDisconnectionMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            "Cancel Request"
+                          )}
+                        </Button>
                       </div>
-                    ) : disconnectionStatus?.status === 'disconnected' ? (
+                    ) : disconnectionStatus?.status === 'disconnected' || disconnectionStatus?.status === 'for_disconnection' ? (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                         <div className="flex items-start space-x-2">
                           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
@@ -458,16 +503,37 @@ export default function ResidentSettings() {
 
                     {/* Archive Account Button */}
                     {archiveStatus?.archive_status === 'pending_archive' ? (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-yellow-900">Archive Request Pending</p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              Your archive request is awaiting admin approval.
-                            </p>
+                      <div className="space-y-2">
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start space-x-2">
+                            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-yellow-900">Archive Request Pending</p>
+                              <p className="text-xs text-yellow-700 mt-1">
+                                Your archive request is awaiting admin approval.
+                              </p>
+                            </div>
                           </div>
                         </div>
+                        <Button
+                          variant="outline"
+                          className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to cancel your archive request?")) {
+                              cancelArchiveMutation.mutate();
+                            }
+                          }}
+                          disabled={cancelArchiveMutation.isPending}
+                        >
+                          {cancelArchiveMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            "Cancel Request"
+                          )}
+                        </Button>
                       </div>
                     ) : archiveStatus?.archive_status === 'archived' ? (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg">

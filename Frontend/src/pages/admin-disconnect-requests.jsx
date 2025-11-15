@@ -36,11 +36,16 @@ export default function AdminDisconnectRequests() {
     queryKey: ['disconnect-requests'],
     queryFn: () => apiClient.getAllWaterConnections()
   });
-
+ 
+  console.log('all water connections', connections);
+  
   // Filter only those with disconnection requests
-  const disconnectRequests = (connections?.connections || []).filter(
-    conn => conn.connection_status === 'scheduled_for_disconnection' && conn.disconnection_type === 'Voluntary'
-  );
+  const disconnectRequests = (connections?.data || []).filter(
+    conn => conn.connection_status === 'request_for_disconnection' && conn.disconnection_type === 'Voluntary'
+  ); 
+
+  console.log('disconnectionrequest list', disconnectRequests);
+  
 
   // Filter based on search
   const filteredRequests = disconnectRequests.filter(req => {
@@ -57,10 +62,7 @@ export default function AdminDisconnectRequests() {
   const approveDisconnectionMutation = useMutation({
     mutationFn: async (connectionId) => {
       // Update connection status to disconnected
-      return await apiClient.updateResidentAccount(connectionId, {
-        connection_status: 'disconnected',
-        disconnection_approved_date: new Date()
-      });
+      return await apiClient.approveDisconnection(connectionId);
     },
     onSuccess: () => {
       toast.success("Disconnection request approved successfully!");
@@ -76,13 +78,8 @@ export default function AdminDisconnectRequests() {
   // Reject disconnection mutation
   const rejectDisconnectionMutation = useMutation({
     mutationFn: async ({ connectionId, reason }) => {
-      // Restore to active and set rejection reason
-      return await apiClient.updateResidentAccount(connectionId, {
-        connection_status: 'active',
-        disconnection_type: null,
-        disconnection_requested_date: null,
-        disconnection_rejection_reason: reason
-      });
+      // Use the reject endpoint
+      return await apiClient.rejectDisconnection(connectionId, reason);
     },
     onSuccess: () => {
       toast.success("Disconnection request rejected");
@@ -108,7 +105,16 @@ export default function AdminDisconnectRequests() {
 
   const confirmApproval = () => {
     if (selectedRequest) {
-      approveDisconnectionMutation.mutate(selectedRequest._id);
+      // Use water_connection_id if _id is not available
+      const connectionId = selectedRequest.connection_id || selectedRequest.water_connection_id;
+
+      if (!connectionId) {
+        toast.error("Cannot find connection ID");
+        console.error("Selected request object:", selectedRequest);
+        return;
+      }
+
+      approveDisconnectionMutation.mutate(connectionId);
     }
   };
 
@@ -119,8 +125,17 @@ export default function AdminDisconnectRequests() {
     }
 
     if (selectedRequest) {
+      // Use water_connection_id if _id is not available
+      const connectionId = selectedRequest._id || selectedRequest.water_connection_id;
+
+      if (!connectionId) {
+        toast.error("Cannot find connection ID");
+        console.error("Selected request object:", selectedRequest);
+        return;
+      }
+
       rejectDisconnectionMutation.mutate({
-        connectionId: selectedRequest._id,
+        connectionId: connectionId,
         reason: rejectionReason.trim()
       });
     }
@@ -240,7 +255,6 @@ export default function AdminDisconnectRequests() {
                       <thead>
                         <tr className="border-b border-gray-200">
                           <th className="text-left py-3 px-4 font-semibold text-gray-700">Resident Name</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Account No.</th>
                           <th className="text-left py-3 px-4 font-semibold text-gray-700">Meter No.</th>
                           <th className="text-left py-3 px-4 font-semibold text-gray-700">Request Date</th>
                           <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
@@ -252,12 +266,9 @@ export default function AdminDisconnectRequests() {
                           <tr key={request._id} className="border-b border-gray-100 hover:bg-gray-50">
                             <td className="py-3 px-4">
                               <div className="font-medium text-gray-900">
-                                {request.resident_id?.first_name} {request.resident_id?.last_name}
+                                {request.full_name} 
                               </div>
                               <div className="text-sm text-gray-500">{request.resident_id?.email}</div>
-                            </td>
-                            <td className="py-3 px-4 text-gray-700">
-                              {request.resident_id?.account_number}
                             </td>
                             <td className="py-3 px-4 text-gray-700">
                               {request.meter_no}
@@ -321,14 +332,18 @@ export default function AdminDisconnectRequests() {
                 <div className="p-4 bg-gray-50 rounded-lg space-y-2">
                   <p className="text-sm">
                     <span className="font-semibold">Resident:</span>{' '}
-                    {selectedRequest.resident_id?.first_name} {selectedRequest.resident_id?.last_name}
-                  </p>
-                  <p className="text-sm">
-                    <span className="font-semibold">Account No:</span>{' '}
-                    {selectedRequest.resident_id?.account_number}
+                    {selectedRequest.full_name} 
                   </p>
                   <p className="text-sm">
                     <span className="font-semibold">Meter No:</span> {selectedRequest.meter_no}
+                  </p>
+                    <p className="text-sm">
+                    <span className="font-semibold">Zone:</span>{' '}
+                    {selectedRequest.zone}
+                  </p>
+                    <p className="text-sm">
+                    <span className="font-semibold">Purok:</span>{' '}
+                    {selectedRequest.purok}
                   </p>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
@@ -374,11 +389,19 @@ export default function AdminDisconnectRequests() {
                 <div className="p-4 bg-gray-50 rounded-lg space-y-2 mb-4">
                   <p className="text-sm">
                     <span className="font-semibold">Resident:</span>{' '}
-                    {selectedRequest.resident_id?.first_name} {selectedRequest.resident_id?.last_name}
+                    {selectedRequest.full_name} 
                   </p>
                   <p className="text-sm">
-                    <span className="font-semibold">Account No:</span>{' '}
-                    {selectedRequest.resident_id?.account_number}
+                    <span className="font-semibold">Meter No:</span>{' '}
+                    {selectedRequest.meter_no}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Zone:</span>{' '}
+                    {selectedRequest.zone}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Purok:</span>{' '}
+                    {selectedRequest.purok}
                   </p>
                 </div>
               )}

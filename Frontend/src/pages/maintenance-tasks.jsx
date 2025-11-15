@@ -56,25 +56,25 @@ export default function MaintenanceTasks() {
     retry: 1
   });
 
-  console.log(assignmentsResponse);
+  console.log('list', assignmentsResponse);
   
 
   // Transform backend data to match UI format
 const tasksData = assignmentsResponse?.assignments?.map(assignment => ({
-  id: assignment.task?.id,   
+  id: assignment.task?.id,
   assignmentId: assignment.id,
   type: assignment.task?.type || 'N/A',
-  location: assignment.task?.location || 'Biking', 
+  location: assignment.task?.location || 'Biking',
   resident: assignment.personnel?.name || 'N/A',
-  connectionId: assignment.task?.connection_id || 'N/A',
+  connectionId: assignment.task?.connection_id?._id || assignment.task?.connection_id || 'N/A',
   status: assignment.task?.task_status || 'Assigned',
   priority: assignment.task?.urgency_lvl || 'Medium',
-  scheduledDate: assignment.task?.schedule_date  
-    ? new Date(assignment.task.schedule_date).toLocaleDateString() 
+  scheduledDate: assignment.task?.schedule_date
+    ? new Date(assignment.task.schedule_date).toLocaleDateString()
     : 'N/A',
   scheduledTime: assignment.task?.schedule_time || 'N/A',
-  assignedDate: assignment.assigned_at 
-    ? new Date(assignment.assigned_at).toLocaleDateString() 
+  assignedDate: assignment.assigned_at
+    ? new Date(assignment.assigned_at).toLocaleDateString()
     : 'N/A',
   description: `${assignment.task?.type || 'Task'} scheduled`,
   personnelName: assignment.personnel?.name,

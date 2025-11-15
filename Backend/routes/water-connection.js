@@ -15,7 +15,8 @@ router.route('/verify-email').post(authMiddleware, verifyEmail); // <-- new rout
 
 
 
-
+ 
 module.exports = router 
 
 
+ 

@@ -99,6 +99,11 @@ const getAllWaterConnections = async (req, res) => {
           status: r?.status || "N/A",
           previous_reading: lastReading?.previous_reading ?? 0,
           present_reading: lastReading?.present_reading ?? 0,
+
+          //disconnection
+          disconnection_type: conn.disconnection_type,
+          disconnection_requested_date: conn.disconnection_requested_date,
+
           //archive
           archive_status: conn.archive_status,
           archive_reason: conn.archive_reason,

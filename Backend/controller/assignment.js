@@ -14,7 +14,7 @@ const { StatusCodes } = require('http-status-codes');
  * - task_id: ID of the scheduled task
  * - assigned_to: ID of the maintenance personnel
  * 
- * Returns:
+ * Returns: 
  * - Created assignment with populated task and personnel details
  */
 const createAssignment = async (req, res) => {

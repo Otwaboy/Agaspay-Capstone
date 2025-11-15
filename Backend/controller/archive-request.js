@@ -3,7 +3,7 @@ const User = require('../model/User');
 const Resident = require('../model/Resident');
 const { StatusCodes } = require('http-status-codes');
 
-/**
+/** 
  * Request account archive (Resident only)
  */
 const requestArchive = async (req, res) => {
@@ -59,9 +59,11 @@ const requestArchive = async (req, res) => {
     }
 
     // Update archive status
+
     connection.archive_status = 'pending_archive';
     connection.archive_requested_date = new Date();
     connection.archive_reason = reason.trim();
+    resident
     await connection.save();
 
     res.status(StatusCodes.OK).json({
@@ -175,8 +177,149 @@ const cancelArchiveRequest = async (req, res) => {
   }
 };
 
+/**
+ * Approve Archive Request (Admin / Treasurer / Secretary)
+ */
+const approveArchiveRequest = async (req, res) => {
+  try {
+    const user = req.user;
+    const { connection_id } = req.params;
+
+    if (user.role !== 'admin' && user.role !== 'secretary' && user.role !== 'treasurer') {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        message: 'Only authorized personnel can approve archive requests'
+      });
+    }
+
+    // Validate connection
+    const connection = await WaterConnection.findById(connection_id);
+    if (!connection) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Water connection not found'
+      });
+    }
+
+     const resident = await Resident.findById(connection.resident_id);
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Resident record not found'
+      });
+    }
+
+    // Must be pending to approve
+    if (connection.archive_status !== 'pending_archive') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'No pending archive request for this connection'
+      });
+    }
+
+    resident.status = 'inactive';
+    await resident.save();
+
+    // Approve archive
+    connection.archive_status = 'archived';
+    connection.archive_approved_date = new Date();
+    connection.archive_rejection_reason = null; // clear previous rejection reason if any
+    await connection.save();
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Archive request approved successfully', 
+      connection
+    });
+ 
+  } catch (error) {
+    console.error('❌ Approve archive error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to approve archive request',
+      error: error.message
+    });
+  }
+};
+
+
+/**
+ * Reject Archive Request (Admin / Treasurer / Secretary)
+ */
+const rejectArchiveRequest = async (req, res) => {
+  try {
+    const user = req.user;
+    const { connection_id } = req.params;
+    const { reason } = req.body;
+
+    if (user.role !== 'admin' && user.role !== 'secretary' && user.role !== 'treasurer') {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        message: 'Only authorized personnel can reject archive requests'
+      });
+    }
+
+    // Validate rejection reason
+    if (!reason || reason.trim().length < 10) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Rejection reason must be at least 10 characters long'
+      });
+    }
+
+    // Validate connection
+    const connection = await WaterConnection.findById(connection_id);
+    if (!connection) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Water connection not found'
+      });
+    }
+
+    const resident = await Resident.findById(connection.resident_id);
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Resident record not found'
+      });
+    }
+
+    // Must be pending to reject
+    if (connection.archive_status !== 'pending_archive') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'No pending archive request for this connection'
+      });
+    }
+
+    // Reject archive - clear archive status and set rejection reason
+    connection.archive_status = null;
+    connection.archive_reason = null;
+    connection.archive_requested_date = null;
+    connection.archive_rejection_reason = reason.trim();
+    await connection.save();
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Archive request rejected successfully',
+      connection
+    });
+
+  } catch (error) {
+    console.error('❌ Reject archive error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to reject archive request',
+      error: error.message
+    });
+  }
+};
+
+
 module.exports = {
   requestArchive,
   getArchiveStatus,
-  cancelArchiveRequest
+  cancelArchiveRequest,
+  approveArchiveRequest,
+  rejectArchiveRequest
 };
