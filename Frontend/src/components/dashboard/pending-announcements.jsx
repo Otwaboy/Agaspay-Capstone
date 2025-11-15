@@ -1,15 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Textarea } from "../ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { Check, X, AlertCircle, Megaphone, Calendar, User } from "lucide-react";
 import { announcementsApi } from "../../services/adminApi";
 import { toast } from "sonner";
 
 export default function PendingAnnouncements() {
   const queryClient = useQueryClient();
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ['pending-announcements'],
@@ -21,24 +33,47 @@ export default function PendingAnnouncements() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-announcements'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Announcement approved and published');
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      toast.success('Announcement approved and published successfully!');
     },
-    onError: () => {
-      toast.error('Failed to approve announcement');
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to approve announcement');
     }
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (id) => announcementsApi.reject(id),
+    mutationFn: ({ id, rejection_reason }) => announcementsApi.reject(id, rejection_reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-announcements'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Announcement rejected');
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      setRejectModalOpen(false);
+      setRejectionReason("");
+      setSelectedAnnouncement(null);
+      toast.success('Announcement rejected successfully');
     },
-    onError: () => {
-      toast.error('Failed to reject announcement');
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to reject announcement');
     }
   });
+
+  const handleRejectClick = (announcement) => {
+    setSelectedAnnouncement(announcement);
+    setRejectionReason("");
+    setRejectModalOpen(true);
+  };
+
+  const handleConfirmReject = () => {
+    if (!rejectionReason.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+
+    rejectMutation.mutate({
+      id: selectedAnnouncement._id,
+      rejection_reason: rejectionReason
+    });
+  };
 
   const announcements = data?.announcements || [];
 
@@ -148,7 +183,7 @@ export default function PendingAnnouncements() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => rejectMutation.mutate(announcement._id)}
+                    onClick={() => handleRejectClick(announcement)}
                     disabled={approveMutation.isPending || rejectMutation.isPending}
                     className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
                   >
@@ -161,6 +196,57 @@ export default function PendingAnnouncements() {
           </div>
         )}
       </CardContent>
+
+      {/* Rejection Modal */}
+      <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Announcement</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this announcement. The secretary will see this feedback.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedAnnouncement && (
+            <div className="space-y-4">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-900">{selectedAnnouncement.title}</p>
+                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{selectedAnnouncement.content}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Rejection Reason <span className="text-red-500">*</span>
+                </label>
+                <Textarea
+                  placeholder="Explain why this announcement is being rejected..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This feedback will be sent to the secretary who created this announcement.
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRejectModalOpen(false)}
+              disabled={rejectMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmReject}
+              disabled={rejectMutation.isPending || !rejectionReason.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {rejectMutation.isPending ? "Rejecting..." : "Reject Announcement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

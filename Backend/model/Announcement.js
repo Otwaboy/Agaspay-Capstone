@@ -12,17 +12,17 @@ const AnnouncementSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Maintenance', 'Event', 'Information', 'Billing', 'Alert'],
+    enum: ['Water Schedule', 'Maintenance', 'Alert'],
     required: true
   },
   priority: {
     type: String,
-    enum: ['low', 'normal', 'high'],
+    enum: ['normal', 'high', 'urgent'],
     default: 'normal'
   },
   status: {
     type: String,
-    enum: ['draft', 'pending_approval', 'approved', 'published', 'archived'],
+    enum: ['draft', 'reject', 'pending_approval', 'approved', 'published', 'archived'],
     default: 'draft'
   },
   created_by: {
@@ -38,6 +38,17 @@ const AnnouncementSchema = new mongoose.Schema({
     type: Date
   },
   published_date: {
+    type: Date
+  },
+  rejection_reason: {
+    type: String,
+    default: null
+  },
+  rejected_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Personnel'
+  },
+  rejection_date: {
     type: Date
   },
   valid_until: {

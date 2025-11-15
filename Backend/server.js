@@ -72,9 +72,12 @@ const connectionManagementRoutes = require('./routes/connection-management')
 const dashboardRoutes = require('./routes/dashboard')
 const personnelRoutes = require('./routes/personnel')
 const reportsRoutes = require('./routes/reports')
+const changePasswordRoutes = require('./routes/change-password')
+const disconnectionRequestRoutes = require('./routes/disconnection-request')
+const archiveRequestRoutes = require('./routes/archive-request')
 
 
-//extra packages 
+//extra packages
 app.use(express.json())
 
 app.get('/', (req, res) => {res.status(200).json({message: 'Hello Vercel!'})})
@@ -95,8 +98,11 @@ app.use('/api/v1/receipts', receiptRoutes)
 app.use('/api/v1/archive', archiveRoutes)
 app.use('/api/v1/connection-management', connectionManagementRoutes)
 app.use('/api/v1/dashboard', dashboardRoutes)
-app.use('/api/v1/personnel', personnelRoutes) 
+app.use('/api/v1/personnel', personnelRoutes)
 app.use('/api/v1/reports', reportsRoutes)
+app.use('/api/v1/change-password', changePasswordRoutes)
+app.use('/api/v1/disconnection', disconnectionRequestRoutes)
+app.use('/api/v1/archive-request', archiveRequestRoutes)
 
 
 //webhooks

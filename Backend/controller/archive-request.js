@@ -1,0 +1,182 @@
+const WaterConnection = require('../model/WaterConnection');
+const User = require('../model/User');
+const Resident = require('../model/Resident');
+const { StatusCodes } = require('http-status-codes');
+
+/**
+ * Request account archive (Resident only)
+ */
+const requestArchive = async (req, res) => {
+  try {
+    const user = req.user;
+    const { reason } = req.body;
+
+    // Validate reason
+    if (!reason || reason.trim().length === 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Please provide a reason for archiving your account'
+      });
+    }
+
+    if (reason.trim().length < 10) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Reason must be at least 10 characters long'
+      });
+    }
+
+    // Get resident's water connection
+    const resident = await Resident.findOne({ user_id: user.userId });
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Resident record not found'
+      });
+    }
+
+    const connection = await WaterConnection.findOne({ resident_id: resident._id });
+    if (!connection) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'No water connection found for this resident'
+      });
+    }
+
+    // Check if already archived or pending archive
+    if (connection.archive_status === 'archived') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Your account is already archived'
+      });
+    } 
+
+    if (connection.archive_status === 'pending_archive') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'You already have a pending archive request'
+      });
+    }
+
+    // Update archive status
+    connection.archive_status = 'pending_archive';
+    connection.archive_requested_date = new Date();
+    connection.archive_reason = reason.trim();
+    await connection.save();
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Archive request submitted successfully. Awaiting admin approval.',
+      connection
+    });
+
+  } catch (error) {
+    console.error('❌ Request archive error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to process archive request',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get archive status (Resident only)
+ */
+const getArchiveStatus = async (req, res) => {
+  try {
+    const user = req.user;
+
+    const resident = await Resident.findOne({ user_id: user.userId });
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Resident record not found'
+      });
+    }
+
+    const connection = await WaterConnection.findOne({ resident_id: resident._id });
+    if (!connection) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'No water connection found'
+      });
+    }
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      archive_status: connection.archive_status,
+      archive_reason: connection.archive_reason,
+      archive_requested_date: connection.archive_requested_date,
+      archive_approved_date: connection.archive_approved_date,
+      archive_rejection_reason: connection.archive_rejection_reason
+    });
+
+  } catch (error) {
+    console.error('❌ Get archive status error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to get archive status',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Cancel archive request (Resident only - if still pending)
+ */
+const cancelArchiveRequest = async (req, res) => {
+  try {
+    const user = req.user;
+
+    const resident = await Resident.findOne({ user_id: user.userId });
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Resident record not found'
+      });
+    }
+
+    const connection = await WaterConnection.findOne({ resident_id: resident._id });
+    if (!connection) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'No water connection found'
+      });
+    }
+
+    if (connection.archive_status !== 'pending_archive') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'No pending archive request to cancel'
+      });
+    }
+
+    // Clear archive fields
+    connection.archive_status = null;
+    connection.archive_reason = null;
+    connection.archive_requested_date = null;
+    connection.archive_rejection_reason = null;
+    await connection.save();
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Archive request cancelled successfully',
+      connection
+    });
+
+  } catch (error) {
+    console.error('❌ Cancel archive error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to cancel archive request',
+      error: error.message
+    });
+  }
+};
+
+module.exports = {
+  requestArchive,
+  getArchiveStatus,
+  cancelArchiveRequest
+};

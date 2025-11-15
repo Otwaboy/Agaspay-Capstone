@@ -400,6 +400,61 @@ async getApprovalStats() {
       return await this.request('/api/v1/announcements/pending');
     }
 
+    // ======================================================
+    // 🔐 CHANGE PASSWORD (Resident)
+    // ======================================================
+    async requestPasswordChange(data) {
+      return await this.request('/api/v1/change-password/request', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
+
+    async verifyPasswordChange(data) {
+      return await this.request('/api/v1/change-password/verify', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
+
+    // ======================================================
+    // 🔌 DISCONNECTION REQUEST (Resident)
+    // ======================================================
+    async requestDisconnection() {
+      return await this.request('/api/v1/disconnection/request', {
+        method: 'POST',
+      });
+    }
+
+    async getDisconnectionStatus() {
+      return await this.request('/api/v1/disconnection/status');
+    }
+
+    async cancelDisconnectionRequest() {
+      return await this.request('/api/v1/disconnection/cancel', {
+        method: 'POST',
+      });
+    }
+
+    // ======================================================
+    // 📦 ARCHIVE REQUEST (Resident)
+    // ======================================================
+    async requestArchive(data) {
+      return await this.request('/api/v1/archive-request/request', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
+
+    async getArchiveStatus() {
+      return await this.request('/api/v1/archive-request/status');
+    }
+
+    async cancelArchiveRequest() {
+      return await this.request('/api/v1/archive-request/cancel', {
+        method: 'POST',
+      });
+    }
 
 }
 

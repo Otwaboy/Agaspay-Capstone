@@ -182,8 +182,10 @@ export const announcementsApi = {
     const response = await apiClient.patch(`/announcements/${id}/approve`);
     return response.data;
   },
-  reject: async (id) => {
-    const response = await apiClient.patch(`/announcements/${id}/reject`);
+  reject: async (id, rejection_reason) => {
+    const response = await apiClient.patch(`/announcements/${id}/reject`, {
+      rejection_reason
+    });
     return response.data;
   },
   archive: async (id) => {

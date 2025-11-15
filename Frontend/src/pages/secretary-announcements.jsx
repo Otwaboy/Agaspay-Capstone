@@ -24,7 +24,7 @@ import {
   DialogTitle, 
   DialogFooter,
 } from "../components/ui/dialog";
-import { Search, MessageSquare, Plus, Edit, Trash2, Eye, AlertCircle, Bell } from "lucide-react";
+import { Search, MessageSquare, Plus, Edit, Trash2, Eye, AlertCircle, Bell, AlertTriangle } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "../lib/api";
@@ -82,7 +82,7 @@ console.log(announcements);
     },
   });
 
-  const categories = ["Maintenance", "Event", "Information", "Billing", "Alert"];
+  const categories = ["Water Schedule", "Maintenance", "Alert"];
 
   const filteredAnnouncements = announcements.filter((ann) => {
     const matchesSearch =
@@ -135,7 +135,7 @@ console.log(announcements);
   };
 
   const statusConfig = {
-    draft: { color: "bg-gray-100 text-gray-700", label: "Draft" },
+    reject: { color: "bg-red-100 text-red-700", label: "Reject" },
     pending_approval: { color: "bg-yellow-100 text-yellow-700", label: "Pending Approval" },
     approved: { color: "bg-blue-100 text-blue-700", label: "Approved" },
     published: { color: "bg-green-100 text-green-700", label: "Published" },
@@ -203,6 +203,22 @@ console.log(announcements);
                     </div>
                     <div className="bg-green-100 p-3 rounded-lg">
                       <Bell className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Rejected</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        {announcements.filter((a) => a.status === "reject").length}
+                      </p>
+                    </div>
+                    <div className="bg-red-100 p-3 rounded-lg">
+                      <AlertTriangle className="h-6 w-6 text-red-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -278,6 +294,25 @@ console.log(announcements);
                                       </Badge>
                                     </div>
                                     <p className="text-sm text-gray-600 mb-2">{ann.content}</p>
+
+                                    {/* Show rejection feedback if announcement was rejected */}
+                                    {ann.status === "reject" && ann.rejection_reason && (
+                                      <div className="mb-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <div className="flex items-start gap-2">
+                                          <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                          <div className="flex-1">
+                                            <p className="text-xs font-medium text-red-900">Rejected by Admin</p>
+                                            <p className="text-xs text-red-700 mt-1">{ann.rejection_reason}</p>
+                                            {ann.rejection_date && (
+                                              <p className="text-xs text-red-600 mt-1">
+                                                Rejected on {new Date(ann.rejection_date).toLocaleDateString()}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
                                     <div className="flex items-center gap-4 text-xs text-gray-500">
                                       <span className="flex items-center">
                                         <MessageSquare className="h-3 w-3 mr-1" />
@@ -347,6 +382,25 @@ console.log(announcements);
                   </Badge>
                 </div>
               </div>
+
+              {/* Show rejection feedback in modal */}
+              {selectedAnnouncement.status === "reject" && selectedAnnouncement.rejection_reason && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-red-900 mb-1">Rejection Feedback</p>
+                      <p className="text-sm text-red-700">{selectedAnnouncement.rejection_reason}</p>
+                      {selectedAnnouncement.rejection_date && (
+                        <p className="text-xs text-red-600 mt-2">
+                          Rejected on {new Date(selectedAnnouncement.rejection_date).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <DialogFooter>
                 <Button variant="outline" onClick={() => setViewDetailsOpen(false)}>
                   Close

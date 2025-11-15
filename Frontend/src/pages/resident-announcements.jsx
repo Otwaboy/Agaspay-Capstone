@@ -1,81 +1,68 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Skeleton } from "../components/ui/skeleton";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
+import apiClient from "../lib/api";
 import {
   Megaphone,
   Calendar,
   AlertTriangle,
   Info,
-  CheckCircle,
-  Bell
+  Droplets,
+  Bell,
+  MessageSquare
 } from "lucide-react";
 
 export default function ResidentAnnouncements() {
-  const { data: announcements, isLoading } = useQuery({
-    queryKey: ['/api/v1/announcements'],
-    queryFn: async () => {
-      try {
-        // Try to fetch announcements from backend
-        const res = await fetch('/api/v1/announcements');
-        if (res.ok) {
-          const data = await res.json();
-          return data;
-        }
-        // Return empty array if endpoint doesn't exist yet
-        return [];
-      } catch (error) {
-        console.log('Announcements endpoint not available yet', error);
-        return [];
-      }
-    },
-    retry: 1
+  const [filterCategory, setFilterCategory] = useState("all");
+
+  // Fetch announcements using API client
+  const { data, isLoading } = useQuery({
+    queryKey: ["announcements"],
+    queryFn: () => apiClient.getAnnouncements(),
   });
 
-  const announcementList = announcements || [];
+  // Filter to show only PUBLISHED announcements to residents
+  const allAnnouncements = data?.announcements || [];
+  const publishedAnnouncements = allAnnouncements.filter(
+    (ann) => ann.status === "published"
+  );
 
-  const getTypeConfig = (type) => {
-    switch (type) {
-      case "maintenance":
+  // Apply category filter
+  const announcementList = filterCategory === "all"
+    ? publishedAnnouncements
+    : publishedAnnouncements.filter((ann) => ann.category === filterCategory);
+
+  // Map backend categories to UI configuration
+  const getCategoryConfig = (category) => {
+    switch (category) {
+      case "Maintenance":
         return {
           icon: AlertTriangle,
           color: "text-orange-600",
           bgColor: "bg-orange-100",
           badgeClass: "bg-orange-100 text-orange-800"
         };
-      case "announcement":
+      case "Water Schedule":
         return {
-          icon: Megaphone,
+          icon: Droplets,
           color: "text-blue-600",
           bgColor: "bg-blue-100",
           badgeClass: "bg-blue-100 text-blue-800"
         };
-      case "advisory":
+      case "Alert":
         return {
-          icon: Info,
-          color: "text-purple-600",
-          bgColor: "bg-purple-100",
-          badgeClass: "bg-purple-100 text-purple-800"
-        };
-      case "schedule":
-        return {
-          icon: Calendar,
-          color: "text-green-600",
-          bgColor: "bg-green-100",
-          badgeClass: "bg-green-100 text-green-800"
-        };
-      case "event":
-        return {
-          icon: CheckCircle,
-          color: "text-indigo-600",
-          bgColor: "bg-indigo-100",
-          badgeClass: "bg-indigo-100 text-indigo-800"
+          icon: Bell,
+          color: "text-red-600",
+          bgColor: "bg-red-100",
+          badgeClass: "bg-red-100 text-red-800"
         };
       default:
         return {
-          icon: Bell,
+          icon: MessageSquare,
           color: "text-gray-600",
           bgColor: "bg-gray-100",
           badgeClass: "bg-gray-100 text-gray-800"
@@ -84,10 +71,16 @@ export default function ResidentAnnouncements() {
   };
 
   const getPriorityBadge = (priority) => {
-    if (priority === "high") {
-      return <Badge className="bg-red-100 text-red-800 ml-2">Important</Badge>;
+    switch (priority) {
+      case "urgent":
+        return <Badge className="bg-red-100 text-red-800 ml-2">Urgent</Badge>;
+      case "high":
+        return <Badge className="bg-orange-100 text-orange-800 ml-2">High Priority</Badge>;
+      case "normal":
+        return null;
+      default:
+        return null;
     }
-    return null;
   };
 
   return (
@@ -113,11 +106,34 @@ export default function ResidentAnnouncements() {
 
             {/* Filter Badges */}
             <div className="mb-6 flex flex-wrap gap-2">
-              <Badge variant="outline" className="cursor-pointer hover:bg-gray-100">All</Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-orange-50">Maintenance</Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-blue-50">Announcements</Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-purple-50">Advisories</Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-green-50">Schedules</Badge>
+              <Badge
+                variant={filterCategory === "all" ? "default" : "outline"}
+                className="cursor-pointer hover:bg-gray-100"
+                onClick={() => setFilterCategory("all")}
+              >
+                All ({publishedAnnouncements.length})
+              </Badge>
+              <Badge
+                variant={filterCategory === "Water Schedule" ? "default" : "outline"}
+                className="cursor-pointer hover:bg-blue-50"
+                onClick={() => setFilterCategory("Water Schedule")}
+              >
+                Water Schedule ({publishedAnnouncements.filter(a => a.category === "Water Schedule").length})
+              </Badge>
+              <Badge
+                variant={filterCategory === "Maintenance" ? "default" : "outline"}
+                className="cursor-pointer hover:bg-orange-50"
+                onClick={() => setFilterCategory("Maintenance")}
+              >
+                Maintenance ({publishedAnnouncements.filter(a => a.category === "Maintenance").length})
+              </Badge>
+              <Badge
+                variant={filterCategory === "Alert" ? "default" : "outline"}
+                className="cursor-pointer hover:bg-red-50"
+                onClick={() => setFilterCategory("Alert")}
+              >
+                Alerts ({publishedAnnouncements.filter(a => a.category === "Alert").length})
+              </Badge>
             </div>
 
             {/* Announcements List */}
@@ -152,11 +168,11 @@ export default function ResidentAnnouncements() {
             ) : (
               <div className="space-y-4">
                 {announcementList.map((announcement) => {
-                const config = getTypeConfig(announcement.type);
+                const config = getCategoryConfig(announcement.category);
                 const Icon = config.icon;
 
                 return (
-                  <Card key={announcement.id} className="hover:shadow-md transition-shadow">
+                  <Card key={announcement._id} className="hover:shadow-md transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-4 flex-1">
@@ -164,7 +180,7 @@ export default function ResidentAnnouncements() {
                             <Icon className={`h-6 w-6 ${config.color}`} />
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center">
+                            <div className="flex items-center flex-wrap">
                               <CardTitle className="text-lg">
                                 {announcement.title}
                               </CardTitle>
@@ -173,24 +189,24 @@ export default function ResidentAnnouncements() {
                             <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
                               <span className="flex items-center">
                                 <Calendar className="h-4 w-4 mr-1" />
-                                {new Date(announcement.date).toLocaleDateString('en-PH', {
+                                {new Date(announcement.createdAt).toLocaleDateString('en-PH', {
                                   month: 'long',
                                   day: 'numeric',
                                   year: 'numeric'
                                 })}
                               </span>
                               <span>•</span>
-                              <span>{announcement.author}</span>
+                              <span>{announcement.created_by?.first_name || 'Admin'} {announcement.created_by?.last_name || ''}</span>
                             </div>
                           </div>
                         </div>
                         <Badge className={config.badgeClass}>
-                          {announcement.type.charAt(0).toUpperCase() + announcement.type.slice(1)}
+                          {announcement.category}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-700 leading-relaxed">
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                         {announcement.content}
                       </p>
                     </CardContent>

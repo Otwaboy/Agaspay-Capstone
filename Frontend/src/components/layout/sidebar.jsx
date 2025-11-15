@@ -13,7 +13,9 @@ import {
   UserPlus,
   Calendar,
   BarChart3,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -25,10 +27,14 @@ const menuItems = [
     color: "text-blue-600"
   },
   {
+    title: "Resident Management",
     icon: Users,
-    label: "User Management",
-    href: "/admin-dashboard/users",
-    color: "text-green-600"
+    color: "text-purple-600",
+    subItems: [
+      { title: "All Residents", href: "/admin-dashboard/users" },
+      { title: "Disconnect Requests", href: "/admin-dashboard/disconnect-requests" },
+      { title: "Archive Requests", href: "/admin-dashboard/archive-requests" },
+    ]
   },
   {
     icon: UserPlus,
@@ -36,12 +42,6 @@ const menuItems = [
     href: "/admin-dashboard/personnel",
     color: "text-purple-600"
   },
-  // {
-  //   icon: Droplets,
-  //   label: "Water Connections",
-  //   href: "/admin-dashboard/connections",
-  //   color: "text-cyan-600"
-  // },
   {
     icon: FileText,
     label: "Billing & Payments",
@@ -74,18 +74,27 @@ const menuItems = [
   }
 ];
 
+
 //sidebar sa desktop
 function SidebarContent() {
   const [location] = useLocation();
   const { logout, user } = useAuth();
+  const [expandedItems, setExpandedItems] = useState({});
 
   const handleLogout = () => {
     logout();
   };
 
+  const toggleExpand = (index) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
   return (
     <div className="flex flex-col h-full bg-white shadow-lg">
-      
+
       {/* Logo Section */}
       <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
         <div className="flex items-center">
@@ -97,23 +106,76 @@ function SidebarContent() {
             <p className="text-xs text-gray-500">Waterworks Admin</p>
           </div>
         </div>
-      </div> 
+      </div>
       {/* Logo Section */}
 
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {menuItems.map((item) => {
-          const isActive = location === item.href;
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {menuItems.map((item, index) => {
           const IconComponent = item.icon;
-          
+
+          // Handle items with subItems
+          if (item.subItems) {
+            const isExpanded = expandedItems[index];
+            const hasActiveSubItem = item.subItems.some(sub => location === sub.href);
+
+            return (
+              <div key={index}>
+                <Button
+                  variant="ghost"
+                  onClick={() => toggleExpand(index)}
+                  className={`cursor-pointer w-full justify-start text-left h-12 ${
+                    hasActiveSubItem
+                      ? "bg-blue-50 text-blue-700"
+                      : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
+                  }`}
+                >
+                  <IconComponent className={`mr-3 h-5 w-5 ${hasActiveSubItem ? "text-blue-600" : item.color}`} />
+                  <span className="font-medium flex-1">{item.title}</span>
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+
+                {/* SubItems */}
+                {isExpanded && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {item.subItems.map((subItem, subIndex) => {
+                      const isSubActive = location === subItem.href;
+                      return (
+                        <Link key={subIndex} href={subItem.href}>
+                          <Button
+                            variant={isSubActive ? "secondary" : "ghost"}
+                            className={`cursor-pointer w-full justify-start text-left h-10 text-sm ${
+                              isSubActive
+                                ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600"
+                                : "hover:bg-gray-50 text-gray-600 hover:text-gray-900"
+                            }`}
+                          >
+                            {subItem.title}
+                          </Button>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // Handle regular items
+          const isActive = location === item.href;
+
           return (
             <Link key={item.href} href={item.href}>
               <Button
                 variant={isActive ? "secondary" : "ghost"}
                 className={`cursor-pointer w-full justify-start text-left h-12 ${
-                  isActive 
-                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600" 
+                  isActive
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                     : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
                 }`}
                 data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}

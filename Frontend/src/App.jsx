@@ -14,6 +14,8 @@ import AdminReports from "./pages/admin-reports";
 import AdminScheduling from "./pages/admin-scheduling";
 import AdminIncidents from "./pages/admin-incidents";
 import AdminSettings from "./pages/admin-settings";
+import AdminDisconnectRequests from "./pages/admin-disconnect-requests";
+import AdminArchiveRequests from "./pages/admin-archive-requests";
 
 //secretary
 import SecretaryDashboard from "./pages/secretaryDashboard";
@@ -76,6 +78,7 @@ import MaintenanceTasks from "./pages/maintenance-tasks";
 import Login from "./pages/login";
 import NotFound from "./pages/not-found";
 import { Toaster } from "./components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -488,7 +491,21 @@ function App() {
                 </AdminRoute>
               )}
             </Route>
-            
+            <Route path="/admin-dashboard/disconnect-requests">
+              {() => (
+                <AdminRoute>
+                  <AdminDisconnectRequests />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/archive-requests">
+              {() => (
+                <AdminRoute>
+                  <AdminArchiveRequests />
+                </AdminRoute>
+              )}
+            </Route>
+
             <Route path="/payment/demo-checkout" component={DemoCheckout} />
             <Route path="/payment/success" component={PaymentSuccess} />
             <Route path="/payment/cancel" component={PaymentSuccess} />
@@ -498,6 +515,7 @@ function App() {
           </Switch>
         </Router>
         <Toaster />
+        <SonnerToaster position="top-center" richColors />
       </AuthProvider>
     </QueryClientProvider>
   );

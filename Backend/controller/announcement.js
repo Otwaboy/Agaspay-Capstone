@@ -62,6 +62,7 @@ const getAnnouncements = async (req, res) => {
     const announcements = await Announcement.find(filter)
       .populate('created_by', 'first_name last_name role')
       .populate('approved_by', 'first_name last_name')
+      .populate('rejected_by', 'first_name last_name')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -72,7 +73,6 @@ const getAnnouncements = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // Get pending announcements (Admin only)
 const getPendingAnnouncements = async (req, res) => {
@@ -142,10 +142,15 @@ const approveAnnouncement = async (req, res) => {
 const rejectAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
+    const { rejection_reason } = req.body;
     const user = req.user;
 
     if (user.role !== 'admin') {
       return res.status(403).json({ message: 'Only Admin can reject announcements' });
+    }
+
+    if (!rejection_reason || rejection_reason.trim() === '') {
+      return res.status(400).json({ message: 'Rejection reason is required' });
     }
 
     const announcement = await Announcement.findById(id);
@@ -153,7 +158,17 @@ const rejectAnnouncement = async (req, res) => {
       return res.status(404).json({ message: 'Announcement not found' });
     }
 
-    announcement.status = 'draft';
+    // Get Personnel ID from User ID
+    const Personnel = require('../model/Personnel');
+    const personnel = await Personnel.findOne({ user_id: user.userId });
+    if (!personnel) {
+      return res.status(404).json({ message: 'Personnel record not found' });
+    }
+
+    announcement.status = 'reject';
+    announcement.rejection_reason = rejection_reason;
+    announcement.rejected_by = personnel._id;
+    announcement.rejection_date = new Date();
     await announcement.save();
 
     res.status(200).json({
