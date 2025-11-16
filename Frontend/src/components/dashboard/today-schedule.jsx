@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Users } from "lucide-react";
-import { scheduleTaskApi } from "../../services/adminApi";
+import { apiClient } from "../../lib/api";
 
 export default function TodaySchedule() {
   const { data, isLoading } = useQuery({
     queryKey: ['today-tasks'],
-    queryFn: scheduleTaskApi.getAll
+    queryFn: () => apiClient.getScheduleTasks()
   });
 
   const tasks = data?.tasks || [];

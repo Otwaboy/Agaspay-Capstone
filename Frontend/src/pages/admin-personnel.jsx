@@ -33,7 +33,7 @@ import {
   Shield,
   Users
 } from "lucide-react";
-import { personnelApi } from "../services/adminApi";
+import { apiClient } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
 
 export default function AdminPersonnel() {
@@ -45,13 +45,13 @@ export default function AdminPersonnel() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['personnel', roleFilter],
-    queryFn: () => personnelApi.getAll({ role: roleFilter !== 'all' ? roleFilter : undefined })
+    queryFn: () => apiClient.getAllPersonnel({ role: roleFilter !== 'all' ? roleFilter : undefined })
   });
 
   const personnel = data?.personnel || [];
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => personnelApi.delete(id),
+    mutationFn: (id) => apiClient.deletePersonnel(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['personnel']);
       toast({

@@ -42,6 +42,8 @@ export default function TreasurerOutstandingBalances() {
     }
   });
 
+  console.log('balances', balances);
+  
   const sendReminderMutation = useMutation({
     mutationFn: async (billingId) => apiClient.sendOverdueReminder(billingId),
     onSuccess: (data) => {

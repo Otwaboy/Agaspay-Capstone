@@ -70,9 +70,25 @@ current_checkout_session: {
   default: null 
   },
   pending_amount: {
-  type: Number,
-  default: 0,
-},
+    type: Number,
+    default: 0,
+  },
+
+  // ✅ Fields for tracking partial payments
+  //amount paid para sa mga manual payment
+  amount_paid: {
+    type: Number,
+    default: 0,
+    comment: 'Total amount paid so far for this bill'
+  },
+  
+  balance: {
+    type: Number,
+    default: function() {
+      return this.total_amount - (this.amount_paid || 0);
+    },
+    comment: 'Remaining amount to be paid (total_amount - amount_paid)'
+  }
 }, {
   collection: 'Billing',
   timestamps: true

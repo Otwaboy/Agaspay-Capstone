@@ -23,7 +23,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
-import { incidentsApi } from "../services/adminApi";
+import { apiClient } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
 
 export default function AdminIncidents() {
@@ -34,16 +34,16 @@ export default function AdminIncidents() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['incidents', statusFilter],
-    queryFn: () => incidentsApi.getAll({ status: statusFilter !== 'all' ? statusFilter : undefined })
+    queryFn: () => apiClient.getIncidentReports({ status: statusFilter !== 'all' ? statusFilter : undefined })
   });
 
  const incidents = data?.reports || [];
 
   console.log('incidents', incidents);
-  
+
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status, resolution_notes }) => incidentsApi.updateStatus(id, status, resolution_notes),
+    mutationFn: ({ id, status, resolution_notes }) => apiClient.updateIncidentStatus(id, status, resolution_notes),
     onSuccess: () => {
       queryClient.invalidateQueries(['incidents']);
       toast({

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
-  CreditCard, 
-  Receipt, 
-  TrendingUp, 
-  FileText, 
+import {
+  LayoutDashboard,
+  CreditCard,
+  Receipt,
+  TrendingUp,
+  FileText,
   AlertCircle,
   BarChart3,
   DollarSign,
@@ -15,24 +15,31 @@ import {
   ChevronDown,
   ChevronRight,
   Menu,
-  CheckCircle2  // ✅ Added for Approve Readings icon
+  CheckCircle2,  // ✅ Added for Approve Readings icon
+  Wallet  // ✅ Added for Record Payment icon
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { useAuth } from "../../hooks/use-auth";
 
 const menuItems = [
-  { 
+  {
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/treasurer-dashboard",
     color: "text-blue-600"
   },
-  { 
+  {
     title: "Approve Readings",  // ✅ Fixed
     icon: CheckCircle2,         // ✅ Changed icon
     href: "/treasurer-dashboard/approve-readings",  // ✅ Correct path
     color: "text-green-600"     // ✅ Changed color
+  },
+  {
+    title: "Record Payment",  // ✅ New menu item
+    icon: Wallet,
+    href: "/treasurer-dashboard/record-payment",
+    color: "text-emerald-600"
   },
   {
     title: "Revenue Management",

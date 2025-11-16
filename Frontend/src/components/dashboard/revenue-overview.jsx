@@ -3,14 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { TrendingDown } from "lucide-react";
-import { dashboardApi } from "../../services/adminApi";
+import { apiClient } from "../../lib/api";
 
 export default function RevenueOverview() {
   const [period, setPeriod] = useState("1year");
-  
+
   const { data } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: dashboardApi.getStats
+    queryFn: () => apiClient.getDashboardStats()
   });
 
   const stats = data?.stats || {};

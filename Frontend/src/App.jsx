@@ -52,6 +52,7 @@ import TreasurerPaymentMethods from "./pages/treasurer-payment-methods";
 import TreasurerCustomerAccounts from "./pages/treasurer-customer-accounts";
 import TreasurerFinancialAlerts from "./pages/treasurer-financial-alerts";
 import TreasurerApproveReadings from "./pages/treasurer-approve-readings";
+import TreasurerRecordPayment from "./pages/treasurer-record-payment";
 
 //residents
 import ResidentDashboard from "./pages/residentDashboard";
@@ -283,6 +284,13 @@ function App() {
               {() => (
                 <TreasurerRoute>
                   <TreasurerApproveReadings />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/record-payment">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerRecordPayment />
                 </TreasurerRoute>
               )}
             </Route>

@@ -14,7 +14,7 @@ import {
   AlertCircle,
   Trash2
 } from "lucide-react";
-import { scheduleTaskApi } from "../services/adminApi";
+import { apiClient } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
 
 export default function AdminScheduling() {
@@ -23,16 +23,16 @@ export default function AdminScheduling() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['scheduleTasks'],
-    queryFn: () => scheduleTaskApi.getAll()
+    queryFn: () => apiClient.getScheduleTasks()
   });
- 
+
   const tasks = data?.tasks || [];
 
   console.log('task', tasks);
-  
+
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => scheduleTaskApi.delete(id),
+    mutationFn: (id) => apiClient.deleteScheduleTask(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['scheduleTasks']);
       toast({
@@ -50,7 +50,7 @@ export default function AdminScheduling() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => scheduleTaskApi.update(id, data),
+    mutationFn: ({ id, data }) => apiClient.updateScheduleTask(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['scheduleTasks']);
       toast({

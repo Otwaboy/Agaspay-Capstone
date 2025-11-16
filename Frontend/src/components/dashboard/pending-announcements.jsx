@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Check, X, AlertCircle, Megaphone, Calendar, User } from "lucide-react";
-import { announcementsApi } from "../../services/adminApi";
+import { apiClient } from "../../lib/api";
 import { toast } from "sonner";
 
 export default function PendingAnnouncements() {
@@ -25,11 +25,11 @@ export default function PendingAnnouncements() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['pending-announcements'],
-    queryFn: () => announcementsApi.getPending(),
+    queryFn: () => apiClient.getPendingAnnouncements(),
   });
 
   const approveMutation = useMutation({
-    mutationFn: (id) => announcementsApi.approve(id),
+    mutationFn: (id) => apiClient.approveAnnouncement(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-announcements'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
@@ -42,7 +42,7 @@ export default function PendingAnnouncements() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: ({ id, rejection_reason }) => announcementsApi.reject(id, rejection_reason),
+    mutationFn: ({ id, rejection_reason }) => apiClient.rejectAnnouncement(id, rejection_reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-announcements'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });

@@ -92,6 +92,8 @@ const getBilling = async (req, res) => {
         previous_balance: billing?.previous_balance ?? 0,    // Unpaid balance from previous months
         current_charges: billing?.current_charges ?? 0,      // This month's consumption charges
         total_amount: billing?.total_amount ?? 0,            // Total = previous + current
+        amount_paid: billing?.amount_paid ?? 0,              // ✅ Amount paid so far
+        balance: billing?.balance ?? billing?.total_amount ?? 0,  // ✅ Remaining balance
 
         status: billing?.status ?? 'unknown',
 
@@ -182,9 +184,11 @@ const createBilling = async (req, res) => {
     //accumalator method  hahaha
     //summing all the array into a one final value
     //sum started at zero so basically 0 + 2 = 2 then 2 + 4 = 6 , 6+ 12 = 18
+    // ✅ FIX: Use 'balance' instead of 'current_charges' to account for partial payments
+    // If balance doesn't exist, fall back to total_amount (for old bills)
 
     const previous_balance = unpaidBills.reduce((sum, bill) => {
-      return sum + (bill.current_charges || 0);
+      return sum + (bill.balance || bill.total_amount || 0);
     }, 0); 
 
     // 💰 Total amount = previous unpaid balance + current month charges
@@ -200,7 +204,22 @@ const createBilling = async (req, res) => {
       previous_balance,      // ← unpaid balance from previous months
       current_charges,       // ← this month's consumption charges
       total_amount,          // ← total = previous + current
+      balance: total_amount, // ← initialize balance with total_amount
     });
+
+    // ✅ Mark all previous unpaid bills as 'consolidated' to hide them from active view
+    // They're now rolled into the new cumulative bill
+    if (unpaidBills.length > 0) {
+      await Billing.updateMany(
+        {
+          _id: { $in: unpaidBills.map(b => b._id) }
+        },
+        {
+          $set: { status: 'consolidated' }
+        }
+      );
+      console.log(`✅ Consolidated ${unpaidBills.length} previous unpaid bill(s) into new bill`);
+    }
 
     console.log("🧾 Billing created successfully with cumulative amounts:");
     console.log("- reading_id:", reading._id.toString());
@@ -226,7 +245,7 @@ const createBilling = async (req, res) => {
 };
 
 
-//continue
+
 const getOverdueBilling = async (req, res) => {
   try {
     const user = req.user;

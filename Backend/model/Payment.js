@@ -20,7 +20,7 @@ const PaymentSchema = new mongoose.Schema({
 
   payment_method: {
     type: String,
-    enum: ['gcash', 'paymaya'],
+    enum: ['gcash', 'paymaya', 'walk-in', 'cash'],
     required: true
   },
 
@@ -52,6 +52,22 @@ const PaymentSchema = new mongoose.Schema({
     required: function () {
       return this.payment_status === 'confirmed';
     }
+  },
+
+  // ✅ Additional fields for walk-in/manual payments
+  connection_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'WaterConnection'
+  },
+
+  received_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User' // treasurer who received the payment
+  },
+
+  notes: {
+    type: String,
+    default: ''
   }
 
 }, {

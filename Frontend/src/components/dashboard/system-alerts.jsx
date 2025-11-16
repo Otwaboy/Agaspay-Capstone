@@ -3,27 +3,27 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { AlertCircle, AlertTriangle, Clock, CheckCircle2, Megaphone, Droplets } from "lucide-react";
-import { dashboardApi, incidentsApi, connectionsApi, announcementsApi } from "../../services/adminApi";
+import { apiClient } from "../../lib/api";
 
 export default function SystemAlerts() {
   const { data: stats } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: () => dashboardApi.getStats(),
+    queryFn: () => apiClient.getDashboardStats(),
   });
 
   const { data: incidents } = useQuery({
     queryKey: ['unresolved-incidents'],
-    queryFn: () => incidentsApi.getAll({ reported_issue_status: 'Pending' }),
+    queryFn: () => apiClient.getIncidentReports({ reported_issue_status: 'Pending' }),
   });
 
   const { data: pendingConnections } = useQuery({
     queryKey: ['pending-connections'],
-    queryFn: () => connectionsApi.getAll({ connection_status: 'Pending' }),
+    queryFn: () => apiClient.getAllWaterConnections({ connection_status: 'Pending' }),
   });
 
   const { data: pendingAnnouncements } = useQuery({
     queryKey: ['pending-announcements-count'],
-    queryFn: () => announcementsApi.getPending(),
+    queryFn: () => apiClient.getPendingAnnouncements(),
   });
 
   const alerts = [

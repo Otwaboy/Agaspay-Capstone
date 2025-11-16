@@ -38,13 +38,15 @@ export default function TreasurerBillHistory() {
     previous_balance: bill.previous_balance,
     current_charges: bill.current_charges,
     total_amount: bill.total_amount,
+    amount_paid: bill.amount_paid || 0,
+    balance: bill.balance || bill.total_amount,
     status: bill.status,
     previous_reading: bill.previous_reading,
     present_reading: bill.present_reading,
     calculated: bill.calculated,
     due_date: bill.due_date,
     created_at: bill.created_at,
-    paid_date: bill.paid_date || null, // Will be added to backend
+    paid_date: bill.paid_date || null,
     bill_period: new Date(bill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   })) || [];
 

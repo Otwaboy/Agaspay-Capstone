@@ -33,7 +33,7 @@ import {
   Clock,
   XCircle
 } from "lucide-react";
-import { connectionsApi } from "../services/adminApi";
+import { apiClient } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
 
 export default function AdminConnections() {
@@ -44,13 +44,13 @@ export default function AdminConnections() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['connections', statusFilter],
-    queryFn: () => connectionsApi.getAll({ status: statusFilter !== 'all' ? statusFilter : undefined })
+    queryFn: () => apiClient.getAllWaterConnections({ status: statusFilter !== 'all' ? statusFilter : undefined })
   });
 
   const connections = data?.connections || [];
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => connectionsApi.updateStatus(id, status),
+    mutationFn: ({ id, status }) => apiClient.updateConnectionStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries(['connections']);
       toast({

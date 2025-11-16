@@ -3,12 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Megaphone, Calendar, AlertTriangle, Info, Wrench } from "lucide-react";
-import { announcementsApi } from "../../services/adminApi";
+import { apiClient } from "../../lib/api";
 
 export default function ResidentModernAnnouncements() {
   const { data, isLoading } = useQuery({
     queryKey: ["resident-announcements"],
-    queryFn: () => announcementsApi.getAll({ status: "published" }),
+    queryFn: () => apiClient.getAnnouncements({ status: "published" }),
   });
 
   const announcements = data?.announcements?.slice(0, 5) || [];

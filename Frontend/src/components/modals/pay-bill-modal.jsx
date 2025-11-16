@@ -23,13 +23,15 @@ export default function PayBillModal({ isOpen, onClose }) {
 
   const [formData, setbillingData] = useState({
     paymentMethod: "",
+    paymentType: "", // 'full' or 'partial'
+    partialAmount: "",
     referenceNumber: "",
     phoneNumber: "",
     email: ""
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: Bill Details, 2: Payment Method, 3: Confirmation
+  const [step, setStep] = useState(1); // 1: Bill Details, 1.5: Payment Type, 2: Payment Method, 3: Confirmation
   const { toast } = useToast();
   
   const {data: billingData, isLoadingBilling} = useQuery({
@@ -130,14 +132,19 @@ export default function PayBillModal({ isOpen, onClose }) {
   setIsLoading(true);
 
   try {
-    if (!billingData?.billDetails?.id) { 
+    if (!billingData?.billDetails?.id) {
       throw new Error("No bill found. Please refresh.");
     }
+
+    // Calculate the amount to pay based on payment type
+    const amountToPay = formData.paymentType === 'partial'
+      ? parseFloat(formData.partialAmount)
+      : billingData.billDetails.totalAmount;
 
     const paymentData = {
       bill_id: billingData.billDetails.id,   // ✅ real bill id from backend
       payment_method: formData.paymentMethod,
-      amount: billingData.billDetails.totalAmount
+      amount: amountToPay
     };
 
     console.log('📦 Payment data being sent:', paymentData);
@@ -148,9 +155,10 @@ export default function PayBillModal({ isOpen, onClose }) {
     if (result.checkoutUrl) {
       localStorage.setItem('pending_payment', JSON.stringify({
       payment_intent_id: result.payment_intent_id,
-      amount: billingData.billDetails.totalAmount,
+      amount: amountToPay,
       method: formData.paymentMethod,
-      accountName: billingData.billDetails.accountName
+      accountName: billingData.billDetails.accountName,
+      paymentType: formData.paymentType
 }));
 
       window.location.href = result.checkoutUrl;
@@ -185,9 +193,9 @@ export default function PayBillModal({ isOpen, onClose }) {
   const handleClose = () => {
     setStep(1);
     setbillingData({
-      accountNumber: "WS-2024-001247",
-      amount: 450.00,
       paymentMethod: "",
+      paymentType: "",
+      partialAmount: "",
       referenceNumber: "",
       phoneNumber: "",
       email: ""
@@ -274,7 +282,7 @@ export default function PayBillModal({ isOpen, onClose }) {
         Cancel
       </Button>
       <Button
-        onClick={() => setStep(2)}
+        onClick={() => setStep(1.5)}
         data-testid="button-proceed-payment"
       >
         Proceed to Payment
@@ -283,6 +291,137 @@ export default function PayBillModal({ isOpen, onClose }) {
   </div>
 );
 
+
+// step 1.5 - Payment Type Selection
+const renderPaymentType = () => (
+  <div className="space-y-6">
+    {/* Bill Summary */}
+    <Card className="bg-blue-50 border-blue-200">
+      <CardContent className="pt-6">
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Total Amount Due:</span>
+            <span className="font-semibold text-gray-900">
+              ₱{billingData?.billDetails?.totalAmount?.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Account Name:</span>
+            <span className="font-medium">{billingData?.billDetails?.accountName}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Meter Number:</span>
+            <span className="font-medium">{billingData?.billDetails?.meter_no}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Payment Type Options */}
+    <div>
+      <Label className="text-base font-medium mb-3 block">Choose Payment Type</Label>
+      <div className="grid grid-cols-1 gap-3">
+        {/* Full Payment Option */}
+        <div
+          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+            formData.paymentType === 'full'
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-200 hover:border-gray-300"
+          }`}
+          onClick={() => {
+            handleChange("paymentType")('full');
+            handleChange("partialAmount")("");
+          }}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2">
+                <Wallet className="h-5 w-5 text-blue-600" />
+                <p className="font-semibold text-gray-900">Full Payment</p>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">Pay the complete bill amount</p>
+              <p className="text-lg font-bold text-blue-600 mt-2">
+                ₱{billingData?.billDetails?.totalAmount?.toFixed(2)}
+              </p>
+            </div>
+            {formData.paymentType === 'full' && (
+              <CheckCircle className="h-5 w-5 text-blue-600" />
+            )}
+          </div>
+        </div>
+
+        {/* Partial Payment Option */}
+        <div
+          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+            formData.paymentType === 'partial'
+              ? "border-orange-500 bg-orange-50"
+              : "border-gray-200 hover:border-gray-300"
+          }`}
+          onClick={() => handleChange("paymentType")('partial')}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2">
+                <CreditCard className="h-5 w-5 text-orange-600" />
+                <p className="font-semibold text-gray-900">Partial Payment</p>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">Pay any amount you want</p>
+
+              {formData.paymentType === 'partial' && (
+                <div className="mt-3 space-y-2">
+                  <Label htmlFor="partialAmount" className="text-sm">Enter Amount</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₱</span>
+                    <Input
+                      id="partialAmount"
+                      type="number"
+                      step="0.01"
+                      min="1"
+                      max={billingData?.billDetails?.totalAmount}
+                      value={formData.partialAmount}
+                      onChange={(e) => handleChange("partialAmount")(e.target.value)}
+                      className="pl-7"
+                      placeholder="0.00"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Maximum: ₱{billingData?.billDetails?.totalAmount?.toFixed(2)}
+                  </p>
+                  {formData.partialAmount && parseFloat(formData.partialAmount) > 0 && (
+                    <p className="text-sm font-medium text-orange-600">
+                      Remaining balance after payment: ₱
+                      {(billingData?.billDetails?.totalAmount - parseFloat(formData.partialAmount)).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+            {formData.paymentType === 'partial' && (
+              <CheckCircle className="h-5 w-5 text-orange-600" />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Navigation Buttons */}
+    <div className="flex justify-between space-x-3">
+      <Button variant="outline" onClick={() => setStep(1)}>
+        Back to Bill Details
+      </Button>
+      <Button
+        onClick={() => setStep(2)}
+        disabled={
+          !formData.paymentType ||
+          (formData.paymentType === 'partial' && (!formData.partialAmount || parseFloat(formData.partialAmount) <= 0 || parseFloat(formData.partialAmount) > billingData?.billDetails?.totalAmount))
+        }
+      >
+        Continue to Payment Method
+      </Button>
+    </div>
+  </div>
+);
 
 // step 2
   const renderPaymentMethod = () => (
@@ -357,24 +496,50 @@ export default function PayBillModal({ isOpen, onClose }) {
 
       <Card className="bg-gray-50">
         <CardContent className="pt-4">
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-medium">Amount to Pay:</span>
-            <span className="text-2xl font-bold text-blue-600">₱{billingData.billDetails.totalAmount.toFixed(2)}</span>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Payment Type:</span>
+              <span className="font-medium capitalize">{formData.paymentType} Payment</span>
+            </div>
+            {formData.paymentType === 'partial' && (
+              <>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Total Bill:</span>
+                  <span>₱{billingData.billDetails.totalAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Remaining After Payment:</span>
+                  <span className="text-orange-600 font-medium">
+                    ₱{(billingData.billDetails.totalAmount - parseFloat(formData.partialAmount)).toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-lg font-medium">Amount to Pay:</span>
+              <span className="text-2xl font-bold text-blue-600">
+                ₱{formData.paymentType === 'partial'
+                  ? parseFloat(formData.partialAmount).toFixed(2)
+                  : billingData.billDetails.totalAmount.toFixed(2)}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="flex justify-between space-x-3">
-        <Button variant="outline" onClick={() => setStep(1)}>
-          Back to Bill Details
+        <Button variant="outline" onClick={() => setStep(1.5)}>
+          Back to Payment Type
         </Button>
 
-        <Button 
+        <Button
           onClick={handleSubmit}
           disabled={!formData.paymentMethod|| isLoading}
           data-testid="button-pay-now"
         >
-          {isLoading ? "Processing..." : `Pay ₱${billingData.billDetails.totalAmount.toFixed(2)}`}
+          {isLoading ? "Processing..." : `Pay ₱${formData.paymentType === 'partial'
+            ? parseFloat(formData.partialAmount).toFixed(2)
+            : billingData.billDetails.totalAmount.toFixed(2)}`}
         </Button>
       </div>
     </div>
@@ -385,7 +550,13 @@ export default function PayBillModal({ isOpen, onClose }) {
   const renderConfirmation = () => {
     const pendingPayment = localStorage.getItem('pending_payment');
     const isPending = !!pendingPayment;
-    
+    const paymentInfo = pendingPayment ? JSON.parse(pendingPayment) : null;
+
+    // Calculate the amount paid
+    const amountPaid = formData.paymentType === 'partial'
+      ? parseFloat(formData.partialAmount)
+      : billingData.billDetails.totalAmount;
+
     return (
       <div className="text-center space-y-6">
         <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
@@ -397,13 +568,13 @@ export default function PayBillModal({ isOpen, onClose }) {
             <CheckCircle className="h-8 w-8 text-green-600" />
           )}
         </div>
-        
+
         <div>
           <h3 className="text-lg font-bold text-gray-900 mb-2">
             {isPending ? 'Payment Processing' : 'Payment Successful!'}
           </h3>
           <p className="text-gray-600">
-            {isPending 
+            {isPending
               ? 'Your payment is being processed through PayMongo. You will receive a confirmation once completed.'
               : 'Your payment has been processed successfully.'
             }
@@ -421,20 +592,38 @@ export default function PayBillModal({ isOpen, onClose }) {
               <div className="flex justify-between">
                 <span className="text-gray-600">Reference Number:</span>
                 <span className="font-medium">
-                  {pendingPayment 
-                    ? JSON.parse(pendingPayment).paymentId?.slice(-8) || 'Processing...'
+                  {pendingPayment
+                    ? paymentInfo.payment_intent_id?.slice(-8) || 'Processing...'
                     : `PAY-2024-${Date.now().toString().slice(-6)}`
                   }
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Account Number:</span>
+                <span className="text-gray-600">Account Name:</span>
                 <span className="font-medium">{billingData.billDetails.accountName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Amount:</span>
-                <span className="font-medium">₱{billingData.billDetails.totalAmount.toFixed(2)}</span>
+                <span className="text-gray-600">Payment Type:</span>
+                <span className="font-medium capitalize">{formData.paymentType} Payment</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Amount Paid:</span>
+                <span className="font-medium text-blue-600">₱{amountPaid.toFixed(2)}</span>
+              </div>
+              {formData.paymentType === 'partial' && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Bill:</span>
+                    <span className="font-medium">₱{billingData.billDetails.totalAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Remaining Balance:</span>
+                    <span className="font-medium text-orange-600">
+                      ₱{(billingData.billDetails.totalAmount - amountPaid).toFixed(2)}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-600">Payment Method:</span>
                 <span className="font-medium capitalize">
@@ -489,18 +678,21 @@ export default function PayBillModal({ isOpen, onClose }) {
         <DialogHeader>
           <DialogTitle>
             {step === 1 && "Bill Payment"}
+            {step === 1.5 && "Payment Type"}
             {step === 2 && "Payment Method"}
             {step === 3 && "Payment Confirmation"}
           </DialogTitle>
           <DialogDescription>
             {step === 1 && "Review your bill details before proceeding to payment"}
+            {step === 1.5 && "Choose between full payment or partial payment"}
             {step === 2 && "Choose your preferred payment method and complete the transaction"}
             {step === 3 && "Payment completed successfully"}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="mt-4">
           {step === 1 && renderBillDetails()}
+          {step === 1.5 && renderPaymentType()}
           {step === 2 && renderPaymentMethod()}
           {step === 3 && renderConfirmation()}
         </div>

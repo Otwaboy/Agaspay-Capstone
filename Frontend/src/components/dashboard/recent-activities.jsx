@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { dashboardApi } from "../../services/adminApi";
+import { apiClient } from "../../lib/api";
 
 export default function RecentActivities() {
   const { data } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: dashboardApi.getStats
+    queryFn: () => apiClient.getDashboardStats()
   });
 
   const transactions = data?.recentTransactions || [];

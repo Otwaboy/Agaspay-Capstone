@@ -15,7 +15,7 @@ import {
   Printer,
   Loader2
 } from "lucide-react";
-import { reportsApi } from "../services/adminApi";
+import { apiClient } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
 
 export default function AdminReports() {
@@ -28,19 +28,19 @@ export default function AdminReports() {
       let response;
       switch (type) {
         case 'revenue':
-          response = await reportsApi.generateRevenue(params);
+          response = await apiClient.generateRevenueReport(params);
           break;
         case 'consumption':
-          response = await reportsApi.generateConsumption(params);
+          response = await apiClient.generateConsumptionReport(params);
           break;
         case 'billing':
-          response = await reportsApi.generateBilling(params);
+          response = await apiClient.generateBillingReport(params);
           break;
         case 'users':
-          response = await reportsApi.generateUsers(params);
+          response = await apiClient.generateUsersReport(params);
           break;
         case 'incidents':
-          response = await reportsApi.generateIncidents(params);
+          response = await apiClient.generateIncidentsReport(params);
           break;
         default:
           throw new Error('Unknown report type');

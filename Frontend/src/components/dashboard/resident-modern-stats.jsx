@@ -27,7 +27,9 @@ export default function ResidentModernStats() {
         current: currentBill,
         previous: previousBill,
         consumption: currentBill.calculated || 0,
-        amount: currentBill.total_amount || 0,
+        amount: currentBill.balance || currentBill.total_amount || 0,
+        totalAmount: currentBill.total_amount || 0,
+        amountPaid: currentBill.amount_paid || 0,
         status: currentBill.payment_status || currentBill.status || "unpaid",
         dueDate: currentBill.due_date
       };
@@ -47,12 +49,24 @@ export default function ResidentModernStats() {
     },
     {
       title: "Payment Status",
-      value: billingData?.status === "paid" ? "Paid" : billingData?.status === "pending" ? "Pending" : "Unpaid",
+      value: billingData?.status === "paid" ? "Paid" :
+             billingData?.status === "partial" ? "Partial" :
+             billingData?.status === "pending" ? "Pending" :
+             "Unpaid",
       icon: billingData?.status === "paid" ? CheckCircle : AlertCircle,
-      iconColor: billingData?.status === "paid" ? "text-green-600" : billingData?.status === "pending" ? "text-orange-600" : "text-red-600",
-      iconBg: billingData?.status === "paid" ? "bg-green-50" : billingData?.status === "pending" ? "bg-orange-50" : "bg-red-50",
+      iconColor: billingData?.status === "paid" ? "text-green-600" :
+                 billingData?.status === "partial" ? "text-orange-600" :
+                 billingData?.status === "pending" ? "text-yellow-600" :
+                 "text-red-600",
+      iconBg: billingData?.status === "paid" ? "bg-green-50" :
+              billingData?.status === "partial" ? "bg-orange-50" :
+              billingData?.status === "pending" ? "bg-yellow-50" :
+              "bg-red-50",
       subtitle: billingData?.dueDate ? `Due: ${new Date(billingData.dueDate).toLocaleDateString()}` : "",
-      statusColor: billingData?.status === "paid" ? "text-green-600" : billingData?.status === "pending" ? "text-orange-600" : "text-red-600"
+      statusColor: billingData?.status === "paid" ? "text-green-600" :
+                   billingData?.status === "partial" ? "text-orange-600" :
+                   billingData?.status === "pending" ? "text-yellow-600" :
+                   "text-red-600"
     },
     {
       title: "Water Consumption",

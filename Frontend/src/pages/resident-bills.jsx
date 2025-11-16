@@ -53,6 +53,13 @@ export default function ResidentBills() {
           icon: CheckCircle,
           color: "text-green-600"
         };
+      case "partial":
+        return {
+          label: "Partial",
+          className: "bg-orange-100 text-orange-800 hover:bg-orange-100 hover:text-orange-800",
+          icon: Clock,
+          color: "text-orange-600"
+        };
       case "pending":
       case "unpaid":
         return {
@@ -180,10 +187,32 @@ export default function ResidentBills() {
 
                           <Separator />
 
-                          <div className="flex justify-between text-lg font-bold">
-                            <span>Total Amount Due</span>
-                            <span className="text-blue-600">₱{billData.total_amount?.toFixed(2) || '0.00'}</span>
-                          </div>
+                          {/* Show original total if partial payment */}
+                          {billData.billing_status === 'partial' && billData.amount_paid > 0 && (
+                            <>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Original Total</span>
+                                <span>₱{billData.total_amount?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between text-sm text-green-600">
+                                <span>Amount Paid</span>
+                                <span>-₱{billData.amount_paid?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <Separator />
+                              <div className="flex justify-between text-lg font-bold">
+                                <span>Remaining Balance</span>
+                                <span className="text-orange-600">₱{billData.balance?.toFixed(2) || '0.00'}</span>
+                              </div>
+                            </>
+                          )}
+
+                          {/* Show total for non-partial bills */}
+                          {billData.billing_status !== 'partial' && (
+                            <div className="flex justify-between text-lg font-bold">
+                              <span>Total Amount Due</span>
+                              <span className="text-blue-600">₱{billData.total_amount?.toFixed(2) || '0.00'}</span>
+                            </div>
+                          )}
 
                           <div className="flex justify-between text-sm text-gray-600">
                             <span>Due Date</span>

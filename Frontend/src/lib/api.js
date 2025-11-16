@@ -46,6 +46,13 @@ class ApiClient {
   }
 
   // ======================================================
+  // 📊 DASHBOARD API (Admin)
+  // ======================================================
+  async getDashboardStats() {
+    return await this.request('/api/v1/dashboard/stats');
+  }
+
+  // ======================================================
   // 💳 PAYMENT API
   // ======================================================
   async updatePaymentStatus(paymentId) {
@@ -74,6 +81,18 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(paymentData),
     });
+  }
+
+  async getAllPayments(params = {}) {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+    const queryString = new URLSearchParams(filteredParams).toString();
+    return await this.request(`/api/v1/payment${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getPaymentById(id) {
+    return await this.request(`/api/v1/payment/${id}`);
   } 
 
   // ======================================================
@@ -96,6 +115,18 @@ class ApiClient {
     return await this.request('/api/v1/billing');
   }
 
+  async getAllBilling(params = {}) {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+    const queryString = new URLSearchParams(filteredParams).toString();
+    return await this.request(`/api/v1/billing${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getBillingById(id) {
+    return await this.request(`/api/v1/billing/${id}`);
+  }
+
   async getOverdueBilling() {
     return await this.request('/api/v1/billing/overdue-billing');
   }
@@ -108,17 +139,31 @@ class ApiClient {
   }
 
   async markForDisconnection(connection_id) {
-  try {
-    return await this.request('/api/v1/billing/update-connection-status', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ connection_id }),
-    });
-  } catch (error) {
-    console.error("Failed to mark connection for disconnection:", error);
-    throw error;
+    try {
+      return await this.request('/api/v1/billing/update-connection-status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connection_id }),
+      });
+    } catch (error) {
+      console.error("Failed to mark connection for disconnection:", error);
+      throw error;
+    }
   }
-}
+
+  // ✅ Record manual/walk-in payment
+  async recordManualPayment(paymentData) {
+    try {
+      return await this.request('/api/v1/payment/record-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData),
+      });
+    } catch (error) {
+      console.error("Failed to record manual payment:", error);
+      throw error;
+    }
+  }
 
 
 
@@ -230,18 +275,79 @@ async getApprovalStats() {
 
 
   // ======================================================
+  // 👷 PERSONNEL API (Admin)
+  // ======================================================
+  async getAllPersonnel(params = {}) {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+    const queryString = new URLSearchParams(filteredParams).toString();
+    return await this.request(`/api/v1/personnel${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getPersonnelById(id) {
+    return await this.request(`/api/v1/personnel/${id}`);
+  }
+
+  async createPersonnel(data) {
+    return await this.request('/api/v1/personnel', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePersonnel(id, data) {
+    return await this.request(`/api/v1/personnel/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePersonnel(id) {
+    return await this.request(`/api/v1/personnel/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ======================================================
   // 💧 WATER CONNECTION (Secretary / Admin)
   // ======================================================
 
-    async getAllWaterConnections() {
-    return await this.request('/api/v1/water-connection');
+    async getAllWaterConnections(params = {}) {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+    const queryString = new URLSearchParams(filteredParams).toString();
+    return await this.request(`/api/v1/water-connection${queryString ? `?${queryString}` : ''}`);
   }
+
+  async getWaterConnectionById(id) {
+    return await this.request(`/api/v1/water-connection/${id}`);
+  }
+
   async getActiveWaterConnections() {
     return await this.request('/api/v1/water-connection/active');
   }
 
    async getInactiveWaterConnections() {
     return await this.request('/api/v1/water-connection/inactive');
+  }
+
+  async getDelinquentAccounts() {
+    return await this.request('/api/v1/connection-management/delinquent');
+  }
+
+  async updateConnectionStatus(id, status) {
+    return await this.request(`/api/v1/connection-management/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async markConnectionForDisconnection(id) {
+    return await this.request(`/api/v1/connection-management/${id}/mark-disconnection`, {
+      method: 'POST',
+    });
   }
 
   async updateResidentAccount(connectionId, updateData) {
@@ -261,10 +367,35 @@ async getApprovalStats() {
 
 
   // ======================================================
-  // 👤 USER MANAGEMENT
+  // 👤 USER MANAGEMENT (Admin)
   // ======================================================
   async getUserAccount() {
     return await this.request('/api/v1/user');
+  }
+
+  async getAllUsers(params = {}) {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+    const queryString = new URLSearchParams(filteredParams).toString();
+    return await this.request(`/api/v1/user/all${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getUserById(id) {
+    return await this.request(`/api/v1/user/${id}`);
+  }
+
+  async updateUser(id, data) {
+    return await this.request(`/api/v1/user/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(id) {
+    return await this.request(`/api/v1/user/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   // ======================================================
@@ -292,6 +423,16 @@ async getApprovalStats() {
     });
   }
 
+  async updateIncidentStatus(id, status, resolution_notes = '') {
+    return await this.request(`/api/v1/incident-report/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        reported_issue_status: status,
+        resolution_notes
+      }),
+    });
+  }
+
   // ======================================================
   // 📅 SCHEDULE TASK (Secretary / Admin)
   // ======================================================
@@ -316,6 +457,13 @@ async getApprovalStats() {
   async deleteScheduleTask(taskId) {
     return await this.request(`/api/v1/schedule-task/${taskId}`, {
       method: 'DELETE',
+    });
+  }
+
+  async updateScheduleTask(id, data) {
+    return await this.request(`/api/v1/schedule-task/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     });
   }
 
@@ -394,12 +542,75 @@ async getApprovalStats() {
       });
     }
 
-    async getAnnouncements() {
-      return await this.request('/api/v1/announcements');
+    async getAnnouncements(params = {}) {
+      const filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      );
+      const queryString = new URLSearchParams(filteredParams).toString();
+      return await this.request(`/api/v1/announcements${queryString ? `?${queryString}` : ''}`);
     }
 
     async getPendingAnnouncements() {
       return await this.request('/api/v1/announcements/pending');
+    }
+
+    async approveAnnouncement(id) {
+      return await this.request(`/api/v1/announcements/${id}/approve`, {
+        method: 'PATCH',
+      });
+    }
+
+    async rejectAnnouncement(id, rejection_reason) {
+      return await this.request(`/api/v1/announcements/${id}/reject`, {
+        method: 'PATCH',
+        body: JSON.stringify({ rejection_reason }),
+      });
+    }
+
+    async archiveAnnouncement(id) {
+      return await this.request(`/api/v1/announcements/${id}/archive`, {
+        method: 'PATCH',
+      });
+    }
+
+    async incrementAnnouncementViews(id) {
+      return await this.request(`/api/v1/announcements/${id}/view`, {
+        method: 'PATCH',
+      });
+    }
+
+    // ======================================================
+    // 💧 WATER SCHEDULES (Secretary / Admin)
+    // ======================================================
+    async createWaterSchedule(data) {
+      return await this.request('/api/v1/water-schedules', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
+
+    async getWaterSchedules(params = {}) {
+      const filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      );
+      const queryString = new URLSearchParams(filteredParams).toString();
+      return await this.request(`/api/v1/water-schedules${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async getPendingWaterSchedules() {
+      return await this.request('/api/v1/water-schedules/pending');
+    }
+
+    async approveWaterSchedule(id) {
+      return await this.request(`/api/v1/water-schedules/${id}/approve`, {
+        method: 'PATCH',
+      });
+    }
+
+    async rejectWaterSchedule(id) {
+      return await this.request(`/api/v1/water-schedules/${id}/reject`, {
+        method: 'PATCH',
+      });
     }
 
     // ======================================================
@@ -486,6 +697,49 @@ async getApprovalStats() {
         method: 'PATCH',
         body: JSON.stringify({ reason }),
       });
+    }
+
+    // ======================================================
+    // 📊 REPORTS API (Admin)
+    // ======================================================
+    async generateRevenueReport(params = {}) {
+      const filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      );
+      const queryString = new URLSearchParams(filteredParams).toString();
+      return await this.request(`/api/v1/reports/revenue${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async generateConsumptionReport(params = {}) {
+      const filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      );
+      const queryString = new URLSearchParams(filteredParams).toString();
+      return await this.request(`/api/v1/reports/consumption${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async generateBillingReport(params = {}) {
+      const filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      );
+      const queryString = new URLSearchParams(filteredParams).toString();
+      return await this.request(`/api/v1/reports/billing${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async generateUsersReport(params = {}) {
+      const filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      );
+      const queryString = new URLSearchParams(filteredParams).toString();
+      return await this.request(`/api/v1/reports/users${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async generateIncidentsReport(params = {}) {
+      const filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      );
+      const queryString = new URLSearchParams(filteredParams).toString();
+      return await this.request(`/api/v1/reports/incidents${queryString ? `?${queryString}` : ''}`);
     }
 }
 

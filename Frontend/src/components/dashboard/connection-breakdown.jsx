@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { dashboardApi } from "../../services/adminApi";
+import { apiClient } from "../../lib/api";
 
 export default function ConnectionBreakdown() {
   const { data } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: dashboardApi.getStats
+    queryFn: () => apiClient.getDashboardStats()
   });
 
   const stats = data?.stats || {};

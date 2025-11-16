@@ -32,7 +32,7 @@ import {
   UserCheck,
   UserX
 } from "lucide-react";
-import { usersApi } from "../services/adminApi";
+import { apiClient } from "../lib/api";
 
 export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,7 +42,7 @@ export default function AdminUsers() {
   // Fetch users from API
   const { data, isLoading } = useQuery({
     queryKey: ['users', statusFilter],
-    queryFn: () => usersApi.getAll({ status: statusFilter !== 'all' ? statusFilter : undefined })
+    queryFn: () => apiClient.getAllUsers({ status: statusFilter !== 'all' ? statusFilter : undefined })
   });
 
   const users = data?.users || [];

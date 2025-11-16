@@ -33,7 +33,7 @@ import {
   XCircle,
   DollarSign
 } from "lucide-react";
-import { billingApi, paymentApi } from "../services/adminApi";
+import { apiClient } from "../lib/api";
 
 export default function AdminBilling() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,12 +41,12 @@ export default function AdminBilling() {
 
   const { data: billingData, isLoading: billingLoading } = useQuery({
     queryKey: ['billing'],
-    queryFn: () => billingApi.getAll()
+    queryFn: () => apiClient.getAllBilling()
   });
 
   const { data: paymentData, isLoading: paymentLoading } = useQuery({
     queryKey: ['payments'],
-    queryFn: () => paymentApi.getAll()
+    queryFn: () => apiClient.getAllPayments()
   });
 
   const isLoading = billingLoading || paymentLoading;

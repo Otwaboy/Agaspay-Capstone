@@ -11,7 +11,7 @@ export default function ResidentBillPaymentCard() {
     queryFn: async () => {
       const res = await apiClient.getCurrentBill(); // this calls your getBilling controller
       const bills = res.data;
-      if (!bills || bills.length === 0) return null;
+      if (!bills || bills.length === 0) return null; 
       const currentBill = bills[bills.length - 1]; 
       
       const dueDate = new Date(currentBill.due_date);
@@ -19,7 +19,9 @@ export default function ResidentBillPaymentCard() {
       const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
       
       return {
-        amount: currentBill.total_amount,
+        amount: currentBill.balance || currentBill.total_amount,
+        totalAmount: currentBill.total_amount,
+        amountPaid: currentBill.amount_paid || 0,
         dueDate: currentBill.due_date,
         status: currentBill.payment_status || currentBill.status || "unpaid",
         connection_status: currentBill.connection_status || "active",
@@ -59,6 +61,7 @@ export default function ResidentBillPaymentCard() {
   }
 
   const isPaid = billingData.status === "paid";
+  const isPartial = billingData.status === "partial";
   const isOverdue = billingData.daysUntilDue < 0;
   const isDueSoon = billingData.daysUntilDue <= 3 && billingData.daysUntilDue >= 0;
   const isForDisconnection = billingData.connection_status === "for_disconnection";
@@ -74,25 +77,38 @@ export default function ResidentBillPaymentCard() {
             Current Water Bill
           </CardTitle>
           <Badge className={
-            isPaid ? 'bg-green-100 text-green-700 border border-green-200' : 
+            isPaid ? 'bg-green-100 text-green-700 border border-green-200' :
+            isPartial ? 'bg-orange-100 text-orange-700 border border-orange-200' :
             isForDisconnection ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
-            isOverdue ? 'bg-red-100 text-red-700 border border-red-200' : 
-            isDueSoon ? 'bg-orange-100 text-orange-700 border border-orange-200' : 
+            isOverdue ? 'bg-red-100 text-red-700 border border-red-200' :
+            isDueSoon ? 'bg-orange-100 text-orange-700 border border-orange-200' :
             'bg-blue-100 text-blue-700 border border-blue-200'
           }>
-            {isPaid ? 'Paid' : isForDisconnection ? 'For Disconnection' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
+            {isPaid ? 'Paid' : isPartial ? 'Partial' : isForDisconnection ? 'For Disconnection' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
           </Badge>
         </div>
         <p className="text-sm text-gray-500 mt-2">Billing Period: {billingData.billingPeriod}</p>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Amount Due</p>
+          <p className="text-sm text-gray-600 mb-1">{isPartial ? 'Remaining Balance' : 'Amount Due'}</p>
           <p className={`text-4xl font-bold ${
-            isPaid ? 'text-green-600' : isForDisconnection ? 'text-yellow-600' : isOverdue ? 'text-red-600' : 'text-blue-600'
+            isPaid ? 'text-green-600' : isPartial ? 'text-orange-600' : isForDisconnection ? 'text-yellow-600' : isOverdue ? 'text-red-600' : 'text-blue-600'
           }`}>
             ₱{billingData.amount.toFixed(2)}
           </p>
+          {isPartial && billingData.amountPaid > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Original Total:</span>
+                <span className="font-medium">₱{billingData.totalAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Amount Paid:</span>
+                <span className="font-medium">-₱{billingData.amountPaid.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">

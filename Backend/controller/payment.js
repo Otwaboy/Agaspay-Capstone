@@ -412,4 +412,141 @@ const updatePaymentStatus = async (req, res) => {
 
  
 
-module.exports = { payPayment, getPayment, updatePaymentStatus, verifyPayment };
+/**
+ * Record Manual/Walk-in Payment
+ * - Only treasurer can record manual payments
+ * - Supports partial payments
+ * - Automatically updates billing status based on amount paid
+ */
+const recordManualPayment = async (req, res) => {
+  try {
+    const user = req.user;
+    const { bill_id, amount_paid, payment_method, notes } = req.body;
+
+    // ✅ Authorization: Only treasurer can record manual payments
+    if (user.role !== 'treasurer') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Only treasurer can record manual payments'
+      });
+    }
+
+    // ✅ Validation
+    if (!bill_id || !amount_paid || !payment_method) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'bill_id, amount_paid, and payment_method are required'
+      });
+    }
+
+    if (amount_paid <= 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Amount paid must be greater than 0'
+      });
+    }
+
+    // ✅ Find the billing record
+    const billing = await Billing.findById(bill_id).populate({
+      path: 'connection_id',
+      populate: {
+        path: 'resident_id',
+        select: 'first_name last_name contact_no'
+      }
+    });
+
+    if (!billing) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Billing record not found'
+      });
+    }
+
+    // ✅ Calculate new totals
+    const previousAmountPaid = billing.amount_paid || 0;
+    const newAmountPaid = previousAmountPaid + amount_paid;
+    const newBalance = billing.total_amount - newAmountPaid;
+
+    // ✅ Prevent overpayment
+    if (newBalance < 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: `Payment amount exceeds remaining balance. Remaining balance: ₱${(billing.total_amount - previousAmountPaid).toFixed(2)}`
+      });
+    }
+
+    // ✅ Determine payment type and new billing status
+    let payment_type;
+    let new_billing_status;
+
+    if (newBalance === 0) {
+      payment_type = 'full';
+      new_billing_status = 'paid';
+    } else {
+      payment_type = 'partial';
+      new_billing_status = 'partial';
+    }
+
+    // ✅ Create payment record
+    const payment = await Payment.create({
+      bill_id: billing._id,
+      connection_id: billing.connection_id._id,
+      amount_paid: amount_paid,
+      payment_method: payment_method,
+      payment_type: payment_type,
+      payment_status: 'confirmed', // Manual payments are immediately confirmed
+      payment_date: new Date(),
+      received_by: user.userId,
+      confirmed_by: user.userId,
+      notes: notes || '',
+      official_receipt_status: 'official_receipt' // ✅ Manual payments get official receipt
+    });
+
+    // ✅ Update billing record
+    billing.amount_paid = newAmountPaid;
+    billing.balance = newBalance;
+    billing.status = new_billing_status;
+    await billing.save();
+
+    console.log('✅ Manual payment recorded:', {
+      payment_id: payment._id,
+      bill_id: billing._id,
+      amount_paid: amount_paid,
+      new_total_paid: newAmountPaid,
+      remaining_balance: newBalance,
+      status: new_billing_status
+    });
+
+    // ✅ Prepare response
+    const resident = billing.connection_id?.resident_id;
+    const residentName = resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown';
+
+    return res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: `Payment recorded successfully. ${newBalance === 0 ? 'Bill fully paid!' : 'Partial payment recorded.'}`,
+      data: {
+        payment_id: payment._id,
+        resident_name: residentName,
+        amount_paid: amount_paid,
+        payment_method: payment_method,
+        payment_type: payment_type,
+        payment_date: payment.payment_date,
+        official_receipt_status: payment.official_receipt_status,
+        billing_status: new_billing_status,
+        total_amount: billing.total_amount,
+        amount_paid_total: newAmountPaid,
+        remaining_balance: newBalance
+      }
+    });
+
+  } catch (error) {
+    console.error('🔥 recordManualPayment error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to record payment',
+      error: error.message
+    });
+  }
+};
+
+module.exports = { payPayment, getPayment, updatePaymentStatus, verifyPayment, recordManualPayment };
