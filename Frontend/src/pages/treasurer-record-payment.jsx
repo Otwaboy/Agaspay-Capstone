@@ -20,7 +20,6 @@ import {
   Receipt,
   User,
   DollarSign,
-  FileText,
   Power
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
@@ -36,8 +35,6 @@ export default function TreasurerRecordPayment() {
   const [selectedBill, setSelectedBill] = useState(null);
   const [amountPaid, setAmountPaid] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [notes, setNotes] = useState("");
-  const [requestReconnection, setRequestReconnection] = useState(false);
 
   // Fetch all unpaid and partial bills
   const { data: billHistory, isLoading } = useQuery({
@@ -72,8 +69,6 @@ export default function TreasurerRecordPayment() {
       setSelectedBill(null);
       setAmountPaid("");
       setPaymentMethod("cash");
-      setNotes("");
-      setRequestReconnection(false);
       setSearchTerm("");
 
       // Invalidate queries to refresh data
@@ -90,8 +85,6 @@ export default function TreasurerRecordPayment() {
     // Calculate remaining balance
     const remaining = bill.total_amount - (bill.amount_paid || 0);
     setAmountPaid(remaining.toString());
-    // Reset reconnection request
-    setRequestReconnection(false);
   };
 
   const handleSubmit = (e) => {
@@ -111,8 +104,7 @@ export default function TreasurerRecordPayment() {
       bill_id: selectedBill.bill_id,
       amount_paid: parseFloat(amountPaid),
       payment_method: paymentMethod,
-      notes: notes || undefined,
-      request_reconnection: requestReconnection || undefined
+      connection_status: selectedBill.connection_status
     };
 
     recordPaymentMutation.mutate(paymentData);
@@ -346,39 +338,19 @@ export default function TreasurerRecordPayment() {
                           </Select>
                         </div>
 
-                        {/* Notes */}
-                        <div className="space-y-2">
-                          <Label htmlFor="notes">Notes (Optional)</Label>
-                          <div className="relative">
-                            <FileText className="absolute left-3 top-3 text-gray-400 h-4 w-4" />
-                            <textarea
-                              id="notes"
-                              value={notes}
-                              onChange={(e) => setNotes(e.target.value)}
-                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
-                              placeholder="Add any additional notes..."
-                            />
-                          </div>
-                        </div>
-
-                        {/* Request Reconnection - Only show if disconnected */}
-                        {selectedBill.connection_status === 'disconnected' && (
+                        {/* Auto Reconnection Notice - Show if for_disconnection, scheduled_for_disconnection, or disconnected */}
+                        {(selectedBill.connection_status === 'for_disconnection' ||
+                          selectedBill.connection_status === 'scheduled_for_disconnection' ||
+                          selectedBill.connection_status === 'disconnected') && (
                           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                             <div className="flex items-start space-x-3">
-                              <input
-                                type="checkbox"
-                                id="request_reconnection"
-                                checked={requestReconnection}
-                                onChange={(e) => setRequestReconnection(e.target.checked)}
-                                className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                              />
+                              <Power className="h-5 w-5 text-green-600 mt-0.5" />
                               <div className="flex-1">
-                                <Label htmlFor="request_reconnection" className="flex items-center text-green-900 font-medium cursor-pointer">
-                                  <Power className="h-4 w-4 mr-2" />
-                                  Request Reconnection
-                                </Label>
+                                <p className="text-sm font-medium text-green-900">
+                                  Auto Reconnection Request
+                                </p>
                                 <p className="text-xs text-green-700 mt-1">
-                                  Mark this connection for reconnection. The connection status will be updated to "for_reconnection" and can be scheduled by the secretary.
+                                  After payment confirmation, this connection will automatically be marked for reconnection and can be scheduled by the secretary.
                                 </p>
                               </div>
                             </div>
@@ -410,8 +382,6 @@ export default function TreasurerRecordPayment() {
                             onClick={() => {
                               setSelectedBill(null);
                               setAmountPaid("");
-                              setNotes("");
-                              setRequestReconnection(false);
                             }}
                           >
                             Cancel

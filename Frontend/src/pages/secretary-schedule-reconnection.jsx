@@ -32,10 +32,10 @@ export default function SecretaryScheduleReconnection() {
   const [selectedConnection, setSelectedConnection] = useState(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
-  // Fetch disconnected connections
+  // Fetch connections marked for reconnection
   const { data: connectionsData, isLoading, error } = useQuery({
-    queryKey: ['/api/v1/water-connection/disconnected'],
-    queryFn: () => apiClient.getDisconnectedConnections(),
+    queryKey: ['/api/v1/water-connection/for-reconnection'],
+    queryFn: () => apiClient.getConnectionsForReconnection(),
   });
 
   // Fetch all assignments to check which connections already have scheduled tasks
@@ -72,7 +72,8 @@ export default function SecretaryScheduleReconnection() {
         description: data.message || "Task has been automatically scheduled with available personnel",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/v1/schedule-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/water-connection/disconnected'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/water-connection/for-reconnection'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/assignments'] });
       setScheduleDialogOpen(false);
       setSelectedConnection(null);
     },
@@ -106,9 +107,9 @@ export default function SecretaryScheduleReconnection() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      for_disconnection: { label: "For Disconnection", className: "bg-orange-100 text-orange-800" },
+      for_reconnection: { label: "For Reconnection", className: "bg-green-100 text-green-800" },
       disconnected: { label: "Disconnected", className: "bg-red-100 text-red-800" },
-      active: { label: "Active", className: "bg-green-100 text-green-800" },
+      active: { label: "Active", className: "bg-blue-100 text-blue-800" },
     };
 
     const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800" };
@@ -169,8 +170,8 @@ export default function SecretaryScheduleReconnection() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Disconnected Connections</p>
-                    <p className="text-2xl font-bold text-red-600">
+                    <p className="text-sm font-medium text-gray-600">For Reconnection</p>
+                    <p className="text-2xl font-bold text-green-600">
                       {filteredConnections.length}
                     </p>
                   </div>
@@ -198,13 +199,13 @@ export default function SecretaryScheduleReconnection() {
             {/* Connections Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Disconnected Connections</CardTitle>
+                <CardTitle>Connections for Reconnection</CardTitle>
               </CardHeader>
               <CardContent>
                 {filteredConnections.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p>No disconnected connections found</p>
+                    <p>No connections marked for reconnection</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">

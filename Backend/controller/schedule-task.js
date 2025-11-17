@@ -283,6 +283,15 @@ const createTask = async (req, res) => {
       }
     }
 
+    if (connection_id && task_type === 'reconnection') {
+      const connection = await WaterConnection.findById(connection_id);
+      if (connection) {
+        connection.connection_status = 'scheduled_for_reconnection';
+        await connection.save();
+        console.log(`✅ Water connection ${connection._id} status set to scheduled_for_reconnection`);
+      }
+    }
+
     // Set auto-scheduled message if not already set (for critical incidents)
     if (!autoScheduledMessage) {
       if (isCritical) {

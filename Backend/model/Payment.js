@@ -63,11 +63,6 @@ const PaymentSchema = new mongoose.Schema({
   received_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User' // treasurer who received the payment
-  },
-
-  notes: {
-    type: String,
-    default: ''
   }
 
 }, {

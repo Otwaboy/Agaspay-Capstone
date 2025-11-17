@@ -337,6 +337,10 @@ async getApprovalStats() {
     return await this.request('/api/v1/water-connection/for-disconnection');
   }
 
+  async getConnectionsForReconnection() {
+    return await this.request('/api/v1/water-connection/for-reconnection');
+  }
+
   async getDisconnectedConnections() {
     return await this.request('/api/v1/water-connection/disconnected');
   }

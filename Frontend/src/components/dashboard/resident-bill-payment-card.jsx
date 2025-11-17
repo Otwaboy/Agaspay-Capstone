@@ -82,6 +82,8 @@ export default function ResidentBillPaymentCard() {
   const isForDisconnection = billingData.connection_status === "for_disconnection";
   const isScheduledForDisconnection = billingData.connection_status === "scheduled_for_disconnection";
   const isDisconnected = billingData.connection_status === "disconnected";
+  const isForReconnection = billingData.connection_status === "for_reconnection";
+  const isScheduledForReconnection = billingData.connection_status === "scheduled_for_reconnection";
 
   return (
     <Card className="bg-white/70 backdrop-blur-md border border-white/30 shadow-sm hover:shadow-md transition-shadow">
@@ -96,6 +98,8 @@ export default function ResidentBillPaymentCard() {
           <Badge className={
             isPaid ? 'bg-green-100 text-green-700 border border-green-200' :
             isDisconnected ? 'bg-red-100 text-red-700 border border-red-200' :
+            isScheduledForReconnection ? 'bg-green-100 text-green-700 border border-green-200' :
+            isForReconnection ? 'bg-green-100 text-green-700 border border-green-200' :
             isScheduledForDisconnection ? 'bg-orange-100 text-orange-700 border border-orange-200' :
             isPartial ? 'bg-orange-100 text-orange-700 border border-orange-200' :
             isForDisconnection ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
@@ -103,7 +107,7 @@ export default function ResidentBillPaymentCard() {
             isDueSoon ? 'bg-orange-100 text-orange-700 border border-orange-200' :
             'bg-blue-100 text-blue-700 border border-blue-200'
           }>
-            {isPaid ? 'Paid' : isDisconnected ? 'Disconnected' : isScheduledForDisconnection ? 'Scheduled for Disconnection' : isPartial ? 'Partial' : isForDisconnection ? 'For Disconnection' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
+            {isPaid ? 'Paid' : isDisconnected ? 'Disconnected' : isScheduledForReconnection ? 'Scheduled for Reconnection' : isForReconnection ? 'For Reconnection' : isScheduledForDisconnection ? 'Scheduled for Disconnection' : isPartial ? 'Partial' : isForDisconnection ? 'For Disconnection' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
           </Badge>
         </div>
         <p className="text-sm text-gray-500 mt-2">Billing Period: {billingData.billingPeriod}</p>
@@ -201,13 +205,37 @@ export default function ResidentBillPaymentCard() {
           </div>
         )}
 
-        {isDisconnected && (
+        {isDisconnected && !isForReconnection && !isScheduledForReconnection && (
           <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-red-900">Service Disconnected</p>
               <p className="text-xs text-red-700 mt-1">
                 Your water service has been disconnected. Please visit the barangay hall office to settle your account and request reconnection.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isForReconnection && (
+          <div className="flex items-start gap-2 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-green-900">Reconnection Requested</p>
+              <p className="text-xs text-green-700 mt-1">
+                Your reconnection request has been received. A reconnection task will be scheduled soon.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isScheduledForReconnection && (
+          <div className="flex items-start gap-2 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-green-900">Reconnection Scheduled</p>
+              <p className="text-xs text-green-700 mt-1">
+                Your water service reconnection has been scheduled. Service will be restored soon.
               </p>
             </div>
           </div>

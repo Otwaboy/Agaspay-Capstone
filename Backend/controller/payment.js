@@ -421,7 +421,7 @@ const updatePaymentStatus = async (req, res) => {
 const recordManualPayment = async (req, res) => {
   try {
     const user = req.user;
-    const { bill_id, amount_paid, payment_method, notes, request_reconnection } = req.body;
+    const { bill_id, amount_paid, payment_method, connection_status } = req.body;
 
     // ✅ Authorization: Only treasurer can record manual payments
     if (user.role !== 'treasurer') {
@@ -498,7 +498,6 @@ const recordManualPayment = async (req, res) => {
       payment_date: new Date(),
       received_by: user.userId,
       confirmed_by: user.userId,
-      notes: notes || '',
       official_receipt_status: 'official_receipt' // ✅ Manual payments get official receipt
     });
 
@@ -508,13 +507,17 @@ const recordManualPayment = async (req, res) => {
     billing.status = new_billing_status;
     await billing.save();
 
-    // ✅ Update connection status to for_reconnection if requested and disconnected
-    if (request_reconnection && billing.connection_id) {
+    // ✅ Auto update connection status to for_reconnection if in disconnection flow
+    let reconnectionUpdated = false;
+    if (billing.connection_id && connection_status) {
       const connection = await WaterConnection.findById(billing.connection_id._id);
-      if (connection && connection.connection_status === 'disconnected') {
+      const validStatuses = ['for_disconnection', 'scheduled_for_disconnection', 'disconnected'];
+      if (connection && validStatuses.includes(connection_status)) {
+        const oldStatus = connection.connection_status;
         connection.connection_status = 'for_reconnection';
         await connection.save();
-        console.log(`✅ Water connection ${connection._id} status set to for_reconnection`);
+        reconnectionUpdated = true;
+        console.log(`✅ Water connection ${connection._id} status updated from ${oldStatus} to for_reconnection (auto reconnection after payment)`);
       }
     }
 
@@ -525,7 +528,7 @@ const recordManualPayment = async (req, res) => {
       new_total_paid: newAmountPaid,
       remaining_balance: newBalance,
       status: new_billing_status,
-      reconnection_requested: request_reconnection || false
+      reconnection_auto_updated: reconnectionUpdated
     });
 
     // ✅ Prepare response

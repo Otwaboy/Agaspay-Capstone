@@ -546,6 +546,49 @@ const getDisconnectedConnections = async (req, res) => {
   }
 };
 
+// Get connections marked for reconnection
+const getConnectionsForReconnection = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Only secretary can access
+    if (user.role !== 'secretary' && user.role !== 'admin') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        msg: 'Unauthorized. Only secretary can access this.',
+      });
+    }
+
+    // Find all connections marked for reconnection
+    const connections = await WaterConnection.find({
+      connection_status: 'for_reconnection'
+    }).populate('resident_id', 'first_name last_name contact_no purok');
+
+    const connectionData = connections.map(conn => ({
+      connection_id: conn._id,
+      meter_no: conn.meter_no,
+      residentName: conn.resident_id
+        ? `${conn.resident_id.first_name} ${conn.resident_id.last_name}`
+        : 'Unknown',
+      contactNo: conn.resident_id?.contact_no || 'N/A',
+      purok: conn.resident_id?.purok || 'N/A',
+      connection_status: conn.connection_status,
+      resident_id: conn.resident_id?._id
+    }));
+
+    res.status(StatusCodes.OK).json({
+      msg: 'Connections for reconnection retrieved successfully',
+      data: connectionData
+    });
+
+  } catch (error) {
+    console.error('Error fetching connections for reconnection:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: 'Failed to retrieve connections',
+      error: error.message
+    });
+  }
+};
+
 
 module.exports = {
   getLatestConnections,
@@ -556,5 +599,6 @@ module.exports = {
   updateUserContact,
   verifyEmail,
   getConnectionsForDisconnection,
-  getDisconnectedConnections
+  getDisconnectedConnections,
+  getConnectionsForReconnection
 };
