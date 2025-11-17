@@ -188,7 +188,11 @@ const getAssignments = async (req, res) => {
         id: assignment._id,
         task: {
           id: task?._id,
-          type: report?.type || task.schedule_type,
+          type: report?.type || task?.schedule_type,
+          task_type: task?.task_type,
+          title: task?.title,
+          description: task?.description,
+          priority: task?.priority,
           urgency_lvl: report?.urgency_level,
           schedule_date: task?.schedule_date,
           schedule_time: task?.schedule_time,
@@ -196,7 +200,7 @@ const getAssignments = async (req, res) => {
           connection_id: task?.connection_id,
           scheduled_by: task?.scheduled_by,
           report_id: report?._id,
-          location: taskLocation || 'N/Ass', // ✅ Check task location first, then report location, then fetch from resident
+          location: taskLocation || 'N/A',
         },
         personnel: {
           id: personnel?._id,
@@ -277,18 +281,22 @@ const getUnassignedTasks = async (req, res) => {
       return {
         id: task._id,
         task_type: task.task_type,
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
         schedule_date: task.schedule_date,
         schedule_time: task.schedule_time,
         task_status: task.task_status,
         connection_id: task.connection_id,
         scheduled_by: task.scheduled_by,
-        report: {
-          id: report?._id,
-          type: report?.type || task.schedule_type,
-          description: report?.description,
-          location: taskLocation || 'N/A', // ✅ Check task location first, then fetch from resident
-          urgency_level: report?.urgency_level,
-        },
+        location: taskLocation || 'N/A',
+        report: report ? {
+          id: report._id,
+          type: report.type,
+          description: report.description,
+          location: report.location,
+          urgency_level: report.urgency_level,
+        } : null,
         created_at: task.createdAt,
       };
     }));

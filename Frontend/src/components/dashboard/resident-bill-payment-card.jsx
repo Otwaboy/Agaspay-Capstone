@@ -11,24 +11,39 @@ export default function ResidentBillPaymentCard() {
     queryFn: async () => {
       const res = await apiClient.getCurrentBill(); // this calls your getBilling controller
       const bills = res.data;
-      if (!bills || bills.length === 0) return null; 
-      const currentBill = bills[bills.length - 1]; 
-      
-      const dueDate = new Date(currentBill.due_date);
+      if (!bills || bills.length === 0) return null;
+      const currentBill = bills[bills.length - 1];
+
+      // Find all unpaid bills to get the earliest due date
+      const unpaidBills = bills.filter(bill =>
+        ['unpaid', 'partial', 'overdue', 'consolidated'].includes(bill.status || bill.payment_status)
+      );
+
+      // Use the earliest unpaid bill's due date for calculating days overdue
+      const earliestUnpaidBill = unpaidBills.length > 0
+        ? unpaidBills.reduce((earliest, bill) => {
+            const earliestDate = new Date(earliest.due_date);
+            const billDate = new Date(bill.due_date);
+            return billDate < earliestDate ? bill : earliest;
+          }, unpaidBills[0])
+        : currentBill;
+
+      const dueDate = new Date(earliestUnpaidBill.due_date);
       const today = new Date();
       const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-      
+
       return {
         amount: currentBill.balance || currentBill.total_amount,
         totalAmount: currentBill.total_amount,
         amountPaid: currentBill.amount_paid || 0,
-        dueDate: currentBill.due_date,
+        dueDate: earliestUnpaidBill.due_date,
         status: currentBill.payment_status || currentBill.status || "unpaid",
         connection_status: currentBill.connection_status || "active",
         consumption: currentBill.calculated,
         presentReading: currentBill.present_reading,
         previousReading: currentBill.previous_reading || 0,
         daysUntilDue,
+        unpaidBillsCount: unpaidBills.length,
         billingPeriod: new Date(currentBill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       };
     },
@@ -65,6 +80,8 @@ export default function ResidentBillPaymentCard() {
   const isOverdue = billingData.daysUntilDue < 0;
   const isDueSoon = billingData.daysUntilDue <= 3 && billingData.daysUntilDue >= 0;
   const isForDisconnection = billingData.connection_status === "for_disconnection";
+  const isScheduledForDisconnection = billingData.connection_status === "scheduled_for_disconnection";
+  const isDisconnected = billingData.connection_status === "disconnected";
 
   return (
     <Card className="bg-white/70 backdrop-blur-md border border-white/30 shadow-sm hover:shadow-md transition-shadow">
@@ -78,13 +95,15 @@ export default function ResidentBillPaymentCard() {
           </CardTitle>
           <Badge className={
             isPaid ? 'bg-green-100 text-green-700 border border-green-200' :
+            isDisconnected ? 'bg-red-100 text-red-700 border border-red-200' :
+            isScheduledForDisconnection ? 'bg-orange-100 text-orange-700 border border-orange-200' :
             isPartial ? 'bg-orange-100 text-orange-700 border border-orange-200' :
             isForDisconnection ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
             isOverdue ? 'bg-red-100 text-red-700 border border-red-200' :
             isDueSoon ? 'bg-orange-100 text-orange-700 border border-orange-200' :
             'bg-blue-100 text-blue-700 border border-blue-200'
           }>
-            {isPaid ? 'Paid' : isPartial ? 'Partial' : isForDisconnection ? 'For Disconnection' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
+            {isPaid ? 'Paid' : isDisconnected ? 'Disconnected' : isScheduledForDisconnection ? 'Scheduled for Disconnection' : isPartial ? 'Partial' : isForDisconnection ? 'For Disconnection' : isOverdue ? 'Overdue' : isDueSoon ? 'Due Soon' : 'Pending'}
           </Badge>
         </div>
         <p className="text-sm text-gray-500 mt-2">Billing Period: {billingData.billingPeriod}</p>
@@ -93,7 +112,7 @@ export default function ResidentBillPaymentCard() {
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
           <p className="text-sm text-gray-600 mb-1">{isPartial ? 'Remaining Balance' : 'Amount Due'}</p>
           <p className={`text-4xl font-bold ${
-            isPaid ? 'text-green-600' : isPartial ? 'text-orange-600' : isForDisconnection ? 'text-yellow-600' : isOverdue ? 'text-red-600' : 'text-blue-600'
+            isPaid ? 'text-green-600' : isDisconnected ? 'text-red-600' : isScheduledForDisconnection ? 'text-orange-600' : isPartial ? 'text-orange-600' : isForDisconnection ? 'text-yellow-600' : isOverdue ? 'text-red-600' : 'text-blue-600'
           }`}>
             ₱{billingData.amount.toFixed(2)}
           </p>
@@ -133,13 +152,16 @@ export default function ResidentBillPaymentCard() {
           </div>
         </div>
 
-        {!isPaid && isOverdue && !isForDisconnection && (
+        {!isPaid && isOverdue && !isForDisconnection && !isScheduledForDisconnection && !isDisconnected && (
           <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-red-900">Payment Overdue!</p>
               <p className="text-xs text-red-700 mt-1">
-                This bill was due {Math.abs(billingData.daysUntilDue)} days ago. Please pay immediately to avoid service interruption.
+                {billingData.unpaidBillsCount > 1
+                  ? `You have ${billingData.unpaidBillsCount} unpaid bills. The earliest bill was due ${Math.abs(billingData.daysUntilDue)} days ago. Please pay immediately to avoid service interruption.`
+                  : `This bill was due ${Math.abs(billingData.daysUntilDue)} days ago. Please pay immediately to avoid service interruption.`
+                }
               </p>
             </div>
           </div>
@@ -155,37 +177,71 @@ export default function ResidentBillPaymentCard() {
           </div>
         )}
 
-        {isForDisconnection && (
+        {isForDisconnection && !isScheduledForDisconnection && !isDisconnected && (
           <div className="flex items-start gap-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-yellow-900">Account Scheduled for Disconnection</p>
+              <p className="text-sm font-medium text-yellow-900">Account Marked for Disconnection</p>
               <p className="text-xs text-yellow-700 mt-1">
-                Please visit the barangay hall office to settle your account and restore service.
+                Please visit the barangay hall office to settle your account and avoid service disconnection.
               </p>
             </div>
           </div>
         )}
 
-        <Button 
+        {isScheduledForDisconnection && (
+          <div className="flex items-start gap-2 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-orange-900">Disconnection Scheduled</p>
+              <p className="text-xs text-orange-700 mt-1">
+                Your water service disconnection has been scheduled. Please settle your account immediately to prevent disconnection.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isDisconnected && (
+          <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-900">Service Disconnected</p>
+              <p className="text-xs text-red-700 mt-1">
+                Your water service has been disconnected. Please visit the barangay hall office to settle your account and request reconnection.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <Button
           className={`w-full ${
-            isPaid || isForDisconnection
+            isPaid || isForDisconnection || isScheduledForDisconnection || isDisconnected
               ? 'bg-gray-300 hover:bg-gray-300 cursor-not-allowed'
               : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'
           } text-white font-semibold shadow-sm`}
           size="lg"
-          onClick={() => !isPaid && !isForDisconnection && window.dispatchEvent(new Event("openPayBillModal"))}
-          disabled={isPaid || isForDisconnection}
+          onClick={() => !isPaid && !isForDisconnection && !isScheduledForDisconnection && !isDisconnected && window.dispatchEvent(new Event("openPayBillModal"))}
+          disabled={isPaid || isForDisconnection || isScheduledForDisconnection || isDisconnected}
         >
           {isPaid ? (
             <>
               <CheckCircle2 className="h-5 w-5 mr-2" />
               Payment Confirmed
             </>
+          ) : isDisconnected ? (
+            <>
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Service Disconnected - Visit Office
+            </>
+          ) : isScheduledForDisconnection ? (
+            <>
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Payment Disabled - Disconnection Scheduled
+            </>
           ) : isForDisconnection ? (
             <>
               <AlertCircle className="h-5 w-5 mr-2" />
-              Payment Disabled - Scheduled for Disconnection
+              Payment Disabled - Marked for Disconnection
             </>
           ) : (
             <>

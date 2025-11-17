@@ -460,8 +460,101 @@ const verifyEmail = async (req, res) => {
 };
 
 
+// Get connections marked for disconnection
+const getConnectionsForDisconnection = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Only secretary can access
+    if (user.role !== 'secretary' && user.role !== 'admin') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        msg: 'Unauthorized. Only secretary can access this.',
+      });
+    }
+
+    // Find all connections marked for disconnection
+    const connections = await WaterConnection.find({
+      connection_status: 'for_disconnection'
+    }).populate('resident_id', 'first_name last_name contact_no purok');
+
+    const connectionData = connections.map(conn => ({
+      connection_id: conn._id,
+      meter_no: conn.meter_no,
+      residentName: conn.resident_id
+        ? `${conn.resident_id.first_name} ${conn.resident_id.last_name}`
+        : 'Unknown',
+      contactNo: conn.resident_id?.contact_no || 'N/A',
+      purok: conn.resident_id?.purok || 'N/A',
+      connection_status: conn.connection_status,
+      resident_id: conn.resident_id?._id
+    }));
+
+    res.status(StatusCodes.OK).json({
+      msg: 'Connections for disconnection retrieved successfully',
+      data: connectionData
+    });
+
+  } catch (error) {
+    console.error('Error fetching connections for disconnection:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: 'Failed to retrieve connections',
+      error: error.message
+    });
+  }
+};
+
+// Get disconnected connections for reconnection
+const getDisconnectedConnections = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Only secretary can access
+    if (user.role !== 'secretary' && user.role !== 'admin') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        msg: 'Unauthorized. Only secretary can access this.',
+      });
+    }
+
+    // Find all disconnected connections
+    const connections = await WaterConnection.find({
+      connection_status: 'disconnected'
+    }).populate('resident_id', 'first_name last_name contact_no purok');
+
+    const connectionData = connections.map(conn => ({
+      connection_id: conn._id,
+      meter_no: conn.meter_no,
+      residentName: conn.resident_id
+        ? `${conn.resident_id.first_name} ${conn.resident_id.last_name}`
+        : 'Unknown',
+      contactNo: conn.resident_id?.contact_no || 'N/A',
+      purok: conn.resident_id?.purok || 'N/A',
+      connection_status: conn.connection_status,
+      resident_id: conn.resident_id?._id
+    }));
+
+    res.status(StatusCodes.OK).json({
+      msg: 'Disconnected connections retrieved successfully',
+      data: connectionData
+    });
+
+  } catch (error) {
+    console.error('Error fetching disconnected connections:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: 'Failed to retrieve connections',
+      error: error.message
+    });
+  }
+};
 
 
-
-
-module.exports = { getLatestConnections, getAllWaterConnections, getActiveWaterConnections,getInactiveWaterConnections, editResidentAccount, updateUserContact, verifyEmail };
+module.exports = {
+  getLatestConnections,
+  getAllWaterConnections,
+  getActiveWaterConnections,
+  getInactiveWaterConnections,
+  editResidentAccount,
+  updateUserContact,
+  verifyEmail,
+  getConnectionsForDisconnection,
+  getDisconnectedConnections
+};

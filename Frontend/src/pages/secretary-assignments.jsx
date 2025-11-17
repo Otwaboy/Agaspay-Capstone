@@ -112,31 +112,35 @@ export default function SecretaryAssignments() {
   const allTasks = [
     ...unassignedTasks.map(task => ({
       id: task.id,
-      type: task.report.type,
-      location: task.report?.location|| 'N/A',
+      type: task.task_type === 'disconnection' ? 'Water Disconnection'
+            : task.task_type === 'reconnection' ? 'Water Reconnection'
+            : task.report?.type || 'Incident',
+      location: task.report?.location || task.location || 'N/A',
       scheduledDate: task.schedule_date,
       timeSlot: task.schedule_time,
-      priority: task.report?.urgency_level?.toLowerCase() || 'medium',
+      priority: task.report?.urgency_level?.toLowerCase() || task.priority || 'medium',
       status: 'Unassigned',
       assignedTo: null,
       notes: '',
-      reportDescription: task.report?.description || '',
+      reportDescription: task.description || task.report?.description || '',
     })),
 
     ...assignments.map(assignment => ({
       id: assignment.task.id,
       assignmentId: assignment.id,
-      type: assignment.task.type,
+      type: assignment.task.task_type === 'disconnection' ? 'Water Disconnection'
+            : assignment.task.task_type === 'reconnection' ? 'Water Reconnection'
+            : assignment.task.type || 'Incident',
       location: assignment.task.location || 'N/A',
       scheduledDate: assignment.task.schedule_date,
       timeSlot: assignment.task.schedule_time,
-      priority: assignment.task.urgency_lvl?.toLowerCase() || 'medium',
+      priority: assignment.task.urgency_lvl?.toLowerCase() || assignment.task.priority || 'medium',
       status: assignment.task.task_status,
       assignedTo: assignment.personnel.name,
       assignedToId: assignment.personnel.id,
       assignedToContact: assignment.personnel.contact_no,
       notes: '',
-      reportDescription: '',
+      reportDescription: assignment.task.description || '',
     })),
   ];
 

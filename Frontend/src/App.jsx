@@ -24,6 +24,8 @@ import SecretaryResidents from "./pages/secretary-residents";
 import SecretaryRegistration from "./pages/secretary-registration";
 import SecretaryDocuments from "./pages/secretary-documents";
 import SecretaryIncidentReports from "./pages/secretary-incident-reports";
+import SecretaryScheduleDisconnection from "./pages/secretary-schedule-disconnection";
+import SecretaryScheduleReconnection from "./pages/secretary-schedule-reconnection";
 import SecretarySettings from "./pages/secretary-settings";
 import SecretaryAssignments from "./pages/secretary-assignments";
 
@@ -155,21 +157,35 @@ function App() {
                   <SecretaryDocuments />
                 </SecretaryRoute>
               )}
-            </Route>             
+            </Route>
             <Route path="/secretary-dashboard/applications">
               {() => (
                 <SecretaryRoute>
                   <SecretaryIncidentReports />
                 </SecretaryRoute>
               )}
-            </Route>          
+            </Route>
+            <Route path="/secretary-dashboard/schedule-disconnection">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryScheduleDisconnection />
+                </SecretaryRoute>
+              )}
+            </Route>
+            <Route path="/secretary-dashboard/schedule-reconnection">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryScheduleReconnection />
+                </SecretaryRoute>
+              )}
+            </Route>
             <Route path="/secretary-dashboard/appointments">
               {() => (
                 <SecretaryRoute>
                   <SecretaryAssignments/>
                 </SecretaryRoute>
               )}
-            </Route>            
+            </Route>
             <Route path="/secretary-dashboard/announcements">
               {() => (
                 <SecretaryRoute>

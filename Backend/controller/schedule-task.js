@@ -18,12 +18,16 @@ const createTask = async (req, res) => {
   const {
     connection_id,
     report_id,
+    resident_id,
+    title,
     description,
+    task_type,
+    priority,
     schedule_type
   } = req.body;
 
   try {
-    // ✅ Check if this is a critical incident
+    // ✅ Check if this is a critical incident (only critical incidents get ASAP scheduling)
     let isCritical = false;
     if (report_id) {
       const incidentReport = await IncidentReports.findById(report_id);
@@ -32,6 +36,8 @@ const createTask = async (req, res) => {
         console.log('🚨 CRITICAL incident detected - prioritizing assignment');
       }
     }
+    // Note: Disconnection/reconnection tasks are NOT treated as critical
+    // They will be scheduled for tomorrow regardless of priority
 
     // ✅ AUTOMATIC SCHEDULING: Find available maintenance personnel
     let scheduleDate;
@@ -241,6 +247,10 @@ const createTask = async (req, res) => {
     const newTask = await ScheduleTask.create({
       connection_id: connection_id || null,
       report_id: report_id || null,
+      resident_id: resident_id || null,
+      title: title || '',
+      task_type: task_type || 'incident',
+      priority: priority || 'medium',
       schedule_date: new Date(scheduleDate),
       schedule_time: scheduleTime,
       task_status: 'Assigned',
@@ -261,6 +271,16 @@ const createTask = async (req, res) => {
       await IncidentReports.findByIdAndUpdate(report_id, {
         reported_issue_status: 'Assigned'
       });
+    }
+
+    // Update connection status based on task type
+    if (connection_id && task_type === 'disconnection') {
+      const connection = await WaterConnection.findById(connection_id);
+      if (connection) {
+        connection.connection_status = 'scheduled_for_disconnection';
+        await connection.save();
+        console.log(`✅ Water connection ${connection._id} status set to scheduled_for_disconnection`);
+      }
     }
 
     // Set auto-scheduled message if not already set (for critical incidents)
@@ -471,6 +491,26 @@ const updateTaskStatus = async (req, res) => {
       const connection = await WaterConnection.findById(task.connection_id);
       if (connection) {
         connection.connection_status ='active';
+        await connection.save();
+        console.log(`✅ Water connection ${connection._id} status set to active`);
+      }
+    }
+
+    // ✅ If task is a disconnection and completed, update connection status to disconnected
+    if (task.task_status === 'Completed' && task.task_type === 'disconnection') {
+      const connection = await WaterConnection.findById(task.connection_id);
+      if (connection) {
+        connection.connection_status = 'disconnected';
+        await connection.save();
+        console.log(`✅ Water connection ${connection._id} status set to disconnected`);
+      }
+    }
+
+    // ✅ If task is a reconnection and completed, update connection status to active
+    if (task.task_status === 'Completed' && task.task_type === 'reconnection') {
+      const connection = await WaterConnection.findById(task.connection_id);
+      if (connection) {
+        connection.connection_status = 'active';
         await connection.save();
         console.log(`✅ Water connection ${connection._id} status set to active`);
       }

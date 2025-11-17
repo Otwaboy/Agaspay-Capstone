@@ -421,7 +421,7 @@ const updatePaymentStatus = async (req, res) => {
 const recordManualPayment = async (req, res) => {
   try {
     const user = req.user;
-    const { bill_id, amount_paid, payment_method, notes } = req.body;
+    const { bill_id, amount_paid, payment_method, notes, request_reconnection } = req.body;
 
     // ✅ Authorization: Only treasurer can record manual payments
     if (user.role !== 'treasurer') {
@@ -508,13 +508,24 @@ const recordManualPayment = async (req, res) => {
     billing.status = new_billing_status;
     await billing.save();
 
+    // ✅ Update connection status to for_reconnection if requested and disconnected
+    if (request_reconnection && billing.connection_id) {
+      const connection = await WaterConnection.findById(billing.connection_id._id);
+      if (connection && connection.connection_status === 'disconnected') {
+        connection.connection_status = 'for_reconnection';
+        await connection.save();
+        console.log(`✅ Water connection ${connection._id} status set to for_reconnection`);
+      }
+    }
+
     console.log('✅ Manual payment recorded:', {
       payment_id: payment._id,
       bill_id: billing._id,
       amount_paid: amount_paid,
       new_total_paid: newAmountPaid,
       remaining_balance: newBalance,
-      status: new_billing_status
+      status: new_billing_status,
+      reconnection_requested: request_reconnection || false
     });
 
     // ✅ Prepare response

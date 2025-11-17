@@ -60,26 +60,44 @@ export default function MaintenanceTasks() {
   
 
   // Transform backend data to match UI format
-const tasksData = assignmentsResponse?.assignments?.map(assignment => ({
-  id: assignment.task?.id,
-  assignmentId: assignment.id,
-  type: assignment.task?.type || 'N/A',
-  location: assignment.task?.location || 'Biking',
-  resident: assignment.personnel?.name || 'N/A',
-  connectionId: assignment.task?.connection_id?._id || assignment.task?.connection_id || 'N/A',
-  status: assignment.task?.task_status || 'Assigned',
-  priority: assignment.task?.urgency_lvl || 'Medium',
-  scheduledDate: assignment.task?.schedule_date
-    ? new Date(assignment.task.schedule_date).toLocaleDateString()
-    : 'N/A',
-  scheduledTime: assignment.task?.schedule_time || 'N/A',
-  assignedDate: assignment.assigned_at
-    ? new Date(assignment.assigned_at).toLocaleDateString()
-    : 'N/A',
-  description: `${assignment.task?.type || 'Task'} scheduled`,
-  personnelName: assignment.personnel?.name,
-  personnelContact: assignment.personnel?.contact_no,
-}));
+const tasksData = assignmentsResponse?.assignments?.map(assignment => {
+  const task = assignment.task;
+
+  // Determine task type display name
+  let taskType = 'N/A';
+  if (task?.task_type === 'disconnection') {
+    taskType = 'Water Disconnection';
+  } else if (task?.task_type === 'reconnection') {
+    taskType = 'Water Reconnection';
+  } else if (task?.task_type === 'meter_installation') {
+    taskType = 'Meter Installation';
+  } else if (task?.task_type === 'maintenance') {
+    taskType = 'Maintenance';
+  } else if (task?.type) {
+    taskType = task.type;
+  }
+
+  return {
+    id: task?.id,
+    assignmentId: assignment.id,
+    type: taskType,
+    location: task?.location || 'Biking',
+    resident: assignment.personnel?.name || 'N/A',
+    connectionId: task?.connection_id?._id || task?.connection_id || 'N/A',
+    status: task?.task_status || 'Assigned',
+    priority: task?.urgency_lvl || task?.priority || 'Medium',
+    scheduledDate: task?.schedule_date
+      ? new Date(task.schedule_date).toLocaleDateString()
+      : 'N/A',
+    scheduledTime: task?.schedule_time || 'N/A',
+    assignedDate: assignment.assigned_at
+      ? new Date(assignment.assigned_at).toLocaleDateString()
+      : 'N/A',
+    description: `${taskType} scheduled`,
+    personnelName: assignment.personnel?.name,
+    personnelContact: assignment.personnel?.contact_no,
+  };
+});
 
     const updateTaskMutation = useMutation({
         mutationFn: async ({ taskId, task_status, remarks }) => {

@@ -12,9 +12,9 @@ import {
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { 
-  AlertTriangle, 
-  Search, 
+import {
+  AlertTriangle,
+  Search,
   Download,
   Send,
   Loader2,
@@ -24,16 +24,15 @@ import {
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
 import apiClient from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function TreasurerOutstandingBalances() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sendingReminder, setSendingReminder] = useState(null);
   const [disconnectionModal, setDisconnectionModal] = useState(null); // <-- for modal
-  const { toast } = useToast();
 
-  const { data: balances, isLoading } = useQuery({
+  const { data: balances } = useQuery({
     queryKey: ['/api/v1/treasurer/outstanding-balances', filterStatus],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
@@ -47,17 +46,14 @@ export default function TreasurerOutstandingBalances() {
   const sendReminderMutation = useMutation({
     mutationFn: async (billingId) => apiClient.sendOverdueReminder(billingId),
     onSuccess: (data) => {
-      toast({
-        title: "SMS Reminder Sent",
+      toast.success("SMS Reminder Sent", {
         description: `Payment reminder sent successfully to ${data.data?.residentName}`,
       });
       setSendingReminder(null);
     },
     onError: (error) => {
-      toast({
-        title: "Failed to Send Reminder",
+      toast.error("Failed to Send Reminder", {
         description: error.message || "Unable to send SMS reminder. Please try again.",
-        variant: "destructive",
       });
       setSendingReminder(null);
     }
@@ -124,13 +120,11 @@ export default function TreasurerOutstandingBalances() {
 
   const handleSendReminder = (balance) => {
     if (!balance.contactNo || balance.contactNo === 'N/A') {
-      toast({
-        title: "No Contact Number",
+      toast.error("No Contact Number", {
         description: `${balance.residentName} does not have a contact number on file.`,
-        variant: "destructive",
       });
       return;
-    } 
+    }
 
     setSendingReminder(balance.id);
     sendReminderMutation.mutate(balance.id);
@@ -295,9 +289,9 @@ export default function TreasurerOutstandingBalances() {
                         const statusConfig = getStatusConfig(balance.status);
                         const isReminding = sendingReminder === balance.id;
                         const showDisconnection =
-                                                balance.monthsOverdue >= 3 //&&
-                                                // balance.connection_status !== "for_disconnection" &&
-                                                // balance.connection_status !== "disconnection";
+                                                balance.monthsOverdue >= 3 &&
+                                                balance.connection_status !== "for_disconnection" &&
+                                                balance.connection_status !== "disconnected";
 
                         return (
                           <tr key={balance.id}>
@@ -375,6 +369,7 @@ export default function TreasurerOutstandingBalances() {
               <Dialog 
                 open={!!disconnectionModal} 
                 onOpenChange={(open) => !open && setDisconnectionModal(null)}
+              
               >
                 <DialogContent data-testid="dialog-mark-disconnection">
                   <DialogHeader>
@@ -407,22 +402,19 @@ export default function TreasurerOutstandingBalances() {
                       try {
                         const response = await apiClient.markForDisconnection(disconnectionModal.connection_id); // pass connection_id
                         setDisconnectionModal(null);
-                        toast({
-                          title: "Marked for Disconnection",
+                        toast.success("Marked for Disconnection", {
                           description: response.msg || `${disconnectionModal.residentName} has been marked for disconnection.`,
                         });
                       } catch (error) {
-                        toast({
-                          title: "Error",
+                        toast.error("Error", {
                           description: error.message || "Failed to mark for disconnection",
-                          variant: "destructive",
                         });
                       }
                     }}
                     disabled={
-                      !disconnectionModal || 
-                      disconnectionModal.monthsOverdue < 3 || 
-                      disconnectionModal.connection_status === "for_disconnection" || 
+                      !disconnectionModal ||
+                      disconnectionModal.monthsOverdue < 3 ||
+                      disconnectionModal.connection_status === "for_disconnection" ||
                       disconnectionModal.connection_status === "disconnection"
                     }
                     data-testid="button-confirm-disconnection"

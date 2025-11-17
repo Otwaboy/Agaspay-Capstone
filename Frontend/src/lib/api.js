@@ -333,6 +333,14 @@ async getApprovalStats() {
     return await this.request('/api/v1/water-connection/inactive');
   }
 
+  async getConnectionsForDisconnection() {
+    return await this.request('/api/v1/water-connection/for-disconnection');
+  }
+
+  async getDisconnectedConnections() {
+    return await this.request('/api/v1/water-connection/disconnected');
+  }
+
   async getDelinquentAccounts() {
     return await this.request('/api/v1/connection-management/delinquent');
   }

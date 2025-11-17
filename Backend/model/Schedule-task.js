@@ -10,19 +10,40 @@ const ScheduleTaskSchema = new mongoose.Schema(
     report_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'IncidentReport',
-      required: false, // not all tasks come from reports 
-    }, 
-    schedule_date: { 
+      required: false, // not all tasks come from reports
+    },
+    resident_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Resident',
+      required: false, // for disconnection/reconnection tasks
+    },
+    title: {
+      type: String,
+      required: false, // Title for the task
+    },
+    task_type: {
+      type: String,
+      enum: ['incident', 'disconnection', 'reconnection', 'meter_installation', 'maintenance'],
+      default: 'incident',
+      required: false
+    },
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high', 'critical'],
+      default: 'medium',
+      required: false
+    },
+    schedule_date: {
       type: Date,
       required: [true, 'Please provide a schedule date'],
     },
     schedule_time: {
-      type: String, 
+      type: String,
       required: [true, 'Please provide a schedule time'],
     },
     schedule_type: {
       type: String,
-      enum: ['Meter Installation'], 
+      enum: ['Meter Installation'],
       default: 'Meter Installation',
       required: false
     },
@@ -50,8 +71,8 @@ const ScheduleTaskSchema = new mongoose.Schema(
       required: false, // Location for the task (e.g., resident's address)
     },
   },
-  { timestamps: true } 
-    
+  { timestamps: true }
+
 );
  
 module.exports = mongoose.model('ScheduleTask', ScheduleTaskSchema);

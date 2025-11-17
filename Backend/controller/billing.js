@@ -260,7 +260,7 @@ const getOverdueBilling = async (req, res) => {
     const currentDate = new Date();
 
     // Find all overdue billings
-    const overdueBillings = await Billing.find({
+    const overdueBillings = await Billing.find({ 
       $or: [
         { status: 'overdue' },
         { 
@@ -285,18 +285,19 @@ const getOverdueBilling = async (req, res) => {
         const resident = connection?.resident_id;
 
         if (!resident || !connection) return null;
-        // Fetch ALL unpaid bills for this connection
+        // Fetch ALL unpaid bills for this connection (including consolidated ones)
   const unpaidBills = await Billing.find({
             connection_id: connection._id,
-            status: 'unpaid'
+            status: { $in: ['unpaid', 'partial', 'overdue', 'consolidated'] }
           }).sort({ due_date: 1 }); // ascending, earliest first
 
-      // Earliest unpaid bill determines true overdue duration
-      const earliestUnpaidBill = unpaidBills[0];
+      // Count the number of unpaid bills as months overdue
+      // Each bill represents one billing cycle (one month)
+      const monthsOverdue = Math.max(1, unpaidBills.length);
+
+      // Get the earliest unpaid bill for due date reference
+      const earliestUnpaidBill = unpaidBills[0] || billing;
       const dueDate = new Date(earliestUnpaidBill.due_date);
-      
-        const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
-        const monthsOverdue = Math.max(1, monthsDiff);
 
         const lastPayment = await Payment.findOne({ 
           connection_id: connection._id,
@@ -404,10 +405,10 @@ const UpdateWaterConnectionStatus = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({ msg: "connection_id is required." });
     }
 
-    // ✅ Get all unpaid, overdue or partial bills sorted from oldest to newest
+    // ✅ Get all unpaid, overdue or partial bills (including consolidated) sorted from oldest to newest
     const unpaidBills = await Billing.find({
       connection_id,
-      status: { $in: ["unpaid", "partial", "overdue"] }
+      status: { $in: ["unpaid", "partial", "overdue", "consolidated"] }
     }).sort({ due_date: 1 });
 
     if (unpaidBills.length === 0) {
@@ -416,17 +417,9 @@ const UpdateWaterConnectionStatus = async (req, res) => {
       });
     }
 
-    // ✅ Determine consecutive overdue months
-    const currentDate = new Date();
-    let consecutiveMonths = 0;
-
-    unpaidBills.forEach(bill => {
-      const dueDate = new Date(bill.due_date);
-      const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
-      if (monthsDiff >= 1) {
-        consecutiveMonths++;
-      }
-    });
+    // ✅ Count the number of unpaid bills as consecutive months
+    // Each bill represents one billing cycle (one month)
+    const consecutiveMonths = unpaidBills.length;
 
     // ✅ If 3 or more consecutive months overdue → Mark for disconnection
     if (consecutiveMonths >= 3) {
