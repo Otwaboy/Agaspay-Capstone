@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   Droplets,
+  User,
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -21,6 +22,7 @@ const menuItems = [
   { icon: ClipboardList, label: "Reading History", href: "/meter-reader-dashboard/history", color: "text-purple-600" },
   { icon: MapPin, label: "Zone Management", href: "/meter-reader-dashboard/zones", color: "text-orange-600" },
   { icon: AlertTriangle, label: "Issue Reports", href: "/meter-reader-dashboard/issues", color: "text-red-600" },
+  { icon: User, label: "Profile", href: "/meter-reader-dashboard/profile", color: "text-blue-600" },
   { icon: Settings, label: "Settings", href: "/meter-reader-dashboard/settings", color: "text-gray-600" },
 ];
 

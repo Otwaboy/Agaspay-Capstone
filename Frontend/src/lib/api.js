@@ -309,6 +309,17 @@ async getApprovalStats() {
     });
   }
 
+  async getPersonnelProfile() {
+    return await this.request('/api/v1/personnel/me');
+  }
+
+  async updatePersonnelContact(updateData) {
+    return await this.request(`/api/v1/personnel/contacts-update`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData),
+    });
+  }
+
   // ======================================================
   // 💧 WATER CONNECTION (Secretary / Admin)
   // ======================================================
@@ -706,6 +717,39 @@ async getApprovalStats() {
 
     async rejectArchive(connectionId, reason) {
       return await this.request(`/api/v1/archive-request/reject/${connectionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
+      });
+    }
+
+    // ======================================================
+    // 📦 PERSONNEL ARCHIVE REQUEST
+    // ======================================================
+    async requestPersonnelArchive(data) {
+      return await this.request('/api/v1/personnel/archive-request', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
+
+    async getPersonnelArchiveStatus() {
+      return await this.request('/api/v1/personnel/archive-status');
+    }
+
+    async cancelPersonnelArchiveRequest() {
+      return await this.request('/api/v1/personnel/archive-request', {
+        method: 'DELETE',
+      });
+    }
+
+    async approvePersonnelArchive(personnelId) {
+      return await this.request(`/api/v1/personnel/${personnelId}/approve-archive`, {
+        method: 'PATCH',
+      });
+    }
+
+    async rejectPersonnelArchive(personnelId, reason) {
+      return await this.request(`/api/v1/personnel/${personnelId}/reject-archive`, {
         method: 'PATCH',
         body: JSON.stringify({ reason }),
       });

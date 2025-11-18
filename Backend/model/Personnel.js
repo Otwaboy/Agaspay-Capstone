@@ -56,13 +56,45 @@ const PersonnelSchema = new mongoose.Schema(
       if (this.role === 'meter_reader') {
         return ['1', '2', '3'].includes(val);
       }
-      return true; 
+      return true;
     },
     message: 'Assigned zone must be 1, 2, or 3 for meter readers'
   }
 },
-
-    created_at: { 
+    pending_email: {
+      type: String,
+      default: null
+    },
+    email_verification_code: {
+      type: String,
+      default: null
+    },
+    email_verification_expires: {
+      type: Date,
+      default: null
+    },
+    archive_status: {
+      type: String,
+      enum: ['pending_archive', 'archived', null],
+      default: null
+    },
+    archive_reason: {
+      type: String,
+      default: null
+    },
+    archive_requested_date: {
+      type: Date,
+      default: null
+    },
+    archive_approved_date: {
+      type: Date,
+      default: null
+    },
+    archive_rejection_reason: {
+      type: String,
+      default: null
+    },
+    created_at: {
       type: Date,
       default: Date.now
     }

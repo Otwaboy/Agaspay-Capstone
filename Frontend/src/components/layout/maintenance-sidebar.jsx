@@ -12,7 +12,9 @@ import {
   Wrench,
   AlertTriangle,
   LogOut,
-  Menu
+  Menu,
+  User,
+  Settings
 } from "lucide-react";
 
 const menuItems = [
@@ -21,7 +23,7 @@ const menuItems = [
     label: "Dashboard",
     href: "/maintenance-dashboard",
     color: "text-blue-600"
-  }, 
+  },
   {
     icon: Wrench,
     label: "My Tasks",
@@ -33,6 +35,18 @@ const menuItems = [
     label: "Incident Reports",
     href: "/maintenance-dashboard/incidents",
     color: "text-red-600"
+  },
+  {
+    icon: User,
+    label: "Profile",
+    href: "/maintenance-dashboard/profile",
+    color: "text-blue-600"
+  },
+  {
+    icon: Settings,
+    label: "Settings",
+    href: "/maintenance-dashboard/settings",
+    color: "text-gray-600"
   }
 ];
 

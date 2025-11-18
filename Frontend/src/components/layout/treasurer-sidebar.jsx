@@ -15,8 +15,9 @@ import {
   ChevronDown,
   ChevronRight,
   Menu,
-  CheckCircle2,  // ✅ Added for Approve Readings icon
-  Wallet  // ✅ Added for Record Payment icon
+  CheckCircle2,
+  Wallet,
+  User
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -71,6 +72,12 @@ const menuItems = [
     icon: AlertCircle,
     href: "/treasurer-dashboard/alerts",
     color: "text-red-600"
+  },
+  {
+    title: "Profile",
+    icon: User,
+    href: "/treasurer-dashboard/profile",
+    color: "text-blue-600"
   },
   {
     title: "Settings",

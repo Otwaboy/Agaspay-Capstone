@@ -26,6 +26,7 @@ import SecretaryDocuments from "./pages/secretary-documents";
 import SecretaryIncidentReports from "./pages/secretary-incident-reports";
 import SecretaryScheduleDisconnection from "./pages/secretary-schedule-disconnection";
 import SecretaryScheduleReconnection from "./pages/secretary-schedule-reconnection";
+import SecretaryProfile from "./pages/secretary-profile";
 import SecretarySettings from "./pages/secretary-settings";
 import SecretaryAssignments from "./pages/secretary-assignments";
 
@@ -36,6 +37,7 @@ import MeterReaderHistory from "./pages/meter-reader-history";
 import MeterReaderZones from "./pages/meter-reader-zones";
 import MeterReaderSchedule from "./pages/meter-reader-schedule";
 import MeterReaderIssues from "./pages/meter-reader-issues";
+import MeterReaderProfile from "./pages/meter-reader-profile";
 import MeterReaderSettings from "./pages/meter-reader-settings";
 
 //treasurer
@@ -55,6 +57,8 @@ import TreasurerCustomerAccounts from "./pages/treasurer-customer-accounts";
 import TreasurerFinancialAlerts from "./pages/treasurer-financial-alerts";
 import TreasurerApproveReadings from "./pages/treasurer-approve-readings";
 import TreasurerRecordPayment from "./pages/treasurer-record-payment";
+import TreasurerProfile from "./pages/treasurer-profile";
+import TreasurerSettings from "./pages/treasurer-settings";
 
 //residents
 import ResidentDashboard from "./pages/residentDashboard";
@@ -74,6 +78,8 @@ import ResidentReadingHistory from "./pages/resident-reading-history";
 import MaintenanceDashboard from "./pages/maintenance-dashboard";
 import MaintenanceIncidents from "./pages/maintenance-incidents";
 import MaintenanceTasks from "./pages/maintenance-tasks";
+import MaintenanceProfile from "./pages/maintenance-profile";
+import MaintenanceSettings from "./pages/maintenance-settings";
 
 
 
@@ -194,7 +200,14 @@ function App() {
                 </SecretaryRoute>
               )}
             </Route>
-             <Route path="/secretary-dashboard/settings">
+            <Route path="/secretary-dashboard/profile">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryProfile />
+                </SecretaryRoute>
+              )}
+            </Route>
+            <Route path="/secretary-dashboard/settings">
               {() => (
                 <SecretaryRoute>
                   <SecretarySettings />
@@ -318,6 +331,20 @@ function App() {
                 </TreasurerRoute>
               )}
             </Route>
+            <Route path="/treasurer-dashboard/profile">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerProfile />
+                </TreasurerRoute>
+              )}
+            </Route>
+            <Route path="/treasurer-dashboard/settings">
+              {() => (
+                <TreasurerRoute>
+                  <TreasurerSettings />
+                </TreasurerRoute>
+              )}
+            </Route>
 
             {/* Meter Reader */}
             <Route path="/meter-reader-dashboard">
@@ -359,6 +386,13 @@ function App() {
                 {() => (
                   <MeterReaderRoute>
                     <MeterReaderIssues />
+                  </MeterReaderRoute>
+                )}
+              </Route>
+            <Route path="/meter-reader-dashboard/profile">
+                {() => (
+                  <MeterReaderRoute>
+                    <MeterReaderProfile />
                   </MeterReaderRoute>
                 )}
               </Route>
@@ -464,7 +498,20 @@ function App() {
                 </MaintenanceRoute>
               )}
             </Route>
-            
+            <Route path="/maintenance-dashboard/profile">
+              {() => (
+                <MaintenanceRoute>
+                  <MaintenanceProfile />
+                </MaintenanceRoute>
+              )}
+            </Route>
+            <Route path="/maintenance-dashboard/settings">
+              {() => (
+                <MaintenanceRoute>
+                  <MaintenanceSettings />
+                </MaintenanceRoute>
+              )}
+            </Route>
 
             {/* Admin */}
             <Route path="/admin-dashboard/users">

@@ -7,14 +7,14 @@ import { Separator } from "../components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
-import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
-import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
+import TreasurerSidebar from "../components/layout/treasurer-sidebar";
+import TreasurerTopHeader from "../components/layout/treasurer-top-header";
 import { Settings as SettingsIcon, Bell, Mail, Lock, Eye, Shield, EyeOff, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 
-export default function MeterReaderSettings() {
+export default function TreasurerSettings() {
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -191,13 +191,13 @@ export default function MeterReaderSettings() {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      <MeterReaderSidebar />
+      <TreasurerSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
         <div className="absolute bottom-20 left-20 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
 
-        <MeterReaderTopHeader />
+        <TreasurerTopHeader />
 
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-4xl mx-auto">

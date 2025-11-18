@@ -19,6 +19,7 @@ import {
   Power,
   ChevronDown,
   ChevronRight,
+  User,
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -84,6 +85,12 @@ const secretaryMenuItems = [
     label: "Announcements",
     href: "/secretary-dashboard/announcements",
     color: "text-indigo-600"
+  },
+  {
+    icon: User,
+    label: "Profile",
+    href: "/secretary-dashboard/profile",
+    color: "text-blue-600"
   },
   {
     icon: Settings,

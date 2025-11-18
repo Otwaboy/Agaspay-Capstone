@@ -31,47 +31,75 @@ export default function AdminArchiveRequests() {
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [viewReasonModal, setViewReasonModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [activeTab, setActiveTab] = useState("residents"); // residents or personnel
   const queryClient = useQueryClient();
 
   // Fetch all water connections with archive requests
-  const { data: connections, isLoading } = useQuery({
+  const { data: connections, isLoading: isLoadingConnections } = useQuery({
     queryKey: ['archive-requests'],
     queryFn: () => apiClient.getAllWaterConnections()
   });
 
-  console.log('get all first the conenction', connections);
-  
+  // Fetch all personnel with archive requests
+  const { data: personnelData, isLoading: isLoadingPersonnel } = useQuery({
+    queryKey: ['personnel-archive-requests'],
+    queryFn: () => apiClient.getAllPersonnel()
+  });
 
-  // Filter only those with archive requests
-  const archiveRequests = (connections?.data || []).filter(
+  console.log('get all first the conenction', connections);
+  console.log('get all personnel', personnelData);
+
+  // Filter resident archive requests
+  const residentArchiveRequests = (connections?.data || []).filter(
     conn => conn.archive_status === 'pending_archive'
   );
 
-  console.log('list of archive request', archiveRequests);
-  
+  // Filter personnel archive requests
+  const personnelArchiveRequests = (personnelData?.personnel || []).filter(
+    person => person.archive_status === 'pending_archive'
+  );
+
+  console.log('list of resident archive request', residentArchiveRequests);
+  console.log('list of personnel archive request', personnelArchiveRequests);
+
+  // Determine which list to use based on active tab
+  const currentRequests = activeTab === "residents" ? residentArchiveRequests : personnelArchiveRequests;
 
   // Filter based on search
-  const filteredRequests = archiveRequests.filter(req => {
-    const residentName = `${req.resident_id?.first_name || ''} ${req.resident_id?.last_name || ''}`.toLowerCase();
-    const meterNo = req.meter_no?.toLowerCase() || '';
-    const accountNo = req.resident_id?.account_number?.toLowerCase() || '';
+  const filteredRequests = currentRequests.filter(req => {
+    if (activeTab === "residents") {
+      const residentName = `${req.resident_id?.first_name || ''} ${req.resident_id?.last_name || ''}`.toLowerCase();
+      const meterNo = req.meter_no?.toLowerCase() || '';
+      const accountNo = req.resident_id?.account_number?.toLowerCase() || '';
 
-    return residentName.includes(searchTerm.toLowerCase()) ||
-           meterNo.includes(searchTerm.toLowerCase()) ||
-           accountNo.includes(searchTerm.toLowerCase());
+      return residentName.includes(searchTerm.toLowerCase()) ||
+             meterNo.includes(searchTerm.toLowerCase()) ||
+             accountNo.includes(searchTerm.toLowerCase());
+    } else {
+      // Personnel search
+      const personnelName = `${req.first_name || ''} ${req.last_name || ''}`.toLowerCase();
+      const email = req.email?.toLowerCase() || '';
+      const role = req.role?.toLowerCase() || '';
+
+      return personnelName.includes(searchTerm.toLowerCase()) ||
+             email.includes(searchTerm.toLowerCase()) ||
+             role.includes(searchTerm.toLowerCase());
+    }
   });
 
   // Approve archive mutation
   const approveArchiveMutation = useMutation({
-    mutationFn: async (connectionId) => {
-      // Update archive status to archived
-      return await apiClient.approveArchive(connectionId, {
-        
-      }); 
+    mutationFn: async ({ id, type }) => {
+      if (type === "residents") {
+        return await apiClient.approveArchive(id);
+      } else {
+        return await apiClient.approvePersonnelArchive(id);
+      }
     },
     onSuccess: () => {
       toast.success("Archive request approved successfully!");
       queryClient.invalidateQueries(['archive-requests']);
+      queryClient.invalidateQueries(['personnel-archive-requests']);
       setApprovalModalOpen(false);
       setSelectedRequest(null);
     },
@@ -82,13 +110,17 @@ export default function AdminArchiveRequests() {
 
   // Reject archive mutation
   const rejectArchiveMutation = useMutation({
-    mutationFn: async ({ connectionId, reason }) => {
-      // Use the reject endpoint
-      return await apiClient.rejectArchive(connectionId, reason);
+    mutationFn: async ({ id, type, reason }) => {
+      if (type === "residents") {
+        return await apiClient.rejectArchive(id, reason);
+      } else {
+        return await apiClient.rejectPersonnelArchive(id, reason);
+      }
     },
     onSuccess: () => {
       toast.success("Archive request rejected");
       queryClient.invalidateQueries(['archive-requests']);
+      queryClient.invalidateQueries(['personnel-archive-requests']);
       setRejectionModalOpen(false);
       setSelectedRequest(null);
       setRejectionReason("");
@@ -116,19 +148,21 @@ export default function AdminArchiveRequests() {
   const confirmApproval = () => {
     if (selectedRequest) {
       console.log('Selected request for approval:', selectedRequest);
-      console.log('Connection ID:', selectedRequest._id);
-      console.log('Water Connection ID:', selectedRequest.water_connection_id);
 
-      // Use water_connection_id if _id is not available
-      const connectionId = selectedRequest.connection_id || selectedRequest.water_connection_id;
+      let requestId;
+      if (activeTab === "residents") {
+        requestId = selectedRequest.connection_id || selectedRequest.water_connection_id || selectedRequest._id;
+      } else {
+        requestId = selectedRequest._id;
+      }
 
-      if (!connectionId) {
-        toast.error("Cannot find connection ID");
+      if (!requestId) {
+        toast.error("Cannot find request ID");
         console.error("Selected request object:", selectedRequest);
         return;
       }
 
-      approveArchiveMutation.mutate(connectionId);
+      approveArchiveMutation.mutate({ id: requestId, type: activeTab });
     }
   };
 
@@ -139,17 +173,22 @@ export default function AdminArchiveRequests() {
     }
 
     if (selectedRequest) {
-      // Use water_connection_id if _id is not available
-      const connectionId = selectedRequest._id || selectedRequest.water_connection_id;
+      let requestId;
+      if (activeTab === "residents") {
+        requestId = selectedRequest._id || selectedRequest.water_connection_id;
+      } else {
+        requestId = selectedRequest._id;
+      }
 
-      if (!connectionId) {
-        toast.error("Cannot find connection ID");
+      if (!requestId) {
+        toast.error("Cannot find request ID");
         console.error("Selected request object:", selectedRequest);
         return;
       }
 
       rejectArchiveMutation.mutate({
-        connectionId: connectionId,
+        id: requestId,
+        type: activeTab,
         reason: rejectionReason.trim()
       });
     }
@@ -166,13 +205,29 @@ export default function AdminArchiveRequests() {
 
   const stats = [
     {
-      title: "Pending Archive Requests",
-      value: archiveRequests.length,
+      title: "Pending Resident Archives",
+      value: residentArchiveRequests.length,
       icon: Clock,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Pending Personnel Archives",
+      value: personnelArchiveRequests.length,
+      icon: Clock,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
+    },
+    {
+      title: "Total Pending",
+      value: residentArchiveRequests.length + personnelArchiveRequests.length,
+      icon: Archive,
       color: "text-orange-600",
       bgColor: "bg-orange-50"
     }
   ];
+
+  const isLoading = isLoadingConnections || isLoadingPersonnel;
 
   if (isLoading) {
     return (
@@ -215,7 +270,7 @@ export default function AdminArchiveRequests() {
                 Archive Requests
               </h1>
               <p className="text-gray-600 mt-2">
-                Review and manage account archive requests from residents
+                Review and manage account archive requests from residents and personnel
               </p>
             </div>
 
@@ -244,16 +299,44 @@ export default function AdminArchiveRequests() {
             {/* Requests Table */}
             <Card>
               <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <CardTitle>Pending Archive Requests</CardTitle>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      placeholder="Search by name, meter no, or account..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 w-full md:w-80"
-                    />
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <CardTitle>Pending Archive Requests</CardTitle>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder={activeTab === "residents" ? "Search by name, meter no, or account..." : "Search by name, email, or role..."}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 w-full md:w-80"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tab Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={activeTab === "residents" ? "default" : "outline"}
+                      onClick={() => {
+                        setActiveTab("residents");
+                        setSearchTerm("");
+                      }}
+                      className={activeTab === "residents" ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Residents ({residentArchiveRequests.length})
+                    </Button>
+                    <Button
+                      variant={activeTab === "personnel" ? "default" : "outline"}
+                      onClick={() => {
+                        setActiveTab("personnel");
+                        setSearchTerm("");
+                      }}
+                      className={activeTab === "personnel" ? "bg-purple-600 hover:bg-purple-700" : ""}
+                    >
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      Personnel ({personnelArchiveRequests.length})
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
