@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2, Save } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
@@ -23,7 +23,6 @@ export default function MeterReaderReadings() {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [savedPeriod, setSavedPeriod] = useState(null);
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Load saved reading period from localStorage on mount
@@ -121,7 +120,7 @@ export default function MeterReaderReadings() {
   const recordReadingMutation = useMutation({
     mutationFn: async (readingData) => apiClient.inputReading(readingData),
     onSuccess: () => {
-      toast({ title: "Success", description: "Meter reading recorded successfully" });
+      toast.success("Success", { description: "" });
       // ✅ Keep saved period when resetting form
       const currentPeriod = savedPeriod || { start: "", end: "" };
       setFormData({
@@ -133,7 +132,7 @@ export default function MeterReaderReadings() {
       queryClient.invalidateQueries({ queryKey: ["connections"] });
     },
     onError: (error) => {
-      toast({ title: "Error", description: error.message || "Failed to record meter reading", variant: "destructive" });
+      toast.error("Error", { description: error.message || "Failed to record meter reading" });
     }
   });
 
@@ -147,11 +146,11 @@ export default function MeterReaderReadings() {
       return apiClient.bulkSubmitReadings(readingIds);
     },
     onSuccess: (data) => {
-      toast({ title: "Success", description: data.message || "All readings submitted successfully" });
+      toast.success("Success", { description: "" });
       queryClient.invalidateQueries({ queryKey: ["connections"] });
     },
     onError: (error) => {
-      toast({ title: "Error", description: error.message || "Failed to submit readings", variant: "destructive" });
+      toast.error("Error", { description: error.message || "Failed to submit readings" });
     }
   });
 
@@ -162,11 +161,11 @@ export default function MeterReaderReadings() {
         return apiClient.updateReadings(reading_id, data);
       },
       onSuccess: (response) => {
-        toast({ title: "Success", description: response.message || "Reading updated successfully" });
+        toast.success("Success", { description: "" });
         queryClient.invalidateQueries({ queryKey: ["connections"] });
       },
       onError: (error) => {
-        toast({ title: "Error", description: error.message || "Failed to update reading", variant: "destructive" });
+        toast.error("Error", { description: error.message || "Failed to update reading" });
       }
     });
   // ------------------ HANDLERS ------------------
@@ -182,11 +181,7 @@ export default function MeterReaderReadings() {
   // ✅ Save reading period to localStorage
   const handleSavePeriod = () => {
     if (!formData.inclusive_date.start || !formData.inclusive_date.end) {
-      return toast({
-        title: "Validation Error",
-        description: "Please enter both start and end dates before saving",
-        variant: "destructive"
-      });
+      return toast.error("Validation Error", { description: "Please enter both start and end dates before saving" });
     }
 
     const period = {
@@ -197,46 +192,29 @@ export default function MeterReaderReadings() {
     localStorage.setItem('meterReadingPeriod', JSON.stringify(period));
     setSavedPeriod(period);
 
-    toast({
-      title: "Success",
-      description: "Reading period saved! It will be used for all future readings."
-    });
+    toast.success("Success", { description: "Reading period saved! It will be used for all future readings." });
   };
 
  const handleSubmit = (e) => {
   e.preventDefault();
 
   if (!formData.connection_id) {
-    return toast({
-      title: "Validation Error",
-      description: "Please select a water connection",
-      variant: "destructive"
-    });
+    return toast.error("Validation Error", { description: "Please select a water connection" });
   }
 
   if (!formData.present_reading) {
-    return toast({
-      title: "Validation Error",
-      description: "Please enter the present reading",
-      variant: "destructive"
-    });
+    return toast.error("Validation Error", { description: "Please enter the present reading" });
   }
 
 
   if (!isEditing && presentReading < previousReading) {
-    return toast({
-      title: "Validation Error",
-      description: `Present reading (${presentReading}) cannot be less than previous reading (${previousReading})`,
-      variant: "destructive"
+    return toast.error("Validation Error", {
+      description: `Present reading cannot be less than previous reading (${previousReading})`
     });
   }
 
   if (!formData.inclusive_date.start || !formData.inclusive_date.end) {
-    return toast({
-      title: "Validation Error",
-      description: "Please enter both start and end dates",
-      variant: "destructive"
-    }); 
+    return toast.error("Validation Error", { description: "Please enter both start and end dates" }); 
   }
 
   const payload = {

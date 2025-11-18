@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -18,7 +18,7 @@ import {
   Receipt,
   CheckCircle,
   Clock,
-  AlertCircle, 
+  AlertCircle,
   XCircle,
   Download,
   Search,
@@ -26,10 +26,13 @@ import {
   CreditCard,
   Filter,
   FileText,
-  ArrowLeft
+  ArrowLeft,
+  Droplets
 } from "lucide-react";
 import apiClient from "../lib/api";
 import { Link } from "wouter";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export default function ResidentPaymentHistory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -145,44 +148,111 @@ export default function ResidentPaymentHistory() {
 
   const handleDownloadReceipt = async (payment) => {
     try {
-      const receiptContent = `
-AGASPAY WATER SERVICES
-Barangay Biking, Dauis, Bohol
-================================
+      // Create temporary receipt HTML element
+      const receiptDiv = document.createElement('div');
+      receiptDiv.style.position = 'absolute';
+      receiptDiv.style.left = '-9999px';
+      receiptDiv.style.width = '800px';
+      receiptDiv.style.padding = '60px';
+      receiptDiv.style.backgroundColor = 'white';
+      receiptDiv.style.fontFamily = 'Arial, sans-serif';
 
-PAYMENT RECEIPT
-Reference #: ${payment.payment_id}
-Date: ${payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric' 
-      }) : 'N/A'}
 
-================================
-Payment Details:
---------------------------------
-Type: ${payment.payment_type || 'Water Bill Payment'}
-Amount: ₱${payment.amount_paid?.toFixed(2) || '0.00'}
-Method: ${payment.payment_method || 'N/A'}
-Status: ${payment.payment_status || 'N/A'}
-Billing Period: ${payment.billing_period || 'N/A'}
+      // format of the temporary receipt 
+      const receiptDate = payment.payment_date
+        ? new Date(payment.payment_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        : 'N/A';
 
-================================
-Thank you for your payment!
+      const isOfficial = payment.official_receipt_status === 'official_receipt';
 
-This is a computer-generated receipt.
-No signature required.
-      `.trim();
+      receiptDiv.innerHTML = `
+        <div style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); padding: 40px; border-radius: 16px 16px 0 0; text-align: center; color: white;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 16px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M7 16.5c0-1 .5-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z" />
+              <path d="M17 16.5c0-1 .5-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z" />
+              <path d="M2 2h20v20H2z" />
+            </svg>
+            <div>
+              <h1 style="margin: 0; font-size: 32px; font-weight: bold;">AGASPAY</h1>
+              <p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.9;">Water Services</p>
+            </div>
+          </div>
+          <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Barangay Biking, Dauis, Bohol</p>
+        </div>
 
-      const blob = new Blob([receiptContent], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `receipt-${payment.payment_id}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+        <div style="padding: 40px; border: 2px solid #e5e7eb; border-top: none; border-radius: 0 0 16px 16px;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <div style="display: inline-block; background: ${isOfficial ? '#9333ea' : '#6b7280'}; color: white; padding: 8px 24px; border-radius: 24px; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+              ${isOfficial ? '✓ OFFICIAL RECEIPT' : 'TEMPORARY RECEIPT'}
+            </div>
+            <h2 style="margin: 16px 0 8px 0; font-size: 24px; font-weight: bold; color: #111827;">Payment Receipt</h2>
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">Reference #: <span style="color: #0891b2; font-weight: 600;">${payment.payment_id}</span></p>
+          </div>
+
+          <div style="background: #f9fafb; padding: 24px; border-radius: 12px; margin-bottom: 32px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 12px; text-transform: uppercase;">Payment Date</p>
+                <p style="margin: 0; color: #111827; font-weight: 600; font-size: 16px;">${receiptDate}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 12px; text-transform: uppercase;">Payment Method</p>
+                <p style="margin: 0; color: #111827; font-weight: 600; font-size: 16px; text-transform: capitalize;">${payment.payment_method || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top: 2px dashed #e5e7eb; padding-top: 24px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">Payment Type:</p>
+              <p style="margin: 0; color: #111827; font-weight: 600; font-size: 14px; text-transform: capitalize;">${payment.payment_type || 'Water Bill'} Payment</p>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">Status:</p>
+              <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${payment.payment_status || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); padding: 24px; border-radius: 12px; text-align: center; color: white; margin-bottom: 32px;">
+            <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">Amount Paid</p>
+            <p style="margin: 0; font-size: 42px; font-weight: bold;">₱${payment.amount_paid?.toFixed(2) || '0.00'}</p>
+          </div>
+
+          <div style="border-top: 2px solid #e5e7eb; padding-top: 24px; text-align: center;">
+            <p style="margin: 0 0 8px 0; color: #059669; font-weight: 600; font-size: 16px;">✓ Payment Confirmed</p>
+            <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 12px;">Thank you for your payment!</p>
+            <p style="margin: 0; color: #9ca3af; font-size: 11px; font-style: italic;">This is a computer-generated receipt. No signature required.</p>
+            <p style="margin: 8px 0 0 0; color: #9ca3af; font-size: 11px;">Generated on ${new Date().toLocaleString('en-US')}</p>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(receiptDiv);
+
+      // Convert to canvas and then to PDF
+      const canvas = await html2canvas(receiptDiv, {
+        scale: 2,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      document.body.removeChild(receiptDiv);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.save(`AgasPay-Receipt-${payment.payment_id}.pdf`);
+
     } catch (error) {
       console.error('Error downloading receipt:', error);
     }
@@ -372,15 +442,21 @@ No signature required.
                                 <PaymentIcon className="h-6 w-6 text-blue-600" />
                               </div>
                               <div className="flex-1">
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                                   <p className="font-semibold text-gray-900">
-                                    {payment.payment_type 
+                                    {payment.payment_type
                                       ? `${payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)} Payment`
                                       : 'Water Bill Payment'}
                                   </p>
                                   <Badge className={statusConfig.className}>
                                     <StatusIcon className="h-3 w-3 mr-1" />
                                     {statusConfig.label}
+                                  </Badge>
+                                  <Badge className={payment.official_receipt_status === 'official_receipt'
+                                    ? 'bg-purple-100 text-purple-800 hover:bg-purple-100 hover:text-purple-800'
+                                    : 'bg-gray-100 text-gray-800 hover:bg-gray-100 hover:text-gray-800'}>
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    {payment.official_receipt_status === 'official_receipt' ? 'Official' : 'Temporary'}
                                   </Badge>
                                 </div>
                                 <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
@@ -415,19 +491,21 @@ No signature required.
                                       month: 'short',
                                       day: 'numeric'
                                     }) : 'N/A'}
-                                  </span> 
+                                  </span>
                                 </p>
                               </div>
-                              
-                              {(payment.payment_status?.toLowerCase() === 'confirmed' || 
-                                payment.payment_status?.toLowerCase() === 'paid') && (
+
+                              {/* Only show download button for temporary receipts */}
+                              {(payment.payment_status?.toLowerCase() === 'confirmed' ||
+                                payment.payment_status?.toLowerCase() === 'paid') &&
+                                payment.official_receipt_status === 'temporary_receipt' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleDownloadReceipt(payment)}
                                 >
                                   <Download className="h-4 w-4 mr-2" />
-                                  Receipt
+                                  Temporary Receipt
                                 </Button>
                               )}
                             </div>

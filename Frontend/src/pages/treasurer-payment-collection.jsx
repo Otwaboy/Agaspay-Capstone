@@ -36,15 +36,13 @@ import {
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
 import apiClient from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function TreasurerPaymentCollection() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingPayment, setEditingPayment] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { toast } = useToast();
- 
   const { data: collections, isLoading, refetch } = useQuery({
     queryKey: ['/api/v1/treasurer/collections', filterStatus],
     staleTime: 2 * 60 * 1000,
@@ -148,19 +146,12 @@ export default function TreasurerPaymentCollection() {
     try {
       await apiClient.updatePaymentStatus(editingPayment.id);
       
-      toast({
-        title: "Status Updated",
-        description: "Payment status has been successfully confirmed.",
-      });
+      toast.success("Status Updated", { description: "Payment status has been successfully confirmed." });
       
       await refetch();
       setEditingPayment(null);
     } catch (error) {
-      toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update payment status. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Update Failed", { description: error.message || "Failed to update payment status. Please try again." });
     } finally {
       setIsUpdating(false);
     }

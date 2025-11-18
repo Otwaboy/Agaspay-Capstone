@@ -10,12 +10,11 @@ import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
 import { User, Mail, Phone, Droplets, Edit, Save, X } from "lucide-react";
 import { useAuth } from "../hooks/use-auth";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import apiClient from "../lib/api";
 
 export default function ResidentProfile() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
 
@@ -46,23 +45,25 @@ export default function ResidentProfile() {
 
   const handleSendVerification = async () => {
     if (!formData.email || formData.email === connectionData?.email) {
-      toast({ title: "Invalid Email", description: "Enter a new email to verify", variant: "destructive" });
+      toast.error("Invalid Email", { description: "Enter a new email to verify" });
       return;
     }
 
     try {
       await apiClient.updateUserContact({ email: formData.email });
       setVerificationSent(true);
-      toast({
-        title: "Verification Sent",
-        description: "Check your email for the verification code",
-      });
+      toast.success("Verification Sent", { description: "Check your email for the verification code" });
     } catch (error) {
-      toast({
-        title: "Failed to Send Verification",
-        description: error?.response?.data?.message || "Something went wrong",
-        variant: "destructive",
-      });
+      const errorMessage = error?.response?.data?.message || error?.message || "Something went wrong";
+
+      // Check for duplicate email error
+      if (errorMessage.toLowerCase().includes('duplicate') || errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already in use')) {
+        toast.error("Email Already in Use", {
+          description: "This email is already registered. Please use a different email address."
+        });
+      } else {
+        toast.error("Failed to Send Verification", { description: errorMessage });
+      }
     }
   };
 
@@ -74,21 +75,27 @@ export default function ResidentProfile() {
         verification_code: verificationSent ? formData.verification_code : undefined
       });
 
-      toast({
-        title: "Profile Updated",
-        description: "Your contact information has been updated successfully",
-      });
+      toast.success("Profile Updated", { description: "Your contact information has been updated successfully" });
 
       setIsEditing(false);
       setVerificationSent(false);
       setFormData({ ...formData, verification_code: "" });
 
     } catch (error) {
-      toast({
-        title: "Update Failed",
-        description: error?.response?.data?.message || "Something went wrong.",
-        variant: "destructive",
-      });
+      const errorMessage = error?.response?.data?.message || error?.message || "Something went wrong";
+
+      // Check for duplicate email error
+      if (errorMessage.toLowerCase().includes('duplicate') || errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already in use')) {
+        toast.error("Email Already in Use", {
+          description: "This email is already registered. Please use a different email address."
+        });
+      } else if (errorMessage.toLowerCase().includes('verification') || errorMessage.toLowerCase().includes('code')) {
+        toast.error("Verification Failed", {
+          description: "Invalid or expired verification code. Please request a new code."
+        });
+      } else {
+        toast.error("Update Failed", { description: errorMessage });
+      }
     }
   };
 

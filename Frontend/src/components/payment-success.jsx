@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { CheckCircle, AlertTriangle, Clock, Loader2 } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function PaymentSuccess() {
   const [, setLocation] = useLocation();
@@ -11,8 +11,6 @@ export default function PaymentSuccess() {
   const [paymentDetails, setPaymentDetails] = useState(null);
   const [attempts, setAttempts] = useState(0);
   const [verificationDetails, setVerificationDetails] = useState(null);
-  const { toast } = useToast();
-
   const maxAttempts = 15; // Try for 45 seconds (15 attempts x 3 seconds)
 
   // 🔹 Use your deployed backend URL
@@ -32,11 +30,7 @@ export default function PaymentSuccess() {
 
     if (status === "failed") {
       setPaymentStatus("failed");
-      toast({
-        title: "Payment Failed",
-        description: "Your payment could not be processed. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Payment Failed", { description: "Your payment could not be processed. Please try again." });
       return;
     }
 
@@ -71,11 +65,7 @@ export default function PaymentSuccess() {
         setVerificationDetails(result.payment_details);
         localStorage.removeItem("pending_payment");
 
-        toast({
-          title: "Payment Successful",
-          description: "Your water bill payment has been processed successfully",
-          variant: "default",
-        });
+        toast.success("Payment Successful", { description: "Your water bill payment has been processed successfully" });
       } else if (result.status === "succeeded" || result.status === "pending") {
         if (attemptNumber < maxAttempts) {
           setPaymentStatus("processing");
@@ -86,20 +76,11 @@ export default function PaymentSuccess() {
           }, 3000);
         } else {
           setPaymentStatus("processing");
-          toast({
-            title: "Payment Processing",
-            description:
-              "Your payment is being processed. Please check your account in a few minutes.",
-            variant: "default",
-          });
+          toast.success("Payment Processing", { description: "Your payment is being processed. Please check your account in a few minutes." });
         }
       } else {
         setPaymentStatus("failed");
-        toast({
-          title: "Payment Failed",
-          description: "Your payment could not be processed. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Payment Failed", { description: "Your payment could not be processed. Please try again." });
       }
     } catch (error) {
       console.error("❌ Error verifying payment:", error);
@@ -111,11 +92,7 @@ export default function PaymentSuccess() {
         }, 3000);
       } else {
         setPaymentStatus("failed");
-        toast({
-          title: "Verification Failed",
-          description: "Unable to verify payment. Please contact support.",
-          variant: "destructive",
-        });
+        toast.error("Verification Failed", { description: "Unable to verify payment. Please contact support." });
       }
     }
   };

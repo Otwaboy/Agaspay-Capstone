@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Badge } from "../components/ui/badge";
 import { Checkbox } from "../components/ui/checkbox";
 import { Skeleton } from "../components/ui/skeleton";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -64,9 +64,6 @@ export default function TreasurerGenerateBills() {
 
   
   //handling error notification
-  const { toast } = useToast();
-
-
   // useState para sa mga  API data
   const [readingsResponse, setReadingsResponse] = useState(null);
   const [existingBills, setExistingBills] = useState(null);
@@ -187,10 +184,7 @@ export default function TreasurerGenerateBills() {
       setIsGeneratingBill(true);
       await apiClient.createBilling(billData);
       
-      toast({
-        title: "Success",
-        description: "Bill generated successfully",
-      });
+      toast.success("Success", { description: "Bill generated successfully" });
       
       // Clear form
       setFormData({
@@ -209,11 +203,7 @@ export default function TreasurerGenerateBills() {
       fetchExistingBills();
 
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate bill",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to generate bill" });
     } finally {
       setIsGeneratingBill(false);
     }
@@ -272,10 +262,7 @@ export default function TreasurerGenerateBills() {
       localStorage.removeItem('meterReadingPeriod');
       console.log('✅ Saved reading period cleared for next billing cycle');
 
-      toast({
-        title: "Bulk Generation Complete",
-        description: `${successCount} bills generated successfully. ${failCount > 0 ? `${failCount} failed.` : ''} Reading period reset for next cycle.`,
-      });
+      toast.success("Bulk Generation Complete", { description: "" });
 
       setSelectedConnections([]);
       // Refresh data
@@ -285,11 +272,7 @@ export default function TreasurerGenerateBills() {
 
        console.error("🔥 Error in bulk generation:", error);
        
-      toast({
-        title: "Error",
-        description: "Failed to generate bulk bills",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to generate bulk bills" });
     } finally {
       setIsGeneratingBulkBills(false);
     }
@@ -334,20 +317,12 @@ export default function TreasurerGenerateBills() {
     e.preventDefault();
     
     if (!formData.connection_id) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a water connection",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Please select a water connection" });
       return;
     }
 
     if (!formData.due_date) {
-      toast({
-        title: "Validation Error",
-        description: "Please set a due date",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Please set a due date" });
       return;
     }
 
@@ -366,20 +341,12 @@ export default function TreasurerGenerateBills() {
   // can generate all and select bill 
   const handleBulkBillSubmit = async () => {
     if (selectedConnections.length === 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please select at least one connection",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Please select at least one connection" });
       return;
     }
 
     if (!formData.due_date) {
-      toast({
-        title: "Validation Error",
-        description: "Please set a due date",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Please set a due date" });
       return;
     }
 
@@ -415,11 +382,7 @@ export default function TreasurerGenerateBills() {
   // ✅ Handle rate update
   const handleUpdateRate = async () => {
     if (!newRateAmount || parseFloat(newRateAmount) <= 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter a valid rate amount",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Please enter a valid rate amount" });
       return;
     }
 
@@ -433,10 +396,7 @@ export default function TreasurerGenerateBills() {
         rate_status: "active"
       });
 
-      toast({
-        title: "Success",
-        description: `Rate updated to ₱${newRateAmount} per m³`,
-      });
+      toast.success("Success", { description: "" });
 
       // Update local state
       setFormData(prev => ({
@@ -451,11 +411,7 @@ export default function TreasurerGenerateBills() {
       // Refresh rate data
       fetchConnections();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update rate",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to update rate" });
     } finally {
       setIsUpdatingRate(false);
     }

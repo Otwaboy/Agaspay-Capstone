@@ -11,7 +11,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
 import apiClient from "../../lib/api";
 
 export default function EditResidentModal({ isOpen, onClose, resident }) {
@@ -26,7 +26,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
     connectionStatus: ""
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   // Populate form when resident data changes
   useEffect(() => {
@@ -79,19 +78,15 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
       // Call backend API to update resident
       await apiClient.updateResidentAccount(resident.id, updateData);
 
-      toast({
-        title: "Resident Updated Successfully",
-        description: `${formData.firstName} ${formData.lastName}'s information has been updated`,
-        variant: "default"
+      toast.success("Resident Updated Successfully", {
+        description: `${formData.firstName} ${formData.lastName}'s information has been updated`
       });
-      
+
       onClose();
 
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update resident. Please try again.",
-        variant: "destructive"
+      toast.error("Error", {
+        description: error.message || "Failed to update resident. Please try again."
       });
     } finally {
       setIsLoading(false);

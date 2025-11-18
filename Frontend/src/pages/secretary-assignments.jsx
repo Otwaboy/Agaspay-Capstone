@@ -43,13 +43,12 @@ import {
   Calendar,
   Wrench
 } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import { apiClient } from "../lib/api";
 
 export default function SecretaryAssignments() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -98,11 +97,7 @@ export default function SecretaryAssignments() {
       setMaintenancePersonnel(personnelResponse.personnel || []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load data. Please refresh the page.",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load data. Please refresh the page." });
     } finally {
       setLoading(false);
     }
@@ -176,11 +171,7 @@ export default function SecretaryAssignments() {
       setMaintenancePersonnel(personnelResponse.personnel || []);
     } catch (error) {
       console.error('Error fetching personnel availability:', error);
-      toast({
-        title: "Warning",
-        description: "Could not check personnel availability. Showing all personnel.",
-        variant: "default",
-      });
+      toast.success("Warning", { description: "Could not check personnel availability. Showing all personnel." });
     }
     
     setAssignModalOpen(true);
@@ -193,11 +184,7 @@ export default function SecretaryAssignments() {
 
   const handleSubmitAssignment = async () => {
     if (!selectedPersonnel) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a maintenance personnel",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Please select a maintenance personnel" });
       return;
     }
 
@@ -208,20 +195,13 @@ export default function SecretaryAssignments() {
         assigned_to: selectedPersonnel,
       });
 
-      toast({
-        title: "Success",
-        description: "Task assigned successfully",
-      });
+      toast.success("Success", { description: "Task assigned successfully" });
 
       setAssignModalOpen(false);
       await fetchAllData();
     } catch (error) {
       console.error('Assignment error:', error);
-      toast({
-        title: "Assignment Failed",
-        description: error.message || "Failed to assign task. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Assignment Failed", { description: error.message || "Failed to assign task. Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -238,19 +218,12 @@ export default function SecretaryAssignments() {
         assigned_to: newPersonnel,
       });
 
-      toast({
-        title: "Success",
-        description: "Task reassigned successfully",
-      });
+      toast.success("Success", { description: "Task reassigned successfully" });
 
       await fetchAllData();
     } catch (error) {
       console.error('Reassignment error:', error);
-      toast({
-        title: "Reassignment Failed",
-        description: error.message || "Failed to reassign task.",
-        variant: "destructive",
-      });
+      toast.error("Reassignment Failed", { description: error.message || "Failed to reassign task." });
     }
   };
 
@@ -260,19 +233,12 @@ export default function SecretaryAssignments() {
     try {
       await apiClient.deleteAssignment(task.assignmentId);
 
-      toast({
-        title: "Success",
-        description: "Task unassigned successfully",
-      });
+      toast.success("Success", { description: "Task unassigned successfully" });
 
       await fetchAllData();
     } catch (error) {
       console.error('Unassignment error:', error);
-      toast({
-        title: "Unassignment Failed",
-        description: error.message || "Failed to unassign task.",
-        variant: "destructive",
-      });
+      toast.error("Unassignment Failed", { description: error.message || "Failed to unassign task." });
     }
   };
 
@@ -287,11 +253,7 @@ export default function SecretaryAssignments() {
 
   const checkAvailability = async () => {
     if (!rescheduleDate || !rescheduleTime) {
-      toast({
-        title: "Missing Information",
-        description: "Please select both date and time to check availability",
-        variant: "destructive",
-      });
+      toast.error("Missing Information", { description: "Please select both date and time to check availability" });
       return;
     }
 
@@ -301,11 +263,7 @@ export default function SecretaryAssignments() {
       setAvailabilityData(response.personnel || []);
     } catch (error) {
       console.error('Availability check error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to check personnel availability",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to check personnel availability" });
     } finally {
       setLoadingAvailability(false);
     }
@@ -313,11 +271,7 @@ export default function SecretaryAssignments() {
 
   const handleConfirmReschedule = async () => {
     if (!rescheduleDate || !rescheduleTime || !reschedulePersonnel) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill all required fields",
-        variant: "destructive",
-      });
+      toast.error("Missing Information", { description: "Please fill all required fields" });
       return;
     }
 
@@ -330,20 +284,13 @@ export default function SecretaryAssignments() {
         reschedulePersonnel
       );
 
-      toast({
-        title: "Success!",
-        description: "Task rescheduled successfully",
-      });
+      toast.success("Success!", { description: "Task rescheduled successfully" });
 
       setRescheduleModalOpen(false);
       await fetchAllData();
     } catch (error) {
       console.error('Reschedule error:', error);
-      toast({
-        title: "Reschedule Failed",
-        description: error.response?.data?.message || error.message || "Failed to reschedule task",
-        variant: "destructive",
-      });
+      toast.error("Reschedule Failed", { description: error.response?.data?.message || error.message || "Failed to reschedule task" });
     } finally {
       setSubmitting(false);
     }

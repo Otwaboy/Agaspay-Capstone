@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { CreditCard, Download, Eye } from "lucide-react";
 import apiClient from "../../lib/api";
+import { Link } from "wouter";
 
 export default function ResidentRecentTransactions() {
   const { data: transactions, isLoading } = useQuery({
@@ -14,7 +15,7 @@ export default function ResidentRecentTransactions() {
       const paymentHistory = res.data;
 
       return paymentHistory.map((ph) => ({
-        id: ph.payment_id,
+        id: ph.payment_id, 
         date: ph.payment_date,
         amount: ph.amount_paid,
         type: ph.payment_type,
@@ -92,9 +93,11 @@ export default function ResidentRecentTransactions() {
             Your payment history and transactions
           </CardDescription>
         </div>
+        <Link href="/resident-dashboard/payment-history" > 
         <Button variant="outline" size="sm">
           View All
         </Button>
+        </Link>
       </CardHeader>
 
       <CardContent>

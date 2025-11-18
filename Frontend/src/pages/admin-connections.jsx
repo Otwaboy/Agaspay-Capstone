@@ -34,14 +34,12 @@ import {
   XCircle
 } from "lucide-react";
 import { apiClient } from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function AdminConnections() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
   const { data, isLoading } = useQuery({
     queryKey: ['connections', statusFilter],
     queryFn: () => apiClient.getAllWaterConnections({ status: statusFilter !== 'all' ? statusFilter : undefined })
@@ -53,17 +51,10 @@ export default function AdminConnections() {
     mutationFn: ({ id, status }) => apiClient.updateConnectionStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries(['connections']);
-      toast({
-        title: "Success",
-        description: "Connection status updated successfully",
-      });
+      toast.success("Success", { description: "Connection status updated successfully" });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.msg || "Failed to update connection status",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.response?.data?.msg || "Failed to update connection status" });
     }
   });
 

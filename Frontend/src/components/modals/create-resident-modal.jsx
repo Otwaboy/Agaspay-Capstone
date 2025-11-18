@@ -11,7 +11,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
 import { authManager } from "../../lib/auth";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
@@ -35,7 +35,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { toast } = useToast();
 
   // Parse MongoDB duplicate key error
   const parseDuplicateKeyError = (errorMessage) => {
@@ -105,10 +104,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       // Format success message with scheduling details
       const successMessage = response.message || `${formData.firstName} ${formData.lastName} has been registered successfully.`;
 
-      toast({
-        title: "Resident Created Successfully",
+      toast.success("Resident Created Successfully", {
         description: successMessage,
-        variant: "default",
         duration: 6000, // Show for 6 seconds since there's more info
       });
 
@@ -172,10 +169,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         // Don't show toast if we're showing field-specific errors
       } else {
         // Only show toast if we couldn't parse specific field errors
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive"
+        toast.error("Error", {
+          description: errorMessage
         });
       }
     } finally {

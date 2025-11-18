@@ -12,7 +12,7 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
 import { CreditCard, Smartphone, Building, Wallet, CheckCircle, Clock, Barcode } from "lucide-react";
 import { apiClient } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -32,7 +32,6 @@ export default function PayBillModal({ isOpen, onClose }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Bill Details, 1.5: Payment Type, 2: Payment Method, 3: Confirmation
-  const { toast } = useToast();
   
   const {data: billingData, isLoadingBilling} = useQuery({
         queryKey:['Amount-to-pay'],
@@ -164,20 +163,16 @@ export default function PayBillModal({ isOpen, onClose }) {
       window.location.href = result.checkoutUrl;
       setStep(3);
     } else {
-      toast({
-        title: "Payment Successful",
-        description: `Payment of ₱${paymentData.amount.toFixed(2)} processed successfully`,
-        variant: "default"
+      toast.success("Payment Successful", {
+        description: `Payment of ₱${paymentData.amount.toFixed(2)} processed successfully`
       });
       setStep(3);
     }
 
   } catch (error) {
     console.error('Payment error:', error);
-    toast({
-      title: "Payment Failed",
-      description: error.message || "Payment processing failed. Please try again.",
-      variant: "destructive"
+    toast.error("Payment Failed", {
+      description: error.message || "Payment processing failed. Please try again."
     });
   } finally {
     setIsLoading(false);

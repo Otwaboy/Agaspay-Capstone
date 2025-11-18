@@ -14,7 +14,7 @@ import {
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
 import { AlertTriangle, MapPin, Camera, Send } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import apiClient from "../lib/api";
 
 export default function ResidentReportIssue() {
@@ -28,28 +28,18 @@ export default function ResidentReportIssue() {
 
 
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.type || !formData.location || !formData.description || !formData.urgency_level) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast.error("Missing Information", { description: "Please fill in all required fields" });
       return;
     }
 
     setIsLoading(true);
     try {
       await apiClient.createIncidentReport(formData);
-      toast({
-        title: "Issue Reported",
-        description:
-          "Your issue has been reported successfully. We'll investigate and respond soon.",
-      });
+      toast.success("Issue Reported", { description: "Your issue has been reported successfully. We'll investigate and respond soon." });
 
       setFormData({
         type: "",
@@ -58,12 +48,7 @@ export default function ResidentReportIssue() {
         urgency_level: "",
       });
     } catch (error) {
-      toast({
-        title: "Failed to Report Issue",
-        description:
-          error?.response?.data?.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to Report Issue", { description: error?.response?.data?.message || "Something went wrong. Please try again." });
     } finally {
       setIsLoading(false);
     }

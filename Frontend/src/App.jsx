@@ -68,6 +68,7 @@ import ResidentReportIssue from "./pages/resident-report-issue";
 import ResidentServiceRequests from "./pages/resident-service-requests";
 import ResidentSettings from "./pages/resident-settings";
 import ResidentUsage from "./pages/resident-usage";
+import ResidentReadingHistory from "./pages/resident-reading-history";
 
 // Maintenance
 import MaintenanceDashboard from "./pages/maintenance-dashboard";
@@ -395,6 +396,13 @@ function App() {
               {() => (
                 <ResidentRoute>
                   <ResidentUsage />
+                </ResidentRoute>
+              )}
+            </Route>
+            <Route path="/resident-dashboard/reading-history">
+              {() => (
+                <ResidentRoute>
+                  <ResidentReadingHistory />
                 </ResidentRoute>
               )}
             </Route>

@@ -31,7 +31,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../components/ui/collapsible";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import {
   CheckCircle2,
   XCircle,
@@ -51,7 +51,6 @@ import TreasurerTopHeader from "../components/layout/treasurer-top-header";
 import { apiClient } from "../lib/api";
 
 export default function TreasurerApproveReadings() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   
   // State
@@ -111,18 +110,11 @@ export default function TreasurerApproveReadings() {
       return response;
     },
     onSuccess: (data) => {
-      toast({
-        title: "Success!",
-        description: `${data.total_approved} readings approved successfully`,
-      });
+      toast.success("Success!", { description: "" });
       queryClient.invalidateQueries(["readings"]);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.msg || "Failed to approve readings",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.response?.data?.msg || "Failed to approve readings" });
     },
   });
 
@@ -133,19 +125,12 @@ export default function TreasurerApproveReadings() {
       return response;
     },
     onSuccess: () => {
-      toast({
-        title: "Success!",
-        description: "Reading approved successfully",
-      });
+      toast.success("Success!", { description: "Reading approved successfully" });
       queryClient.invalidateQueries(["readings"]);
       setSelectedReading(null);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.msg || "Failed to approve reading",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.response?.data?.msg || "Failed to approve reading" });
     },
   });
 

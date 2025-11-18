@@ -15,12 +15,10 @@ import {
   Trash2
 } from "lucide-react";
 import { apiClient } from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function AdminScheduling() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
   const { data, isLoading } = useQuery({
     queryKey: ['scheduleTasks'],
     queryFn: () => apiClient.getScheduleTasks()
@@ -35,17 +33,10 @@ export default function AdminScheduling() {
     mutationFn: (id) => apiClient.deleteScheduleTask(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['scheduleTasks']);
-      toast({
-        title: "Success",
-        description: "Task deleted successfully",
-      });
+      toast.success("Success", { description: "Task deleted successfully" });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.msg || "Failed to delete task",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.response?.data?.msg || "Failed to delete task" });
     }
   });
 
@@ -53,17 +44,10 @@ export default function AdminScheduling() {
     mutationFn: ({ id, data }) => apiClient.updateScheduleTask(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['scheduleTasks']);
-      toast({
-        title: "Success",
-        description: "Task updated successfully",
-      });
+      toast.success("Success", { description: "Task updated successfully" });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.msg || "Failed to update task",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.response?.data?.msg || "Failed to update task" });
     }
   });
 

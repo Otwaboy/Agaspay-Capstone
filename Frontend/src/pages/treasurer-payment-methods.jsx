@@ -5,7 +5,7 @@ import { Badge } from "../components/ui/badge";
 import { Switch } from "../components/ui/switch";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import { 
   CreditCard, 
   Wallet,
@@ -19,8 +19,6 @@ import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
 
 export default function TreasurerPaymentMethods() {
-  const { toast } = useToast();
-  
   const [paymentMethods, setPaymentMethods] = useState([
     {
       id: "cash",
@@ -78,10 +76,7 @@ export default function TreasurerPaymentMethods() {
         method.id === id ? { ...method, enabled: !method.enabled } : method
       )
     );
-    toast({
-      title: "Payment Method Updated",
-      description: "Payment method status has been changed",
-    });
+    toast.success("Payment Method Updated", { description: "Payment method status has been changed" });
   };
 
   const formatTransactionCount = (id) => {

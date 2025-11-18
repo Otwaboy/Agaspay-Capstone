@@ -14,6 +14,7 @@ import {
   Menu,
   ChevronDown,
   ChevronRight,
+  History,
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -35,6 +36,12 @@ const residentMenuItems = [
     icon: Droplets,
     href: "/resident-dashboard/usage",
     color: "text-blue-500"
+  },
+  {
+    title: "Reading History",
+    icon: History,
+    href: "/resident-dashboard/reading-history",
+    color: "text-cyan-600"
   },
   {
     title: "Service Request",

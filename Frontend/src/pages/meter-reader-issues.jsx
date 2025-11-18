@@ -11,7 +11,7 @@ import { AlertTriangle, Plus, Search, MapPin, Calendar, User, Image } from "luci
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function MeterReaderIssues() {
@@ -24,7 +24,6 @@ export default function MeterReaderIssues() {
     severity: "normal"
   });
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: authUser } = useQuery({
@@ -64,10 +63,7 @@ export default function MeterReaderIssues() {
       return response.data;
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Issue reported successfully"
-      });
+      toast.success("Success", { description: "Issue reported successfully" });
       setFormData({
         issue_type: "",
         location: "",
@@ -78,11 +74,7 @@ export default function MeterReaderIssues() {
       queryClient.invalidateQueries({ queryKey: ["incident-reports"] });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to report issue",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to report issue" });
     }
   });
 

@@ -24,14 +24,12 @@ import {
   XCircle
 } from "lucide-react";
 import { apiClient } from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function AdminIncidents() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
   const { data, isLoading } = useQuery({
     queryKey: ['incidents', statusFilter],
     queryFn: () => apiClient.getIncidentReports({ status: statusFilter !== 'all' ? statusFilter : undefined })
@@ -46,17 +44,10 @@ export default function AdminIncidents() {
     mutationFn: ({ id, status, resolution_notes }) => apiClient.updateIncidentStatus(id, status, resolution_notes),
     onSuccess: () => {
       queryClient.invalidateQueries(['incidents']);
-      toast({
-        title: "Success",
-        description: "Incident status updated successfully",
-      });
+      toast.success("Success", { description: "Incident status updated successfully" });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.msg || "Failed to update incident status",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.response?.data?.msg || "Failed to update incident status" });
     }
   });
 

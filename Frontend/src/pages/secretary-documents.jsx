@@ -32,12 +32,11 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { Search, FileText, FilePlus, Download, CheckCircle, Clock, XCircle } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function SecretaryDocuments() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
@@ -116,10 +115,7 @@ export default function SecretaryDocuments() {
   });
 
   const handleIssueDocument = () => {
-    toast({
-      title: "Document Issued",
-      description: "The document has been successfully issued.",
-    });
+    toast.success("Document Issued", { description: "The document has been successfully issued." });
     setIssueModalOpen(false);
   };
 

@@ -12,13 +12,11 @@ import { Switch } from "../components/ui/switch";
 import { Separator } from "../components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { User, Lock, Bell, Settings as SettingsIcon, Save } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function SecretarySettings() { 
   const [, setLocation] = useLocation();
   const { isAuthenticated, user } = useAuth();
-  const { toast } = useToast();
-
   // Settings state
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(true);
@@ -27,24 +25,15 @@ export default function SecretarySettings() {
   const [documentRequestAlerts, setDocumentRequestAlerts] = useState(true);
 
   const handleSaveProfile = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved successfully.",
-    });
+    toast.success("Profile Updated", { description: "Your profile information has been saved successfully." });
   };
 
   const handleSavePassword = () => {
-    toast({
-      title: "Password Changed",
-      description: "Your password has been updated successfully.",
-    });
+    toast.success("Password Changed", { description: "Your password has been updated successfully." });
   };
 
   const handleSaveNotifications = () => {
-    toast({
-      title: "Preferences Saved",
-      description: "Your notification preferences have been updated.",
-    });
+    toast.success("Preferences Saved", { description: "Your notification preferences have been updated." });
   };
 
   if (!isAuthenticated) {

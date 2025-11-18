@@ -34,12 +34,11 @@ import {
 import { Search, Eye, AlertTriangle, CheckCircle, Clock, AlertCircle, Loader2, Calendar, Plus } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { queryClient } from "../lib/query-client";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function SecretaryIncidentReports() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
@@ -105,22 +104,13 @@ export default function SecretaryIncidentReports() {
   const createTaskMutation = useMutation({
     mutationFn: (taskData) => apiClient.createScheduleTask(taskData),
     onSuccess: (data) => {
-      toast({
-        title: "Task Scheduled Successfully",
-        description: data.message || "Task has been automatically scheduled with available personnel",
-        variant: "default",
-        duration: 6000
-      });
+      toast.success("Task Scheduled Successfully", { description: data.message || "Task has been automatically scheduled with available personnel", duration: 6000 });
       queryClient.invalidateQueries({ queryKey: ['/api/v1/schedule-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['/api/v1/incident-reports'] });
       setCreateTaskOpen(false);
     },
     onError: (error) => { 
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create schedule task",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to create schedule task" });
     },
   });
 
@@ -129,20 +119,13 @@ export default function SecretaryIncidentReports() {
     mutationFn: ({ reportId, status }) => 
       apiClient.updateIncidentReport(reportId, { reported_issue_status: status }),
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Report status updated successfully",
-      });
+      toast.success("Success", { description: "Report status updated successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/v1/incident-reports'] });
       setUpdateStatusOpen(false);
       setNewStatus("");
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update report status",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to update report status" });
     },
   });
 
@@ -162,11 +145,7 @@ export default function SecretaryIncidentReports() {
 
   const submitCreateTask = () => {
     if (!selectedReport) {
-      toast({
-        title: "Error",
-        description: "No report selected",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "No report selected" });
       return;
     }
 
@@ -180,11 +159,7 @@ export default function SecretaryIncidentReports() {
 
   const submitUpdateStatus = () => {
     if (!newStatus) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a status",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Please select a status" });
       return;
     }
 

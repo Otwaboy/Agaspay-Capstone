@@ -9,10 +9,9 @@ import { Settings, User, Mail, Phone, MapPin, Shield, Save } from "lucide-react"
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function MeterReaderSettings() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: authUser, isLoading } = useQuery({
@@ -49,18 +48,11 @@ export default function MeterReaderSettings() {
       return response.data;
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Profile updated successfully"
-      });
+      toast.success("Success", { description: "Profile updated successfully" });
       queryClient.invalidateQueries({ queryKey: ["auth-user"] });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to update profile" });
     }
   });
 

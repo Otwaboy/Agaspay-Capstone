@@ -23,7 +23,7 @@ import {
 import { Textarea } from "../components/ui/textarea";
 import MaintenanceSidebar from "../components/layout/maintenance-sidebar";
 import MaintenanceTopHeader from "../components/layout/maintenance-top-header";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import { apiClient } from "../lib/api";
 import {
   Wrench,
@@ -44,8 +44,6 @@ export default function MaintenanceTasks() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [remarks, setRemarks] = useState("");
-  const { toast } = useToast();
-
   // Fetch assignments from backend (filtered by maintenance role automatically)
   const { data: assignmentsResponse, isLoading, refetch } = useQuery({
     queryKey: ['/api/v1/assignments'],
@@ -104,10 +102,7 @@ const tasksData = assignmentsResponse?.assignments?.map(assignment => {
           return await apiClient.updateTaskStatus(taskId, { task_status, remarks });
         },
         onSuccess: () => { 
-          toast({
-            title: "Task Updated",
-            description: "Task status has been updated successfully.",
-          });
+          toast.success("Task Updated", { description: "Task status has been updated successfully." });
           setIsUpdateModalOpen(false);
           setSelectedTask(null);
           setNewStatus("");
@@ -115,11 +110,7 @@ const tasksData = assignmentsResponse?.assignments?.map(assignment => {
           refetch();
         },
         onError: (error) => {
-          toast({
-            title: "Error",
-            description: error?.message || "Failed to update task status.",
-            variant: "destructive",
-          });
+          toast.error("Error", { description: error?.message || "Failed to update task status." });
         }
 });
 
@@ -172,11 +163,7 @@ const tasksData = assignmentsResponse?.assignments?.map(assignment => {
 
   const handleUpdateTask = () => {
     if (!newStatus) {
-      toast({
-        title: "Error",
-        description: "Please select a status",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please select a status" });
       return;
     }
 updateTaskMutation.mutate({

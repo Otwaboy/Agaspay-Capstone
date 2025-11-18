@@ -66,7 +66,7 @@ export default function ResidentUsage() {
 
   // ✅ Create a simple historical dataset for chart display
   const historicalData = sortedData.map((item) => {
-    const date = new Date(item.created_at);
+    const date = new Date(item.due_date);
     const monthName = date.toLocaleString("default", { month: "short" });
     return {
       month: `${monthName} ${date.getFullYear()}`,

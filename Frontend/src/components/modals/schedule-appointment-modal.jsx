@@ -12,7 +12,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 import { authManager } from "../../lib/auth";
 
@@ -22,8 +22,6 @@ export default function ScheduleAppointmentModal({ isOpen, onClose, reportId, co
     scheduleType: ""
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -47,12 +45,7 @@ export default function ScheduleAppointmentModal({ isOpen, onClose, reportId, co
       const data = await response.json();
 
       if (response.ok) {
-        toast({
-          title: "Task Scheduled Successfully",
-          description: data.message || "Task has been automatically scheduled with available personnel",
-          variant: "default",
-          duration: 6000
-        });
+        toast.success("Task Scheduled Successfully", { description: data.message || "Task has been automatically scheduled with available personnel", duration: 6000 });
 
         // Reset form
         setFormData({
@@ -67,11 +60,7 @@ export default function ScheduleAppointmentModal({ isOpen, onClose, reportId, co
 
     } catch (error) {
       console.error('Task scheduling error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to schedule task. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "Failed to schedule task. Please try again." });
     } finally {
       setIsLoading(false);
     }

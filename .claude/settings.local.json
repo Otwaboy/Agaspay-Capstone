@@ -7,7 +7,12 @@
       "Bash(npm start)",
       "Bash(taskkill:*)",
       "Bash(timeout /t 2 /nobreak)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(done)",
+      "Bash(for file in edit-resident-modal.jsx meter-reading-modal.jsx pay-bill-modal.jsx)",
+      "Bash(do cp \"$file\" \"$file.bak\")",
+      "Bash(do mv:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

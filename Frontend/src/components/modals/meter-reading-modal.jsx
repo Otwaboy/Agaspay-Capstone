@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Badge } from "../ui/badge";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
 import { apiRequest } from "../../lib/query-client";
 
 export default function RecordMeterReadingModal({ open, onClose }) {
@@ -30,8 +30,7 @@ export default function RecordMeterReadingModal({ open, onClose }) {
   const [endDate, setEndDate] = useState("");
   const [remarks, setRemarks] = useState("Normal Reading");
   const [errors, setErrors] = useState({});
-  
-  const { toast } = useToast();
+
   const queryClient = useQueryClient();
 
   // Fetch all water connections for the dropdown
@@ -80,10 +79,8 @@ export default function RecordMeterReadingModal({ open, onClose }) {
       });
     },
     onSuccess: () => {
-      toast({
-        title: "Reading Recorded",
-        description: "Meter reading has been successfully recorded.",
-        variant: "default",
+      toast.success("Reading Recorded", {
+        description: "Meter reading has been successfully recorded."
       });
       queryClient.invalidateQueries(['/api/v1/meter-reader/daily-stats']);
       queryClient.invalidateQueries(['/api/v1/meter-reader/recent-readings']);
@@ -91,10 +88,8 @@ export default function RecordMeterReadingModal({ open, onClose }) {
       handleClose();
     },
     onError: (error) => {
-      toast({
-        title: "Error Recording Reading",
-        description: error.message || "Failed to record meter reading. Please try again.",
-        variant: "destructive",
+      toast.error("Error Recording Reading", {
+        description: error.message || "Failed to record meter reading. Please try again."
       });
     },
   });

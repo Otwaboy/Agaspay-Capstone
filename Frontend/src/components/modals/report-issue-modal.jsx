@@ -12,7 +12,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
 import { apiClient } from "../../lib/api";
 
 export default function ReportIssueModal({ isOpen, onClose, onReportCreated }) {
@@ -23,8 +23,6 @@ export default function ReportIssueModal({ isOpen, onClose, onReportCreated }) {
     description: ""
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -37,11 +35,7 @@ export default function ReportIssueModal({ isOpen, onClose, onReportCreated }) {
       
       console.log('✅ Incident report created:', response);
 
-      toast({
-        title: "Issue Reported Successfully",
-        description: "Your incident report has been submitted. We'll address it as soon as possible.",
-        variant: "default"
-      });
+      toast.success("Issue Reported Successfully", { description: "Your incident report has been submitted. We'll address it as soon as possible." });
 
       // Reset form
       setFormData({
@@ -59,11 +53,7 @@ export default function ReportIssueModal({ isOpen, onClose, onReportCreated }) {
       onClose();
     } catch (error) {
       console.error('❌ Incident report error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to submit your report. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "Failed to submit your report. Please try again." });
     } finally {
       setIsLoading(false);
     }

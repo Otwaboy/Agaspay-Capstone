@@ -25,14 +25,13 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { Search, MessageSquare, Plus, Edit, Trash2, Eye, AlertCircle, Bell, AlertTriangle } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 
 export default function SecretaryAnnouncements() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,10 +61,7 @@ console.log(announcements);
   const createAnnouncement = useMutation({
     mutationFn: (data) => apiClient.createAnnouncements(data),
     onSuccess: () => {
-      toast({
-        title: "Announcement Created",
-        description: "Your announcement has been submitted please wait for admin approval.",
-      });
+      toast.success("Announcement Created", { description: "Your announcement has been submitted please wait for admin approval." });
       queryClient.invalidateQueries(["announcements"]);
       setCreateModalOpen(false);
       setTitle("");
@@ -74,11 +70,7 @@ console.log(announcements);
       setPriority("normal");
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to create announcement",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.response?.data?.message || "Failed to create announcement" });
     },
   });
 
@@ -99,11 +91,7 @@ console.log(announcements);
 
   const handleCreateAnnouncement = () => {
     if (!title || !content || !category) {
-      toast({
-        title: "Missing Fields",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
+      toast.error("Missing Fields", { description: "Please fill in all required fields." });
       return;
     }
 

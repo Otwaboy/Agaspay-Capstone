@@ -1,8 +1,9 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Badge } from "../ui/badge";
-import { Droplets, TrendingUp, TrendingDown } from "lucide-react";
+import { Button } from "../ui/button";
+import { Droplets, ArrowRight } from "lucide-react";
 import { apiClient } from "../../lib/api";
 
 export default function ResidentUsageChart() {
@@ -13,9 +14,9 @@ export default function ResidentUsageChart() {
       const bills = res.data || [];
       
       const last6Months = bills.slice(-6).map((bill, index) => {
-        const date = new Date(bill.created_at);
+        const date = new Date(bill.due_date);
         return {
-          month: date.toLocaleDateString('en-US', { month: 'short' }),
+          month: date.toLocaleDateString('en-US', { month: 'short' }), 
           consumption: bill.calculated || 0,
           amount: bill.total_amount || 0,
           reading: bill.present_reading || 0
@@ -59,8 +60,6 @@ export default function ResidentUsageChart() {
 
   const months = data?.months || [];
   const maxValue = data?.maxConsumption || 100;
-  const trend = parseFloat(data?.trend || 0);
-  const isIncreasing = trend > 0;
 
   return (
     <Card>
@@ -70,10 +69,13 @@ export default function ResidentUsageChart() {
             <Droplets className="h-5 w-5 text-cyan-600" />
             Water Usage Trend
           </CardTitle>
-          <Badge className={`${isIncreasing ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-            {isIncreasing ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-            {isIncreasing ? '+' : ''}{trend}%
-          </Badge>
+
+          <Link href="/resident-dashboard/usage">
+            <Button variant="outline" size="sm" className="gap-2">
+              View All
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
         <p className="text-sm text-gray-500 mt-1">Last 6 months consumption history</p>
       </CardHeader>

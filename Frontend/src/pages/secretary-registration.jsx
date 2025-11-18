@@ -33,12 +33,11 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { Search, UserPlus, CheckCircle, XCircle, Clock, Eye, FileText } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function SecretaryRegistration() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedApplication, setSelectedApplication] = useState(null);
@@ -115,9 +114,8 @@ export default function SecretaryRegistration() {
   };
 
   const confirmProcessAction = () => {
-    toast({
-      title: actionType === "approve" ? "Application Approved" : "Application Rejected",
-      description: `${selectedApplication.applicantName}'s application has been ${actionType === "approve" ? "approved" : "rejected"}.`,
+    toast.success(actionType === "approve" ? "Application Approved" : "Application Rejected", {
+      description: `${selectedApplication.applicantName}'s application has been ${actionType === "approve" ? "approved" : "rejected"}.`
     });
     setProcessModalOpen(false);
   };

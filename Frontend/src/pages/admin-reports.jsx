@@ -16,10 +16,9 @@ import {
   Loader2
 } from "lucide-react";
 import { apiClient } from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function AdminReports() {
-  const { toast } = useToast();
   const [generatingReport, setGeneratingReport] = useState(null);
 
   const generateReportMutation = useMutation({
@@ -48,10 +47,7 @@ export default function AdminReports() {
       return response;
     },
     onSuccess: (data, variables) => {
-      toast({
-        title: "Report Generated",
-        description: `${variables.type} report has been generated successfully`,
-      });
+      toast.success("Report Generated", { description: "" });
       
       if (data && typeof data === 'object') {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -68,11 +64,7 @@ export default function AdminReports() {
       setGeneratingReport(null);
     },
     onError: (error, variables) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.msg || `Failed to generate ${variables.type} report`,
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "" });
       setGeneratingReport(null);
     }
   });

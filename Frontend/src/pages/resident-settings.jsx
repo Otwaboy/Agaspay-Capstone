@@ -10,13 +10,11 @@ import { Textarea } from "../components/ui/textarea";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
 import { Settings as SettingsIcon, Bell, Mail, Lock, Eye, Shield, EyeOff, Loader2, AlertTriangle } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 
 export default function ResidentSettings() {
-  const { toast: toastHook } = useToast();
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,

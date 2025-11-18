@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Switch } from "../components/ui/switch";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import { 
   Settings, 
   DollarSign, 
@@ -19,8 +19,6 @@ import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
 
 export default function TreasurerBillingSettings() {
-  const { toast } = useToast();
-  
   const [settings, setSettings] = useState({
     ratePerCubic: "15.00",
     fixedCharge: "50.00",
@@ -46,10 +44,7 @@ export default function TreasurerBillingSettings() {
 
   const handleSaveSettings = () => {
     // Mock save
-    toast({
-      title: "Settings Saved",
-      description: "Billing settings have been updated successfully",
-    });
+    toast.success("Settings Saved", { description: "Billing settings have been updated successfully" });
   };
 
   return (

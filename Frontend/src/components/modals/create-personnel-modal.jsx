@@ -12,7 +12,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Checkbox } from "../ui/checkbox";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
 import { authManager } from "../../lib/auth";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -32,7 +32,6 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { toast } = useToast();
 
 
   // functions when submmiting the button
@@ -44,19 +43,15 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       // If create account is checked, validate account fields and create account first
       if (formData.createAccount) {
         if (!formData.username || !formData.password) {
-          toast({
-            title: "Validation Error",
-            description: "Username and password are required when creating an account",
-            variant: "destructive"
+          toast.error("Validation Error", {
+            description: "Username and password are required when creating an account"
           });
           return;
         }
 
         if (formData.password.length < 6) {
-          toast({
-            title: "Validation Error", 
-            description: "Password must be at least 6 characters long",
-            variant: "destructive"
+          toast.error("Validation Error", {
+            description: "Password must be at least 6 characters long"
           });
           return;
         }
@@ -79,14 +74,12 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       // Simulate personnel creation (this would normally be a separate API call)
       // await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const successMessage = formData.createAccount 
+      const successMessage = formData.createAccount
         ? `${formData.firstName} ${formData.lastName} has been added as ${formData.role} with login account created`
         : `${formData.firstName} ${formData.lastName} has been added as ${formData.role}`;
 
-      toast({
-        title: "Personnel Created Successfully",
-        description: successMessage,
-        variant: "default"
+      toast.success("Personnel Created Successfully", {
+        description: successMessage
       });
 
       // Reset form
@@ -106,10 +99,8 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       onClose();
 
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create personnel. Please try again.",
-        variant: "destructive"
+      toast.error("Error", {
+        description: error.message || "Failed to create personnel. Please try again."
       });
     } finally {
       setIsLoading(false);

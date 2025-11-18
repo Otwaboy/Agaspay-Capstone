@@ -34,15 +34,13 @@ import {
   Users
 } from "lucide-react";
 import { apiClient } from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 export default function AdminPersonnel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
   const { data, isLoading } = useQuery({
     queryKey: ['personnel', roleFilter],
     queryFn: () => apiClient.getAllPersonnel({ role: roleFilter !== 'all' ? roleFilter : undefined })
@@ -54,17 +52,10 @@ export default function AdminPersonnel() {
     mutationFn: (id) => apiClient.deletePersonnel(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['personnel']);
-      toast({
-        title: "Success",
-        description: "Personnel deleted successfully",
-      });
+      toast.success("Success", { description: "Personnel deleted successfully" });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.msg || "Failed to delete personnel",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.response?.data?.msg || "Failed to delete personnel" });
     }
   });
 
