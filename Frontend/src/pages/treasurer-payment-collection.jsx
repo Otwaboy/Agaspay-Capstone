@@ -43,7 +43,8 @@ export default function TreasurerPaymentCollection() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingPayment, setEditingPayment] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { data: collections, isLoading, refetch } = useQuery({
+  
+  const { data: collections,  refetch } = useQuery({
     queryKey: ['/api/v1/treasurer/collections', filterStatus],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
@@ -59,7 +60,7 @@ export default function TreasurerPaymentCollection() {
         amount: p.amount_paid,
         method: p.payment_method,
         status: p.payment_status,
-        referenceNo: p.payment_reference,
+        referenceNo: p.payment_reference || 'Pay Onsite',
         date: p.payment_date,
         billPeriod: "August 2024"
       }));

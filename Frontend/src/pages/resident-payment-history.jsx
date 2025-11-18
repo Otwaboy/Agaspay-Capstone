@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import apiClient from "../lib/api";
 import { Link } from "wouter";
+
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -172,26 +173,22 @@ export default function ResidentPaymentHistory() {
       receiptDiv.innerHTML = `
         <div style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); padding: 40px; border-radius: 16px 16px 0 0; text-align: center; color: white;">
           <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 16px;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M7 16.5c0-1 .5-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z" />
-              <path d="M17 16.5c0-1 .5-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z" />
-              <path d="M2 2h20v20H2z" />
-            </svg>
+            
             <div>
               <h1 style="margin: 0; font-size: 32px; font-weight: bold;">AGASPAY</h1>
               <p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.9;">Water Services</p>
             </div>
           </div>
-          <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Barangay Biking, Dauis, Bohol</p>
+          <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Barangay Biking, Dauis, Bohol</p> 
         </div>
 
         <div style="padding: 40px; border: 2px solid #e5e7eb; border-top: none; border-radius: 0 0 16px 16px;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <div style="display: inline-block; background: ${isOfficial ? '#9333ea' : '#6b7280'}; color: white; padding: 8px 24px; border-radius: 24px; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+            <div style="display: inline-block; background: ${isOfficial ? '#9333ea' : '#6b7280'}; color: white; padding-right: 8px; padding-left: 8px; padding-bottom: 18px;  padding-top: 12px; border-radius: 24px; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
               ${isOfficial ? '✓ OFFICIAL RECEIPT' : 'TEMPORARY RECEIPT'}
             </div>
             <h2 style="margin: 16px 0 8px 0; font-size: 24px; font-weight: bold; color: #111827;">Payment Receipt</h2>
-            <p style="margin: 0; color: #6b7280; font-size: 14px;">Reference #: <span style="color: #0891b2; font-weight: 600;">${payment.payment_id}</span></p>
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">Reference #: <span style="color: #0891b2; font-weight: 600;">${payment.payment_reference}</span></p>
           </div>
 
           <div style="background: #f9fafb; padding: 24px; border-radius: 12px; margin-bottom: 32px;">
@@ -214,7 +211,7 @@ export default function ResidentPaymentHistory() {
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
               <p style="margin: 0; color: #6b7280; font-size: 14px;">Status:</p>
-              <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${payment.payment_status || 'N/A'}</span>
+              <span style="background: #d1fae5; color: #065f46; padding: 6px 6px 14px 6px; border-radius: 402px; font-size: 10px; font-weight: 600; text-transform: uppercase;">${payment.payment_status || 'N/A'}</span>
             </div>
           </div>
 
@@ -432,6 +429,7 @@ export default function ResidentPaymentHistory() {
                         const statusConfig = getStatusConfig(payment.payment_status);
                         const StatusIcon = statusConfig.icon;
                         const PaymentIcon = getPaymentMethodIcon(payment.payment_method);
+
                         return (
                           <div
                             key={payment.payment_id}
@@ -473,7 +471,7 @@ export default function ResidentPaymentHistory() {
                                     {payment.payment_method || 'N/A'}
                                   </span>
                                   <span className="text-xs text-gray-500">
-                                    Ref: {payment.payment_id}
+                                    Ref: {payment.payment_reference || 'Pay Onsite'}
                                   </span>
                                 </div>
                               </div>
@@ -495,10 +493,9 @@ export default function ResidentPaymentHistory() {
                                 </p>
                               </div>
 
-                              {/* Only show download button for temporary receipts */}
-                              {(payment.payment_status?.toLowerCase() === 'confirmed' ||
-                                payment.payment_status?.toLowerCase() === 'paid') &&
-                                payment.official_receipt_status === 'temporary_receipt' && (
+                              {/* Only show download button for confirmed temporary receipts */}
+                              {payment.official_receipt_status === 'temporary_receipt' &&
+                               payment.payment_status?.toLowerCase() === 'confirmed' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
