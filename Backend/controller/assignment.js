@@ -5,6 +5,43 @@ const IncidentReport = require('../model/Incident-reports');
 const { StatusCodes } = require('http-status-codes');
 
 /**
+ * Helper function: Check and update overdue tasks
+ *
+ * Purpose: Automatically mark tasks as "Pending" if they are past their scheduled date/time
+ * and still have status "Assigned"
+ */
+const checkAndUpdateOverdueTasks = async () => {
+  try {
+    // Get current date and time in Philippine Time (UTC+8)
+    const now = new Date();
+    const philippineTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+
+    console.log(`[Overdue Check] Current Philippine Time: ${philippineTime.toISOString()}`);
+
+    // Find all tasks that are "Assigned" status
+    const assignedTasks = await ScheduleTask.find({ task_status: 'Assigned' });
+
+    for (const task of assignedTasks) {
+      // Combine schedule_date and schedule_time to create a full datetime
+      const scheduleDate = new Date(task.schedule_date);
+      const [hours, minutes] = task.schedule_time.split(':');
+
+      // Create the scheduled datetime in UTC
+      const scheduledDateTime = new Date(scheduleDate);
+      scheduledDateTime.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      // Compare: if current time is past the scheduled time, mark as Pending
+      if (philippineTime > scheduledDateTime) {
+        await ScheduleTask.findByIdAndUpdate(task._id, { task_status: 'Pending' });
+        console.log(`[Overdue] Task ${task._id} marked as Pending (was scheduled for ${scheduledDateTime.toISOString()})`);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking overdue tasks:', error);
+  }
+};
+
+/**
  * Controller: createAssignment
  * 
  * Purpose: Assign a scheduled task to a maintenance personnel
@@ -60,6 +97,14 @@ const createAssignment = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: 'Can only assign tasks to maintenance personnel',
+      });
+    }
+
+    // ✅ Check if personnel account is archived
+    if (personnel.archive_status === 'archived') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Cannot assign tasks to archived personnel',
       });
     }
 
@@ -123,8 +168,12 @@ const createAssignment = async (req, res) => {
  * - List of assignments with task and personnel details
  */
 const getAssignments = async (req, res) => {
-  try { 
+  try {
     const user = req.user;
+
+    // ✅ Check and update overdue tasks before fetching assignments
+    await checkAndUpdateOverdueTasks();
+
     // ✅ Allow secretary, admin, and maintenance to access
     if (!['secretary', 'admin', 'maintenance'].includes(user.role)) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -239,6 +288,9 @@ const getAssignments = async (req, res) => {
 const getUnassignedTasks = async (req, res) => {
   try {
     const user = req.user;
+
+    // ✅ Check and update overdue tasks before fetching
+    await checkAndUpdateOverdueTasks();
 
     // ✅ Only secretary can view unassigned tasks
     if (user.role !== 'secretary') {
@@ -437,8 +489,15 @@ const getMaintenancePersonnel = async (req, res) => {
       });
     }
 
-    // ✅ Find all maintenance personnel
-    const maintenancePersonnel = await Personnel.find({ role: 'maintenance' })
+    // ✅ Find all maintenance personnel (exclude archived)
+    const maintenancePersonnel = await Personnel.find({
+      role: 'maintenance',
+      $or: [
+        { archive_status: { $exists: false } },
+        { archive_status: null },
+        { archive_status: { $ne: 'archived' } }
+      ]
+    })
       .select('first_name last_name contact_no assigned_zone')
       .sort({ first_name: 1 });
 
@@ -575,6 +634,14 @@ const updateAssignment = async (req, res) => {
       });
     }
 
+    // ✅ Check if personnel account is archived
+    if (personnel.archive_status === 'archived') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Cannot assign tasks to archived personnel',
+      });
+    }
+
     // ✅ Update assignment
     const assignment = await Assignment.findByIdAndUpdate(
       id,
@@ -705,8 +772,15 @@ const getPersonnelAvailability = async (req, res) => {
       });
     }
 
-    // ✅ Get all maintenance personnel
-    const allPersonnel = await Personnel.find({ role: 'maintenance' });
+    // ✅ Get all active maintenance personnel (exclude archived)
+    const allPersonnel = await Personnel.find({
+      role: 'maintenance',
+      $or: [
+        { archive_status: { $exists: false } },
+        { archive_status: null },
+        { archive_status: { $ne: 'archived' } }
+      ]
+    });
 
     // ✅ Check availability for each personnel
     const personnelWithAvailability = await Promise.all(
@@ -824,6 +898,14 @@ const rescheduleAssignment = async (req, res) => {
         return res.status(StatusCodes.NOT_FOUND).json({
           success: false,
           message: 'New personnel not found or not a maintenance worker',
+        });
+      }
+
+      // ✅ Check if personnel account is archived
+      if (newPersonnel.archive_status === 'archived') {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Cannot reschedule to archived personnel',
         });
       }
 

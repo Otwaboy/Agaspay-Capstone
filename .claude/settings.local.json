@@ -12,7 +12,12 @@
       "Bash(for file in edit-resident-modal.jsx meter-reading-modal.jsx pay-bill-modal.jsx)",
       "Bash(do cp \"$file\" \"$file.bak\")",
       "Bash(do mv:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(for file in treasurer-settings.jsx meter-reader-settings.jsx maintenance-settings.jsx)",
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

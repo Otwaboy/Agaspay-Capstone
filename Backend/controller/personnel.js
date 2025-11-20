@@ -540,6 +540,50 @@ const rejectPersonnelArchive = async (req, res) => {
   }
 };
 
+// Unarchive personnel (Admin only)
+const unarchivePersonnel = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const personnel = await Personnel.findById(id);
+    if (!personnel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Personnel not found'
+      });
+    }
+
+    if (personnel.archive_status !== 'archived') {
+      return res.status(400).json({
+        success: false,
+        message: 'Personnel is not archived'
+      });
+    }
+
+    // Restore personnel account
+    personnel.archive_status = null;
+    personnel.archive_reason = null;
+    personnel.archive_requested_date = null;
+    personnel.archive_approved_date = null;
+    personnel.archive_rejection_reason = null;
+    await personnel.save();
+
+    // Restore user account status if exists
+    if (personnel.user_id) {
+      await User.findByIdAndUpdate(personnel.user_id, { status: 'active' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Personnel unarchived successfully',
+      data: personnel
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllPersonnel,
   getPersonnel,
@@ -552,5 +596,6 @@ module.exports = {
   getPersonnelArchiveStatus,
   cancelPersonnelArchiveRequest,
   approvePersonnelArchive,
-  rejectPersonnelArchive
+  rejectPersonnelArchive,
+  unarchivePersonnel
 };

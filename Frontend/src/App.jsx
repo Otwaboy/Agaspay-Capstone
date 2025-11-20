@@ -1,7 +1,7 @@
 import { Router, Route, Switch } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
-import { AdminRoute, SecretaryRoute, ResidentRoute, TreasurerRoute, MeterReaderRoute, MaintenanceRoute, DashboardRoute, AnyDashboardRoute } from "./components/ProtectedRoute";
+import { AdminRoute, SecretaryRoute, ResidentRoute, TreasurerRoute, MeterReaderRoute, MaintenanceRoute, AnyDashboardRoute } from "./components/ProtectedRoute";
 
 
 //admin
@@ -10,12 +10,13 @@ import AdminUsers from "./pages/admin-users";
 import AdminPersonnel from "./pages/admin-personnel";
 import AdminConnections from "./pages/admin-connections";
 import AdminBilling from "./pages/admin-billing";
-import AdminReports from "./pages/admin-reports";
 import AdminScheduling from "./pages/admin-scheduling";
 import AdminIncidents from "./pages/admin-incidents";
 import AdminSettings from "./pages/admin-settings";
 import AdminDisconnectRequests from "./pages/admin-disconnect-requests";
 import AdminArchiveRequests from "./pages/admin-archive-requests";
+import AdminArchivedUsers from "./pages/admin-archived-users";
+import AdminDeliquencyList from "./pages/admin-deliquency-list";
 
 //secretary
 import SecretaryDashboard from "./pages/secretaryDashboard";
@@ -29,6 +30,7 @@ import SecretaryScheduleReconnection from "./pages/secretary-schedule-reconnecti
 import SecretaryProfile from "./pages/secretary-profile";
 import SecretarySettings from "./pages/secretary-settings";
 import SecretaryAssignments from "./pages/secretary-assignments";
+import SecretaryDeliquencyList from "./pages/secretary-deliquency-list";
 
 //meter- reader
 import MeterReaderDashboard from "./pages/meter-reader-dashboard";
@@ -36,7 +38,8 @@ import MeterReaderReadings from "./pages/meter-reader-readings";
 import MeterReaderHistory from "./pages/meter-reader-history";
 import MeterReaderZones from "./pages/meter-reader-zones";
 import MeterReaderSchedule from "./pages/meter-reader-schedule";
-import MeterReaderIssues from "./pages/meter-reader-issues";
+import MeterReaderReportIssue from "./pages/meter-reader-report";
+import MeterReaderReportHistory from "./pages/meter-reader-report-history";
 import MeterReaderProfile from "./pages/meter-reader-profile";
 import MeterReaderSettings from "./pages/meter-reader-settings";
 
@@ -150,7 +153,14 @@ function App() {
                   <SecretaryResidents />
                 </SecretaryRoute>
               )}
-            </Route>             
+            </Route>
+              <Route path="/secretary-dashboard/deliquency-list">
+              {() => (
+                <SecretaryRoute>
+                  <SecretaryDeliquencyList />
+                </SecretaryRoute>
+              )}
+            </Route>        
             <Route path="/secretary-dashboard/registration">
               {() => (
                 <SecretaryRoute>
@@ -382,10 +392,17 @@ function App() {
                   </MeterReaderRoute>
                 )}
               </Route>
-            <Route path="/meter-reader-dashboard/issues">
+            <Route path="/meter-reader-dashboard/report-issue">
                 {() => (
                   <MeterReaderRoute>
-                    <MeterReaderIssues />
+                    <MeterReaderReportIssue />
+                  </MeterReaderRoute>
+                )}
+              </Route>
+               <Route path="/meter-reader-dashboard/report-issue-history">
+                {() => (
+                  <MeterReaderRoute>
+                    <MeterReaderReportHistory />
                   </MeterReaderRoute>
                 )}
               </Route>
@@ -581,6 +598,20 @@ function App() {
               {() => (
                 <AdminRoute>
                   <AdminArchiveRequests />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/archived-users">
+              {() => (
+                <AdminRoute>
+                  <AdminArchivedUsers />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/deliquency-list">
+              {() => (
+                <AdminRoute>
+                  <AdminDeliquencyList />
                 </AdminRoute>
               )}
             </Route>

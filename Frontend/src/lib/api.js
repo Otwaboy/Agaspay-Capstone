@@ -52,6 +52,12 @@ class ApiClient {
     return await this.request('/api/v1/dashboard/stats');
   }
 
+
+ async getResidentByDate(selectedDate) {
+  const url = `/api/v1/auth/residents/by-date?startDate=${encodeURIComponent(selectedDate)}`;
+  return await this.request(url);
+}
+
   // ======================================================
   // 💳 PAYMENT API
   // ======================================================
@@ -602,43 +608,51 @@ async getApprovalStats() {
       });
     }
 
-    // ======================================================
-    // 💧 WATER SCHEDULES (Secretary / Admin)
-    // ======================================================
-    async createWaterSchedule(data) {
-      return await this.request('/api/v1/water-schedules', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-    }
+    // // ======================================================
+    // // 💧 WATER SCHEDULES (Secretary / Admin)
+    // // ======================================================
+    // async createWaterSchedule(data) {
+    //   return await this.request('/api/v1/water-schedules', {
+    //     method: 'POST',
+    //     body: JSON.stringify(data),
+    //   });
+    // }
 
-    async getWaterSchedules(params = {}) {
-      const filteredParams = Object.fromEntries(
-        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
-      );
-      const queryString = new URLSearchParams(filteredParams).toString();
-      return await this.request(`/api/v1/water-schedules${queryString ? `?${queryString}` : ''}`);
-    }
+    // async getWaterSchedules(params = {}) {
+    //   const filteredParams = Object.fromEntries(
+    //     Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    //   );
+    //   const queryString = new URLSearchParams(filteredParams).toString();
+    //   return await this.request(`/api/v1/water-schedules${queryString ? `?${queryString}` : ''}`);
+    // }
 
-    async getPendingWaterSchedules() {
-      return await this.request('/api/v1/water-schedules/pending');
-    }
+    // async getPendingWaterSchedules() {
+    //   return await this.request('/api/v1/water-schedules/pending');
+    // }
 
-    async approveWaterSchedule(id) {
-      return await this.request(`/api/v1/water-schedules/${id}/approve`, {
-        method: 'PATCH',
-      });
-    }
+    // async approveWaterSchedule(id) {
+    //   return await this.request(`/api/v1/water-schedules/${id}/approve`, {
+    //     method: 'PATCH',
+    //   });
+    // }
 
-    async rejectWaterSchedule(id) {
-      return await this.request(`/api/v1/water-schedules/${id}/reject`, {
-        method: 'PATCH',
-      });
-    }
+    // async rejectWaterSchedule(id) {
+    //   return await this.request(`/api/v1/water-schedules/${id}/reject`, {
+    //     method: 'PATCH',
+    //   });
+    // }
 
-    // ======================================================
+
+  
+    
+
+      // ======================================================
     // 🔐 CHANGE PASSWORD (Resident)
     // ======================================================
+   
+   
+   
+   
     async requestPasswordChange(data) {
       return await this.request('/api/v1/change-password/request', {
         method: 'POST',
@@ -752,6 +766,24 @@ async getApprovalStats() {
       return await this.request(`/api/v1/personnel/${personnelId}/reject-archive`, {
         method: 'PATCH',
         body: JSON.stringify({ reason }),
+      });
+    }
+
+    async unarchiveResident(connectionId) {
+      return await this.request(`/api/v1/archive-request/unarchive/${connectionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          archive_status: null,
+          archive_approved_date: null,
+          archive_requested_date: null,
+          archive_reason: null
+        })
+      });
+    }
+
+    async unarchivePersonnel(personnelId) {
+      return await this.request(`/api/v1/personnel/${personnelId}/unarchive`, {
+        method: 'PATCH',
       });
     }
 

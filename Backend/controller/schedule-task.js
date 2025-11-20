@@ -4,6 +4,43 @@ const IncidentReports = require('../model/Incident-reports');
 const WaterConnection = require('../model/WaterConnection');
 const Personnel = require('../model/Personnel');
 
+/**
+ * Helper function: Check and update overdue tasks
+ *
+ * Purpose: Automatically mark tasks as "Pending" if they are past their scheduled date/time
+ * and still have status "Assigned"
+ */
+const checkAndUpdateOverdueTasks = async () => {
+  try {
+    // Get current date and time in Philippine Time (UTC+8)
+    const now = new Date();
+    const philippineTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+
+    console.log(`[Overdue Check] Current Philippine Time: ${philippineTime.toISOString()}`);
+
+    // Find all tasks that are "Assigned" status
+    const assignedTasks = await ScheduleTask.find({ task_status: 'Assigned' });
+
+    for (const task of assignedTasks) {
+      // Combine schedule_date and schedule_time to create a full datetime
+      const scheduleDate = new Date(task.schedule_date);
+      const [hours, minutes] = task.schedule_time.split(':');
+
+      // Create the scheduled datetime in UTC
+      const scheduledDateTime = new Date(scheduleDate);
+      scheduledDateTime.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      // Compare: if current time is past the scheduled time, mark as Pending
+      if (philippineTime > scheduledDateTime) {
+        await ScheduleTask.findByIdAndUpdate(task._id, { task_status: 'Pending' });
+        console.log(`[Overdue] Task ${task._id} marked as Pending (was scheduled for ${scheduledDateTime.toISOString()})`);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking overdue tasks:', error);
+  }
+};
+
 const createTask = async (req, res) => {
   const user = req.user;
 
@@ -347,6 +384,9 @@ const getTasks = async (req, res) => {
   }
 
   try {
+    // ✅ Check and update overdue tasks before fetching
+    await checkAndUpdateOverdueTasks();
+
     console.log('🔍 Fetching tasks for user:', { userId: user.userId, role: user.role });
 
     const now = new Date();

@@ -52,8 +52,15 @@ const registerResident = async (req, res) => {
     let assignment = null;
     let autoScheduledMessage = '';
 
-    // Get all maintenance personnel
-    const maintenancePersonnel = await Personnel.find({ role: 'maintenance' }).session(session);
+    // Get all active maintenance personnel (exclude archived)
+    const maintenancePersonnel = await Personnel.find({
+      role: 'maintenance',
+      $or: [
+        { archive_status: { $exists: false } },
+        { archive_status: null },
+        { archive_status: { $ne: 'archived' } }
+      ]
+    }).session(session);
 
     if (maintenancePersonnel.length > 0) {
       // Define available time slots
@@ -309,25 +316,103 @@ const login = async (req, res) => {
     }
 
   let fullname = "";
+  let isArchived = false;
 
   if (user.role === "resident") {
     const resident = await Resident.findOne({ user_id: user._id });
-    if (resident) fullname = `${resident.first_name} ${resident.last_name}`;
+    if (resident) {
+      fullname = `${resident.first_name} ${resident.last_name}`;
+
+      // Check if resident's water connection is archived
+      const waterConnection = await WaterConnection.findOne({ resident_id: resident._id });
+      if (waterConnection && waterConnection.archive_status === 'archived') {
+        isArchived = true;
+      }
+    }
   } else {
     const personnel = await Personnel.findOne({ user_id: user._id });
-    if (personnel) fullname = `${personnel.first_name} ${personnel.last_name}`;
+    if (personnel) {
+      fullname = `${personnel.first_name} ${personnel.last_name}`;
+
+      // Check if personnel account is archived
+      if (personnel.archive_status === 'archived') {
+        isArchived = true;
+      }
+    }
   }
 
-  
+  // Prevent login if account is archived
+  if (isArchived) {
+    throw new UnauthorizedError('Your account has been archived. Please contact the administrator for assistance.');
+  }
 
     const token = user.createJWT();
 
-    res.status(StatusCodes.ACCEPTED).json({userForm: {msg: 'congratulations youre succesfully loginss',  
+    res.status(StatusCodes.ACCEPTED).json({userForm: {msg: 'congratulations youre succesfully loginss',
         username: user.username,
         fullname: fullname  ,
-        role: user.role, 
+        role: user.role,
         token
     }})
 }
 
-module.exports = { registerResident, login, registerPersonnel }; 
+// Get residents by date range
+const getResidentsByDate = async (req, res) => {
+  try {
+    const { startDate } = req.query;
+
+    if (!startDate) {
+      throw new BadRequestError('Start date is required');
+    }
+
+    // Create date range: from startDate to now
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0); // Start of the day
+
+    const end = new Date();
+    end.setHours(23, 59, 59, 999); // End of today
+
+    console.log(`📅 Fetching residents from ${start} to ${end}`);
+
+    // Find all residents created within the date range
+    const residents = await Resident.find({
+      created_at: {
+        $gte: start,
+        $lte: end
+      } 
+    }).sort({ created_at: -1 }); // Sort by newest first
+
+    console.log(`✅ Found ${residents.length} residents`);
+
+    // For each resident, get their water connection to get meter_no and type
+    const residentsWithDetails = await Promise.all(
+      residents.map(async (resident) => {
+        const waterConnection = await WaterConnection.findOne({ resident_id: resident._id });
+
+        return {
+          _id: resident._id,
+          user_id: resident.user_id,
+          first_name: resident.first_name,
+          last_name: resident.last_name,
+          zone: resident.zone,
+          purok: resident.purok,
+          email: resident.email,
+          contact_no: resident.contact_no,
+          meter_no: waterConnection?.meter_no || 'N/A',
+          type: waterConnection?.type || 'N/A',
+          created_at: resident.created_at
+        };
+      })
+    );
+
+    res.status(StatusCodes.OK).json({data: residentsWithDetails});
+  } catch (error) {
+  console.error('❌ Error fetching residents by date:', error);
+  res.status(error.statusCode || 500).json({
+    error: error.message || 'Failed to fetch residents',
+    stack: error.stack
+  });
+}
+};
+
+module.exports = { registerResident, login, registerPersonnel, getResidentsByDate }; 

@@ -1,10 +1,22 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { useLocation } from "wouter";
+import { useAuth } from "../hooks/use-auth";
+import Sidebar from "../components/layout/sidebar";
+import TopHeader from "../components/layout/top-header";
+import CreateResidentModal from "../components/modals/create-resident-modal";
+import EditResidentModal from "../components/modals/edit-resident-modal";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { Skeleton } from "../components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import {
   Select,
   SelectContent,
@@ -13,111 +25,100 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
-import Sidebar from "../components/layout/sidebar";
-import TopHeader from "../components/layout/top-header";
-import {
-  Users,
-  Search,
-  Filter,
-  Plus,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  UserCheck,
-  UserX
-} from "lucide-react";
-import { apiClient } from "../lib/api";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar, UserPlus, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "../lib/api";
+import { queryClient } from "../lib/query-client";
 
-export default function AdminUsers() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const queryClient = useQueryClient();
+export default function SecretaryResidents() {
+  const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedResident, setSelectedResident] = useState(null);
+  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [residentToEdit, setResidentToEdit] = useState(null);
 
-  // Fetch users from API
-  const { data, isLoading } = useQuery({
-    queryKey: ['users', statusFilter],
-    queryFn: () => apiClient.getAllUsers({ status: statusFilter !== 'all' ? statusFilter : undefined })
+  // Fetch water connections from backend
+  const { data: residents = [], isLoading, error } = useQuery({
+    queryKey: ['/api/water-connections'],
+    queryFn: async () => {
+      const res = await apiClient.getAllWaterConnections();
+      const connections = res.data;
+      
+      // Debug: Log the first connection to see the structure
+      if (connections && connections.length > 0) {
+        console.log('🔍 First connection from backend:', connections[0]);
+        console.log('🔍 Available fields:', Object.keys(connections[0]));
+      }
+      
+      // Map backend data to frontend format
+      return connections.map((conn) => ({
+        id: conn.connection_id || conn._id,
+        name: conn.full_name,
+        address: conn.address,
+        contactNo: conn.contact_no,
+        email: conn.email,
+        status: conn.status,
+        connectionStatus: conn.connection_status,
+        meter_no: conn.meter_no,
+        type: conn.type,
+        previousReading: conn.previous_reading || 0,
+        presentReading: conn.present_reading || 0
+      }));
+    }
   });
 
-  const users = data?.users || [];
-  console.log(users);
-  
+  const filteredResidents = residents.filter(resident => {
 
-  // Filter users based on search
-  const filteredUsers = users.filter(user => {
-    const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.account_number?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
+    //search
+    const matchesSearch = resident.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         resident.contactNo.includes(searchQuery) ||
+                         resident.address.toLowerCase().includes(searchQuery.toLowerCase());
+      //filter
+    const matchesFilter = filterStatus === "all" || resident.connectionStatus === filterStatus;
+    return matchesSearch && matchesFilter;
   });
 
-  const getStatusBadge = (status) => {
-    const config = {
-      active: { label: "Active", className: "bg-green-100 text-green-800" },
-      suspended: { label: "Suspended", className: "bg-red-100 text-red-800" },
-      inactive: { label: "Inactive", className: "bg-gray-100 text-gray-800" }
-    };
-    return config[status] || config.inactive;
+  const handleViewDetails = (resident) => {
+    setSelectedResident(resident);
+    setViewDetailsOpen(true);
   };
 
-  const stats = [
-    {
-      title: "Total Users",
-      value: users.length,
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
-    },
-    {
-      title: "Active Users",
-      value: users.filter(u => u.status === "active").length,
-      icon: UserCheck,
-      color: "text-green-600",
-      bgColor: "bg-green-50"
-    },
-    {
-      title: "Suspended",
-      value: users.filter(u => u.status === "suspended").length,
-      icon: UserX,
-      color: "text-red-600",
-      bgColor: "bg-red-50"
-    }
-  ];
+  const handleCloseModal = () => {
+    setIsResidentModalOpen(false);
+    // Refetch water connections after creating a new resident
+    queryClient.invalidateQueries({ queryKey: ['/api/water-connections'] });
+  };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-        <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
-        <div className="absolute bottom-20 left-20 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
-        
-          <TopHeader />
-          <main className="flex-1 overflow-auto p-6 relative z-10">
-            <div className="max-w-7xl mx-auto">
-              <Skeleton className="h-8 w-64 mb-4" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-24" />)}
-              </div>
-              <Skeleton className="h-96" />
-            </div>
-          </main>
-        </div>
-      </div>
-    );
+  const handleEditResident = (resident) => {
+    setResidentToEdit(resident);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setResidentToEdit(null);
+    // Refetch water connections after updating a resident
+    queryClient.invalidateQueries({ queryKey: ['/api/water-connections'] });
+  };
+
+  if (!isAuthenticated) {
+    setLocation("/login");
+    return null;
   }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      <Sidebar />
+    <Sidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
@@ -125,139 +126,320 @@ export default function AdminUsers() {
         
         <TopHeader />
         
-        <main className="flex-1 overflow-auto p-6 relative z-10">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 relative z-10">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Users className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-                  <p className="text-gray-600 mt-1">Manage resident accounts and water connections</p>
-                </div>
-              </div>
+              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
+                View All Residents
+              </h1>
+              <p className="text-gray-600 mt-2">
+                View barangay resident records
+              </p>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              {stats.map((stat, index) => (
-                <Card key={index}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                        <p className="text-2xl font-bold mt-2">{stat.value}</p>
-                      </div>
-                      <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                        <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Residents</p>
+                      <p className="text-2xl font-bold text-gray-900" data-testid="text-total-residents">
+                        {isLoading ? "..." : residents.length}
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <div className="bg-blue-100 p-3 rounded-lg">
+                      <UserCheck className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Active</p>
+                      <p className="text-2xl font-bold text-green-600" data-testid="text-active-residents">
+                        {isLoading ? "..." : residents.filter(r => r.connectionStatus === "active").length}
+                      </p>
+                    </div>
+                    <div className="bg-green-100 p-3 rounded-lg">
+                      <UserCheck className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Disconnected</p>
+                      <p className="text-2xl font-bold text-orange-600" data-testid="text-inactive-residents">
+                        {isLoading ? "..." : residents.filter(r => r.connectionStatus === "disconnected").length}
+                      </p>
+                    </div>
+                    <div className="bg-orange-100 p-3 rounded-lg">
+                      <UserX className="h-6 w-6 text-orange-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Pending</p>
+                      <p className="text-2xl font-bold text-purple-600" data-testid="text-pending-residents">
+                        {isLoading ? "..." : residents.filter(r => r.connectionStatus === "pending").length}
+                      </p>
+                    </div>
+                    <div className="bg-purple-100 p-3 rounded-lg">
+                      <Calendar className="h-6 w-6 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Users Table */}
+            {/* Main Content */}
             <Card>
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <CardTitle>All Users ({filteredUsers.length})</CardTitle>
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <div className="relative flex-1 md:w-64">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search users..."
-                        className="pl-10"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full md:w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="suspended">Suspended</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div>
+                    <CardTitle>Resident Records</CardTitle>
+                    <CardDescription>
+                      Manage and view all registered residents
+                    </CardDescription>
                   </div>
+                  
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-4 text-sm font-medium text-gray-600">Name</th>
-                        <th className="text-left p-4 text-sm font-medium text-gray-600">Email</th>
-                        <th className="text-left p-4 text-sm font-medium text-gray-600">Zone/Purok</th>
-                        <th className="text-left p-4 text-sm font-medium text-gray-600">Status</th>
-                        <th className="text-right p-4 text-sm font-medium text-gray-600">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map((user) => {
-                        const statusConfig = getStatusBadge(user.status);
-                        return (
-                          <tr key={user._id} className="border-b hover:bg-gray-50">
-                            <td className="p-4">
-                              <div className="font-medium">{user.first_name} {user.last_name}</div>
-                              <div className="text-sm text-gray-500">{user.meter_number || 'N/A'}</div>
-                            </td>
-                            <td className="p-4 text-sm">{user.email}</td>
-                            <td className="p-4 text-sm"> {`Biking ${user.zone}`} / {`Purok ${user.purok}`}</td>
-                            <td className="p-4">
-                              <Badge className={statusConfig.className}>
-                                {statusConfig.label}
-                              </Badge>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="sm">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-red-600">
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {filteredUsers.length === 0 && (
-                        <tr>
-                          <td colSpan="5" className="p-8 text-center text-gray-500">
-                            No users found
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                
+                {/* Search and Filter */}
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by name, contact, or address..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search"
+                    />
+                  </div>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-full md:w-48" data-testid="select-status-filter">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Filter by connection status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="disconnected">Disconnected</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {/* Loading State */}
+                {isLoading && (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    <span className="ml-3 text-gray-600">Loading residents...</span>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <p className="text-red-800 text-sm">
+                      <strong>Error loading residents:</strong> {error.message}
+                    </p>
+                  </div>
+                )}
+
+                {/* Table */}
+                {!isLoading && !error && (
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Address</TableHead>
+                          <TableHead>Meter No.</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
+                        
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResidents.length > 0 ? (
+                          filteredResidents.map((resident) => (
+                            <TableRow key={resident.id} data-testid={`row-resident-${resident.id}`}>
+                              <TableCell className="font-medium">{resident.name}</TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div>{resident.contactNo}</div>
+                                  <div className="text-gray-500">{resident.email}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">{resident.address}</TableCell>
+                              <TableCell>
+                                <span className="font-mono text-sm">{resident.meter_no}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="capitalize">
+                                  {resident.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                    variant={resident.connectionStatus === "active" ? "success" : "secondary"}
+                                    className={`
+                                      ${
+                                        resident.connectionStatus === "active"
+                                          ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                          : resident.connectionStatus === "pending"
+                                          ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+                                          : resident.connectionStatus === "disconnected"
+                                          ? "bg-red-100 text-red-700 hover:bg-red-100"
+                                          : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                                      }
+                                    `}
+                                    data-testid={`badge-status-${resident.id}`}
+                                  >
+                                    {resident.connectionStatus.charAt(0).toUpperCase() + resident.connectionStatus.slice(1)}
+                                  </Badge>
+                              </TableCell>
+                            
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                              No residents found matching your criteria
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </main>
       </div>
+
+      {/* View Details Dialog */}
+      <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Resident Details</DialogTitle>
+            <DialogDescription>
+              Complete information about the selected resident
+            </DialogDescription>
+          </DialogHeader>
+          {selectedResident && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Full Name</label>
+                  <p className="text-gray-900 mt-1">{selectedResident.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Meter Number</label>
+                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.meter_no}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Contact Number</label>
+                  <p className="text-gray-900 mt-1 flex items-center">
+                    <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                    {selectedResident.contactNo}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Email</label>
+                  <p className="text-gray-900 mt-1 flex items-center">
+                    <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                    {selectedResident.email}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium text-gray-700">Address</label>
+                  <p className="text-gray-900 mt-1 flex items-center">
+                    <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                    {selectedResident.address}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Connection Type</label>
+                  <p className="text-gray-900 mt-1 capitalize">{selectedResident.type}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Connection Status</label>
+                  <div className="mt-1">
+                    <Badge
+                      variant="outline"
+                      className="capitalize"
+                    >
+                      {selectedResident.connectionStatus}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Previous Reading</label>
+                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.previousReading} m³</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Present Reading</label>
+                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.presentReading} m³</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Status</label>
+                  <div className="mt-1">
+                    <Badge
+                      variant={selectedResident.status === "active" ? "success" : "secondary"}
+                      className={
+                        selectedResident.status === "active"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-700"
+                      }
+                    >
+                      {selectedResident.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setViewDetailsOpen(false)} data-testid="button-close-dialog">
+                  Close
+                </Button>
+                <Button data-testid="button-edit-information">Edit Information</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Resident Modal */}
+      <CreateResidentModal 
+        isOpen={isResidentModalOpen} 
+        onClose={handleCloseModal} 
+      />
+
+      {/* Edit Resident Modal */}
+      <EditResidentModal 
+        isOpen={isEditModalOpen} 
+        onClose={handleCloseEditModal}
+        resident={residentToEdit}
+      />
     </div>
   );
 }

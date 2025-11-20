@@ -15,7 +15,8 @@ import {
   BarChart3,
   AlertTriangle,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Archive
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -33,7 +34,7 @@ const menuItems = [
     subItems: [
       { title: "All Residents", href: "/admin-dashboard/users" },
       { title: "Disconnect Requests", href: "/admin-dashboard/disconnect-requests" },
-      { title: "Archive Requests", href: "/admin-dashboard/archive-requests" },
+      { title: "Deliquency List", href: "/admin-dashboard/deliquency-list" },
     ]
   },
   {
@@ -43,16 +44,20 @@ const menuItems = [
     color: "text-purple-600"
   },
   {
+    title: "Archive Management",
+    icon: Archive,
+    color: "text-orange-600",
+    subItems: [
+      { title: "Archive Requests", href: "/admin-dashboard/archive-requests" },
+      { title: "Archived Users", href: "/admin-dashboard/archived-users" },
+      
+    ]
+  },
+  {
     icon: FileText,
     label: "Billing & Payments",
     href: "/admin-dashboard/billing",
     color: "text-orange-600"
-  },
-  {
-    icon: BarChart3,
-    label: "Reports",
-    href: "/admin-dashboard/reports",
-    color: "text-indigo-600"
   },
   {
     icon: Calendar,

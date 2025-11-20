@@ -12,7 +12,8 @@ const {
   getPersonnelArchiveStatus,
   cancelPersonnelArchiveRequest,
   approvePersonnelArchive,
-  rejectPersonnelArchive
+  rejectPersonnelArchive,
+  unarchivePersonnel
 } = require('../controller/personnel');
 const authMiddleware = require('../middleware/authentication');
 const roleMiddleware = require('../middleware/roleMiddleware');
@@ -46,5 +47,6 @@ router.delete('/:id', authMiddleware, roleMiddleware('admin'), deletePersonnel);
 // Admin routes for personnel archive management
 router.patch('/:id/approve-archive', authMiddleware, roleMiddleware('admin'), approvePersonnelArchive);
 router.patch('/:id/reject-archive', authMiddleware, roleMiddleware('admin'), rejectPersonnelArchive);
+router.patch('/:id/unarchive', authMiddleware, roleMiddleware('admin'), unarchivePersonnel);
 
 module.exports = router;

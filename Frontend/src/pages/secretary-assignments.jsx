@@ -50,8 +50,8 @@ export default function SecretaryAssignments() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterPriority, setFilterPriority] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("Priority");
+  const [filterStatus, setFilterStatus] = useState("Status");
   const [selectedTask, setSelectedTask] = useState(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
@@ -146,12 +146,15 @@ export default function SecretaryAssignments() {
       task.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.assignedTo?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesPriority = filterPriority === "all" || task.priority === filterPriority;
+    const matchesPriority = filterPriority === "Priority" || task.priority === filterPriority;
     
     const matchesStatus = 
-      filterStatus === "all" ||
-      (filterStatus === "unassigned" && task.status === "Unassigned") ||
-      (filterStatus === "assigned" && task.status !== "Unassigned");
+      filterStatus === "Status" ||
+      (filterStatus === "Unassigned" && task.status === "Unassigned") ||
+      (filterStatus === "Assigned" && task.status === "Assigned") ||
+      (filterStatus === "Pending" && task.status === "Pending") ||
+      (filterStatus === "Completed" && task.status === "Completed") ||
+      (filterStatus === "Cancelled" && task.status === "Cancelled");
     
     return matchesSearch && matchesPriority && matchesStatus;
   });
@@ -312,6 +315,7 @@ export default function SecretaryAssignments() {
     Unassigned: { color: "bg-gray-100 text-gray-700", label: "Unassigned" },
     Assigned: { color: "bg-blue-100 text-blue-700", label: "Assigned" },
     Completed: { color: "bg-green-100 text-green-700", label: "Completed" },
+    Pending: { color: "bg-orange-100 text-orange-700", label: "Pending" },
     Cancelled: { color: "bg-red-100 text-red-700", label: "Cancelled" },
   };
 
@@ -438,7 +442,7 @@ export default function SecretaryAssignments() {
                       <SelectValue placeholder="Filter by priority" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Priorities</SelectItem>
+                      <SelectItem value="Priority">All Priorities</SelectItem>
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="high">High</SelectItem>
@@ -450,9 +454,11 @@ export default function SecretaryAssignments() {
                       <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="unassigned">Unassigned Only</SelectItem>
-                      <SelectItem value="assigned">Assigned Only</SelectItem>
+                      <SelectItem value="Status">All Status</SelectItem>
+                      <SelectItem value="Assigned">Assigned</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                       <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="Cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

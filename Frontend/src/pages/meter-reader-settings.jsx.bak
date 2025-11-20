@@ -7,31 +7,29 @@ import { Separator } from "../components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
-import ResidentSidebar from "../components/layout/resident-sidebar";
-import ResidentTopHeader from "../components/layout/resident-top-header";
+import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
+import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { Settings as SettingsIcon, Bell, Mail, Lock, Eye, Shield, EyeOff, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 
-export default function ResidentSettings() {
+export default function MeterReaderSettings() {
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
-    billReminders: true,
-    paymentConfirmations: true,
-    announcements: true,
-    serviceUpdates: true
+    taskReminders: true,
+    announcements: true
   });
 
   const [privacy, setPrivacy] = useState({
     showProfile: true,
-    shareUsageData: false
+    shareData: false
   });
 
   // Change Password Modal States
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [passwordStep, setPasswordStep] = useState(1); // 1 = password entry, 2 = verification code
+  const [passwordStep, setPasswordStep] = useState(1);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -43,63 +41,26 @@ export default function ResidentSettings() {
     verificationCode: ""
   });
 
-  // Disconnect Account Modal States
-  const [disconnectModalOpen, setDisconnectModalOpen] = useState(false);
-
   // Archive Account Modal States
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
-  const [cancelArchiveModalOpen, setCancelArchiveModalOpen] = useState(false);
-
-  // Fetch disconnection status
-  const { data: disconnectionStatus } = useQuery({
-    queryKey: ["disconnection-status"],
-    queryFn: () => apiClient.getDisconnectionStatus(),
-    retry: false,
-    enabled: true
-  });
 
   // Fetch archive status
   const { data: archiveStatus } = useQuery({
-    queryKey: ["archive-status"],
-    queryFn: () => apiClient.getArchiveStatus(),
+    queryKey: ["personnel-archive-status"],
+    queryFn: () => apiClient.getPersonnelArchiveStatus(),
     retry: false,
     enabled: true
-  });
-
-  // Request Disconnection Mutation
-  const requestDisconnectionMutation = useMutation({
-    mutationFn: () => apiClient.requestDisconnection(),
-    onSuccess: () => {
-      toast.success("Disconnection request submitted successfully!");
-      setDisconnectModalOpen(false);
-      window.location.reload(); // Reload to update status
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to submit disconnection request");
-    }
-  });
-
-  // Cancel Disconnection Mutation
-  const cancelDisconnectionMutation = useMutation({
-    mutationFn: () => apiClient.cancelDisconnectionRequest(),
-    onSuccess: () => {
-      toast.success("Disconnection request cancelled successfully!");
-      window.location.reload(); // Reload to update status
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to cancel disconnection request");
-    }
   });
 
   // Request Archive Mutation
   const requestArchiveMutation = useMutation({
-    mutationFn: (data) => apiClient.requestArchive(data),
+    mutationFn: (data) => apiClient.requestPersonnelArchive(data),
     onSuccess: () => {
       toast.success("Archive request submitted successfully!");
       setArchiveModalOpen(false);
       setArchiveReason("");
-      window.location.reload(); // Reload to update status
+      window.location.reload();
     },
     onError: (error) => {
       toast.error(error.message || "Failed to submit archive request");
@@ -108,10 +69,10 @@ export default function ResidentSettings() {
 
   // Cancel Archive Mutation
   const cancelArchiveMutation = useMutation({
-    mutationFn: () => apiClient.cancelArchiveRequest(),
+    mutationFn: () => apiClient.cancelPersonnelArchiveRequest(),
     onSuccess: () => {
       toast.success("Archive request cancelled successfully!");
-      window.location.reload(); // Reload to update status
+      window.location.reload();
     },
     onError: (error) => {
       toast.error(error.message || "Failed to cancel archive request");
@@ -119,10 +80,7 @@ export default function ResidentSettings() {
   });
 
   const handleSaveSettings = () => {
-    toastHook({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully",
-    });
+    toast.success("Settings Saved", { description: "Your preferences have been updated successfully" });
   };
 
   // Request Password Change Mutation
@@ -130,21 +88,15 @@ export default function ResidentSettings() {
     mutationFn: (data) => apiClient.requestPasswordChange(data),
     onSuccess: (response) => {
       toast.success("Verification code sent to your email");
-      setPasswordStep(2); // Move to verification step
+      setPasswordStep(2);
     },
     onError: (error) => {
-      console.error("❌ Password change error FULL:", error);
-      console.error("❌ Error message:", error.message);
-      console.error("❌ Error stack:", error.stack);
-
-      // The error.message contains the backend's error message
       const errorMessage = error.message || "Failed to send verification code";
 
-      // Show the appropriate toast based on the error message
       if (errorMessage.includes("No email address found")) {
         toast.error("No email address found. Please add an email to your profile first.");
       } else if (errorMessage.includes("Current password is incorrect")) {
-        toast.error("❌ Current password is incorrect. Please try again.");
+        toast.error("Current password is incorrect. Please try again.");
       } else if (errorMessage.includes("at least 6 characters")) {
         toast.error("New password must be at least 6 characters long");
       } else if (errorMessage.includes("provide both current and new password")) {
@@ -163,18 +115,16 @@ export default function ResidentSettings() {
       resetPasswordModal();
     },
     onError: (error) => {
-      console.error("Verification error:", error);
-
       const errorMessage = error.message || "Failed to change password";
 
       if (errorMessage.includes("expired")) {
         toast.error("Verification code has expired. Please start over.");
-        setPasswordStep(1); // Reset to step 1
+        setPasswordStep(1);
       } else if (errorMessage.includes("Invalid verification code")) {
         toast.error("Invalid verification code. Please check and try again.");
       } else if (errorMessage.includes("No pending password change")) {
         toast.error("Session expired. Please start the process again.");
-        setPasswordStep(1); // Reset to step 1
+        setPasswordStep(1);
       } else {
         toast.error(errorMessage);
       }
@@ -196,19 +146,16 @@ export default function ResidentSettings() {
   };
 
   const handlePasswordSubmit = () => {
-    // Validate passwords match
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error("New passwords do not match");
       return;
     }
 
-    // Validate password length
     if (passwordData.newPassword.length < 6) {
       toast.error("New password must be at least 6 characters");
       return;
     }
 
-    // Request password change with verification code
     requestPasswordChangeMutation.mutate({
       current_password: passwordData.currentPassword,
       new_password: passwordData.newPassword
@@ -227,7 +174,6 @@ export default function ResidentSettings() {
   };
 
   const handleArchiveSubmit = () => {
-    // Validate reason
     if (!archiveReason || archiveReason.trim().length === 0) {
       toast.error("Please provide a reason for archiving your account");
       return;
@@ -238,7 +184,6 @@ export default function ResidentSettings() {
       return;
     }
 
-    // Submit archive request
     requestArchiveMutation.mutate({
       reason: archiveReason.trim()
     });
@@ -246,20 +191,18 @@ export default function ResidentSettings() {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      <ResidentSidebar />
+      <MeterReaderSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
         <div className="absolute bottom-20 left-20 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
-        
-        <ResidentTopHeader />
+
+        <MeterReaderTopHeader />
 
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-settings-title">
-                Settings
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
               <p className="text-gray-600 mt-2">
                 Manage your account preferences and notification settings
               </p>
@@ -276,7 +219,6 @@ export default function ResidentSettings() {
                   <CardDescription>Choose how you want to receive notifications</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Notification Channels */}
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-4">Notification Channels</h3>
                     <div className="space-y-4">
@@ -292,7 +234,6 @@ export default function ResidentSettings() {
                           id="email-notif"
                           checked={notifications.email}
                           onCheckedChange={(checked) => setNotifications({...notifications, email: checked})}
-                          data-testid="switch-email-notif"
                         />
                       </div>
 
@@ -308,7 +249,6 @@ export default function ResidentSettings() {
                           id="sms-notif"
                           checked={notifications.sms}
                           onCheckedChange={(checked) => setNotifications({...notifications, sms: checked})}
-                          data-testid="switch-sms-notif"
                         />
                       </div>
                     </div>
@@ -316,59 +256,30 @@ export default function ResidentSettings() {
 
                   <Separator />
 
-                  {/* Notification Types */}
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-4">Notification Types</h3>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <Label htmlFor="bill-reminders" className="font-medium">Bill Reminders</Label>
-                          <p className="text-sm text-gray-600">Get reminded before bill due dates</p>
+                          <Label htmlFor="task-reminders" className="font-medium">Task Reminders</Label>
+                          <p className="text-sm text-gray-600">Get reminded about pending tasks</p>
                         </div>
                         <Switch
-                          id="bill-reminders"
-                          checked={notifications.billReminders}
-                          onCheckedChange={(checked) => setNotifications({...notifications, billReminders: checked})}
-                          data-testid="switch-bill-reminders"
+                          id="task-reminders"
+                          checked={notifications.taskReminders}
+                          onCheckedChange={(checked) => setNotifications({...notifications, taskReminders: checked})}
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <Label htmlFor="payment-confirm" className="font-medium">Payment Confirmations</Label>
-                          <p className="text-sm text-gray-600">Receive confirmation when payments are processed</p>
-                        </div>
-                        <Switch
-                          id="payment-confirm"
-                          checked={notifications.paymentConfirmations}
-                          onCheckedChange={(checked) => setNotifications({...notifications, paymentConfirmations: checked})}
-                          data-testid="switch-payment-confirm"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="announcements" className="font-medium">Barangay Announcements</Label>
-                          <p className="text-sm text-gray-600">Stay updated with community announcements</p>
+                          <Label htmlFor="announcements" className="font-medium">System Announcements</Label>
+                          <p className="text-sm text-gray-600">Stay updated with system announcements</p>
                         </div>
                         <Switch
                           id="announcements"
                           checked={notifications.announcements}
                           onCheckedChange={(checked) => setNotifications({...notifications, announcements: checked})}
-                          data-testid="switch-announcements"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="service-updates" className="font-medium">Service Updates</Label>
-                          <p className="text-sm text-gray-600">Notifications about water service changes</p>
-                        </div>
-                        <Switch
-                          id="service-updates"
-                          checked={notifications.serviceUpdates}
-                          onCheckedChange={(checked) => setNotifications({...notifications, serviceUpdates: checked})}
-                          data-testid="switch-service-updates"
                         />
                       </div>
                     </div>
@@ -398,7 +309,6 @@ export default function ResidentSettings() {
                       id="show-profile"
                       checked={privacy.showProfile}
                       onCheckedChange={(checked) => setPrivacy({...privacy, showProfile: checked})}
-                      data-testid="switch-show-profile"
                     />
                   </div>
 
@@ -412,9 +322,8 @@ export default function ResidentSettings() {
                     </div>
                     <Switch
                       id="share-data"
-                      checked={privacy.shareUsageData}
-                      onCheckedChange={(checked) => setPrivacy({...privacy, shareUsageData: checked})}
-                      data-testid="switch-share-data"
+                      checked={privacy.shareData}
+                      onCheckedChange={(checked) => setPrivacy({...privacy, shareData: checked})}
                     />
                   </div>
 
@@ -424,84 +333,14 @@ export default function ResidentSettings() {
                     <Button
                       variant="outline"
                       className="w-full"
-                      data-testid="button-change-password"
                       onClick={() => setChangePasswordOpen(true)}
                     >
                       <Lock className="h-4 w-4 mr-2" />
                       Change Password
                     </Button>
 
-                    {/* Disconnect Account Button */}
-                    {disconnectionStatus?.status === 'request_for_disconnection' ? (
-                      <div className="space-y-2">
-                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <div className="flex items-start space-x-2">
-                            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-yellow-900">Disconnection Pending</p>
-                              <p className="text-xs text-yellow-700 mt-1">
-                                Your disconnection request is awaiting admin approval.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to cancel your disconnection request?")) {
-                              cancelDisconnectionMutation.mutate();
-                            }
-                          }}
-                          disabled={cancelDisconnectionMutation.isPending}
-                        >
-                          {cancelDisconnectionMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Cancelling...
-                            </>
-                          ) : (
-                            "Cancel Request"
-                          )}
-                        </Button>
-                      </div>
-                    ) : disconnectionStatus?.status === 'disconnected' || disconnectionStatus?.status === 'for_disconnection' ? (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-red-900">Account Disconnected</p>
-                            <p className="text-xs text-red-700 mt-1">
-                              Your water service has been disconnected.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : disconnectionStatus?.disconnection_rejection_reason ? (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900">Disconnection Request Not Approved</p>
-                            <p className="text-xs text-blue-700 mt-1">
-                              {disconnectionStatus.disconnection_rejection_reason}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full border-red-200 text-red-600 hover:bg-red-50"
-                        onClick={() => setDisconnectModalOpen(true)}
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Disconnect Account
-                      </Button>
-                    )}
-
                     {/* Archive Account Button */}
-                    {archiveStatus?.archive_status === 'pending_archive' ? (
+                    {archiveStatus?.data?.archive_status === 'pending_archive' ? (
                       <div className="space-y-2">
                         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <div className="flex items-start space-x-2">
@@ -517,12 +356,24 @@ export default function ResidentSettings() {
                         <Button
                           variant="outline"
                           className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
-                          onClick={() => setCancelArchiveModalOpen(true)}
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to cancel your archive request?")) {
+                              cancelArchiveMutation.mutate();
+                            }
+                          }}
+                          disabled={cancelArchiveMutation.isPending}
                         >
-                          Cancel Request
+                          {cancelArchiveMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            "Cancel Request"
+                          )}
                         </Button>
                       </div>
-                    ) : archiveStatus?.archive_status === 'archived' ? (
+                    ) : archiveStatus?.data?.archive_status === 'archived' ? (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                         <div className="flex items-start space-x-2">
                           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
@@ -534,14 +385,14 @@ export default function ResidentSettings() {
                           </div>
                         </div>
                       </div>
-                    ) : archiveStatus?.archive_rejection_reason ? (
+                    ) : archiveStatus?.data?.archive_rejection_reason ? (
                       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-start space-x-2">
                           <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
                           <div>
                             <p className="text-sm font-medium text-blue-900">Archive Request Not Approved</p>
                             <p className="text-xs text-blue-700 mt-1">
-                              {archiveStatus.archive_rejection_reason}
+                              {archiveStatus.data.archive_rejection_reason}
                             </p>
                           </div>
                         </div>
@@ -572,7 +423,7 @@ export default function ResidentSettings() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label className="font-medium">Language</Label>
-                    <select className="w-full mt-2 px-3 py-2 border rounded-md" data-testid="select-language">
+                    <select className="w-full mt-2 px-3 py-2 border rounded-md">
                       <option value="en">English</option>
                       <option value="fil">Filipino</option>
                     </select>
@@ -580,7 +431,7 @@ export default function ResidentSettings() {
 
                   <div>
                     <Label className="font-medium">Date Format</Label>
-                    <select className="w-full mt-2 px-3 py-2 border rounded-md" data-testid="select-date-format">
+                    <select className="w-full mt-2 px-3 py-2 border rounded-md">
                       <option value="mm/dd/yyyy">MM/DD/YYYY</option>
                       <option value="dd/mm/yyyy">DD/MM/YYYY</option>
                       <option value="yyyy-mm-dd">YYYY-MM-DD</option>
@@ -589,7 +440,7 @@ export default function ResidentSettings() {
 
                   <div>
                     <Label className="font-medium">Currency</Label>
-                    <select className="w-full mt-2 px-3 py-2 border rounded-md" data-testid="select-currency">
+                    <select className="w-full mt-2 px-3 py-2 border rounded-md">
                       <option value="php">Philippine Peso (₱)</option>
                     </select>
                   </div>
@@ -599,7 +450,7 @@ export default function ResidentSettings() {
               {/* Save Button */}
               <div className="flex justify-end gap-3">
                 <Button variant="outline">Reset to Defaults</Button>
-                <Button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700" data-testid="button-save-settings">
+                <Button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700">
                   <SettingsIcon className="h-4 w-4 mr-2" />
                   Save Settings
                 </Button>
@@ -624,9 +475,7 @@ export default function ResidentSettings() {
             </DialogHeader>
 
             {passwordStep === 1 ? (
-              // Step 1: Password Entry
               <div className="space-y-4 py-4">
-                {/* Current Password */}
                 <div className="space-y-2">
                   <Label htmlFor="current-password">Current Password</Label>
                   <div className="relative">
@@ -653,7 +502,6 @@ export default function ResidentSettings() {
                   </div>
                 </div>
 
-                {/* New Password */}
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New Password</Label>
                   <div className="relative">
@@ -681,7 +529,6 @@ export default function ResidentSettings() {
                   <p className="text-xs text-gray-500">Password must be at least 6 characters</p>
                 </div>
 
-                {/* Confirm New Password */}
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm New Password</Label>
                   <div className="relative">
@@ -712,7 +559,6 @@ export default function ResidentSettings() {
                 </div>
               </div>
             ) : (
-              // Step 2: Verification Code
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="verification-code">Verification Code</Label>
@@ -723,7 +569,7 @@ export default function ResidentSettings() {
                     maxLength={6}
                     value={passwordData.verificationCode}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, ""); // Only allow digits
+                      const value = e.target.value.replace(/\D/g, "");
                       setPasswordData({ ...passwordData, verificationCode: value });
                     }}
                     className="text-center text-2xl tracking-widest"
@@ -770,54 +616,6 @@ export default function ResidentSettings() {
                   "Send Verification Code"
                 ) : (
                   "Change Password"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Disconnect Account Confirmation Modal */}
-        <Dialog open={disconnectModalOpen} onOpenChange={setDisconnectModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center text-red-600">
-                <AlertTriangle className="h-5 w-5 mr-2" />
-                Disconnect Account
-              </DialogTitle>
-              <DialogDescription className="text-gray-700">
-                Do you really want to disconnect your water service account?
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="py-4">
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">
-                  <strong>Warning:</strong> This action will request disconnection of your water service.
-                  Your request will be sent to the administrator for approval.
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setDisconnectModalOpen(false)}
-                disabled={requestDisconnectionMutation.isPending}
-              >
-                No, Cancel
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => requestDisconnectionMutation.mutate()}
-                disabled={requestDisconnectionMutation.isPending}
-              >
-                {requestDisconnectionMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Yes, Disconnect"
                 )}
               </Button>
             </DialogFooter>
@@ -884,54 +682,6 @@ export default function ResidentSettings() {
                   </>
                 ) : (
                   "Submit Request"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Cancel Archive Request Modal */}
-        <Dialog open={cancelArchiveModalOpen} onOpenChange={setCancelArchiveModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center text-orange-600">
-                <AlertTriangle className="h-5 w-5 mr-2" />
-                Cancel Archive Request
-              </DialogTitle>
-              <DialogDescription>
-                Are you sure you want to cancel your archive request?
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="py-4">
-              <p className="text-sm text-gray-600">
-                This will remove your pending archive request. You can submit a new request anytime.
-              </p>
-            </div>
-
-            <DialogFooter className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setCancelArchiveModalOpen(false)}
-                disabled={cancelArchiveMutation.isPending}
-              >
-                No, Keep Request
-              </Button>
-              <Button
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-                onClick={() => {
-                  cancelArchiveMutation.mutate();
-                  setCancelArchiveModalOpen(false);
-                }}
-                disabled={cancelArchiveMutation.isPending}
-              >
-                {cancelArchiveMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Cancelling...
-                  </>
-                ) : (
-                  "Yes, Cancel Request"
                 )}
               </Button>
             </DialogFooter>

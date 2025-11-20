@@ -44,6 +44,7 @@ export default function SecretarySettings() {
   // Archive Account Modal States
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
+  const [cancelArchiveModalOpen, setCancelArchiveModalOpen] = useState(false);
 
   // Fetch archive status
   const { data: archiveStatus } = useQuery({
@@ -340,7 +341,7 @@ export default function SecretarySettings() {
                     </Button>
 
                     {/* Archive Account Button */}
-                    {archiveStatus?.archive_status === 'pending_archive' ? (
+                    {archiveStatus?.data?.archive_status === 'pending_archive' ? (
                       <div className="space-y-2">
                         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <div className="flex items-start space-x-2">
@@ -356,24 +357,12 @@ export default function SecretarySettings() {
                         <Button
                           variant="outline"
                           className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to cancel your archive request?")) {
-                              cancelArchiveMutation.mutate();
-                            }
-                          }}
-                          disabled={cancelArchiveMutation.isPending}
+                          onClick={() => setCancelArchiveModalOpen(true)}
                         >
-                          {cancelArchiveMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Cancelling...
-                            </>
-                          ) : (
-                            "Cancel Request"
-                          )}
+                          Cancel Request
                         </Button>
                       </div>
-                    ) : archiveStatus?.archive_status === 'archived' ? (
+                    ) : archiveStatus?.data?.archive_status === 'archived' ? (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                         <div className="flex items-start space-x-2">
                           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
@@ -385,14 +374,14 @@ export default function SecretarySettings() {
                           </div>
                         </div>
                       </div>
-                    ) : archiveStatus?.archive_rejection_reason ? (
+                    ) : archiveStatus?.data?.archive_rejection_reason ? (
                       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-start space-x-2">
                           <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
                           <div>
                             <p className="text-sm font-medium text-blue-900">Archive Request Not Approved</p>
                             <p className="text-xs text-blue-700 mt-1">
-                              {archiveStatus.archive_rejection_reason}
+                              {archiveStatus.data.archive_rejection_reason}
                             </p>
                           </div>
                         </div>
@@ -682,6 +671,54 @@ export default function SecretarySettings() {
                   </>
                 ) : (
                   "Submit Request"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Cancel Archive Request Modal */}
+        <Dialog open={cancelArchiveModalOpen} onOpenChange={setCancelArchiveModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center text-orange-600">
+                <AlertTriangle className="h-5 w-5 mr-2" />
+                Cancel Archive Request
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to cancel your archive request?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4">
+              <p className="text-sm text-gray-600">
+                This will remove your pending archive request. You can submit a new request anytime.
+              </p>
+            </div>
+
+            <DialogFooter className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCancelArchiveModalOpen(false)}
+                disabled={cancelArchiveMutation.isPending}
+              >
+                No, Keep Request
+              </Button>
+              <Button
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={() => {
+                  cancelArchiveMutation.mutate();
+                  setCancelArchiveModalOpen(false);
+                }}
+                disabled={cancelArchiveMutation.isPending}
+              >
+                {cancelArchiveMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  "Yes, Cancel Request"
                 )}
               </Button>
             </DialogFooter>

@@ -11,7 +11,7 @@ class AuthManager {
     try {
       // Debug: Log the backend URL being used
       console.log('Attempting login to:', `${this.backendURL}/api/v1/auth/login`);
-      
+
       // Try connecting to your MongoDB backend first
       const response = await fetch(`${this.backendURL}/api/v1/auth/login`, {
         method: 'POST',
@@ -25,7 +25,7 @@ class AuthManager {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Handle your backend response format
         const userData = {
           token: data.userForm?.token || data.token,
@@ -40,19 +40,25 @@ class AuthManager {
             role: data.userForm?.role || data.role
           }
         };
-        
+
         // Store token and user data
         //key ug value pair this tokenkey is equal sa userdata.token
         localStorage.setItem(this.tokenKey, userData.token);
         localStorage.setItem(this.userKey, JSON.stringify(userData.user));
-        
+
         return userData;
       }
-      
-      // throw new Error('MongoDB backend connection failed');
-      
+
+      // Handle error responses from backend
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.msg || errorData.message || errorData.error || 'Login failed';
+        throw new Error(errorMessage);
+      }
+
     } catch (error) {
       console.log('MongoDB backend error:', error.message);
+      throw error;
       
       // try {
       //   // Try Replit server as fallback

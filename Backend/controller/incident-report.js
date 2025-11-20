@@ -44,6 +44,7 @@ const createReports = async (req, res) => {
  
 const getReports = async (req, res) => {
   const user = req.user;
+
   if (!user) {
     return res.status(401).json({
       success: false,
@@ -57,10 +58,10 @@ const getReports = async (req, res) => {
     });
   }
   try {
-    console.log('🔍 Fetching reports for user:', {
+    console.log('🔍 Fetching reports for user:', { 
       userId: user.userId,
       role: user.role,
-      email: user.email
+  
     });
     let filter = {};
     if (user.role === 'resident') {
@@ -70,32 +71,15 @@ const getReports = async (req, res) => {
       };
     } else if (user.role === 'meter_reader') {
       filter = {
-        $or: [
-          { assigned_to: user.userId },
-          { assigned_to: null },
-          { assigned_to: { $exists: false } }
-        ]
+        reported_by: user.userId,
+        reported_by_model: 'Personnel'
       };
-    }
+      };
+    
 
     console.log('📋 Query filter:', filter);
 
-    // this part is the one who exlcude those task is being scheduled
-    
-    // ✅ Get all report IDs that have scheduled tasks
-    // const scheduledReportIds = await ScheduleTask.find({
-    //   report_id: { $exists: true, $ne: null }
-    // })
-    //   .distinct('report_id')
-    //   .lean();
-    // console.log(`🗓️ Found ${scheduledReportIds.length} reports with scheduled tasks`);
-    
-    // ✅ Exclude reports that already have scheduled tasks
 
-
-    // filter._id = { $nin: scheduledReportIds };
-    // console.log('📋 Updated filter (excluding scheduled reports):', filter);
-    // ✅ Fetch incident reports
 
 
     const reports = await IncidentReport.find(filter)
@@ -103,6 +87,7 @@ const getReports = async (req, res) => {
       .lean();
     console.log(`✅ Found ${reports.length} unscheduled reports`);
     // ✅ Manually populate reported_by with ONLY the full name
+    
     const populatedReports = await Promise.all(
       reports.map(async (report) => {
         if (report.reported_by) {
@@ -187,7 +172,7 @@ const getReports = async (req, res) => {
 };
 
 
-// Update incident status
+// Update incident status 
 const updateIncidentStatus = async (req, res) => {
   try {
     const { id } = req.params;

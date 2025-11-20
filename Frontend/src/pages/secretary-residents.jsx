@@ -5,6 +5,7 @@ import SecretarySidebar from "../components/layout/secretary-sidebar";
 import SecretaryTopHeader from "../components/layout/secretary-top-header";
 import CreateResidentModal from "../components/modals/create-resident-modal";
 import EditResidentModal from "../components/modals/edit-resident-modal";
+import GenerateResidentReportModal from "../components/modals/generate-resident-report-modal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -31,7 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar, UserPlus, Loader2 } from "lucide-react";
+import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar, UserPlus, Loader2, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 import { queryClient } from "../lib/query-client";
@@ -46,6 +47,7 @@ export default function SecretaryResidents() {
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [residentToEdit, setResidentToEdit] = useState(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Fetch water connections from backend
   const { data: residents = [], isLoading, error } = useQuery({
@@ -216,7 +218,16 @@ export default function SecretaryResidents() {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
+                    <Button
+                      onClick={() => setIsReportModalOpen(true)}
+                      variant="outline"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                      data-testid="button-generate-report"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Generate Report
+                    </Button>
+                    <Button
                       onClick={() => setIsResidentModalOpen(true)}
                       data-testid="button-add-resident"
                     >
@@ -464,10 +475,16 @@ export default function SecretaryResidents() {
       />
 
       {/* Edit Resident Modal */}
-      <EditResidentModal 
-        isOpen={isEditModalOpen} 
+      <EditResidentModal
+        isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         resident={residentToEdit}
+      />
+
+      {/* Generate Report Modal */}
+      <GenerateResidentReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
       />
     </div>
   );

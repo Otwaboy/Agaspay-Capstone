@@ -78,10 +78,16 @@ export default function AdminPersonnel() {
     return config[role] || { label: role, className: "bg-gray-100 text-gray-800" };
   };
 
-  const getStatusBadge = (status) => {
-    return status === "active" 
+  const getStatusBadge = (person) => {
+    // Check if archived first
+    if (person.archive_status === 'archived') {
+      return { label: "Archived", className: "bg-red-100 text-red-700" };
+    }
+
+    // Otherwise check active/inactive status
+    return person.status === "active"
       ? { label: "Inactive", className: "bg-green-100 text-green-800" }
-      : { label: "Active", className: "bg-gray-100 text-gray-800" };
+      : { label: "Active", className: "bg-green-100 text-green-800" };
   };
 
   const handleDelete = (id) => {
@@ -263,7 +269,7 @@ export default function AdminPersonnel() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredPersonnel.map((person) => {
                         const roleConfig = getRoleBadge(person.role);
-                        const statusConfig = getStatusBadge(person.status);
+                        const statusConfig = getStatusBadge(person);
                         const fullName = `${person.first_name} ${person.last_name}`;
                         const joinDate = person.created_at ? new Date(person.created_at).toLocaleDateString() : 'N/A';
                         

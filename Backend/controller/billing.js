@@ -251,7 +251,7 @@ const getOverdueBilling = async (req, res) => {
     const user = req.user;
 
     // Only treasurer or admin can access overdue accounts
-    if (user.role !== 'treasurer' && user.role !== 'admin') {
+    if (user.role !== 'treasurer' && user.role !== 'admin' && user.role !== 'secretary') {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         msg: 'Unauthorized. Only treasurer can access overdue accounts.',
       });

@@ -30,7 +30,7 @@ const residentMenuItems = [
     icon: Receipt,
     href: "/resident-dashboard/payment-history",
     color: "text-purple-600"
-  },
+  }, 
   {
     title: "Water Usage",
     icon: Droplets,

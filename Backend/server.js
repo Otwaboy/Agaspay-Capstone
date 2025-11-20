@@ -1,4 +1,4 @@
-// Backend file: server.js
+// backend packages
 require('dotenv').config()
 require('express-async-errors')
 
@@ -7,23 +7,22 @@ const cors = require('cors');
 const app = express()
 
 
-//import database Connection
+//Connect sa mongoDB 
 const connectDB = require('./connect/connect')
 
-//import Middleware 
+//Handle sa mga error using these middleware 
 const notFoundErrorMiddleware = require('./middleware/not-found')
 const errorHandlerMiddleware = require('./middleware/error-handler')
 
 
-// --- ✅ ROBUST CORS CONFIGURATION ---
 
 // List of explicitly allowed origins
 const allowedOrigins = [
   'http://localhost:5173', // Vite dev server
   'http://localhost:3000', // Local backend if needed
   'http://localhost:5000',
-  'https://agaspay-frontend.vercel.app', // Main production alias
-  // Add the newest one explicitly just in case the regex fails
+  'https://agaspay-frontend.vercel.app', // Vercel main domain
+  // backup
   'https://agaspay-frontend-pyad6f4fw-otwaboys-projects.vercel.app', 
 ];
 
@@ -48,9 +47,9 @@ const corsOptions = {
     credentials: true
 };
 
+
 app.use(cors(corsOptions)); // Use the defined options object
 
-// --- END ROBUST CORS CONFIGURATION ---
 
 
 //import routes
@@ -65,8 +64,6 @@ const IncidentReportRoutes = require('./routes/Incident-reports')
 const scheduleTaskRoutes = require('./routes/schedule-task')
 const assignmentRoutes= require('./routes/assignments')
 const announcementRoutes = require('./routes/announcement')
-const waterScheduleRoutes = require('./routes/water-schedule')
-const receiptRoutes = require('./routes/receipt')
 const connectionManagementRoutes = require('./routes/connection-management')
 const dashboardRoutes = require('./routes/dashboard')
 const personnelRoutes = require('./routes/personnel')
@@ -79,7 +76,8 @@ const archiveRequestRoutes = require('./routes/archive-request')
 //extra packages
 app.use(express.json())
 
-app.get('/', (req, res) => {res.status(200).json({message: 'Hello Vercel!'})})
+// app.get('/', (req, res) => {res.status(200).json({message: 'Hello Vercel!'})})
+
 //routes
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/meter-reader', meterReadingRoutes) 
@@ -92,8 +90,6 @@ app.use('/api/v1/incident-report', IncidentReportRoutes)
 app.use('/api/v1/schedule-task', scheduleTaskRoutes)
 app.use('/api/v1/assignments', assignmentRoutes)
 app.use('/api/v1/announcements', announcementRoutes)
-app.use('/api/v1/water-schedules', waterScheduleRoutes)
-app.use('/api/v1/receipts', receiptRoutes)
 app.use('/api/v1/connection-management', connectionManagementRoutes)
 app.use('/api/v1/dashboard', dashboardRoutes)
 app.use('/api/v1/personnel', personnelRoutes)
@@ -103,24 +99,24 @@ app.use('/api/v1/disconnection', disconnectionRequestRoutes)
 app.use('/api/v1/archive-request', archiveRequestRoutes)
 
 
-//webhooks
+//paymongo webhooks to to get event when succesfully na maka bayad
 app.use("/paymongo/webhook",require("./routes/webhook"));
 
 //error handler
 app.use(notFoundErrorMiddleware)
 app.use(errorHandlerMiddleware)
 
-//port
+//port 
 const port = process.env.PORT || 3000
 
 const start = async ()=> {
 
      try {
          await connectDB(process.env.MONGO_URI)
-            app.listen(port, ()=> {console.log(`Server is listening on :${port}`);})
+            app.listen(port, ()=> {console.log(`Agaspay Server is listening on Port: ${port}`);})
         } catch (error) {
           console.log(error);
-            }
+        }
 }
 
 start()

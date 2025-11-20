@@ -13,12 +13,7 @@ import {
   Clock, 
   Users,
   BarChart3,
-  FileText,
-  Bell,
   X,
-  FileCheck,
-  Wallet,
-  Wrench
 } from "lucide-react";
 
 export default function Login() {
@@ -46,7 +41,18 @@ export default function Login() {
     try {
       await login(formData);
     } catch (err) {
-      setError("Invalid username or password", err);
+      // Check if error is related to archived account
+      const errorMessage = err?.message || err?.response?.data?.message || err?.toString() || "";
+
+      if (errorMessage.toLowerCase().includes('archived')) {
+        setError("Your account has been archived. Please contact the administrator for assistance.");
+      } else if (errorMessage.toLowerCase().includes('password')) {
+        setError("Incorrect password. Please try again.");
+      } else if (errorMessage.toLowerCase().includes('username')) {
+        setError("Username does not exist.");
+      } else {
+        setError("Invalid username or password");
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -19,7 +19,9 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Eye
+  Eye,
+  User,
+  Briefcase
 } from "lucide-react";
 import apiClient from "../lib/api";
 import { toast } from "sonner";
@@ -351,62 +353,131 @@ export default function AdminArchiveRequests() {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Resident Name</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Meter No.</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Request Date</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Reason</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                          {activeTab === "residents" ? (
+                            <>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Resident Name</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Meter No.</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Request Date</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Reason</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                            </>
+                          ) : (
+                            <>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Personnel Name</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Role</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Department</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Request Date</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Reason</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                            </>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
                         {filteredRequests.map((request) => (
                           <tr key={request._id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-3 px-4">
-                              <div className="font-medium text-gray-900">
-                                {request.full_name} 
-                              </div>
-                              <div className="text-sm text-gray-500">{request.resident_id?.email}</div>
-                            </td>
-                          
-                            <td className="py-3 px-4 text-gray-700">
-                              {request.meter_no}
-                            </td>
-                            <td className="py-3 px-4 text-gray-700">
-                              {formatDate(request.archive_requested_date)}
-                            </td>
-                            <td className="py-3 px-4">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-blue-600 hover:text-blue-700"
-                                onClick={() => handleViewReason(request)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                View
-                              </Button>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  onClick={() => handleApprove(request)}
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => handleReject(request)}
-                                >
-                                  <X className="h-4 w-4 mr-1" />
-                                  Reject
-                                </Button>
-                              </div>
-                            </td>
+                            {activeTab === "residents" ? (
+                              <>
+                                <td className="py-3 px-4">
+                                  <div className="font-medium text-gray-900">
+                                    {request.full_name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">{request.resident_id?.email}</div>
+                                </td>
+                                <td className="py-3 px-4 text-gray-700">
+                                  {request.meter_no}
+                                </td>
+                                <td className="py-3 px-4 text-gray-700">
+                                  {formatDate(request.archive_requested_date)}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-blue-600 hover:text-blue-700"
+                                    onClick={() => handleViewReason(request)}
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View
+                                  </Button>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      onClick={() => handleApprove(request)}
+                                    >
+                                      <Check className="h-4 w-4 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => handleReject(request)}
+                                    >
+                                      <X className="h-4 w-4 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="py-3 px-4">
+                                  <div className="font-medium text-gray-900">
+                                    {request.first_name} {request.last_name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">{request.email}</div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Badge variant="outline" className="capitalize">
+                                    {request.role?.replace('_', ' ')}
+                                  </Badge>
+                                </td>
+                                <td className="py-3 px-4 text-gray-700">
+                                  {request.department || 'N/A'}
+                                </td>
+                                <td className="py-3 px-4 text-gray-700">
+                                  {formatDate(request.archive_requested_date)}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-blue-600 hover:text-blue-700"
+                                    onClick={() => handleViewReason(request)}
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View
+                                  </Button>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      onClick={() => handleApprove(request)}
+                                    >
+                                      <Check className="h-4 w-4 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => handleReject(request)}
+                                    >
+                                      <X className="h-4 w-4 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -431,22 +502,45 @@ export default function AdminArchiveRequests() {
             {selectedRequest && (
               <div className="py-4">
                 <div className="p-4 bg-gray-50 rounded-lg space-y-2 mb-4">
-                  <p className="text-sm">
-                    <span className="font-semibold">Resident:</span>{' '}
-                    {selectedRequest.full_name} 
-                  </p>
-                  <p className="text-sm">
-                    <span className="font-semibold">Meter No:</span>{' '}
-                    {selectedRequest.meter_no}
-                  </p>
-                    <p className="text-sm">
-                    <span className="font-semibold">Zone:</span>{' '}
-                    {selectedRequest.zone} 
-                  </p>
-                    <p className="text-sm">
-                    <span className="font-semibold">Purok:</span>{' '}
-                    {selectedRequest.purok} 
-                  </p>
+                  {activeTab === "residents" ? (
+                    <>
+                      <p className="text-sm">
+                        <span className="font-semibold">Resident:</span>{' '}
+                        {selectedRequest.full_name}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Meter No:</span>{' '}
+                        {selectedRequest.meter_no}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Zone:</span>{' '}
+                        {selectedRequest.zone}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Purok:</span>{' '}
+                        {selectedRequest.purok}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm">
+                        <span className="font-semibold">Personnel:</span>{' '}
+                        {selectedRequest.first_name} {selectedRequest.last_name}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Email:</span>{' '}
+                        {selectedRequest.email}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Role:</span>{' '}
+                        <span className="capitalize">{selectedRequest.role?.replace('_', ' ')}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Department:</span>{' '}
+                        {selectedRequest.department || 'N/A'}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -484,19 +578,40 @@ export default function AdminArchiveRequests() {
             {selectedRequest && (
               <div className="py-4">
                 <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-                  <p className="text-sm">
-                    <span className="font-semibold">Resident:</span>{' '}
-                    {selectedRequest.full_name}
-                  </p>
-                  <p className="text-sm">
-                    <span className="font-semibold">Meter No:</span> {selectedRequest.meter_no}
-                  </p>
-                   <p className="text-sm">
-                    <span className="font-semibold">Zone:</span> {selectedRequest.zone}
-                  </p>
-                   <p className="text-sm">
-                    <span className="font-semibold">Purok:</span> {selectedRequest.purok}
-                  </p>
+                  {activeTab === "residents" ? (
+                    <>
+                      <p className="text-sm">
+                        <span className="font-semibold">Resident:</span>{' '}
+                        {selectedRequest.full_name}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Meter No:</span> {selectedRequest.meter_no}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Zone:</span> {selectedRequest.zone}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Purok:</span> {selectedRequest.purok}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm">
+                        <span className="font-semibold">Personnel:</span>{' '}
+                        {selectedRequest.first_name} {selectedRequest.last_name}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Email:</span> {selectedRequest.email}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Role:</span>{' '}
+                        <span className="capitalize">{selectedRequest.role?.replace('_', ' ')}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Department:</span> {selectedRequest.department || 'N/A'}
+                      </p>
+                    </>
+                  )}
                   <p className="text-sm mt-3">
                     <span className="font-semibold">Reason:</span>
                   </p>
@@ -505,7 +620,7 @@ export default function AdminArchiveRequests() {
                   </p>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
-                  This will archive the account and prevent the resident from logging in.
+                  This will archive the account and prevent {activeTab === "residents" ? "the resident" : "the personnel"} from logging in.
                 </p>
               </div>
             )}
@@ -545,22 +660,45 @@ export default function AdminArchiveRequests() {
             <div className="space-y-4 py-4">
               {selectedRequest && (
                 <div className="p-4 bg-gray-50 rounded-lg space-y-2 mb-4">
-                  <p className="text-sm">
-                    <span className="font-semibold">Resident:</span>{' '}
-                    {selectedRequest.full_name} 
-                  </p>
-                  <p className="text-sm">
-                    <span className="font-semibold">Meter No:</span>{' '}
-                    {selectedRequest.meter_no}
-                  </p>
-                   <p className="text-sm">
-                    <span className="font-semibold">Zone:</span>{' '}
-                    {selectedRequest.zone}
-                  </p>
-                   <p className="text-sm">
-                    <span className="font-semibold">Purok:</span>{' '}
-                    {selectedRequest.purok}
-                  </p>
+                  {activeTab === "residents" ? (
+                    <>
+                      <p className="text-sm">
+                        <span className="font-semibold">Resident:</span>{' '}
+                        {selectedRequest.full_name}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Meter No:</span>{' '}
+                        {selectedRequest.meter_no}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Zone:</span>{' '}
+                        {selectedRequest.zone}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Purok:</span>{' '}
+                        {selectedRequest.purok}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm">
+                        <span className="font-semibold">Personnel:</span>{' '}
+                        {selectedRequest.first_name} {selectedRequest.last_name}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Email:</span>{' '}
+                        {selectedRequest.email}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Role:</span>{' '}
+                        <span className="capitalize">{selectedRequest.role?.replace('_', ' ')}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Department:</span>{' '}
+                        {selectedRequest.department || 'N/A'}
+                      </p>
+                    </>
+                  )}
                   <p className="text-sm mt-3">
                     <span className="font-semibold">Their Reason:</span>
                   </p>

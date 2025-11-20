@@ -316,10 +316,78 @@ const rejectArchiveRequest = async (req, res) => {
 };
 
 
+/**
+ * Unarchive User (Admin only)
+ */
+const unarchiveUser = async (req, res) => {
+  try {
+    const user = req.user;
+    const { connection_id } = req.params;
+
+    if (user.role !== 'admin') {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        message: 'Only admin can unarchive users'
+      });
+    }
+
+    // Find the connection
+    const connection = await WaterConnection.findById(connection_id);
+    if (!connection) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Water connection not found'
+      });
+    }
+
+    const resident = await Resident.findById(connection.resident_id);
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Resident record not found'
+      });
+    }
+
+    // Must be archived to unarchive
+    if (connection.archive_status !== 'archived') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'User is not archived'
+      });
+    }
+
+    // Restore the account
+    connection.archive_status = null;
+    connection.archive_reason = null;
+    connection.archive_requested_date = null;
+    connection.archive_approved_date = null;
+    connection.archive_rejection_reason = null;
+    await connection.save();
+
+    resident.status = 'active';
+    await resident.save();
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'User unarchived successfully',
+      connection
+    });
+
+  } catch (error) {
+    console.error('❌ Unarchive user error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to unarchive user',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   requestArchive,
   getArchiveStatus,
   cancelArchiveRequest,
   approveArchiveRequest,
-  rejectArchiveRequest
+  rejectArchiveRequest,
+  unarchiveUser
 };

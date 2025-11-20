@@ -15,7 +15,8 @@ import apiClient from "../lib/api";
 
 export default function ResidentProfile() {
   const { user } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
 
   const { data: connectionData } = useQuery({
@@ -67,24 +68,22 @@ export default function ResidentProfile() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveEmail = async () => {
     try {
       await apiClient.updateUserContact({
-        email: verificationSent ? formData.email : undefined,
-        contact_no: formData.phone,
-        verification_code: verificationSent ? formData.verification_code : undefined
+        email: formData.email,
+        verification_code: formData.verification_code
       });
 
-      toast.success("Profile Updated", { description: "Your contact information has been updated successfully" });
+      toast.success("Email Updated", { description: "Your email has been updated successfully" });
 
-      setIsEditing(false);
+      setIsEditingEmail(false);
       setVerificationSent(false);
       setFormData({ ...formData, verification_code: "" });
 
     } catch (error) {
       const errorMessage = error?.response?.data?.message || error?.message || "Something went wrong";
 
-      // Check for duplicate email error
       if (errorMessage.toLowerCase().includes('duplicate') || errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already in use')) {
         toast.error("Email Already in Use", {
           description: "This email is already registered. Please use a different email address."
@@ -99,14 +98,38 @@ export default function ResidentProfile() {
     }
   };
 
-  const handleCancel = () => {
+  const handleSavePhone = async () => {
+    try {
+      await apiClient.updateUserContact({
+        contact_no: formData.phone
+      });
+
+      toast.success("Phone Updated", { description: "Your phone number has been updated successfully" });
+
+      setIsEditingPhone(false);
+
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || error?.message || "Something went wrong";
+      toast.error("Update Failed", { description: errorMessage });
+    }
+  };
+
+  const handleCancelEmail = () => {
     setFormData({
+      ...formData,
       email: connectionData?.email || "",
-      phone: connectionData?.contact_no || "",
       verification_code: ""
     });
     setVerificationSent(false);
-    setIsEditing(false);
+    setIsEditingEmail(false);
+  };
+
+  const handleCancelPhone = () => {
+    setFormData({
+      ...formData,
+      phone: connectionData?.contact_no || ""
+    });
+    setIsEditingPhone(false);
   };
 
   return (
@@ -186,7 +209,7 @@ export default function ResidentProfile() {
                   <CardContent>
                     <div className="space-y-4">
                       {/* Email */}
-                      <div className="space-y-2">
+                      <div className="space-y-2  p-4 relative">
                         <Label>Email Address</Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -194,12 +217,12 @@ export default function ResidentProfile() {
                             type="email"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            disabled={!isEditing}
+                            disabled={!isEditingEmail}
                             className="pl-10"
                           />
                         </div>
 
-                        {!verificationSent && isEditing && formData.email !== connectionData?.email && (
+                        {!verificationSent && isEditingEmail && formData.email !== connectionData?.email && (
                           <Button
                             onClick={handleSendVerification}
                             size="sm"
@@ -209,7 +232,7 @@ export default function ResidentProfile() {
                           </Button>
                         )}
 
-                        {verificationSent && (
+                        {verificationSent && isEditingEmail && (
                           <div className="mt-2">
                             <Label>Enter Verification Code</Label>
                             <Input
@@ -220,15 +243,47 @@ export default function ResidentProfile() {
                           </div>
                         )}
 
-                        {connectionData?.pending_email && !isEditing && (
+                        {connectionData?.pending_email && !isEditingEmail && (
                           <p className="text-sm text-orange-600 mt-1">
                             Verification pending for <strong>{connectionData.pending_email}</strong>. Check your email.
                           </p>
                         )}
+
+                        {/* Email Edit/Save/Cancel Buttons */}
+                        {!isEditingEmail ? (
+                          <Button
+                            onClick={() => setIsEditingEmail(true)}
+                            size="sm"
+                            className="absolute  -top-1 right-2"
+                          >
+                            <Edit className="h-3 w-3 mr-2" />
+                            Edit
+                          </Button>
+                        ) : (
+                          <div className="flex gap-2 absolute  -top-1 right-2">
+                            <Button
+                              onClick={handleSaveEmail}
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
+                              disabled={!verificationSent || !formData.verification_code}
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Save
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={handleCancelEmail}
+                              size="sm"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Phone */}
-                      <div className="space-y-2">
+                      <div className="space-y-2  p-4 relative">
                         <Label>Phone Number</Label>
                         <div className="relative">
                           <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -236,45 +291,42 @@ export default function ResidentProfile() {
                             type="tel"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            disabled={!isEditing}
+                            disabled={!isEditingPhone}
                             className="pl-10"
                           />
                         </div>
-                      </div>
 
-                      {/* Buttons */}
-                      {!isEditing ? (
-                        <Button
-                          onClick={() => setIsEditing(true)}
-                          size="sm"
-                          className="w-full sm:w-auto sm:absolute sm:top-4 sm:right-4"
-                        >
-                          <Edit className="h-3 w-3 mr-2" />
-                          Edit
-                        </Button>
-                      ) : (
-                        <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:absolute sm:top-4 sm:right-4">
+                        {/* Phone Edit/Save/Cancel Buttons */}
+                        {!isEditingPhone ? (
                           <Button
-                            onClick={handleSave}
+                            onClick={() => setIsEditingPhone(true)}
                             size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
-                            disabled={(formData.email === connectionData?.email && !verificationSent) ||
-                                       (formData.email !== connectionData?.email && !verificationSent)}
+                            className="absolute  -top-1 right-2"
                           >
-                            <Save className="h-4 w-4 mr-2" />
-                            Save
+                            <Edit className="h-3 w-3 mr-2" />
+                            Edit
                           </Button>
-                          <Button
-                            variant="outline"
-                            onClick={handleCancel}
-                            size="sm"
-                            className="w-full sm:w-auto"
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Cancel
-                          </Button>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="flex gap-2 absolute  -top-1 right-2">
+                            <Button
+                              onClick={handleSavePhone}
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Save
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={handleCancelPhone}
+                              size="sm"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

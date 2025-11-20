@@ -32,22 +32,25 @@ const secretaryMenuItems = [
   },
   {
     icon: Users,
-    label: "Residents",
-    href: "/secretary-dashboard/residents",
-    color: "text-green-600"
+    label: "Resident Management",
+    color: "text-green-600",
+    isParent: true,
+    subItems: [
+      {
+        icon: UserPlus,
+        label: "Add Residents",
+        href: "/secretary-dashboard/residents",
+        color: "text-green-600"
+    
+      },
+      {
+        icon: AlertTriangle,
+        label: "Deliquency List",
+        href: "/secretary-dashboard/deliquency-list",
+        color: "text-red-600"
+      },
+    ]
   },
-  // {
-  //   icon: UserPlus,
-  //   label: "Registration",
-  //   href: "/secretary-dashboard/registration",
-  //   color: "text-purple-600"
-  // },
-  // {
-  //   icon: FileText,
-  //   label: "Documents",
-  //   href: "/secretary-dashboard/documents",
-  //   color: "text-orange-600"
-  // },
   {
     icon: AlertTriangle,
     label: "Incident Reports",
