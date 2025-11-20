@@ -65,11 +65,7 @@ export default function Dashboard() {
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="text-dashboard-title">
-                Dashboard
-              </h1>
-            </div>
+            
 
             {/* Top Stats Cards */}
             <ModernStatsCards />
@@ -126,28 +122,18 @@ export default function Dashboard() {
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               {/* Pending Announcements - Takes 2 columns */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-4">
                 <PendingAnnouncements />
               </div>
 
               {/* Connection Breakdown - Takes 1 column */}
-              <div className="lg:col-span-1">
-                <ConnectionBreakdown />
-              </div>
+             
             </div>
 
             {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* System Overview - Takes 2 columns */}
-              <div className="lg:col-span-2">
-                <SystemAlerts />
-              </div>
+          
 
-              {/* Recent Activities - Takes 1 column */}
-              <div className="lg:col-span-1">
-                <RecentActivities />
-              </div>
-            </div>
+            
 
             {/* Footer */}
             <footer className="mt-12 pt-8 pb-6 border-t border-gray-200">
