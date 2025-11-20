@@ -20,9 +20,11 @@ import {
   Loader2,
   DollarSign,
   Users,
+  FileText,
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
+import GenerateDelinquencyReportModal from "../components/modals/generate-delinquency-report-modal";
 import apiClient from "../lib/api";
 import { toast } from "sonner";
 
@@ -31,6 +33,7 @@ export default function TreasurerOutstandingBalances() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [sendingReminder, setSendingReminder] = useState(null);
   const [disconnectionModal, setDisconnectionModal] = useState(null); // <-- for modal
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const { data: balances } = useQuery({
     queryKey: ['/api/v1/treasurer/outstanding-balances', filterStatus],
@@ -241,9 +244,13 @@ export default function TreasurerOutstandingBalances() {
                     >
                       Warning
                     </Button>
-                    <Button variant="outline">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
+                    <Button
+                      variant="outline"
+                      className="border-red-600 text-red-600 hover:bg-red-50"
+                      onClick={() => setIsReportModalOpen(true)}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Generate Report
                     </Button>
                   </div>
                 </div>
@@ -429,6 +436,12 @@ export default function TreasurerOutstandingBalances() {
           </div>
         </main>
       </div>
+
+      {/* Generate Delinquency Report Modal */}
+      <GenerateDelinquencyReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 }

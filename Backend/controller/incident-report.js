@@ -86,8 +86,29 @@ const getReports = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
     console.log(`✅ Found ${reports.length} unscheduled reports`);
+
+    // ✅ Get task and assignment information for each report
+    const reportIds = reports.map(r => r._id);
+    const tasks = await ScheduleTask.find({ report_id: { $in: reportIds } })
+      .populate('assigned_personnel', 'name first_name last_name')
+      .lean();
+
+    // Create a map of report_id to task info
+    const taskMap = {};
+    tasks.forEach(task => {
+      if (task.report_id) {
+        taskMap[task.report_id.toString()] = {
+          task_status: task.task_status,
+          assigned_personnel: task.assigned_personnel?.name ||
+                            (task.assigned_personnel?.first_name && task.assigned_personnel?.last_name
+                              ? `${task.assigned_personnel.first_name} ${task.assigned_personnel.last_name}`
+                              : null)
+        };
+      }
+    });
+
     // ✅ Manually populate reported_by with ONLY the full name
-    
+
     const populatedReports = await Promise.all(
       reports.map(async (report) => {
         if (report.reported_by) {
@@ -153,6 +174,14 @@ const getReports = async (req, res) => {
             report.reported_by = 'Unknown';
           }
         }
+
+        // Add task and assignment information to the report
+        const taskInfo = taskMap[report._id.toString()];
+        if (taskInfo) {
+          report.task_status = taskInfo.task_status;
+          report.assigned_personnel = taskInfo.assigned_personnel;
+        }
+
         return report;
       })
     );

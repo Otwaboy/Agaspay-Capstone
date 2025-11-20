@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
 import SecretarySidebar from "../components/layout/secretary-sidebar";
 import SecretaryTopHeader from "../components/layout/secretary-top-header";
+import GenerateAssignmentReportModal from "../components/modals/generate-assignment-report-modal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -31,17 +32,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../components/ui/dialog";
-import { 
-  Search, 
-  ClipboardList, 
-  UserPlus, 
-  CheckCircle, 
-  Clock, 
+import {
+  Search,
+  ClipboardList,
+  UserPlus,
+  CheckCircle,
+  Clock,
   AlertTriangle,
   User,
   MapPin,
   Calendar,
-  Wrench
+  Wrench,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api";
@@ -56,6 +58,7 @@ export default function SecretaryAssignments() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Data states
   const [unassignedTasks, setUnassignedTasks] = useState([]);
@@ -421,6 +424,17 @@ export default function SecretaryAssignments() {
                     <CardDescription>
                       Manage task assignments to maintenance personnel
                     </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setIsReportModalOpen(true)}
+                      variant="outline"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                      data-testid="button-generate-report"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Generate Report
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -933,6 +947,12 @@ export default function SecretaryAssignments() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Generate Assignment Report Modal */}
+      <GenerateAssignmentReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 }

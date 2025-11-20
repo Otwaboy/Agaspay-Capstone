@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -18,18 +18,29 @@ import {
   AlertTriangle,
   Search,
   Filter,
-  Plus,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  User,
+  UserCheck,
+  FileText
 } from "lucide-react";
 import { apiClient } from "../lib/api";
-import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import GenerateIncidentReportModal from "../components/modals/generate-incident-report-modal";
 
 export default function AdminIncidents() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const queryClient = useQueryClient();
+  const [selectedIncident, setSelectedIncident] = useState(null);
+  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ['incidents', statusFilter],
     queryFn: () => apiClient.getIncidentReports({ status: statusFilter !== 'all' ? statusFilter : undefined })
@@ -39,17 +50,6 @@ export default function AdminIncidents() {
 
   console.log('incidents', incidents);
 
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status, resolution_notes }) => apiClient.updateIncidentStatus(id, status, resolution_notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['incidents']);
-      toast.success("Success", { description: "Incident status updated successfully" });
-    },
-    onError: (error) => {
-      toast.error("Error", { description: error.response?.data?.msg || "Failed to update incident status" });
-    }
-  });
 
   const filteredIncidents = incidents.filter(incident => {
     const matchesSearch = incident.reported_issue?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -79,11 +79,16 @@ export default function AdminIncidents() {
     return config[priority] || config.medium;
   };
 
-  const handleStatusChange = (id, newStatus) => {
-    const notes = newStatus === 'resolved' ? prompt("Enter resolution notes:") : '';
-    if (newStatus === 'resolved' && !notes) return;
-    
-    updateStatusMutation.mutate({ id, status: newStatus, resolution_notes: notes });
+  const getTaskStatusBadge = (status) => {
+    if (!status) return null;
+    const config = {
+      "Unassigned": { label: "Unassigned", className: "bg-gray-100 text-gray-800" },
+      "Assigned": { label: "Assigned", className: "bg-blue-100 text-blue-800" },
+      "Pending": { label: "Pending", className: "bg-yellow-100 text-yellow-800" },
+      "Completed": { label: "Completed", className: "bg-green-100 text-green-800" },
+      "Cancelled": { label: "Cancelled", className: "bg-red-100 text-red-800" }
+    };
+    return config[status] || { label: status, className: "bg-gray-100 text-gray-800" };
   };
 
   const stats = [
@@ -165,10 +170,6 @@ export default function AdminIncidents() {
                     <p className="text-gray-600">Track and resolve water service issues</p>
                   </div>
                 </div>
-                <Button data-testid="button-report-incident">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Report Incident
-                </Button>
               </div>
             </div>
 
@@ -218,6 +219,14 @@ export default function AdminIncidents() {
                     <Filter className="h-4 w-4 mr-2" />
                     More Filters
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="border-red-600 text-red-600 hover:bg-red-50"
+                    onClick={() => setIsReportModalOpen(true)}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate Report
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -234,7 +243,11 @@ export default function AdminIncidents() {
                     const reporterName = incident.reported_by || 'NA'
                     const reportedDate = incident.reported_at ?
                       new Date(incident.reported_date).toLocaleString() : 'N/A';
-                    
+
+                    // Get assignment information from the backend response
+                    const assignedPersonnel = incident.assigned_personnel;
+                    const taskStatus = incident.task_status;
+
                     return (
                       <div key={incident._id} className="p-4 border rounded-lg" data-testid={`incident-${incident._id}`}>
                         <div className="flex items-start justify-between mb-3">
@@ -251,24 +264,38 @@ export default function AdminIncidents() {
                             </div>
                             <p className="text-sm text-gray-600 mb-2">{incident.description || 'No description'}</p>
                             <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <span>Reporter: {reporterName}</span>
+                              <span className="flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                Reporter: {reporterName}
+                              </span>
                               <span>Location: {incident.location || 'N/A'}</span>
                               <span>{reportedDate}</span>
-                            </div> 
+                            </div>
+                            {assignedPersonnel && (
+                              <div className="mt-2 flex items-center gap-2 text-sm">
+                                <div className="flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded">
+                                  <UserCheck className="w-3 h-3" />
+                                  <span className="font-medium">Assigned to:</span>
+                                  <span>{assignedPersonnel.name || assignedPersonnel}</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-col gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedIncident(incident);
+                                setViewDetailsOpen(true);
+                              }}
+                            >
                               View Details
                             </Button>
-                            {incident.reported_issue_status !== 'resolved' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => handleStatusChange(incident._id, 'resolved')}
-                                disabled={updateStatusMutation.isPending}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Resolve
-                              </Button>
+                            {taskStatus && (
+                              <Badge className={`${getTaskStatusBadge(taskStatus).className} flex items-center justify-center py-1`}>
+                                {getTaskStatusBadge(taskStatus).label}
+                              </Badge>
                             )}
                           </div>
                         </div>
@@ -286,6 +313,119 @@ export default function AdminIncidents() {
           </div>
         </main>
       </div>
+
+      {/* View Details Modal */}
+      <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Incident Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about this incident report
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedIncident && (
+            <div className="space-y-4 py-4">
+              {/* Type and Status Section */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Type</label>
+                  <p className="text-base font-semibold text-gray-900">{selectedIncident.type}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Status</label>
+                  <div className="mt-1">
+                    <Badge className={`${getStatusBadge(selectedIncident.reported_issue_status).className} flex items-center w-fit`}>
+                      {React.createElement(getStatusBadge(selectedIncident.reported_issue_status).icon, { className: "w-3 h-3 mr-1" })}
+                      {getStatusBadge(selectedIncident.reported_issue_status).label}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Priority and Task Status */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Priority</label>
+                  <div className="mt-1">
+                    <Badge className={getPriorityBadge(selectedIncident.priority || 'medium').className}>
+                      {getPriorityBadge(selectedIncident.priority || 'medium').label}
+                    </Badge>
+                  </div>
+                </div>
+                {selectedIncident.task_status && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Task Status</label>
+                    <div className="mt-1">
+                      <Badge className={getTaskStatusBadge(selectedIncident.task_status).className}>
+                        {getTaskStatusBadge(selectedIncident.task_status).label}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-sm font-medium text-gray-600">Description</label>
+                <p className="text-sm text-gray-900 mt-1">{selectedIncident.description || 'No description provided'}</p>
+              </div>
+
+              {/* Location */}
+              <div>
+                <label className="text-sm font-medium text-gray-600">Location</label>
+                <p className="text-sm text-gray-900 mt-1">{selectedIncident.location || 'N/A'}</p>
+              </div>
+
+              {/* Reporter Information */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Reporter</label>
+                  <p className="text-sm text-gray-900 mt-1">{selectedIncident.reported_by || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Reported Date</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {selectedIncident.reported_at ? new Date(selectedIncident.reported_date).toLocaleString() : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Assigned Personnel */}
+              {selectedIncident.assigned_personnel && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-5 h-5 text-green-700" />
+                    <div>
+                      <label className="text-sm font-medium text-green-900">Assigned To</label>
+                      <p className="text-sm text-green-800 mt-1">
+                        {selectedIncident.assigned_personnel.name || selectedIncident.assigned_personnel}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Resolution Notes (if resolved) */}
+              {selectedIncident.resolution_notes && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Resolution Notes</label>
+                  <p className="text-sm text-gray-900 mt-1">{selectedIncident.resolution_notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Incident Report Modal */}
+      <GenerateIncidentReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 }

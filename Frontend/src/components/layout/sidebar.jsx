@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  Archive
+  Archive,
+  User
 } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -70,6 +71,12 @@ const menuItems = [
     label: "Incidents",
     href: "/admin-dashboard/incidents",
     color: "text-red-600"
+  },
+  {
+    icon: User,
+    label: "Profile",
+    href: "/admin-dashboard/profile",
+    color: "text-blue-600"
   },
   {
     icon: Settings,

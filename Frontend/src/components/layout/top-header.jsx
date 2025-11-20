@@ -21,15 +21,17 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../../hooks/use-auth";
+import { useLocation } from "wouter";
 
  
 
 //FUNCTION
 export default function TopHeader() {
   const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
 
   const handleLogout = () => {
-    logout(); 
+    logout();
   };
 
   return (
@@ -122,16 +124,16 @@ export default function TopHeader() {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/admin-dashboard/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/admin-dashboard/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={handleLogout}
                 className="text-red-600 focus:text-red-600"
               >

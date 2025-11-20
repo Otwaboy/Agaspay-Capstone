@@ -20,21 +20,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { 
-  CreditCard, 
-  Search, 
-  Filter, 
+import {
+  CreditCard,
+  Search,
+  Filter,
   Download,
-  CheckCircle, 
+  CheckCircle,
   Clock,
   XCircle,
   Eye,
   Calendar,
   DollarSign,
-  Edit
+  Edit,
+  FileText
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
+import GeneratePaymentCollectionReportModal from "../components/modals/generate-payment-collection-report-modal";
 import apiClient from "../lib/api";
 import { toast } from "sonner";
 
@@ -43,6 +45,7 @@ export default function TreasurerPaymentCollection() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingPayment, setEditingPayment] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   
   const { data: collections,  refetch } = useQuery({
     queryKey: ['/api/v1/treasurer/collections', filterStatus],
@@ -269,9 +272,14 @@ export default function TreasurerPaymentCollection() {
                     >
                       Pending
                     </Button>
-                    <Button variant="outline" data-testid="button-export">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
+                    <Button
+                      variant="outline"
+                      className="border-green-600 text-green-600 hover:bg-green-50"
+                      onClick={() => setIsReportModalOpen(true)}
+                      data-testid="button-generate-report"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Generate Report
                     </Button>
                   </div>
                 </div>
@@ -423,7 +431,11 @@ export default function TreasurerPaymentCollection() {
         </DialogContent>
       </Dialog>
 
-      
+      {/* Generate Payment Collection Report Modal */}
+      <GeneratePaymentCollectionReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 }

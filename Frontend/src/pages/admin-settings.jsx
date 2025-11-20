@@ -1,8 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Switch } from "../components/ui/switch";
+import { Badge } from "../components/ui/badge";
 import Sidebar from "../components/layout/sidebar";
 import TopHeader from "../components/layout/top-header";
 import {
@@ -11,7 +9,8 @@ import {
   Database,
   Shield,
   DollarSign,
-  Mail
+  Check,
+  X
 } from "lucide-react";
 
 export default function AdminSettings() {
@@ -111,24 +110,28 @@ export default function AdminSettings() {
                   <CardContent>
                     <div className="space-y-4">
                       {section.settings.map((setting, settingIndex) => (
-                        <div key={settingIndex} className="flex items-center justify-between">
-                          <Label htmlFor={`${section.title}-${settingIndex}`} className="text-sm font-medium text-gray-700">
+                        <div key={settingIndex} className="flex items-center justify-between py-2">
+                          <Label className="text-sm font-medium text-gray-700">
                             {setting.label}
                           </Label>
                           {setting.type === "toggle" ? (
-                            <Switch
-                              id={`${section.title}-${settingIndex}`}
-                              checked={setting.value}
-                              data-testid={`switch-${setting.label.toLowerCase().replace(/\s+/g, '-')}`}
-                            />
+                            <div className="flex items-center gap-2">
+                              {setting.value ? (
+                                <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
+                                  <Check className="h-3 w-3" />
+                                  Enabled
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-gray-100 text-gray-800 flex items-center gap-1">
+                                  <X className="h-3 w-3" />
+                                  Disabled
+                                </Badge>
+                              )}
+                            </div>
                           ) : (
-                            <Input
-                              id={`${section.title}-${settingIndex}`}
-                              type={setting.type}
-                              defaultValue={setting.value}
-                              className="w-48"
-                              data-testid={`input-${setting.label.toLowerCase().replace(/\s+/g, '-')}`}
-                            />
+                            <div className="px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold min-w-[150px] text-right">
+                              {setting.value}
+                            </div>
                           )}
                         </div>
                       ))}
@@ -147,7 +150,7 @@ export default function AdminSettings() {
                   </div>
                   <div>
                     <CardTitle>Database & Backup</CardTitle>
-                    <CardDescription>Manage database and backup settings</CardDescription>
+                    <CardDescription>Database and backup information</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -158,24 +161,30 @@ export default function AdminSettings() {
                       <p className="text-sm font-medium text-gray-900">Last Backup</p>
                       <p className="text-sm text-gray-500">January 20, 2024 - 02:00 AM</p>
                     </div>
-                    <Button variant="outline">Backup Now</Button>
+                    <Badge className="bg-blue-100 text-blue-800">Completed</Badge>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div>
                       <p className="text-sm font-medium text-gray-900">Auto Backup</p>
                       <p className="text-sm text-gray-500">Daily at 2:00 AM</p>
                     </div>
-                    <Switch checked={true} />
+                    <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
+                      <Check className="h-3 w-3" />
+                      Enabled
+                    </Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Save Button */}
-            <div className="mt-8 flex justify-end space-x-4">
-              <Button variant="outline">Cancel</Button>
-              <Button data-testid="button-save-settings">Save Changes</Button>
-            </div>
+            {/* Info Note */}
+            <Card className="mt-6 bg-blue-50 border-blue-200">
+              <CardContent className="pt-6">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> This is a read-only view of system settings. To modify these settings, please contact the system administrator or access the configuration files directly.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>

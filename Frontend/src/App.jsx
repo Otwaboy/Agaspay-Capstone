@@ -13,6 +13,7 @@ import AdminBilling from "./pages/admin-billing";
 import AdminScheduling from "./pages/admin-scheduling";
 import AdminIncidents from "./pages/admin-incidents";
 import AdminSettings from "./pages/admin-settings";
+import AdminProfile from "./pages/admin-profile";
 import AdminDisconnectRequests from "./pages/admin-disconnect-requests";
 import AdminArchiveRequests from "./pages/admin-archive-requests";
 import AdminArchivedUsers from "./pages/admin-archived-users";
@@ -584,6 +585,13 @@ function App() {
               {() => (
                 <AdminRoute>
                   <AdminSettings />
+                </AdminRoute>
+              )}
+            </Route>
+            <Route path="/admin-dashboard/profile">
+              {() => (
+                <AdminRoute>
+                  <AdminProfile />
                 </AdminRoute>
               )}
             </Route>
