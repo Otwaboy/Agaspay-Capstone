@@ -233,9 +233,9 @@ export default function Sidebar() {
       {/* Mobile Sidebar */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="lg:hidden fixed top-4 left-4 z-40">
-            <Menu className="h-5 w-5" />
-          </Button>
+          <button className="lg:hidden fixed top-4 left-4 z-40 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+            <Menu className="h-6 w-6" />
+          </button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-72">
           <SidebarContent />

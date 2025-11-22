@@ -224,13 +224,9 @@ export default function TreasurerSidebar() {
       {/* Mobile Sidebar */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild className="ml-5 absolute mt-5 lg:hidden">
-          <Button
-            variant="outline"
-            size="icon"
-            className="fixed top-4 left-4 z-50 bg-white shadow-md"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          <button className="fixed top-4 left-4 z-50 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+            <Menu className="h-6 w-6" />
+          </button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-72">
           <SidebarContent />

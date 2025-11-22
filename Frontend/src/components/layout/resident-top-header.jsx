@@ -33,7 +33,7 @@ export default function ResidentTopHeader() {
   };
 
   return (
-     <header className="bg-gradient-to-br from-blue-50 via-white to-cyan-50  border-gray-200 lg:ml-0">
+     <header className="bg-white shadow-sm  border-gray-200 lg:ml-0">
        <div className="flex items-center justify-between px-6 py-6">
         {/* Search Bar */}
         <div className="hidden md:flex flex-1 max-w-lg">
