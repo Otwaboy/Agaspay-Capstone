@@ -11,82 +11,51 @@ import {
   Clock,
   XCircle
 } from "lucide-react";
+import apiClient from "../../lib/api";
+import { Link } from "wouter";
 
 export default function TreasurerRecentTransactions() {
-  const { data: transactions, isLoading } = useQuery({
+
+
+  const { data: transaction } = useQuery({
     queryKey: ["/api/dashboard/transactions"],
     staleTime: 5 * 60 * 1000, // 5 minutes
+    queryFn: () => apiClient.getRecentPayment(), 
   });
 
-  const defaultTransactions = [
-    {
-      id: "TXN-001",
-      residentName: "Juan Dela Cruz",
-      amount: 450.00,
-      type: "Monthly Bill",
-      status: "completed",
-      date: "2024-01-15T10:30:00Z",
-      method: "GCash"
-    },
-    {
-      id: "TXN-002", 
-      residentName: "Maria Santos",
-      amount: 320.00,
-      type: "Monthly Bill",
-      status: "completed",
-      date: "2024-01-15T09:15:00Z",
-      method: "Cash"
-    },
-    {
-      id: "TXN-003",
-      residentName: "Pedro Reyes",
-      amount: 890.00,
-      type: "Connection Fee",
-      status: "pending",
-      date: "2024-01-15T08:45:00Z",
-      method: "Bank Transfer"
-    },
-    {
-      id: "TXN-004",
-      residentName: "Ana Garcia",
-      amount: 275.00,
-      type: "Monthly Bill", 
-      status: "completed",
-      date: "2024-01-14T16:20:00Z",
-      method: "PayMaya"
-    },
-    {
-      id: "TXN-005",
-      residentName: "Roberto Luna",
-      amount: 520.00,
-      type: "Penalty Fee",
-      status: "failed",
-      date: "2024-01-14T14:10:00Z",
-      method: "GCash"
-    }
-  ];
-
-  const displayTransactions = transactions && Array.isArray(transactions) && transactions.length > 0 ? transactions : defaultTransactions;
+const recentPayment = transaction?.data;
+  console.log('sheiitis', recentPayment);
+  
+const displayTransactions = recentPayment && Array.isArray(recentPayment) && recentPayment.length > 0 ? recentPayment : [];
+console.log('display transaction', displayTransactions);
 
   const getStatusConfig = (status) => {
     switch (status) {
-      case "completed":
+
+      case "confirmed":
         return {
-          label: "Completed",
+          label: "Confirmed",
           variant: "default",
           className: "bg-green-100 text-green-800 hover:bg-green-100",
           icon: CheckCircle
         };
-      case "pending":
+      case "pending": 
         return {
           label: "Pending",
           variant: "secondary",
           className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
           icon: Clock
         };
-      case "failed":
+      case "partially_paid":
         return {
-          label: "Failed",
+          label: "Partial",
+          variant: "destructive",
+          className: "bg-red-100 text-red-800 hover:bg-red-100",
+          icon: XCircle
+        };
+      case "fully_paid":
+        return {
+          label: "Full",
           variant: "destructive",
           className: "bg-red-100 text-red-800 hover:bg-red-100",
           icon: XCircle
@@ -145,10 +114,11 @@ export default function TreasurerRecentTransactions() {
             <CardTitle>Recent Transactions</CardTitle>
             <CardDescription>Latest payment transactions and billing</CardDescription>
           </div>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
+          <Link href= "/treasurer-dashboard/revenue/payment-collection">
+           <Button variant="outline" size="sm">
+            View all transactions →
           </Button>
+          </Link>
         </div>
       </CardHeader>
       <CardContent>
@@ -186,37 +156,37 @@ export default function TreasurerRecentTransactions() {
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
                         <span className="text-sm font-medium text-gray-600">
-                          {transaction.residentName.charAt(0)}
+                          {transaction.residentFullName.charAt(0)}
                         </span>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {transaction.residentName}
+                          {transaction.residentFullName}
                         </p>
                         <p className="text-xs text-gray-500">
-                          ID: {transaction.id}
+                          ID: {transaction.id || 'wapa'}
                         </p>
                       </div>
                     </div>
                   </td>
                   <td className="py-4 px-6">
                     <span className="text-sm text-gray-900">
-                      {transaction.type}
+                      {transaction.payment_type}
                     </span>
                   </td>
                   <td className="py-4 px-6">
                     <span className="text-sm font-medium text-gray-900">
-                      ₱{transaction.amount.toFixed(2)}
+                      ₱{transaction.amount_paid.toFixed(2)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
                     <span className="text-sm text-gray-600">
-                      {transaction.method}
+                      {transaction.payment_method}
                     </span>
                   </td>
                   <td className="py-4 px-6">
                     {(() => {
-                      const statusConfig = getStatusConfig(transaction.status);
+                      const statusConfig = getStatusConfig(transaction.payment_status);
                       const StatusIcon = statusConfig.icon;
                       return (
                         <Badge 
@@ -230,7 +200,7 @@ export default function TreasurerRecentTransactions() {
                   </td>
                   <td className="py-4 px-6">
                     <span className="text-sm text-gray-600">
-                      {formatDate(transaction.date)}
+                      {formatDate(transaction.payment_date)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
@@ -253,9 +223,7 @@ export default function TreasurerRecentTransactions() {
           <p className="text-sm text-gray-500">
             Showing {displayTransactions?.length || 0} of {displayTransactions?.length || 0} transactions
           </p>
-          <Button variant="outline" size="sm">
-            View all transactions →
-          </Button>
+        
         </div>
       </CardContent>
     </Card>

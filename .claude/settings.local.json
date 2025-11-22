@@ -17,7 +17,9 @@
       "Bash(timeout /t 5 /nobreak)",
       "Bash(npm run dev:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(cmd /c taskkill /PID 14396 /F)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

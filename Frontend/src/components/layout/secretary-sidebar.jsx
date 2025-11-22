@@ -248,16 +248,11 @@ export default function SecretarySidebar() {
 
   return (
     <>
-      {/* Mobile sidebar */}
+      {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="lg:hidden fixed top-4 left-4 z-40"
-            data-testid="button-mobile-menu"
-          >
-            <Menu className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="lg:hidden fixed top-4 left-4 z-40">
+            <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-72">
@@ -265,7 +260,7 @@ export default function SecretarySidebar() {
         </SheetContent>
       </Sheet>
 
-      {/* Desktop sidebar */}
+      {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-72">
           <SecretarySidebarContent />

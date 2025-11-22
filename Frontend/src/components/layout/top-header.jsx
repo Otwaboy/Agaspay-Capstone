@@ -22,6 +22,7 @@ import {
 
 import { useAuth } from "../../hooks/use-auth";
 import { useLocation } from "wouter";
+import { Link } from "wouter";
 
  
 
@@ -93,15 +94,7 @@ export default function TopHeader() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Settings */}
-          <Button 
-            variant="outline" 
-            size="icon"
-            data-testid="button-settings"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-
+        
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -129,8 +122,10 @@ export default function TopHeader() {
                 <span>Profile</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setLocation('/admin-dashboard/settings')}>
+               
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
+              
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

@@ -1,95 +1,59 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
-import { Clock, User, FileText, Calendar, UserPlus } from "lucide-react";
+import { AlertTriangle, MapPin, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
+import apiClient from "../../lib/api";
 
 export default function SecretaryRecentActivities() {
-  const { data: activities, isLoading } = useQuery({
-    queryKey: ['/api/secretary/activities'],
-    initialData: [
-        {
-          id: 1,
-          type: "registration",
-          user: "Maria Santos",
-          action: "Registered new resident",
-          details: "Completed registration for Biking Zone 2",
-          time: "2 minutes ago",
-          status: "completed"
-        },
-        {
-          id: 2,
-          type: "document",
-          user: "Juan Dela Cruz",
-          action: "Processed barangay certificate",
-          details: "Certificate ready for pickup",
-          time: "15 minutes ago",
-          status: "completed"
-        },
-        {
-          id: 3,
-          type: "appointment",
-          user: "Pedro Rodriguez",
-          action: "Scheduled appointment",
-          details: "Water connection consultation on Friday 2PM",
-          time: "1 hour ago",
-          status: "pending"
-        },
-        {
-          id: 4,
-          type: "document",
-          user: "Ana Garcia",
-          action: "Document verification",
-          details: "Reviewed business permit requirements",
-          time: "2 hours ago",
-          status: "completed"
-        },
-        {
-          id: 5,
-          type: "registration",
-          user: "Carlos Mendoza",
-          action: "Updated resident record",
-          details: "Contact information and address updated",
-          time: "3 hours ago",
-          status: "completed"
-        }
-      ]
+  const { data: incidentData, isLoading } = useQuery({
+    queryKey: ["recent-incident-reports"],
+    queryFn: () => apiClient.getIncidentReports(),
   });
 
-  const getIcon = (type) => {
-    switch (type) {
-      case "registration": return UserPlus;
-      case "document": return FileText;
-      case "appointment": return Calendar;
-      default: return User;
+  // Get only the 5 most recent incidents
+  const recentIncidents = incidentData?.reports?.slice(0, 5) || [];
+  console.log(recentIncidents);
+  
+
+  const getUrgencyColor = (urgency) => {
+    const level = urgency?.toLowerCase();
+
+    if (level === "critical") {
+      return "bg-red-100 text-red-800 border-red-200";
     }
+    if (level === "high") {
+      return "bg-orange-100 text-orange-800 border-orange-200";
+    }
+    if (level === "medium") {
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    }
+    if (level === "low") {
+      return "bg-green-100 text-green-800 border-green-200";
+    }
+
+    return "bg-gray-100 text-gray-800 border-gray-200";
   };
 
-  const getIconColor = (type) => {
-    switch (type) {
-      case "registration": return "text-green-600 bg-green-100";
-      case "document": return "text-blue-600 bg-blue-100";
-      case "appointment": return "text-purple-600 bg-purple-100";
-      default: return "text-gray-600 bg-gray-100";
-    }
-  };
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "completed": return "bg-green-100 text-green-800";
-      case "pending": return "bg-yellow-100 text-yellow-800";
-      case "failed": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
+    if (diffInHours < 1) return "Just now";
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 48) return "Yesterday";
+    return date.toLocaleDateString();
   };
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activities</CardTitle>
-          <CardDescription>Latest secretary activities and tasks</CardDescription>
+          <CardTitle>Recent Incident Reports</CardTitle>
+          <CardDescription>Latest reported incidents</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -112,34 +76,55 @@ export default function SecretaryRecentActivities() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent Activities</CardTitle>
-        <CardDescription>Latest secretary activities and tasks</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Recent Incident Reports</CardTitle>
+          <CardDescription>Latest reported incidents (Read Only)</CardDescription>
+        </div>
+        <Link href="/secretary-dashboard/incident-reports">
+          <Button variant="outline" size="sm">
+            View All
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </Link>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {activities?.map((activity) => {
-            const IconComponent = getIcon(activity.type);
-            return (
-              <div key={activity.id} className="flex items-start space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className={`p-2 rounded-full ${getIconColor(activity.type)}`}>
-                  <IconComponent className="h-4 w-4" />
+        {recentIncidents.length === 0 ? (
+          <div className="text-center py-8">
+            <AlertTriangle className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">No incident reports found</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentIncidents.map((incident) => (
+              <div key={incident._id || incident.id} className="flex items-start space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors border">
+                <div className="p-2 rounded-full bg-red-100 text-red-600">
+                  <AlertTriangle className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                    <Badge className={getStatusColor(activity.status)}>
-                      {activity.status}
-                    </Badge>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium text-gray-900">{incident.type || "Incident Report"}</p>
+                    <span className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold ${getUrgencyColor(incident.urgency_level)}`}>
+                      {incident.urgency_level ? incident.urgency_level.charAt(0).toUpperCase() + incident.urgency_level.slice(1) : "Medium"}
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">{activity.user}</p>
-                  <p className="text-sm text-gray-500 mt-1">{activity.details}</p>
-                  <p className="text-xs text-gray-400">{activity.time}</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <p className="text-xs text-gray-600">
+                      Reported by: <span className="font-medium text-gray-900">{incident.reported_by || "N/A"}</span>
+                    </p>
+                    <p className="text-xs text-gray-400">{formatDate(incident.reported_at || incident.reported_date)}</p>
+                  </div>
+                  {incident.location && (
+                    <p className="text-xs text-gray-500 mt-1 flex items-center">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      {incident.location}
+                    </p>
+                  )}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

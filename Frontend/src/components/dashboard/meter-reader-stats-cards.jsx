@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Gauge, CheckCircle, Clock, AlertTriangle, Route, Target } from "lucide-react";
+import { Gauge, CheckCircle, Clock, AlertTriangle, Route, Target, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 
@@ -95,38 +95,42 @@ export default function MeterReaderStatsCards() {
       {statsCards.map((stat) => {
         const Icon = stat.icon;
         return (
-          <Card  key={stat.title} data-testid={stat.testId}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {stat.title}
-              </CardTitle>
-              <div className={`w-5 h-5 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                <Icon className={`h-5 w-5 ${stat.iconColor}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900" data-testid={`text-${stat.testId}-value`}>
-                {stat.value}
-              </div>
-              {stat.subtitle && (
-                <div className="text-sm text-gray-500 mt-1">
-                  {stat.subtitle}
+          <Card key={stat.title} data-testid={stat.testId} className="border-none shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
+                  <h3 className="text-3xl font-bold text-gray-900" data-testid={`text-${stat.testId}-value`}>
+                    {stat.value}
+                  </h3>
+                  {stat.percentage ? (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs font-medium text-green-600">
+                        {stat.percentage}%
+                      </span>
+                      <TrendingUp className="h-3 w-3 text-green-600" />
+                    </div>
+                  ) : (
+                    <div className="h-5 mt-2"></div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    {stat.subtitle || "Today's progress"}
+                  </p>
                 </div>
-              )}
-              {stat.percentage && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Progress</span>
-                    <span className="font-medium">{stat.percentage}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div 
-                      className={`h-2 rounded-full ${stat.iconColor.replace('text-', 'bg-')}`}
-                      style={{ width: `${stat.percentage}%` }}
-                    ></div>
-                  </div>
+
+                {/* Mini bar chart */}
+                <div className="flex items-end gap-0.5 h-12 ml-2">
+                  {[30, 45, 35, 50, 40, 60, 55, 70, 65, 75].map((height, i) => (
+                    <div
+                      key={i}
+                      className={`w-1.5 ${stat.iconColor.replace('text-', 'bg-')} opacity-${
+                        i === 9 ? "100" : "40"
+                      } rounded-sm`}
+                      style={{ height: `${height}%` }}
+                    />
+                  ))}
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         );

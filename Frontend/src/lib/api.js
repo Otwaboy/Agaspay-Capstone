@@ -52,6 +52,10 @@ class ApiClient {
     return await this.request('/api/v1/dashboard/stats');
   }
 
+  async getSecretaryFinancialStats() {
+    return await this.request('/api/v1/dashboard/financial-stats');
+  }
+
 
  async getResidentByDate(selectedDate) {
   const url = `/api/v1/auth/residents/by-date?startDate=${encodeURIComponent(selectedDate)}`;
@@ -439,6 +443,10 @@ async getApprovalStats() {
 
   async getIncidentReports() {
     return await this.request('/api/v1/incident-report');
+  }
+
+  async getAllIncidentReports() {
+    return await this.request('/api/v1/incident-report/all');
   }
 
   async getIncidentReportById(reportId) {

@@ -38,7 +38,7 @@ export default function MeterReaderReportHistory() {
         return res.reports || [];
       } catch (error) {
         console.error("Error fetching service requests:", error);
-        return [];
+        return []; 
       }
     },
     retry: 1,

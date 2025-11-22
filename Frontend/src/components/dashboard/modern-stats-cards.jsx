@@ -1,35 +1,43 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
-import { Users, Droplets, DollarSign, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { Droplets, AlertTriangle, TrendingUp, TrendingDown, FileText, Bell } from "lucide-react";
 import apiClient from "../../lib/api";
 
 export default function ModernStatsCards() {
   // ✅ Fetch active connections
-  const { data: activeData, isLoading: activeLoading } = useQuery({
+  const { data: activeData  } = useQuery({
     queryKey: ["active-connections"],
     queryFn: () => apiClient.getActiveWaterConnections(),
   });
 
-  // ✅ Fetch inactive connections
-  const { data: inactiveData, isLoading: inactiveLoading } = useQuery({
-    queryKey: ["inactive-connections"],
-    queryFn: () => apiClient.getInactiveWaterConnections(),
+  // ✅ Fetch incident reports
+  const { data: incidentData  } = useQuery({
+    queryKey: ["incident-reports"],
+    queryFn: () => apiClient.getIncidentReports(),
   });
- 
-   const { data: overdueData, isLoading: overdueLoading } = useQuery({
+
+  const { data: overdueData } = useQuery({
     queryKey: ["overdue-billing"],
     queryFn: () => apiClient.getOverdueBilling(),
   });
 
+  // ✅ Fetch pending announcements
+  const { data: pendingAnnouncementsData } = useQuery({
+    queryKey: ["pending-announcements"],
+    queryFn: () => apiClient.getPendingAnnouncements(),
+  });
+
   // ✅ Extract connection counts safely
   const activeConnections = activeData?.data?.length || 0;
-  const inactiveConnections = inactiveData?.data?.length || 0;
-  const overdueBilling = overdueData?.data?.length || 0
+  const incidentReports = incidentData?.count || 0;
+  const overdueBilling = overdueData?.data?.length || 0;
+  const pendingAnnouncements = pendingAnnouncementsData?.announcements?.length || 0;
 
   console.log("Active Connections:", activeData?.data);
-  console.log("Inactive Connections:", inactiveData?.data);
-    console.log("Ovedue:", overdueData?.data);
+  console.log("Incident Reports:", incidentData?.data);
+  console.log("Overdue:", overdueData?.data);
+  console.log("Pending Announcements:", pendingAnnouncementsData?.data);
 
   // ✅ Loading state skeleton
   // if (activeLoading || inactiveLoading || overdueLoading) {
@@ -60,15 +68,15 @@ export default function ModernStatsCards() {
       chartColor: "bg-blue-500",
     },
     {
-      title: "Inactive Connections",
-      value: inactiveConnections,
+      title: "Incident Reports",
+      value: incidentReports,
       change: "-3.42%",
       trend: "down",
-      subtitle: "Temporarily inactive users",
-      icon: Users,
-      color: "text-gray-600",
-      bgColor: "bg-gray-50",
-      chartColor: "bg-gray-500",
+      subtitle: "Total incident reports",
+      icon: FileText,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      chartColor: "bg-orange-500",
     },
     {
       title: "Overdue Bills",
@@ -82,12 +90,12 @@ export default function ModernStatsCards() {
       chartColor: "bg-red-500",
     },
     {
-      title: "Scheduled Tasks",
-      value: 7, // Replace with actual backend data later
+      title: "Pending Announcements",
+      value: pendingAnnouncements,
       change: "+27.47%",
       trend: "up",
-      subtitle: "Upcoming maintenance",
-      icon: DollarSign,
+      subtitle: "Awaiting approval",
+      icon: Bell,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       chartColor: "bg-purple-500",

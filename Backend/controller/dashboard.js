@@ -128,4 +128,79 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats };
+// Get secretary financial statistics
+const getSecretaryFinancialStats = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Only secretary, treasurer, or admin can access
+    if (!['secretary', 'treasurer', 'admin'].includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized access'
+      });
+    }
+
+    // 1. Total Revenue - sum of all confirmed payments
+    const totalRevenueResult = await Payment.aggregate([
+      { $match: { payment_status: 'confirmed' } },
+      { $group: { _id: null, total: { $sum: '$amount_paid' } } }
+    ]);
+    const totalRevenue = totalRevenueResult[0]?.total || 0;
+
+    // 2. Monthly Collection - sum of confirmed payments for current month
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    const monthlyCollectionResult = await Payment.aggregate([
+      {
+        $match: {
+          payment_status: 'confirmed',
+          payment_date: {
+            $gte: currentMonth,
+            $lt: nextMonth
+          }
+        }
+      },
+      { $group: { _id: null, total: { $sum: '$amount_paid' } } }
+    ]);
+    const monthlyCollection = monthlyCollectionResult[0]?.total || 0;
+
+    // 3. Outstanding Balances - sum of all unpaid/partial/overdue billing balances
+    const outstandingBalancesResult = await Billing.aggregate([
+      {
+        $match: {
+          status: { $in: ['unpaid', 'partial', 'overdue'] }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$balance' }
+        }
+      }
+    ]);
+    const outstandingBalances = outstandingBalancesResult[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalRevenue,
+        monthlyCollection,
+        outstandingBalances
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching secretary financial stats:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+module.exports = { getDashboardStats, getSecretaryFinancialStats };

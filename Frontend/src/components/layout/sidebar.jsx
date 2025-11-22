@@ -61,18 +61,12 @@ const menuItems = [
     color: "text-orange-600"
   },
   {
-    icon: Calendar,
-    label: "Scheduling",
-    href: "/admin-dashboard/scheduling",
-    color: "text-teal-600"
-  },
-  {
     icon: AlertTriangle,
     label: "Incidents",
     href: "/admin-dashboard/incidents",
     color: "text-red-600"
   },
-  {
+  { 
     icon: User,
     label: "Profile",
     href: "/admin-dashboard/profile",
@@ -231,7 +225,6 @@ function SidebarContent() {
   );
 }
 
-//mobile sidebar
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -239,27 +232,21 @@ export default function Sidebar() {
     <>
       {/* Mobile Sidebar */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild className="ml-5 absolute  mt-5 lg:hidden">
-          <Button
-            variant="outline"
-            size="icon"
-            className="fixed top-4 left-4 z-50 bg-white shadow-md"
-            data-testid="button-mobile-menu"
-          >
+        <SheetTrigger asChild>
+          <Button variant="outline" size="icon" className="lg:hidden fixed top-4 left-4 z-40">
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-
-        {/* pop up when clicking the menu mao ni mugawas */}
         <SheetContent side="left" className="p-0 w-72">
           <SidebarContent />
         </SheetContent>
-
       </Sheet>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-72 bg-white shadow-lg">
-        <SidebarContent />
+      <div className="hidden lg:flex lg:flex-shrink-0">
+        <div className="flex flex-col w-72">
+          <SidebarContent />
+        </div>
       </div>
     </>
   );

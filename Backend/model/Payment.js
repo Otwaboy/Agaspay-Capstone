@@ -36,7 +36,7 @@ const PaymentSchema = new mongoose.Schema({
     default: 'pending'
   },
 
-  official_receipt_status: {
+  official_receipt_status: { 
     type: String,
     enum: ['temporary_receipt', 'official_receipt'],
     default: 'temporary_receipt'

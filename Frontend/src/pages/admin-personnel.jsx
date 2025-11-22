@@ -21,8 +21,9 @@ import {
 import Sidebar from "../components/layout/sidebar";
 import TopHeader from "../components/layout/top-header";
 import CreatePersonnelModal from "../components/modals/create-personnel-modal";
+import EditPersonnelModal from "../components/modals/edit-personnel-modal";
 import {
-  UserPlus, 
+  UserPlus,
   Search,
   Filter,
   Plus,
@@ -40,6 +41,8 @@ export default function AdminPersonnel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedPersonnel, setSelectedPersonnel] = useState(null);
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['personnel', roleFilter],
@@ -94,6 +97,15 @@ export default function AdminPersonnel() {
     if (confirm("Are you sure you want to remove this personnel?")) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleEdit = (person) => {
+    setSelectedPersonnel(person);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    queryClient.invalidateQueries(['personnel']);
   };
 
   const stats = [
@@ -313,11 +325,11 @@ export default function AdminPersonnel() {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEdit(person)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Personnel
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     className="text-red-600"
                                     onClick={() => handleDelete(person._id)}
                                     disabled={deleteMutation.isPending}
@@ -347,12 +359,22 @@ export default function AdminPersonnel() {
         </main>
       </div>
 
-      <CreatePersonnelModal 
+      <CreatePersonnelModal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
           queryClient.invalidateQueries(['personnel']);
         }}
+      />
+
+      <EditPersonnelModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedPersonnel(null);
+        }}
+        personnel={selectedPersonnel}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );

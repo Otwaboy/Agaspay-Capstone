@@ -8,7 +8,7 @@ import ResidentBillPaymentCard from "../components/dashboard/resident-bill-payme
 import ResidentUsageChart from "../components/dashboard/resident-usage-chart";
 import ResidentRecentTransactions from "../components/dashboard/resident-recent-transactions";
 import ResidentModernAnnouncements from "../components/dashboard/resident-modern-announcements";
-import ResidentQuickActions from "../components/dashboard/resident-quick-actions";
+import ResidentFooter from "../components/layout/resident-footer";
 import PayBillModal from "../components/modals/pay-bill-modal";
 import ReportIssueModal from "../components/modals/report-issue-modal";
 import { Loader2 } from "lucide-react";
@@ -62,7 +62,7 @@ export default function ResidentDashboard() {
         
         <ResidentTopHeader /> 
 
-        <main className="flex-1 overflow-auto p-6 relative z-10">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 relative z-10">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-gray-750 mb-[-17px]" data-testid="text-dashboard-title">
@@ -98,6 +98,8 @@ export default function ResidentDashboard() {
 
             {/* Announcements */}
             <ResidentModernAnnouncements />
+
+            <ResidentFooter></ResidentFooter>
           </div>
         </main>
     

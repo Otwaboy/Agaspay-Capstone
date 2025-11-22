@@ -5,15 +5,23 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { useAuth } from "../hooks/use-auth";
-import { 
-  Loader2, 
-  Droplets, 
-  CheckCircle2, 
-  Shield, 
-  Clock, 
+import {
+  Loader2,
+  Droplets,
+  CheckCircle2,
+  Shield,
+  Clock,
   Users,
   BarChart3,
   X,
+  Menu,
+  Mail,
+  Phone,
+  MapPin,
+  Zap,
+  TrendingUp,
+  ArrowRight,
+  AlertCircle,
 } from "lucide-react";
 
 export default function Login() {
@@ -26,6 +34,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRequirementsModal, setShowRequirementsModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLearnMoreModal, setShowLearnMoreModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -78,7 +89,7 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       {/* Header Navigation */}
       <header className="absolute top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-2">
@@ -91,24 +102,113 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Navigation */}
+            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">
+              <a href="#features" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
                 Features
               </a>
-              <a href="#workflow" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">
+              <a href="#workflow" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
                 Workflow
               </a>
-              <a href="#about" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">
+              <a href="#about" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
                 About
               </a>
-              <a href="#contact" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">
+              <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
                 Contact
               </a>
             </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile Sidebar Menu */}
+      {mobileMenuOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Sidebar */}
+          <div className="fixed top-0 right-0 h-full w-72 bg-white shadow-2xl z-50 md:hidden transform transition-transform">
+            <div className="flex flex-col h-full">
+              {/* Sidebar Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-lg">
+                    <Droplets className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-blue-900">AGASPAY</h1>
+                    <p className="text-xs text-blue-600">Navigation</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Sidebar Navigation */}
+              <nav className="flex-1 p-4 space-y-2">
+                <a
+                  href="#features"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                >
+                  <Zap className="h-5 w-5" />
+                  <span className="font-medium">Features</span>
+                </a>
+                <a
+                  href="#workflow"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                >
+                  <TrendingUp className="h-5 w-5" />
+                  <span className="font-medium">Workflow</span>
+                </a>
+                <a
+                  href="#about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                >
+                  <Shield className="h-5 w-5" />
+                  <span className="font-medium">About</span>
+                </a>
+                <a
+                  href="#contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                >
+                  <Mail className="h-5 w-5" />
+                  <span className="font-medium">Contact</span>
+                </a>
+              </nav>
+
+              {/* Sidebar Footer */}
+              <div className="p-4 border-t border-gray-200">
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-blue-900 mb-1">Need Help?</p>
+                  <p className="text-xs text-blue-700">
+                    Contact the Barangay Hall for assistance
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="flex flex-col lg:flex-row min-h-screen pt-20">
         {/* Hero Section - Left Panel */}
@@ -323,15 +423,21 @@ export default function Login() {
             <div className="text-center text-sm text-gray-600 space-y-2">
               <p>
                 Don't have an account?{" "}
-                <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold">
+                <button
+                  onClick={() => setShowLearnMoreModal(true)}
+                  className="text-blue-600 hover:text-blue-700 font-semibold"
+                >
                   Learn more
-                </a>
+                </button>
               </p>
               <p>
                 Need help?{" "}
-                <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold">
+                <button
+                  onClick={() => setShowSupportModal(true)}
+                  className="text-blue-600 hover:text-blue-700 font-semibold"
+                >
                   Support Center
-                </a>
+                </button>
               </p>
             </div>
 
@@ -351,10 +457,298 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Footer Note */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-center text-xs text-gray-500 bg-white/80 backdrop-blur-xs px-4 py-2 rounded-full shadow-sm">
-        © 2025 AGASPAY Waterworks Management System. All rights reserved.
-      </div>
+      {/* Features Section */}
+      <section id="features" className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Powerful Features for Modern Water Management</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Everything you need to manage, monitor, and maintain your water system efficiently
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="group p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg hover:border-blue-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
+                <BarChart3 className="h-6 w-6 text-blue-600 group-hover:text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Real-Time Billing</h3>
+              <p className="text-gray-600">
+                Track water consumption and bills in real-time with automated calculations and instant updates
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="group p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg hover:border-blue-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
+                <Clock className="h-6 w-6 text-blue-600 group-hover:text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Automated Monitoring</h3>
+              <p className="text-gray-600">
+                Automatic meter reading scheduling and consumption tracking for accurate billing cycles
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="group p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg hover:border-blue-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
+                <Shield className="h-6 w-6 text-blue-600 group-hover:text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Secure Platform</h3>
+              <p className="text-gray-600">
+                End-to-end encryption and role-based access control to protect your data and privacy
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="group p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg hover:border-blue-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
+                <Users className="h-6 w-6 text-blue-600 group-hover:text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Community Tools</h3>
+              <p className="text-gray-600">
+                Announcements, incident reporting, and communication tools for the entire community
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="group p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg hover:border-blue-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
+                <Zap className="h-6 w-6 text-blue-600 group-hover:text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Quick Payments</h3>
+              <p className="text-gray-600">
+                Multiple payment options with instant confirmation and digital receipt generation
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="group p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg hover:border-blue-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
+                <TrendingUp className="h-6 w-6 text-blue-600 group-hover:text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Usage Analytics</h3>
+              <p className="text-gray-600">
+                Detailed consumption reports and analytics to help you understand water usage patterns
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Workflow Section */}
+      <section id="workflow" className="py-20 px-4 bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">How AGASPAY Works</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              A seamless workflow from registration to payment
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Step 1 */}
+            <div className="relative">
+              <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                  1
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Register Account</h3>
+                <p className="text-gray-600 text-sm">
+                  Visit the Barangay Hall to submit requirements and register your water connection
+                </p>
+              </div>
+              <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-blue-300"></div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="relative">
+              <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                  2
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Meter Installation</h3>
+                <p className="text-gray-600 text-sm">
+                  Maintenance team installs your water meter and activates your connection
+                </p>
+              </div>
+              <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-blue-300"></div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="relative">
+              <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                  3
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Monthly Reading</h3>
+                <p className="text-gray-600 text-sm">
+                  Meter readers record your water consumption and generate monthly bills
+                </p>
+              </div>
+              <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-blue-300"></div>
+            </div>
+
+            {/* Step 4 */}
+            <div>
+              <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                  4
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Pay Your Bill</h3>
+                <p className="text-gray-600 text-sm">
+                  View bills online and make payments at the Barangay Hall or through digital channels
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">About AGASPAY</h2>
+              <p className="text-lg text-gray-600 mb-6">
+                AGASPAY is the official waterworks management system of Barangay Biking, Dauis, Bohol.
+                We are committed to providing reliable, transparent, and efficient water services to our community.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                    <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-1">Our Mission</h3>
+                    <p className="text-gray-600">
+                      To ensure every household has access to clean, affordable water through sustainable management practices
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                    <CheckCircle2 className="h-5 w-5 text-cyan-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-1">Our Vision</h3>
+                    <p className="text-gray-600">
+                      A community where water management is transparent, efficient, and accessible to all residents
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Content - Stats */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="text-4xl font-bold text-blue-600 mb-2">500+</div>
+                <div className="text-gray-600">Active Connections</div>
+              </div>
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="text-4xl font-bold text-blue-600 mb-2">24/7</div>
+                <div className="text-gray-600">System Availability</div>
+              </div>
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="text-4xl font-bold text-blue-600 mb-2">99%</div>
+                <div className="text-gray-600">Customer Satisfaction</div>
+              </div>
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="text-4xl font-bold text-blue-600 mb-2">10+</div>
+                <div className="text-gray-600">Years of Service</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-20 px-4 bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Get in Touch</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Have questions or need assistance? We're here to help
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            {/* Contact Card 1 */}
+            <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200 text-center hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Phone className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Phone</h3>
+              <p className="text-gray-600 mb-2">Call us during office hours</p>
+              <a href="tel:+639123456789" className="text-blue-600 font-semibold hover:text-blue-700">
+                +63 912 345 6789
+              </a>
+            </div>
+
+            {/* Contact Card 2 */}
+            <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200 text-center hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Email</h3>
+              <p className="text-gray-600 mb-2">Send us an email</p>
+              <a href="mailto:agaspay@barangaybiking.gov.ph" className="text-blue-600 font-semibold hover:text-blue-700">
+                agaspay@barangaybiking.gov.ph
+              </a>
+            </div>
+
+            {/* Contact Card 3 */}
+            <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200 text-center hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Visit Us</h3>
+              <p className="text-gray-600 mb-2">Barangay Hall</p>
+              <p className="text-blue-600 font-semibold">
+                Biking, Dauis, Bohol
+              </p>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 md:p-12 text-center text-white">
+            <h3 className="text-3xl font-bold mb-4">Ready to Get Started?</h3>
+            <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+              Visit our Barangay Hall to apply for a water connection and join hundreds of satisfied residents
+            </p>
+            <Button
+              size="lg"
+              className="bg-white text-blue-600 hover:bg-blue-50"
+              onClick={() => setShowRequirementsModal(true)}
+            >
+              View Requirements
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-blue-900 text-white py-8 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="bg-white p-2 rounded-lg">
+              <Droplets className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">AGASPAY</h1>
+              <p className="text-xs text-blue-300">Waterworks Management</p>
+            </div>
+          </div>
+          <p className="text-blue-200 text-sm">
+            © 2025 AGASPAY Waterworks Management System. All rights reserved.
+          </p>
+        </div>
+      </footer>
 
       {/* Connection Requirements Modal */}
       {showRequirementsModal && (
@@ -547,6 +941,316 @@ export default function Login() {
                 </p>
                 
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Learn More Modal */}
+      {showLearnMoreModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white relative">
+              <button
+                onClick={() => setShowLearnMoreModal(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <div className="flex items-center gap-3">
+                <Users className="h-8 w-8" />
+                <div>
+                  <h2 className="text-2xl font-bold">Getting Started with AGASPAY</h2>
+                  <p className="text-blue-100 text-sm mt-1">Your guide to creating an account</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="space-y-6">
+                {/* Who Can Use */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
+                  <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-blue-600" />
+                    Who Can Use AGASPAY?
+                  </h3>
+                  <p className="text-gray-700 text-sm mb-3">
+                    AGASPAY accounts are created by the Barangay Secretary for:
+                  </p>
+                  <ul className="text-sm text-gray-600 space-y-2 ml-4">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>Residents</strong> - View bills, make payments, and report issues</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>Barangay Personnel</strong> - Manage water connections, billing, and maintenance</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* How to Get Started */}
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-4 text-lg">How to Get Started</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                        1
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 mb-1">Visit the Barangay Hall</h4>
+                        <p className="text-sm text-gray-600">
+                          Go to Barangay Biking Hall during office hours (Monday-Friday, 8:00 AM - 5:00 PM)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 mb-1">Submit Requirements</h4>
+                        <p className="text-sm text-gray-600">
+                          Bring valid ID, proof of residence, and completed application form
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                        3
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 mb-1">Provide Your Meter</h4>
+                        <p className="text-sm text-gray-600">
+                          Purchase and provide your own water meter for registration
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                        4
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 mb-1">Pay Connection Fee</h4>
+                        <p className="text-sm text-gray-600">
+                          Pay the required connection fee to the Barangay Treasurer
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                        5
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 mb-1">Account Creation</h4>
+                        <p className="text-sm text-gray-600">
+                          The Secretary will create your account and provide login credentials
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* What You Can Do */}
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-5">
+                  <h3 className="font-bold text-gray-900 mb-3">What You Can Do with AGASPAY</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span>View water bills and payment history</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span>Track water consumption</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span>Report water issues</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span>Receive announcements</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Important Info */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-900 mb-1">Important Information</p>
+                      <p className="text-xs text-amber-800">
+                        Residents cannot create accounts themselves. All accounts must be created by the Barangay Secretary
+                        after completing the water connection application process.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between items-center">
+              <p className="text-xs text-gray-600">
+                Need more details? Contact the Barangay Hall
+              </p>
+              <Button
+                onClick={() => setShowLearnMoreModal(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Got it
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Support Center Modal */}
+      {showSupportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white relative">
+              <button
+                onClick={() => setShowSupportModal(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <div className="flex items-center gap-3">
+                <Shield className="h-8 w-8" />
+                <div>
+                  <h2 className="text-2xl font-bold">Support Center</h2>
+                  <p className="text-blue-100 text-sm mt-1">We're here to help you</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="space-y-6">
+                {/* FAQ Section */}
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-4 text-lg">Frequently Asked Questions</h3>
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-bold text-gray-900 mb-2 text-sm">How do I pay my water bill?</h4>
+                      <p className="text-sm text-gray-600">
+                        You can pay at the Barangay Hall during office hours. Online payment options may be available
+                        through your account dashboard.
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-bold text-gray-900 mb-2 text-sm">What if I forgot my password?</h4>
+                      <p className="text-sm text-gray-600">
+                        Contact the Barangay Secretary to reset your password. Visit the Barangay Hall with a valid ID.
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-bold text-gray-900 mb-2 text-sm">How often are meter readings taken?</h4>
+                      <p className="text-sm text-gray-600">
+                        Meter readers visit monthly to record your water consumption. You'll be notified of your billing period.
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-bold text-gray-900 mb-2 text-sm">How do I report a water leak or issue?</h4>
+                      <p className="text-sm text-gray-600">
+                        Log in to your account and use the incident reporting feature, or call the Barangay Hall directly.
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-bold text-gray-900 mb-2 text-sm">Can I view my payment history?</h4>
+                      <p className="text-sm text-gray-600">
+                        Yes, all payment history and water consumption records are available in your dashboard once you log in.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
+                  <h3 className="font-bold text-gray-900 mb-4">Contact Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                        <Phone className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Phone</p>
+                        <p className="text-sm font-semibold text-gray-900">+63 912 345 6789</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                        <Mail className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Email</p>
+                        <p className="text-sm font-semibold text-gray-900">agaspay@barangaybiking.gov.ph</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                        <MapPin className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Address</p>
+                        <p className="text-sm font-semibold text-gray-900">Barangay Biking, Dauis, Bohol</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                        <Clock className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Office Hours</p>
+                        <p className="text-sm font-semibold text-gray-900">Mon-Fri: 8:00 AM - 5:00 PM</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Emergency Contact */}
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-red-900 mb-1">Emergency Water Issues</p>
+                      <p className="text-xs text-red-800">
+                        For urgent water-related emergencies (major leaks, no water supply), call the emergency hotline:
+                        <strong> +63 912 345 6789</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between items-center">
+              <p className="text-xs text-gray-600">
+                Still need help? Visit us at the Barangay Hall
+              </p>
+              <Button
+                onClick={() => setShowSupportModal(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Close
+              </Button>
             </div>
           </div>
         </div>

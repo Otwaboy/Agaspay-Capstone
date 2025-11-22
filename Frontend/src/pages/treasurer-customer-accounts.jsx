@@ -27,7 +27,7 @@ export default function TreasurerCustomerAccounts() {
   });
 
   const mockAccounts = [
-    {
+    { 
       id: "ACC-12345",
       name: "Juan Dela Cruz",
       email: "juan.delacruz@email.com",

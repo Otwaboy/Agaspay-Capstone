@@ -1,20 +1,20 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { Loader2 } from "lucide-react";
+import { Loader2, DollarSign, TrendingUp, FileText, BarChart3 } from "lucide-react";
 import { useAuth } from "../hooks/use-auth"
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "..//components/layout/treasurer-top-header";
+import TreasurerFooter from "../components/layout/treasurer-footer";
 import TreasurerStatsCards from "..//components/dashboard/treasurer-stats-cards";
-import TreasurerQuickActions from "../components/dashboard/treasurer-quick-actions";
 import TreasurerRecentTransactions from "../components/dashboard/treasurer-recent-transactions";
 import TreasurerFinancialSummary from "../components/dashboard/treasurer-financial-summary";
-import TreasurerPaymentAlerts from "../components/dashboard/treasurer-payment-alerts";
+
 
 export default function TreasurerDashboard() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, isLoading } = useAuth();
 
-  useEffect(() => {
+  useEffect(() => { 
     if (!isLoading && !isAuthenticated) {
       setLocation("/login");
     }
@@ -42,15 +42,59 @@ export default function TreasurerDashboard() {
         
         <TreasurerTopHeader />
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 relative z-10">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 relative z-10">
           <div className="max-w-7xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="text-dashboard-title">
-                Treasurer Dashboard
-              </h1>
-              <p className="text-gray-600">
-                Welcome to AGASPAY - Financial Management Portal
-              </p>
+              <div className="lg:col-span-2 ">
+               <TreasurerStatsCards />
+                  
+              </div>
+
+            {/* Welcome Information Section */}
+            <div className="mb-6 py-6">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                    Welcome to AGASPAY Financial Management Portal
+                  </h2>
+                  <p className="text-base text-gray-700 mb-5 leading-relaxed">
+                    As the Treasurer, you have full control over the financial operations of Barangay Biking's water service.
+                    Manage billing cycles, track payment collections, monitor outstanding balances, and generate comprehensive
+                    financial reports—all designed to ensure accurate and transparent financial management.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <DollarSign className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base">Payment Collection</h3>
+                        <p className="text-sm text-gray-600">Process and track all payment transactions</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base">Billing Management</h3>
+                        <p className="text-sm text-gray-600">Generate and manage monthly billing cycles</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <BarChart3 className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base">Financial Reports</h3>
+                        <p className="text-sm text-gray-600">Generate comprehensive revenue and analytics reports</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
              <div className="grid grid-cols-1 gap-6 mb-6">
@@ -64,19 +108,13 @@ export default function TreasurerDashboard() {
               </div> */}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              <div className="lg:col-span-2 ">
-               <TreasurerStatsCards />
-                  
-              </div>
-              <div className="lg:col-span-1">
-                <TreasurerPaymentAlerts />
-              </div>
-            </div>
+            
 
             <div className="grid grid-cols-1 gap-6">
               <TreasurerFinancialSummary />
             </div>
+
+            <TreasurerFooter />
           </div>
         </main>
       </div>
