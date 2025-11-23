@@ -33,7 +33,7 @@ export default function ResidentTopHeader() {
         <div className="flex-1 lg:hidden"></div>
 
         {/* Logo - Visible only on mobile */}
-        <div className="flex lg:hidden items-center justify-center">
+        <div className="flex lg:hidden items-center justify-center mr-6">
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-lg">
               <Droplets className="h-6 w-6 text-white" />
@@ -55,7 +55,7 @@ export default function ResidentTopHeader() {
                 className="cursor-pointer flex items-center space-x-2 px-3 lg:border lg:border-gray-200 border-0 h-11 lg:h-10"
                 data-testid="button-user-menu"
               >
-                <div className="w-10 h-10 lg:w-6 lg:h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 lg:w-6 lg:h-6 bg-blue-600 rounded-full flex items-center justify-center ">
                   <span className="text-white text-sm lg:text-xs font-large">
                     {user?.fullname?.charAt(0)?.toUpperCase() || 'R'}
                   </span>
