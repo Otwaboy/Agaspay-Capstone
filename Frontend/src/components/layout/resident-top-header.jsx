@@ -1,6 +1,4 @@
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,61 +9,18 @@ import {
 } from "../ui/dropdown-menu";
 
 import {
-  Bell,
-  Search,
   Settings,
   User,
   LogOut,
-  MessageSquare,
-  ExternalLink
+  Droplets
 } from "lucide-react";
 
 import { useAuth } from "../../hooks/use-auth";
 import { useLocation } from "wouter";
-import { Link } from "wouter";
-import { useState, useEffect } from "react";
-import { apiClient } from "../../lib/api";
 
 export default function ResidentTopHeader() {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
-  const [announcements, setAnnouncements] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchAnnouncements();
-  }, []);
-
-  const fetchAnnouncements = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getAnnouncements({
-        status: 'approved',
-        limit: 3,
-        sortBy: 'created_at',
-        sortOrder: 'desc'
-      });
-      setAnnouncements(response.announcements || []);
-    } catch (error) {
-      console.error('Failed to fetch announcements:', error);
-      setAnnouncements([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getPriorityBadge = (priority) => {
-    if (!priority) return { text: 'Normal', color: 'text-blue-600' };
-
-    const priorityMap = {
-      'high': { text: 'High Priority', color: 'text-red-600' },
-      'medium': { text: 'Medium Priority', color: 'text-orange-600' },
-      'low': { text: 'Low Priority', color: 'text-green-600' },
-      'normal': { text: 'Normal', color: 'text-blue-600' }
-    };
-
-    return priorityMap[priority.toLowerCase()] || { text: priority, color: 'text-gray-600' };
-  };
 
   const handleLogout = () => {
     logout();
@@ -74,81 +29,24 @@ export default function ResidentTopHeader() {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
       <div className="flex items-center justify-between px-6 py-6">
-        {/* Search Bar */}
-        <div className="flex-1 max-w-lg">
+        {/* Left spacer - Visible only on mobile */}
+        <div className="flex-1 lg:hidden"></div>
 
-
+        {/* Logo - Visible only on mobile */}
+        <div className="flex lg:hidden items-center justify-center">
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-lg">
+              <Droplets className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-blue-900">AGASPAY</h1>
+              <p className="text-xs text-blue-600">Resident Portal</p>
+            </div>
+          </div>
         </div>
 
         {/* Right Side Actions */}
-        <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="cursor-pointer relative lg:border lg:border-gray-200 border-0 h-11 w-11 lg:h-10 lg:w-10 p-0"
-                data-testid="button-notifications"
-              >
-                <Bell className="cursor-pointer h-5 w-5 lg:h-4 lg:w-4" />
-                {announcements.length > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-0 -right-0 h-4 w-4 flex items-center justify-center text-xs p-0"
-                  >
-                    {announcements.length}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-
-            {/* display when clicking the notification bell */}
-
-            <DropdownMenuContent align="end" className="w-56 sm:w-64 md:w-72 lg:w-80">
-              <DropdownMenuLabel>Announcements</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-
-              {loading ? (
-                <div className="p-4 text-center text-sm text-gray-500">
-                  Loading announcements...
-                </div>
-              ) : announcements.length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500">
-                  No announcements available
-                </div>
-              ) : (
-                <>
-                  {announcements.map((announcement) => (
-                    <DropdownMenuItem
-                      key={announcement.announcement_id}
-                      className="flex items-start space-x-3 p-3 cursor-pointer"
-                    >
-                      <MessageSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-2">
-                          {announcement.title}
-                        </p>
-                        <p className={`text-xs mt-1 font-medium ${getPriorityBadge(announcement.priority).color}`}>
-                          {getPriorityBadge(announcement.priority).text}
-                        </p>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setLocation('/resident-dashboard/announcements')}
-                    className="flex items-center justify-center p-3 text-blue-600 hover:text-blue-700 cursor-pointer"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    <span className="font-medium">View All Announcements</span>
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-
+        <div className="flex items-center space-x-4 flex-1 justify-end">
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
