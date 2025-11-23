@@ -71,7 +71,8 @@ export default function MeterReaderReadings() {
       const matchesZone = meterReaderZone ? conn.zone === meterReaderZone : true;
       const matchesSearch = searchQuery
         ? conn.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          conn.purok_no?.toLowerCase().includes(searchQuery.toLowerCase())
+          conn.purok_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          conn.meter_number?.toLowerCase().includes(searchQuery.toLowerCase())
         : true;
       return matchesZone && matchesSearch;
     })
@@ -325,7 +326,7 @@ export default function MeterReaderReadings() {
                           <div className="sticky top-0 bg-white p-2 border-b z-10">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                              <Input type="text" placeholder="Search by name or purok..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9 text-sm" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
+                              <Input type="text" placeholder="Search by name, purok, or meter number..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9 text-sm" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
                             </div>
                           </div>
                           <div className="max-h-[300px] overflow-y-auto">
@@ -364,6 +365,10 @@ export default function MeterReaderReadings() {
                             <p className="text-gray-900 font-semibold">{selectedConnectionData.full_name}</p>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
+                            <span className="font-medium text-gray-600 block mb-1">Meter Number</span>
+                            <p className="text-gray-900 font-semibold">{selectedConnectionData.meter_number || 'N/A'}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Purok</span>
                             <p className="text-gray-900 font-semibold">Purok {selectedConnectionData.purok_no}</p>
                           </div>
@@ -393,6 +398,10 @@ export default function MeterReaderReadings() {
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Customer</span>
                             <p className="text-gray-900 font-semibold">{selectedConnectionData.full_name}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded-lg">
+                            <span className="font-medium text-gray-600 block mb-1">Meter Number</span>
+                            <p className="text-gray-900 font-semibold">{selectedConnectionData.meter_number || 'N/A'}</p>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Purok</span>

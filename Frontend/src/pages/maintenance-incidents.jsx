@@ -21,6 +21,7 @@ import {
 } from "../components/ui/dialog";
 import MaintenanceSidebar from "../components/layout/maintenance-sidebar";
 import MaintenanceTopHeader from "../components/layout/maintenance-top-header";
+import MaintenanceFooter from "../components/layout/maintenance-footer";
 import {
   AlertTriangle,
   MapPin,
@@ -39,83 +40,42 @@ export default function MaintenanceIncidents() {
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // Mock data - replace with actual API calls
-  const { data: incidentsData, isLoading } = useQuery({
-    queryKey: ['/api/maintenance/incidents'],
-    queryFn: async () => {
-      // Replace with actual API call
-      return [
-        {
-          id: 1,
-          type: 'Pipe Leak',
-          location: 'Purok 5, Biking 1',
-          reporter: 'Anna Cruz',
-          reporterType: 'Resident',
-          status: 'pending',
-          priority: 'urgent',
-          reportedDate: '2025-10-15',
-          reportedTime: '08:30 AM',
-          description: 'Major pipe leak near the corner of the street causing water wastage',
-          remarks: 'Water supply temporarily shut off in the area'
-        },
-        {
-          id: 2,
-          type: 'Water Outage',
-          location: 'Purok 3, Biking 2',
-          reporter: 'Jose Reyes',
-          reporterType: 'Resident',
-          status: 'in_progress',
-          priority: 'high',
-          reportedDate: '2025-10-14',
-          reportedTime: '03:00 PM',
-          description: 'No water supply for the entire Purok 3 area since yesterday',
-          remarks: 'Currently investigating the main valve'
-        },
-        {
-          id: 3,
-          type: 'Broken Meter',
-          location: 'Purok 4, Biking 1',
-          reporter: 'Pedro Santos',
-          reporterType: 'Meter Reader',
-          status: 'pending',
-          priority: 'medium',
-          reportedDate: '2025-10-16',
-          reportedTime: '10:00 AM',
-          description: 'Water meter display not working, unable to read consumption',
-          remarks: 'Meter reader reported during monthly reading'
-        },
-        {
-          id: 4,
-          type: 'Low Water Pressure',
-          location: 'Purok 7, Biking 3',
-          reporter: 'Maria Garcia',
-          reporterType: 'Resident',
-          status: 'resolved',
-          priority: 'low',
-          reportedDate: '2025-10-13',
-          reportedTime: '09:15 AM',
-          resolvedDate: '2025-10-14',
-          description: 'Very low water pressure affecting several households',
-          remarks: 'Issue resolved - cleared obstruction in main pipe',
-          resolution: 'Removed debris from main supply line'
-        },
-        {
-          id: 5,
-          type: 'Pipe Leak',
-          location: 'Purok 2, Biking 2',
-          reporter: 'Juan Dela Cruz',
-          reporterType: 'Resident',
-          status: 'in_progress',
-          priority: 'high',
-          reportedDate: '2025-10-16',
-          reportedTime: '07:00 AM',
-          description: 'Underground pipe leak causing flooding in the area',
-          remarks: 'Excavation in progress to locate exact leak point'
-        }
-      ];
-    },
-    retry: 1
+  // Fetch real incident data from backend
+  const { data: apiResponse, isLoading } = useQuery({
+    queryKey: ['/api/v1/incident-reports/all'],
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
+
+  // Transform API data to match component structure
+  const incidentsData = apiResponse?.incidents?.map(incident => ({
+    id: incident._id,
+    type: incident.type,
+    location: incident.location,
+    reporter: incident.reported_by || 'Unknown',
+    reporterType: incident.reported_by_model === 'Resident' ? 'Resident' : 'Meter Reader',
+    status: incident.reported_issue_status?.toLowerCase().replace(' ', '_') || 'pending',
+    priority: incident.urgency_level?.toLowerCase() || 'medium',
+    reportedDate: new Date(incident.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }),
+    reportedTime: new Date(incident.createdAt).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }),
+    description: incident.description,
+    remarks: incident.resolution_notes || null,
+    resolvedDate: incident.resolved_at
+      ? new Date(incident.resolved_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        })
+      : null,
+    resolution: incident.resolution_notes || null
+  })) || [];
 
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
@@ -317,6 +277,9 @@ export default function MaintenanceIncidents() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Footer */}
+            <MaintenanceFooter />
           </div>
         </main>
       </div>

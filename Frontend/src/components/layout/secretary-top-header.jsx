@@ -1,5 +1,3 @@
-import React from "react";
-import { useLocation } from "wouter";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
@@ -11,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+
 import {
   Bell,
   Search,
@@ -20,7 +19,10 @@ import {
   MessageSquare,
   AlertCircle
 } from "lucide-react";
+
 import { useAuth } from "../../hooks/use-auth";
+import { useLocation } from "wouter";
+import { Link } from "wouter";
 
 export default function SecretaryTopHeader() {
   const { user, logout } = useAuth();
@@ -28,14 +30,15 @@ export default function SecretaryTopHeader() {
 
   const handleLogout = () => {
     logout();
-    setLocation("/login");
   };
- 
+
   return (
-     <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
+    <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
       <div className="flex items-center justify-between px-6 py-6">
         {/* Search Bar */}
         <div className="flex-1 max-w-lg">
+
+
         </div>
 
         {/* Right Side Actions */}
@@ -43,99 +46,90 @@ export default function SecretaryTopHeader() {
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="relative"
+              <Button
+                variant="outline"
+                size="icon"
+                className="cursor-pointer relative"
                 data-testid="button-notifications"
               >
-                <Bell className="h-4 w-4" />
-                <Badge 
-                  variant="destructive" 
+                <Bell className="cursor-pointer h-4 w-4" />
+                <Badge
+                  variant="destructive"
                   className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center text-xs p-0"
                 >
-                  5
+                  3
                 </Badge>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
+
+            {/* display when clicking the notification bell */}
+
+            <DropdownMenuContent align="end" className="w-56 sm:w-64 md:w-72 lg:w-80">
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-start space-x-3 p-3">
-                <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">New Application</p>
-                  <p className="text-xs text-gray-500 mt-1">Water connection request from Maria Santos</p>
-                  <p className="text-xs text-gray-400 mt-1">10 minutes ago</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-start space-x-3 p-3">
-                <MessageSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">Document Ready</p>
-                  <p className="text-xs text-gray-500 mt-1">Barangay certificate for Juan Dela Cruz is ready</p>
-                  <p className="text-xs text-gray-400 mt-1">1 hour ago</p>
-                </div>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="flex items-start space-x-3 p-3">
                 <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">Urgent: Missing Documents</p>
-                  <p className="text-xs text-gray-500 mt-1">Pedro Rodriguez application needs additional documents</p>
-                  <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                  <p className="text-sm font-medium text-gray-900">Water Outage Reported</p>
+                  <p className="text-xs text-gray-500">Zone 3, Purok 5 - 2 minutes ago</p>
                 </div>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <div className="p-2">
-                <Button variant="outline" className="w-full text-xs">
-                  View All Notifications
-                </Button>
-              </div>
+              <DropdownMenuItem className="flex items-start space-x-3 p-3">
+                <MessageSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">New Payment Received</p>
+                  <p className="text-xs text-gray-500">Juan Dela Cruz - ₱450.00 - 5 minutes ago</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-start space-x-3 p-3">
+                <User className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">New Resident Registration</p>
+                  <p className="text-xs text-gray-500">Maria Santos - 10 minutes ago</p>
+                </div>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Profile Dropdown */}
+
+          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="flex items-center space-x-2 px-3"
+              <Button
+                variant="outline"
+                className="cursor-pointer flex items-center space-x-2 px-3"
                 data-testid="button-user-menu"
               >
-                <div className="bg-green-100 p-1 rounded-full">
-                  <User className="h-4 w-4 text-green-600" />
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-medium">
+                    {user?.username?.charAt(0)?.toUpperCase() || 'S'}
+                  </span>
                 </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user?.firstName && user?.lastName 
-                      ? `${user.firstName} ${user.lastName}` 
-                      : user?.username || 'Secretary'
-                    }
-                  </p>
-                  <p className="text-xs text-gray-500">Barangay Secretary</p>
-                </div>
+                <span className="text-sm font-medium hidden sm:block">
+                  {user?.username || 'Secretary'}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem onClick={() => setLocation('/secretary-dashboard/profile')}>
                 <User className="mr-2 h-4 w-4" />
-                Profile Settings
+                <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem onClick={() => setLocation('/secretary-dashboard/settings')}>
+
                 <Settings className="mr-2 h-4 w-4" />
-                Preferences
+                <span>Settings</span>
+
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+              <DropdownMenuItem
                 onClick={handleLogout}
+                className="text-red-600 focus:text-red-600"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -138,19 +138,19 @@ function SecretarySidebarContent() {
     <div className="flex flex-col h-full bg-white shadow-lg">
       {/* Logo Section */}
       <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
-        <div className="flex items-center">
-          <div className="bg-blue-600 p-2 rounded-lg">
+        <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-lg">
             <Droplets className="h-6 w-6 text-white" />
           </div>
-          <div className="ml-3">
-            <h2 className="text-lg font-bold text-gray-900">AGASPAY</h2>
-            <p className="text-xs text-gray-500">Secretary Portal</p>
+          <div>
+            <h1 className="text-xl font-bold text-blue-900">AGASPAY</h1>
+            <p className="text-xs text-blue-600">Secretary Portal</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {secretaryMenuItems.map((item) => {
           const Icon = item.icon;
 
@@ -163,14 +163,14 @@ function SecretarySidebarContent() {
                 <Button
                   variant="ghost"
                   onClick={() => toggleExpanded(item.label)}
-                  className={`w-full justify-start h-11 px-4 ${
+                  className={`cursor-pointer w-full justify-start text-left h-12 ${
                     hasActiveSubItem
-                      ? "text-blue-600 hover:bg-blue-50"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      ? "bg-blue-50 text-blue-700"
+                      : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
                   }`}
                 >
                   <Icon className={`mr-3 h-5 w-5 ${hasActiveSubItem ? "text-blue-600" : item.color}`} />
-                  <span className="font-medium flex-1 text-left">{item.label}</span>
+                  <span className="font-medium flex-1">{item.label}</span>
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4" />
                   ) : (
@@ -179,7 +179,7 @@ function SecretarySidebarContent() {
                 </Button>
 
                 {isExpanded && item.subItems && (
-                  <div className="ml-4 mt-1 space-y-1">
+                  <div className="ml-8 mt-1 space-y-1">
                     {item.subItems.map((subItem) => {
                       const isActive = location === subItem.href;
                       const SubIcon = subItem.icon;
@@ -187,16 +187,16 @@ function SecretarySidebarContent() {
                       return (
                         <Link key={subItem.href} href={subItem.href}>
                           <Button
-                            variant={isActive ? "default" : "ghost"}
-                            className={`w-full justify-start h-10 px-4 ${
+                            variant={isActive ? "secondary" : "ghost"}
+                            className={`cursor-pointer w-full justify-start text-left h-10 text-sm ${
                               isActive
-                                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                                ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600"
+                                : "hover:bg-gray-50 text-gray-600 hover:text-gray-900"
                             }`}
                             data-testid={`nav-${subItem.label.toLowerCase().replace(/\s+/g, '-')}`}
                           >
-                            <SubIcon className={`mr-3 h-4 w-4 ${isActive ? "text-white" : subItem.color}`} />
-                            <span className="text-sm font-medium">{subItem.label}</span>
+                            <SubIcon className={`mr-3 h-4 w-4 ${isActive ? "text-blue-600" : subItem.color}`} />
+                            <span>{subItem.label}</span>
                           </Button>
                         </Link>
                       );
@@ -211,15 +211,15 @@ function SecretarySidebarContent() {
           return (
             <Link key={item.href} href={item.href}>
               <Button
-                variant={isActive ? "default" : "ghost"}
-                className={`w-full justify-start h-11 px-4 ${
+                variant={isActive ? "secondary" : "ghost"}
+                className={`cursor-pointer w-full justify-start text-left h-12 ${
                   isActive
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                    : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
                 }`}
                 data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <Icon className={`mr-3 h-5 w-5 ${isActive ? "text-white" : item.color}`} />
+                <Icon className={`mr-3 h-5 w-5 ${isActive ? "text-blue-600" : item.color}`} />
                 <span className="font-medium">{item.label}</span>
               </Button>
             </Link>
@@ -229,24 +229,25 @@ function SecretarySidebarContent() {
 
       {/* User Info and Logout */}
       <div className="px-4 py-4 border-t border-gray-200">
-        <div className="flex items-center mb-3 px-2">
-          <div className="bg-blue-100 p-2 rounded-full">
-            <Users className="h-4 w-4 text-blue-600" />
+        <div className="flex items-center px-3 py-2 mb-3 bg-gray-50 rounded-lg">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm font-medium">
+              {user?.username?.charAt(0)?.toUpperCase() || 'S'}
+            </span>
           </div>
-          <div className="ml-3 min-w-0 flex-1">
+          <div className="ml-3 flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.firstName && user?.lastName 
-                ? `${user.firstName} ${user.lastName}` 
-                : user?.username || 'Secretary'
-              }
+              {user?.username || 'Secretary'}
             </p>
-            <p className="text-xs text-gray-500 truncate">Barangay Secretary</p>
+            <p className="text-xs text-gray-500 truncate">
+              {user?.role || 'secretary'}
+            </p>
           </div>
         </div>
         <Button
-          variant="ghost"
           onClick={handleLogout}
-          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+          variant="outline"
+          className="cursor-pointer w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
           data-testid="button-logout"
         >
           <LogOut className="mr-3 h-4 w-4" />
@@ -265,7 +266,7 @@ export default function SecretarySidebar() {
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetTrigger asChild>
-          <button className="lg:hidden fixed top-4 left-4 z-40 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+          <button className="lg:hidden absolute top-6 left-4 z-40 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
             <Menu className="h-6 w-6" />
           </button>
         </SheetTrigger>

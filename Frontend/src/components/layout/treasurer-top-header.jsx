@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { Bell, Search, User, ChevronDown, DollarSign } from "lucide-react";
-import { useAuth } from "../../hooks/use-auth";
-import { useLocation } from "wouter";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,83 +8,129 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Badge } from "../../components/ui/badge";
+} from "../ui/dropdown-menu";
+
+import {
+  Bell,
+  Search,
+  Settings,
+  User,
+  LogOut,
+  MessageSquare,
+  AlertCircle,
+  DollarSign
+} from "lucide-react";
+
+import { useAuth } from "../../hooks/use-auth";
+import { useLocation } from "wouter";
+import { Link } from "wouter";
 
 export default function TreasurerTopHeader() {
   const { user, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
   const [, setLocation] = useLocation();
 
   const handleLogout = () => {
     logout();
-    setLocation("/login");
   };
 
-
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-6">
-      <div className="flex items-center justify-between">
+    <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
+      <div className="flex items-center justify-between px-6 py-6">
         {/* Search Bar */}
-        <div className="flex-1 max-w-md">
-          <div className="relative">
-          </div>
+        <div className="flex-1 max-w-lg">
+
+
         </div>
 
         {/* Right Side Actions */}
         <div className="flex items-center space-x-4">
-          {/* Financial Status Indicator */}
-          <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-green-50 rounded-full">
-            <DollarSign className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800">
-              Collections: ₱45,280
-            </span>
-          </div>
-
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative" data-testid="button-notifications">
-            <Bell className="h-5 w-5" />
-            <Badge variant="destructive" className="absolute -top-1 -right-1 px-1 min-w-0 h-5 text-xs">
-              3
-            </Badge>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="cursor-pointer relative"
+                data-testid="button-notifications"
+              >
+                <Bell className="cursor-pointer h-4 w-4" />
+                <Badge
+                  variant="destructive"
+                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center text-xs p-0"
+                >
+                  3
+                </Badge>
+              </Button>
+            </DropdownMenuTrigger>
+
+            {/* display when clicking the notification bell */}
+
+            <DropdownMenuContent align="end" className="w-56 sm:w-64 md:w-72 lg:w-80">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="flex items-start space-x-3 p-3">
+                <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">Water Outage Reported</p>
+                  <p className="text-xs text-gray-500">Zone 3, Purok 5 - 2 minutes ago</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-start space-x-3 p-3">
+                <MessageSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">New Payment Received</p>
+                  <p className="text-xs text-gray-500">Juan Dela Cruz - ₱450.00 - 5 minutes ago</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-start space-x-3 p-3">
+                <User className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">New Resident Registration</p>
+                  <p className="text-xs text-gray-500">Maria Santos - 10 minutes ago</p>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-2 px-3" data-testid="button-user-menu">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-blue-600" />
+              <Button
+                variant="outline"
+                className="cursor-pointer flex items-center space-x-2 px-3"
+                data-testid="button-user-menu"
+              >
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-medium">
+                    {user?.username?.charAt(0)?.toUpperCase() || 'T'}
+                  </span>
                 </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user?.firstName || 'Treasurer'} {user?.lastName || 'User'}
-                  </p>
-                  <p className="text-xs text-gray-500">Treasurer</p>
-                </div>
-                <ChevronDown className="h-4 w-4 text-gray-400" />
+                <span className="text-sm font-medium hidden sm:block">
+                  {user?.username || 'Treasurer'}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Financial Manager</DropdownMenuLabel>
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem data-testid="menu-profile">
+              <DropdownMenuItem onClick={() => setLocation('/treasurer-dashboard/profile')}>
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile Settings</span>
+                <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem data-testid="menu-financial-settings">
-                <DollarSign className="mr-2 h-4 w-4" />
-                <span>Financial Settings</span>
+              <DropdownMenuItem onClick={() => setLocation('/treasurer-dashboard/settings')}>
+
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={handleLogout}
                 className="text-red-600 focus:text-red-600"
-                data-testid="menu-logout"
               >
-                <span>Logout</span>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

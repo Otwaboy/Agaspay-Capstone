@@ -1,7 +1,9 @@
 const { StatusCodes } = require('http-status-codes');
-const MeterReading = require('../model/Meter-reading'); 
+const MeterReading = require('../model/Meter-reading');
 const WaterConnection = require('../model/WaterConnection');
 const Personnel = require('../model/Personnel');
+const IncidentReport = require('../model/Incident-reports');
+const Resident = require('../model/Resident');
 
 const {UnauthorizedError, BadRequestError} = require('../errors')
  
@@ -384,6 +386,7 @@ const getLatestReadings = async (req, res) => {
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
+        meter_number: item.meter_no,
         reading_status: reading?.reading_status,
         is_billed: !!item.is_billed,
         read_this_month: read_this_month, // ✅ Monthly status tracker
@@ -660,6 +663,114 @@ const getApprovalStats = async (req, res) => {
 
 
 
+/**
+ * ✅ Get Meter Reader Daily Stats
+ * GET /api/v1/meter-reader/daily-stats
+ * Returns stats for meter reader dashboard
+ */
+const getMeterReaderDailyStats = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Only meter readers can access
+    if (user.role !== 'meter_reader') {
+      return res.status(403).json({
+        message: 'Unauthorized. Only meter readers can view daily stats.'
+      });
+    }
+
+    // Get meter reader's assigned zone
+    const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
+
+    if (!personnel || !personnel.assigned_zone) {
+      return res.status(400).json({
+        message: 'Meter reader has no assigned zone',
+        stats: {
+          totalResidents: 0,
+          reportedIssues: 0,
+          zonesCovered: 0,
+          residentChange: "+0%",
+          issuesChange: "0%",
+          zonesChange: "0%"
+        }
+      });
+    }
+
+    const assignedZone = personnel.assigned_zone;
+
+    // Count total residents in assigned zone
+    const totalResidents = await Resident.countDocuments({
+      zone: assignedZone,
+      status: 'active'
+    });
+
+    // Count incidents reported by this meter reader
+    const reportedIssues = await IncidentReport.countDocuments({
+      reported_by: user.userId
+    });
+
+    // Zones covered (currently meter readers have 1 zone, but keeping flexible)
+    const zonesCovered = assignedZone ? 1 : 0;
+
+    // Calculate changes (comparing with previous month)
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+
+    const previousMonth = new Date(currentMonth);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+
+    // Previous month resident count
+    const previousMonthConnections = await WaterConnection.countDocuments({
+      connection_status: 'active',
+      createdAt: { $lt: currentMonth }
+    }).populate({
+      path: 'resident_id',
+      match: { zone: assignedZone }
+    });
+
+    // Previous month incidents
+    const previousMonthIssues = await IncidentReport.countDocuments({
+      reported_by: user.userId,
+      createdAt: { $lt: currentMonth }
+    });
+
+    // Calculate percentage changes
+    const residentChange = previousMonthConnections > 0
+      ? `${((totalResidents - previousMonthConnections) / previousMonthConnections * 100).toFixed(1)}%`
+      : "+0%";
+
+    const currentMonthIssues = await IncidentReport.countDocuments({
+      reported_by: user.userId,
+      createdAt: { $gte: currentMonth }
+    });
+
+    const issuesChange = previousMonthIssues > 0
+      ? `${((currentMonthIssues - previousMonthIssues) / previousMonthIssues * 100).toFixed(1)}%`
+      : "0%";
+
+    return res.status(200).json({
+      message: 'Meter reader stats fetched successfully',
+      stats: {
+        totalResidents,
+        reportedIssues,
+        zonesCovered,
+        residentChange,
+        issuesChange,
+        zonesChange: "0%",
+        assignedZone
+      }
+    });
+
+  } catch (error) {
+    console.error('🔥 getMeterReaderDailyStats error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to fetch meter reader stats",
+      error: error.message
+    });
+  }
+};
+
 module.exports = { getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading,
-                    getSubmittedReadings, getApprovalStats
+                    getSubmittedReadings, getApprovalStats, getMeterReaderDailyStats
 };

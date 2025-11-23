@@ -1,5 +1,3 @@
-import React from "react";
-import { useLocation } from "wouter";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
@@ -11,142 +9,184 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+
 import {
   Bell,
   Search,
   Settings,
   User,
   LogOut,
-  CreditCard,
-  AlertTriangle,
-  CheckCircle
+  MessageSquare,
+  ExternalLink
 } from "lucide-react";
+
 import { useAuth } from "../../hooks/use-auth";
+import { useLocation } from "wouter";
+import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { apiClient } from "../../lib/api";
 
 export default function ResidentTopHeader() {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.getAnnouncements({
+        status: 'approved',
+        limit: 3,
+        sortBy: 'created_at',
+        sortOrder: 'desc'
+      });
+      setAnnouncements(response.announcements || []);
+    } catch (error) {
+      console.error('Failed to fetch announcements:', error);
+      setAnnouncements([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPriorityBadge = (priority) => {
+    if (!priority) return { text: 'Normal', color: 'text-blue-600' };
+
+    const priorityMap = {
+      'high': { text: 'High Priority', color: 'text-red-600' },
+      'medium': { text: 'Medium Priority', color: 'text-orange-600' },
+      'low': { text: 'Low Priority', color: 'text-green-600' },
+      'normal': { text: 'Normal', color: 'text-blue-600' }
+    };
+
+    return priorityMap[priority.toLowerCase()] || { text: priority, color: 'text-gray-600' };
+  };
 
   const handleLogout = () => {
     logout();
-    setLocation("/login");
   };
 
   return (
-     <header className="bg-white shadow-sm  border-gray-200 lg:ml-0">
-       <div className="flex items-center justify-between px-6 py-6">
+    <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-0">
+      <div className="flex items-center justify-between px-6 py-6">
         {/* Search Bar */}
-        <div className="hidden md:flex flex-1 max-w-lg">
-          <div className="relative w-full">
+        <div className="flex-1 max-w-lg">
 
-          </div> 
-        </div> 
+
+        </div>
 
         {/* Right Side Actions */}
-        <div className="flex items-center space-x-2 md:space-x-4 ml-auto md:ml-0">
-          {/* Quick Pay Button */}
-          
-
+        <div className="flex items-center space-x-4">
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="relative"
+              <Button
+                variant="outline"
+                className="cursor-pointer relative lg:border lg:border-gray-200 border-0 h-11 w-11 lg:h-10 lg:w-10 p-0"
                 data-testid="button-notifications"
               >
-                <Bell className="h-4 w-4" />
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center text-xs p-0"
-                >
-                  3
-                </Badge>
+                <Bell className="cursor-pointer h-5 w-5 lg:h-4 lg:w-4" />
+                {announcements.length > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-0 -right-0 h-4 w-4 flex items-center justify-center text-xs p-0"
+                  >
+                    {announcements.length}
+                  </Badge>
+                )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+
+            {/* display when clicking the notification bell */}
+
+            <DropdownMenuContent align="end" className="w-56 sm:w-64 md:w-72 lg:w-80">
+              <DropdownMenuLabel>Announcements</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-start space-x-3 p-3">
-                <CreditCard className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">Bill Due Soon</p>
-                  <p className="text-xs text-gray-500 mt-1">Your water bill for this month is due in 3 days</p>
-                  <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+
+              {loading ? (
+                <div className="p-4 text-center text-sm text-gray-500">
+                  Loading announcements...
                 </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-start space-x-3 p-3">
-                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">Payment Confirmed</p>
-                  <p className="text-xs text-gray-500 mt-1">Your payment of ₱450.00 has been processed</p>
-                  <p className="text-xs text-gray-400 mt-1">1 day ago</p>
+              ) : announcements.length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500">
+                  No announcements available
                 </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-start space-x-3 p-3">
-                <AlertTriangle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">Service Maintenance</p>
-                  <p className="text-xs text-gray-500 mt-1">Scheduled water service maintenance on Friday</p>
-                  <p className="text-xs text-gray-400 mt-1">2 days ago</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <div className="p-2">
-                <Button variant="outline" className="w-full text-xs">
-                  View All Notifications
-                </Button>
-              </div>
+              ) : (
+                <>
+                  {announcements.map((announcement) => (
+                    <DropdownMenuItem
+                      key={announcement.announcement_id}
+                      className="flex items-start space-x-3 p-3 cursor-pointer"
+                    >
+                      <MessageSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                          {announcement.title}
+                        </p>
+                        <p className={`text-xs mt-1 font-medium ${getPriorityBadge(announcement.priority).color}`}>
+                          {getPriorityBadge(announcement.priority).text}
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setLocation('/resident-dashboard/announcements')}
+                    className="flex items-center justify-center p-3 text-blue-600 hover:text-blue-700 cursor-pointer"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    <span className="font-medium">View All Announcements</span>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Profile Dropdown */}
+
+          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="flex items-center space-x-2 px-3"
+              <Button
+                variant="outline"
+                className="cursor-pointer flex items-center space-x-2 px-3 lg:border lg:border-gray-200 border-0 h-11 lg:h-10"
                 data-testid="button-user-menu"
               >
-                <div className="bg-blue-100 p-1 rounded-full">
-                  <User className="h-4 w-4 text-blue-600" />
+                <div className="w-10 h-10 lg:w-6 lg:h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm lg:text-xs font-large">
+                    {user?.fullname?.charAt(0)?.toUpperCase() || 'R'}
+                  </span>
                 </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user?.firstName && user?.lastName 
-                      ? `${user.firstName} ${user.lastName}` 
-                      : user?.username || 'Resident'
-                    }
-                  </p>
-                  <p className="text-xs text-gray-500">Account: WS-2024-001</p>
-                </div>
+                <span className="text-sm font-medium hidden sm:block">
+                  {user?.fullname || 'Resident'}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem onClick={() => setLocation('/resident-dashboard/profile')}>
                 <User className="mr-2 h-4 w-4" />
-                Profile Settings
+                <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <CreditCard className="mr-2 h-4 w-4" />
-                Payment Methods
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem onClick={() => setLocation('/resident-dashboard/settings')}>
+
                 <Settings className="mr-2 h-4 w-4" />
-                Account Preferences
+                <span>Settings</span>
+
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+              <DropdownMenuItem
                 onClick={handleLogout}
+                className="text-red-600 focus:text-red-600"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -21,15 +21,18 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../../hooks/use-auth";
+import { useLocation } from "wouter";
+import { Link } from "wouter";
 
- 
+
 
 //FUNCTION
-export default function TopHeader() {
+export default function MaintenanceTopHeader() {
   const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
 
   const handleLogout = () => {
-    logout(); 
+    logout();
   };
 
   return (
@@ -91,47 +94,40 @@ export default function TopHeader() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Settings */}
-          <Button 
-            variant="outline" 
-            size="icon"
-            data-testid="button-settings"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="cursor-pointer flex items-center space-x-2 px-3"
                 data-testid="button-user-menu"
               >
                 <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-medium">
-                    {/* kwaon ag first letter sa username aron himoon ug logo */}
-                    {user?.username?.charAt(0)?.toUpperCase() || 'A'}
+                    {user?.username?.charAt(0)?.toUpperCase() || 'M'}
                   </span>
                 </div>
                 <span className="text-sm font-medium hidden sm:block">
-                  {user?.username || 'Administrator'}
+                  {user?.username || 'Maintenance'}
                 </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/maintenance-dashboard/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/maintenance-dashboard/settings')}>
+
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
+
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={handleLogout}
                 className="text-red-600 focus:text-red-600"
               >

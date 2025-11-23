@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import MaintenanceSidebar from "../components/layout/maintenance-sidebar";
 import MaintenanceTopHeader from "../components/layout/maintenance-top-header";
+import MaintenanceFooter from "../components/layout/maintenance-footer";
 import {
   Wrench,
   AlertTriangle,
@@ -14,88 +15,44 @@ import {
   MapPin,
   ArrowRight,
   TrendingUp,
-  Activity
+  TrendingDown,
+  Activity,
+  Shield,
+  Users
 } from "lucide-react";
 import { Link } from "wouter";
 
 export default function MaintenanceDashboard() {
-  // Mock data - replace with actual API calls
-  const { data: tasksData, isLoading: tasksLoading } = useQuery({
-    queryKey: ['/api/maintenance/tasks'],
-    queryFn: async () => {
-      // Replace with actual API call
-      return {
-        total: 24,
-        pending: 8,
-        inProgress: 5,
-        completed: 11,
-        todayTasks: [
-          {
-            id: 1,
-            type: 'Installation',
-            location: 'Purok 4, Biking 1',
-            resident: 'Juan Dela Cruz',
-            status: 'pending',
-            priority: 'high',
-            scheduledTime: '09:00 AM'
-          },
-          {
-            id: 2,
-            type: 'Disconnection',
-            location: 'Purok 2, Biking 2',
-            resident: 'Maria Santos',
-            status: 'in_progress',
-            priority: 'medium',
-            scheduledTime: '10:30 AM'
-          },
-          {
-            id: 3,
-            type: 'Repair',
-            location: 'Purok 7, Biking 3',
-            resident: 'Pedro Garcia',
-            status: 'pending',
-            priority: 'urgent',
-            scheduledTime: '02:00 PM'
-          }
-        ]
-      };
-    },
-    retry: 1
+  // Fetch real incident data from backend
+  const { data: incidentsData, isLoading: incidentsLoading } = useQuery({
+    queryKey: ['/api/v1/incident-reports/all'],
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
-  const { data: incidentsData, isLoading: incidentsLoading } = useQuery({
-    queryKey: ['/api/maintenance/incidents'],
-    queryFn: async () => {
-      // Replace with actual API call
-      return {
-        total: 15,
-        pending: 6,
-        inProgress: 4,
-        resolved: 5,
-        recentIncidents: [
-          {
-            id: 1,
-            type: 'Pipe Leak',
-            location: 'Purok 5, Biking 1',
-            reporter: 'Anna Cruz',
-            status: 'pending',
-            reportedDate: '2025-10-15',
-            priority: 'urgent'
-          },
-          {
-            id: 2,
-            type: 'Water Outage',
-            location: 'Purok 3, Biking 2',
-            reporter: 'Jose Reyes',
-            status: 'in_progress',
-            reportedDate: '2025-10-14',
-            priority: 'high'
-          }
-        ]
+  // Process incidents data from API
+  const processedIncidentsData = incidentsData?.incidents
+    ? {
+        total: incidentsData.incidents.length,
+        pending: incidentsData.incidents.filter(i => i.reported_issue_status === 'Pending').length,
+        inProgress: incidentsData.incidents.filter(i => i.reported_issue_status === 'In Progress').length,
+        resolved: incidentsData.incidents.filter(i => i.reported_issue_status === 'Resolved').length,
+        recentIncidents: incidentsData.incidents.slice(0, 2).map(incident => ({
+          id: incident._id,
+          type: incident.type,
+          location: incident.location,
+          reporter: incident.reported_by || 'Unknown',
+          status: incident.reported_issue_status?.toLowerCase().replace(' ', '_') || 'pending',
+          reportedDate: new Date(incident.createdAt).toLocaleDateString('en-US'),
+          priority: incident.urgency_level?.toLowerCase() || 'medium'
+        }))
+      }
+    : {
+        total: 0,
+        pending: 0,
+        inProgress: 0,
+        resolved: 0,
+        recentIncidents: []
       };
-    },
-    retry: 1
-  });
 
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
@@ -137,77 +94,155 @@ export default function MaintenanceDashboard() {
 
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-7xl mx-auto">
-            {/* Page Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="text-dashboard-title">
-                Maintenance Dashboard
-              </h1>
-              <p className="text-gray-600">
-                Manage your assigned tasks and incident reports
-              </p>
+            {/* Modern Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-500 mb-1">Total Incidents</p>
+                      <h3 className="text-3xl font-bold text-gray-900">{processedIncidentsData.total || 0}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-medium text-blue-600">+12.5%</span>
+                        <TrendingUp className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">All reported incidents</p>
+                    </div>
+                    <div className="flex items-end gap-0.5 h-12 ml-2">
+                      {[30, 45, 35, 50, 40, 60, 55, 70, 65, 75].map((height, i) => (
+                        <div
+                          key={i}
+                          className={`w-1.5 bg-blue-500 opacity-${i === 9 ? "100" : "40"} rounded-sm`}
+                          style={{ height: `${height}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-500 mb-1">Pending Tasks</p>
+                      <h3 className="text-3xl font-bold text-gray-900">{processedIncidentsData.pending || 0}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-medium text-red-600">-8.2%</span>
+                        <TrendingDown className="h-3 w-3 text-red-600" />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Awaiting assignment</p>
+                    </div>
+                    <div className="flex items-end gap-0.5 h-12 ml-2">
+                      {[30, 45, 35, 50, 40, 60, 55, 70, 65, 75].map((height, i) => (
+                        <div
+                          key={i}
+                          className={`w-1.5 bg-yellow-500 opacity-${i === 9 ? "100" : "40"} rounded-sm`}
+                          style={{ height: `${height}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-500 mb-1">In Progress</p>
+                      <h3 className="text-3xl font-bold text-gray-900">{processedIncidentsData.inProgress || 0}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-medium text-blue-600">+5.3%</span>
+                        <TrendingUp className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Being handled</p>
+                    </div>
+                    <div className="flex items-end gap-0.5 h-12 ml-2">
+                      {[30, 45, 35, 50, 40, 60, 55, 70, 65, 75].map((height, i) => (
+                        <div
+                          key={i}
+                          className={`w-1.5 bg-orange-500 opacity-${i === 9 ? "100" : "40"} rounded-sm`}
+                          style={{ height: `${height}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-500 mb-1">Completed</p>
+                      <h3 className="text-3xl font-bold text-gray-900">{processedIncidentsData.resolved || 0}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-medium text-blue-600">+18.7%</span>
+                        <TrendingUp className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Fixed incidents</p>
+                    </div>
+                    <div className="flex items-end gap-0.5 h-12 ml-2">
+                      {[30, 45, 35, 50, 40, 60, 55, 70, 65, 75].map((height, i) => (
+                        <div
+                          key={i}
+                          className={`w-1.5 bg-green-500 opacity-${i === 9 ? "100" : "40"} rounded-sm`}
+                          style={{ height: `${height}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-                    <Wrench className="h-4 w-4 mr-2" />
-                    Total Tasks
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-gray-900">
-                    {tasksData?.total || 0}
+            {/* Welcome Information Section */}
+            <div className="mb-6 py-6">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Wrench className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                    Welcome to AGASPAY Maintenance Portal
+                  </h2>
+                  <p className="text-base text-gray-700 mb-5 leading-relaxed">
+                    As a maintenance personnel for Barangay Biking's water service, you are essential to maintaining
+                    reliable water delivery to our community. This portal enables you to efficiently manage installation
+                    tasks, handle disconnections, respond to incidents, and track your work assignments—all in one centralized system.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Wrench className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base">Task Management</h3>
+                        <p className="text-sm text-gray-600">Track installations, repairs, and disconnections</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Shield className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base">Incident Response</h3>
+                        <p className="text-sm text-gray-600">Respond to and resolve reported incidents quickly</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Activity className="h-5 w-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base">Work Tracking</h3>
+                        <p className="text-sm text-gray-600">Monitor progress and update task status in real-time</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-600 mt-1">All assigned tasks</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Pending Tasks
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-yellow-600">
-                    {tasksData?.pending || 0}
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">Awaiting action</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-                    <Activity className="h-4 w-4 mr-2" />
-                    In Progress
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-600">
-                    {tasksData?.inProgress || 0}
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">Currently working</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Completed
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">
-                    {tasksData?.completed || 0}
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">This month</p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -218,9 +253,9 @@ export default function MaintenanceDashboard() {
                     <div>
                       <CardTitle className="flex items-center">
                         <Calendar className="h-5 w-5 mr-2 text-orange-600" />
-                        Today's Schedule
+                        Recent Incidents
                       </CardTitle>
-                      <CardDescription>Tasks assigned for today</CardDescription>
+                      <CardDescription>Latest reported incidents</CardDescription>
                     </div>
                     <Link href="/maintenance-dashboard/tasks">
                       <Button variant="outline" size="sm" data-testid="button-view-all-tasks">
@@ -230,15 +265,15 @@ export default function MaintenanceDashboard() {
                     </Link>
                   </CardHeader>
                   <CardContent>
-                    {tasksLoading ? (
+                    {incidentsLoading ? (
                       <div className="space-y-3">
                         {[...Array(3)].map((_, i) => (
                           <Skeleton key={i} className="h-24 w-full" />
                         ))}
                       </div>
-                    ) : tasksData?.todayTasks?.length > 0 ? (
+                    ) : processedIncidentsData.recentIncidents?.length > 0 ? (
                       <div className="space-y-3">
-                        {tasksData.todayTasks.map((task) => (
+                        {processedIncidentsData.recentIncidents.map((task) => (
                           <div
                             key={task.id}
                             className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -257,11 +292,11 @@ export default function MaintenanceDashboard() {
                                     {task.location}
                                   </p>
                                   <p className="text-sm text-gray-600">
-                                    Resident: {task.resident}
+                                    Reporter: {task.reporter}
                                   </p>
                                   <p className="text-xs text-gray-500">
                                     <Clock className="h-3 w-3 inline mr-1" />
-                                    {task.scheduledTime}
+                                    {task.reportedDate}
                                   </p>
                                 </div>
                               </div>
@@ -275,7 +310,7 @@ export default function MaintenanceDashboard() {
                     ) : (
                       <div className="text-center py-8">
                         <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                        <p className="text-gray-500">No tasks scheduled for today</p>
+                        <p className="text-gray-500">No recent incidents</p>
                       </div>
                     )}
                   </CardContent>
@@ -305,9 +340,9 @@ export default function MaintenanceDashboard() {
                           <Skeleton key={i} className="h-20 w-full" />
                         ))}
                       </div>
-                    ) : incidentsData?.recentIncidents?.length > 0 ? (
+                    ) : processedIncidentsData?.recentIncidents?.length > 0 ? (
                       <div className="space-y-3">
-                        {incidentsData.recentIncidents.map((incident) => (
+                        {processedIncidentsData.recentIncidents.slice(0, 2).map((incident) => (
                           <div
                             key={incident.id}
                             className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -349,25 +384,28 @@ export default function MaintenanceDashboard() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Total Reports</span>
-                        <span className="font-bold text-gray-900">{incidentsData?.total || 0}</span>
+                        <span className="font-bold text-gray-900">{processedIncidentsData.total || 0}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Pending</span>
-                        <span className="font-bold text-yellow-600">{incidentsData?.pending || 0}</span>
+                        <span className="font-bold text-yellow-600">{processedIncidentsData.pending || 0}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">In Progress</span>
-                        <span className="font-bold text-blue-600">{incidentsData?.inProgress || 0}</span>
+                        <span className="font-bold text-blue-600">{processedIncidentsData.inProgress || 0}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Resolved</span>
-                        <span className="font-bold text-green-600">{incidentsData?.resolved || 0}</span>
+                        <span className="font-bold text-green-600">{processedIncidentsData.resolved || 0}</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
             </div>
+
+            {/* Footer */}
+            <MaintenanceFooter />
           </div>
         </main>
       </div>

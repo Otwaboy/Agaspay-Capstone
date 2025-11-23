@@ -63,23 +63,23 @@ function SidebarContent() {
       
       {/* Logo Section */}
       <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
-        <div className="flex items-center">
-          <div className="bg-orange-600 p-2 rounded-lg">
+        <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-lg">
             <Wrench className="h-6 w-6 text-white" />
           </div>
-          <div className="ml-3">
-            <h2 className="text-lg font-bold text-gray-900">AGASPAY</h2>
-            <p className="text-xs text-gray-500">Maintenance Portal</p>
+          <div>
+            <h1 className="text-xl font-bold text-blue-900">AGASPAY</h1>
+            <p className="text-xs text-blue-600">Maintenance Portal</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
           const isActive = location === item.href;
           const IconComponent = item.icon;
-          
+
           return (
             <Link key={item.href} href={item.href}>
               <Button
@@ -138,7 +138,7 @@ export default function MaintenanceSidebar() {
       {/* Mobile Sidebar */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <button className="lg:hidden fixed top-4 left-4 z-40 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+          <button className="lg:hidden absolute top-6 left-4 z-40 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
             <Menu className="h-6 w-6" />
           </button>
         </SheetTrigger>

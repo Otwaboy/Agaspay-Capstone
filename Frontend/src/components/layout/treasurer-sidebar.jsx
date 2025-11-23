@@ -126,58 +126,61 @@ function SidebarContent() {
       
       {/* Logo Section */}
       <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
-        <div className="flex items-center">
-          <div className="bg-blue-500 p-2 rounded-4xl">
+        <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-lg">
             <DollarSign className="h-6 w-6 text-white" />
           </div>
-          <div className="ml-3">
-            <h2 className="text-xl font-bold text-gray-900">AGASPAY</h2>
-            <p className="text-xs text-gray-500">Treasurer Portal</p>
+          <div>
+            <h1 className="text-xl font-bold text-blue-900">AGASPAY</h1>
+            <p className="text-xs text-blue-600">Treasurer Portal</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
 
           return item.subItems ? (
             <div key={item.title}>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => toggleExpanded(item.title)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`cursor-pointer w-full justify-start text-left h-12 ${
                   isParentActive(item.subItems)
-                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-blue-50 text-blue-700"
+                    : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
                 }`}
               >
-                <div className="flex items-center">
-                  <Icon className={`mr-3 h-5 w-5 ${isParentActive(item.subItems) ? "text-blue-600" : item.color}`} />
-                  <span>{item.title}</span>
-                </div>
+                <Icon className={`mr-3 h-5 w-5 ${isParentActive(item.subItems) ? "text-blue-600" : item.color}`} />
+                <span className="font-medium flex-1">{item.title}</span>
                 {expandedItems[item.title] ? (
                   <ChevronDown className="h-4 w-4" />
                 ) : (
                   <ChevronRight className="h-4 w-4" />
                 )}
-              </button>
+              </Button>
               {expandedItems[item.title] && (
-                <div className="ml-6 mt-2 space-y-1">
-                  {item.subItems.map((subItem) => (
-                    <Link key={subItem.href} href={subItem.href}>
-                      <span
-                        className={`block px-3 py-2 text-sm rounded-md transition-colors ${
-                          isActive(subItem.href)
-                            ? "bg-blue-50 text-blue-700 font-medium"
-                            : "text-gray-600 hover:bg-gray-50"
-                        }`}
-                      >
-                        {subItem.title}
-                      </span>
-                    </Link>
-                  ))}
+                <div className="ml-8 mt-1 space-y-1">
+                  {item.subItems.map((subItem) => {
+                    const isSubActive = isActive(subItem.href);
+                    return (
+                      <Link key={subItem.href} href={subItem.href}>
+                        <Button
+                          variant={isSubActive ? "secondary" : "ghost"}
+                          className={`cursor-pointer w-full justify-start text-left h-10 text-sm ${
+                            isSubActive
+                              ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600"
+                              : "hover:bg-gray-50 text-gray-600 hover:text-gray-900"
+                          }`}
+                        >
+                          {subItem.title}
+                        </Button>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -237,8 +240,8 @@ export default function TreasurerSidebar() {
     <>
       {/* Mobile Sidebar */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild className="ml-5 absolute mt-5 lg:hidden">
-          <button className="fixed top-4 left-4 z-50 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+        <SheetTrigger asChild>
+          <button className="lg:hidden absolute top-6 left-4 z-40 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
             <Menu className="h-6 w-6" />
           </button>
         </SheetTrigger>
@@ -248,8 +251,10 @@ export default function TreasurerSidebar() {
       </Sheet>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-72 bg-white shadow-lg">
-        <SidebarContent />
+      <div className="hidden lg:flex lg:flex-shrink-0">
+        <div className="flex flex-col w-72">
+          <SidebarContent />
+        </div>
       </div>
     </>
   );
