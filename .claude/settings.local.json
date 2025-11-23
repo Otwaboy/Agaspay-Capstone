@@ -19,7 +19,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(cmd /c taskkill /PID 14396 /F)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(cmd /c taskkill /PID 36244 /F)"
     ],
     "deny": [],
     "ask": []

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -26,12 +26,12 @@ const menuItems = [
     icon: Home,
     label: "Dashboard",
     href: "/",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     title: "Resident Management",
     icon: Users,
-    color: "text-purple-600",
+    color: "text-gray-600",
     subItems: [
       { title: "All Residents", href: "/admin-dashboard/users" },
       { title: "Disconnect Requests", href: "/admin-dashboard/disconnect-requests" },
@@ -42,35 +42,35 @@ const menuItems = [
     icon: UserPlus,
     label: "Personnel",
     href: "/admin-dashboard/personnel",
-    color: "text-purple-600"
+    color: "text-gray-600"
   },
   {
     title: "Archive Management",
     icon: Archive,
-    color: "text-orange-600",
+    color: "text-gray-600",
     subItems: [
       { title: "Archive Requests", href: "/admin-dashboard/archive-requests" },
       { title: "Archived Users", href: "/admin-dashboard/archived-users" },
-      
+
     ]
   },
   {
     icon: FileText,
     label: "Billing & Payments",
     href: "/admin-dashboard/billing",
-    color: "text-orange-600"
+    color: "text-gray-600"
   },
   {
     icon: AlertTriangle,
     label: "Incidents",
     href: "/admin-dashboard/incidents",
-    color: "text-red-600"
+    color: "text-gray-600"
   },
-  { 
+  {
     icon: User,
     label: "Profile",
     href: "/admin-dashboard/profile",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     icon: Settings,
@@ -86,6 +86,20 @@ function SidebarContent() {
   const [location] = useLocation();
   const { logout, user } = useAuth();
   const [expandedItems, setExpandedItems] = useState({});
+
+  // Auto-expand dropdowns if a subitem is active
+  useEffect(() => {
+    const newExpandedItems = {};
+    menuItems.forEach((item, index) => {
+      if (item.subItems) {
+        const hasActiveSubItem = item.subItems.some(sub => location === sub.href);
+        if (hasActiveSubItem) {
+          newExpandedItems[index] = true;
+        }
+      }
+    });
+    setExpandedItems(prev => ({ ...prev, ...newExpandedItems }));
+  }, [location]);
 
   const handleLogout = () => {
     logout();

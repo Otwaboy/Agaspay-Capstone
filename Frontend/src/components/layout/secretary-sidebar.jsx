@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -28,26 +28,26 @@ const secretaryMenuItems = [
     icon: Home,
     label: "Dashboard",
     href: "/secretary-dashboard",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     icon: Users,
     label: "Resident Management",
-    color: "text-green-600",
+    color: "text-gray-600",
     isParent: true,
     subItems: [
       {
         icon: UserPlus,
         label: "Add Residents",
         href: "/secretary-dashboard/residents",
-        color: "text-green-600"
-    
+        color: "text-gray-600"
+
       },
       {
         icon: AlertTriangle,
         label: "Deliquency List",
         href: "/secretary-dashboard/deliquency-list",
-        color: "text-red-600"
+        color: "text-gray-600"
       },
     ]
   },
@@ -55,25 +55,25 @@ const secretaryMenuItems = [
     icon: AlertTriangle,
     label: "Incident Reports",
     href: "/secretary-dashboard/applications",
-    color: "text-cyan-600"
+    color: "text-gray-600"
   },
   {
     icon: ClipboardList,
     label: "Task Management",
-    color: "text-purple-600",
+    color: "text-gray-600",
     isParent: true,
     subItems: [
       {
         icon: Unplug,
         label: "Schedule Disconnection",
         href: "/secretary-dashboard/schedule-disconnection",
-        color: "text-orange-600"
+        color: "text-gray-600"
       },
       {
         icon: Power,
         label: "Schedule Reconnection",
         href: "/secretary-dashboard/schedule-reconnection",
-        color: "text-green-600"
+        color: "text-gray-600"
       },
     ]
   },
@@ -81,19 +81,19 @@ const secretaryMenuItems = [
     icon: Calendar,
     label: "Assignments",
     href: "/secretary-dashboard/appointments",
-    color: "text-teal-600"
+    color: "text-gray-600"
   },
   {
     icon: MessageSquare,
     label: "Announcements",
     href: "/secretary-dashboard/announcements",
-    color: "text-indigo-600"
+    color: "text-gray-600"
   },
   {
     icon: User,
     label: "Profile",
     href: "/secretary-dashboard/profile",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     icon: Settings,
@@ -107,6 +107,20 @@ function SecretarySidebarContent() {
   const [location, setLocation] = useLocation();
   const { logout, user } = useAuth();
   const [expandedItems, setExpandedItems] = useState({});
+
+  // Auto-expand dropdowns if a subitem is active
+  useEffect(() => {
+    const newExpandedItems = {};
+    secretaryMenuItems.forEach((item) => {
+      if (item.subItems) {
+        const hasActiveSubItem = item.subItems.some(sub => location === sub.href);
+        if (hasActiveSubItem) {
+          newExpandedItems[item.label] = true;
+        }
+      }
+    });
+    setExpandedItems(prev => ({ ...prev, ...newExpandedItems }));
+  }, [location]);
 
   const handleLogout = () => {
     logout();
@@ -125,7 +139,7 @@ function SecretarySidebarContent() {
       {/* Logo Section */}
       <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
         <div className="flex items-center">
-          <div className="bg-green-600 p-2 rounded-lg">
+          <div className="bg-blue-600 p-2 rounded-lg">
             <Droplets className="h-6 w-6 text-white" />
           </div>
           <div className="ml-3">
@@ -216,8 +230,8 @@ function SecretarySidebarContent() {
       {/* User Info and Logout */}
       <div className="px-4 py-4 border-t border-gray-200">
         <div className="flex items-center mb-3 px-2">
-          <div className="bg-green-100 p-2 rounded-full">
-            <Users className="h-4 w-4 text-green-600" />
+          <div className="bg-blue-100 p-2 rounded-full">
+            <Users className="h-4 w-4 text-blue-600" />
           </div>
           <div className="ml-3 min-w-0 flex-1">
             <p className="text-sm font-medium text-gray-900 truncate">

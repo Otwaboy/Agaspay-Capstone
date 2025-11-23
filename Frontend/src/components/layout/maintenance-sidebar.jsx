@@ -22,25 +22,25 @@ const menuItems = [
     icon: Home,
     label: "Dashboard",
     href: "/maintenance-dashboard",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     icon: Wrench,
     label: "My Tasks",
     href: "/maintenance-dashboard/tasks",
-    color: "text-orange-600"
+    color: "text-gray-600"
   },
   {
     icon: AlertTriangle,
     label: "Incident Reports",
     href: "/maintenance-dashboard/incidents",
-    color: "text-red-600"
+    color: "text-gray-600"
   },
   {
     icon: User,
     label: "Profile",
     href: "/maintenance-dashboard/profile",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     icon: Settings,
@@ -85,13 +85,13 @@ function SidebarContent() {
               <Button
                 variant={isActive ? "secondary" : "ghost"}
                 className={`cursor-pointer w-full justify-start text-left h-12 ${
-                  isActive 
-                    ? "bg-orange-50 text-orange-700 border-r-2 border-orange-600" 
+                  isActive
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                     : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
                 }`}
                 data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <IconComponent className={`mr-3 h-5 w-5 ${isActive ? "text-orange-600" : item.color}`} />
+                <IconComponent className={`mr-3 h-5 w-5 ${isActive ? "text-blue-600" : item.color}`} />
                 <span className="font-medium">{item.label}</span>
               </Button>
             </Link>
@@ -102,7 +102,7 @@ function SidebarContent() {
       {/* User Info & Logout */}
       <div className="px-4 py-4 border-t border-gray-200">
         <div className="flex items-center px-3 py-2 mb-3 bg-gray-50 rounded-lg">
-          <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-medium">
               {user?.username?.charAt(0)?.toUpperCase() || 'M'}
             </span>

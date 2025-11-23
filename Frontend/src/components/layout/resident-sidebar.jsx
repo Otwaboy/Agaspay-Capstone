@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -23,30 +23,30 @@ const residentMenuItems = [
     title: "Dashboard",
     icon: Home,
     href: "/resident-dashboard",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     title: "Payment History",
     icon: Receipt,
     href: "/resident-dashboard/payment-history",
-    color: "text-purple-600"
-  }, 
+    color: "text-gray-600"
+  },
   {
     title: "Water Usage",
     icon: Droplets,
     href: "/resident-dashboard/usage",
-    color: "text-blue-500"
+    color: "text-gray-600"
   },
   {
     title: "Reading History",
     icon: History,
     href: "/resident-dashboard/reading-history",
-    color: "text-cyan-600"
+    color: "text-gray-600"
   },
   {
     title: "Service Request",
     icon: AlertTriangle,
-    color: "text-red-600",
+    color: "text-gray-600",
     subItems: [
       { title: "Report Issue", href: "/resident-dashboard/report-issue" },
       { title: "Report History", href: "/resident-dashboard/service-requests" },
@@ -56,7 +56,7 @@ const residentMenuItems = [
     title: "Announcements",
     icon: MessageSquare,
     href: "/resident-dashboard/announcements",
-    color: "text-indigo-600"
+    color: "text-gray-600"
   },
   {
     title: "Profile",
@@ -77,15 +77,29 @@ function ResidentSidebarContent() {
   const { logout, user } = useAuth();
   const [expandedItems, setExpandedItems] = useState({});
 
+  const isActive = (href) =>
+    location === href || (href !== "/resident-dashboard" && location.startsWith(href));
+
+  // Auto-expand dropdowns if a subitem is active
+  useEffect(() => {
+    const newExpandedItems = {};
+    residentMenuItems.forEach((item) => {
+      if (item.subItems) {
+        const hasActiveSubItem = item.subItems.some(sub => isActive(sub.href));
+        if (hasActiveSubItem) {
+          newExpandedItems[item.title] = true;
+        }
+      }
+    });
+    setExpandedItems(prev => ({ ...prev, ...newExpandedItems }));
+  }, [location]);
+
   const toggleExpanded = (title) => {
     setExpandedItems(prev => ({
       ...prev,
       [title]: !prev[title]
     }));
   };
-
-  const isActive = (href) =>
-    location === href || (href !== "/resident-dashboard" && location.startsWith(href));
 
   const isParentActive = (subItems) =>
     subItems?.some(item => isActive(item.href));

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -23,30 +23,30 @@ const residentMenuItems = [
     title: "Dashboard",
     icon: Home,
     href: "/meter-reader-dashboard",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     title: "Meter Readings",
     icon: Gauge,
     href: "/meter-reader-dashboard/readings",
-    color: "text-purple-600"
-  }, 
+    color: "text-gray-600"
+  },
   {
     title: "Reading History",
     icon: ClipboardList,
     href: "/meter-reader-dashboard/history",
-    color: "text-blue-500"
+    color: "text-gray-600"
   },
   {
     title: "Zone Management",
     icon: MapPin,
     href: "/meter-reader-dashboard/zones",
-    color: "text-cyan-600"
+    color: "text-gray-600"
   },
   {
     title: "Service Request",
     icon: AlertTriangle,
-    color: "text-red-600",
+    color: "text-gray-600",
     subItems: [
       { title: "Report Issue", href: "/meter-reader-dashboard/report-issue" },
       { title: "Report History", href: "/meter-reader-dashboard/report-issue-history" },
@@ -56,7 +56,7 @@ const residentMenuItems = [
     title: "Profile",
     icon: User,
     href: "/meter-reader-dashboard/profile",
-    color: "text-indigo-600"
+    color: "text-gray-600"
   },
   {
     title: "Settings",
@@ -72,15 +72,29 @@ function MeterReaderSidebarContent() {
   const { logout, user } = useAuth();
   const [expandedItems, setExpandedItems] = useState({});
 
+  const isActive = (href) =>
+    location === href || (href !== "/meter-reader-dashboard" && location.startsWith(href));
+
+  // Auto-expand dropdowns if a subitem is active
+  useEffect(() => {
+    const newExpandedItems = {};
+    residentMenuItems.forEach((item) => {
+      if (item.subItems) {
+        const hasActiveSubItem = item.subItems.some(sub => isActive(sub.href));
+        if (hasActiveSubItem) {
+          newExpandedItems[item.title] = true;
+        }
+      }
+    });
+    setExpandedItems(prev => ({ ...prev, ...newExpandedItems }));
+  }, [location]);
+
   const toggleExpanded = (title) => {
     setExpandedItems(prev => ({
       ...prev,
       [title]: !prev[title]
     }));
   };
-
-  const isActive = (href) =>
-    location === href || (href !== "/meter-reader-dashboard" && location.startsWith(href));
 
   const isParentActive = (subItems) =>
     subItems?.some(item => isActive(item.href));

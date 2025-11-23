@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
@@ -28,24 +28,24 @@ const menuItems = [
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/treasurer-dashboard",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
-    title: "Approve Readings",  // ✅ Fixed
-    icon: CheckCircle2,         // ✅ Changed icon
-    href: "/treasurer-dashboard/approve-readings",  // ✅ Correct path
-    color: "text-green-600"     // ✅ Changed color
+    title: "Approve Readings",
+    icon: CheckCircle2,
+    href: "/treasurer-dashboard/approve-readings",
+    color: "text-gray-600"
   },
   {
-    title: "Record Payment",  // ✅ New menu item
+    title: "Record Payment",
     icon: Wallet,
     href: "/treasurer-dashboard/record-payment",
-    color: "text-emerald-600"
+    color: "text-gray-600"
   },
   {
     title: "Revenue Management",
     icon: DollarSign,
-    color: "text-green-600",
+    color: "text-gray-600",
     subItems: [
       { title: "Payment Collection", href: "/treasurer-dashboard/revenue/payment-collection" },
       { title: "Outstanding Balances", href: "/treasurer-dashboard/revenue/outstanding-balances" },
@@ -54,7 +54,7 @@ const menuItems = [
   {
     title: "Billing Management",
     icon: Receipt,
-    color: "text-purple-600",
+    color: "text-gray-600",
     subItems: [
       { title: "Generate Bills", href: "/treasurer-dashboard/billing/generate" },
       { title: "Bill History", href: "/treasurer-dashboard/billing/history" },
@@ -65,19 +65,19 @@ const menuItems = [
     title: "Customer Accounts",
     icon: Users,
     href: "/treasurer-dashboard/accounts",
-    color: "text-orange-600"
+    color: "text-gray-600"
   },
   {
     title: "Financial Alerts",
     icon: AlertCircle,
     href: "/treasurer-dashboard/alerts",
-    color: "text-red-600"
+    color: "text-gray-600"
   },
   {
     title: "Profile",
     icon: User,
     href: "/treasurer-dashboard/profile",
-    color: "text-blue-600"
+    color: "text-gray-600"
   },
   {
     title: "Settings",
@@ -92,15 +92,29 @@ function SidebarContent() {
   const { logout, user } = useAuth();
   const [expandedItems, setExpandedItems] = useState({});
 
+  const isActive = (href) =>
+    location === href || (href !== "/treasurer-dashboard" && location.startsWith(href));
+
+  // Auto-expand dropdowns if a subitem is active
+  useEffect(() => {
+    const newExpandedItems = {};
+    menuItems.forEach((item) => {
+      if (item.subItems) {
+        const hasActiveSubItem = item.subItems.some(sub => isActive(sub.href));
+        if (hasActiveSubItem) {
+          newExpandedItems[item.title] = true;
+        }
+      }
+    });
+    setExpandedItems(prev => ({ ...prev, ...newExpandedItems }));
+  }, [location]);
+
   const toggleExpanded = (title) => {
     setExpandedItems(prev => ({
       ...prev,
       [title]: !prev[title]
     }));
   };
-
-  const isActive = (href) =>
-    location === href || (href !== "/treasurer-dashboard" && location.startsWith(href));
 
   const isParentActive = (subItems) =>
     subItems?.some(item => isActive(item.href));
