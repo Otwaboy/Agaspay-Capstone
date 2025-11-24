@@ -33,32 +33,23 @@ router.post("/", async (req, res) => {
     let paymentReference;
 
     if (type === "payment.paid") {
-      // ✅ FIX: payment_intent_id is a string field in the payment webhook, not nested
-      const paymentIntent = data?.attributes?.payment_intent_id;
-      if (!paymentIntent) {
-        console.log("⚠️ No payment_intent_id found in payment.paid webhook");
-        console.log("   Available fields:", Object.keys(data?.attributes || {}));
-        return res.status(200).json({ success: true });
-      }
-
-      console.log("📌 [Webhook] payment.paid using payment_intent_id:", paymentIntent);
-      paymentReference = paymentIntent;
-      billing = await Billing.findOne({ current_payment_intent: paymentIntent });
+      // ⚠️ IMPORTANT: payment.paid webhook has payment_intent_id, but it might differ from what we saved
+      // Don't use it for lookup - instead wait for checkout_session.payment.paid which has the checkout_session ID
+      console.log("ℹ️  [Webhook] payment.paid received - waiting for checkout_session webhook to process");
+      return res.status(200).json({ success: true });
     }
 
     if (type === "checkout_session.payment.paid") {
-      // ✅ CRITICAL FIX: Use the payment_intent ID from the webhook
-      // In checkout_session webhook, payment_intent is nested as an object
-      const paymentIntentFromWebhook = data?.payment_intent?.id;
-      if (!paymentIntentFromWebhook) {
-        console.log("⚠️ No payment_intent.id found in checkout_session webhook");
-        console.log("   Available payment_intent:", data?.payment_intent);
+      // ✅ CRITICAL FIX: Use checkout_session ID which matches what we saved in billing
+      const checkoutSessionId = data?.id;
+      if (!checkoutSessionId) {
+        console.log("⚠️ No checkout_session ID found in webhook");
         return res.status(200).json({ success: true });
       }
 
-      console.log("📌 [Webhook] checkout_session.payment.paid using payment_intent.id:", paymentIntentFromWebhook);
-      paymentReference = paymentIntentFromWebhook;
-      billing = await Billing.findOne({ current_payment_intent: paymentIntentFromWebhook });
+      console.log("📌 [Webhook] checkout_session.payment.paid using checkout_session ID:", checkoutSessionId);
+      paymentReference = data?.payment_intent?.id || "checkout_" + checkoutSessionId;
+      billing = await Billing.findOne({ current_checkout_session: checkoutSessionId });
     }
 
     if (!billing) {
