@@ -48,10 +48,8 @@ const PaymentSchema = new mongoose.Schema({
 
   confirmed_by: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // assuming treasurer accounts are in User collection
-    required: function () {
-      return this.payment_status === 'confirmed';
-    }
+    ref: 'User', // treasurer or system who confirmed the payment
+    default: null // Optional - webhook payments don't need confirmation from a user
   },
 
   // ✅ Additional fields for walk-in/manual payments
