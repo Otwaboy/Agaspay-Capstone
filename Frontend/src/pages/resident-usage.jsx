@@ -8,7 +8,7 @@ import apiClient from "../lib/api";
 
 export default function ResidentUsage() {
   
-  const { data: usageData } = useQuery({
+  const { data: usageData, isLoading } = useQuery({
     queryKey: ["/api/v1/billing"],
     queryFn: async () => {
       const res = await apiClient.getCurrentBill();
@@ -19,6 +19,14 @@ export default function ResidentUsage() {
 
   console.log(usageData);
   
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   // ✅ make a shallow copy
   const sortedData = [...usageData].sort(

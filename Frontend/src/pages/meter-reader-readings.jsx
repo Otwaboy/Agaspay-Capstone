@@ -185,6 +185,11 @@ export default function MeterReaderReadings() {
       return toast.error("Validation Error", { description: "Please enter both start and end dates before saving" });
     }
 
+    // Validate that end date is not before start date
+    if (new Date(formData.inclusive_date.end) < new Date(formData.inclusive_date.start)) {
+      return toast.error("Validation Error", { description: "End date cannot be before start date" });
+    }
+
     const period = {
       start: formData.inclusive_date.start,
       end: formData.inclusive_date.end
@@ -215,7 +220,12 @@ export default function MeterReaderReadings() {
   }
 
   if (!formData.inclusive_date.start || !formData.inclusive_date.end) {
-    return toast.error("Validation Error", { description: "Please enter both start and end dates" }); 
+    return toast.error("Validation Error", { description: "Please enter both start and end dates" });
+  }
+
+  // Validate that end date is not before start date
+  if (new Date(formData.inclusive_date.end) < new Date(formData.inclusive_date.start)) {
+    return toast.error("Validation Error", { description: "End date cannot be before start date" });
   }
 
   const payload = {
@@ -497,8 +507,25 @@ export default function MeterReaderReadings() {
                         </div>
                       )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Input type="date" value={formData.inclusive_date.start} onChange={(e) => handleInputChange("inclusive_date.start", e.target.value)} />
-                        <Input type="date" value={formData.inclusive_date.end} onChange={(e) => handleInputChange("inclusive_date.end", e.target.value)} />
+                        <div className="space-y-2">
+                          <Label htmlFor="start_date" className="text-sm font-medium">Start Date</Label>
+                          <Input
+                            id="start_date"
+                            type="date"
+                            value={formData.inclusive_date.start}
+                            onChange={(e) => handleInputChange("inclusive_date.start", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="end_date" className="text-sm font-medium">End Date</Label>
+                          <Input
+                            id="end_date"
+                            type="date"
+                            value={formData.inclusive_date.end}
+                            onChange={(e) => handleInputChange("inclusive_date.end", e.target.value)}
+                            min={formData.inclusive_date.start}
+                          />
+                        </div>
                       </div>
 
                       <Label className="flex items-center space-x-2 text-base">

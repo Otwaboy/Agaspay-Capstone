@@ -20,7 +20,7 @@ export default function ResidentBillPaymentCard() {
       );
 
       // Use the earliest unpaid bill's due date for calculating days overdue
-      const earliestUnpaidBill = unpaidBills.length > 0
+      const earliestUnpaidBill = unpaidBills.length > 0 
         ? unpaidBills.reduce((earliest, bill) => {
             const earliestDate = new Date(earliest.due_date);
             const billDate = new Date(bill.due_date);
