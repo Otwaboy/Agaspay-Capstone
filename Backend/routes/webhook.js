@@ -33,27 +33,31 @@ router.post("/", async (req, res) => {
     let paymentReference;
 
     if (type === "payment.paid") {
-      const paymentIntent = data?.attributes?.payment_intent?.id;
+      // ✅ FIX: payment_intent_id is a string field in the payment webhook, not nested
+      const paymentIntent = data?.attributes?.payment_intent_id;
       if (!paymentIntent) {
-        console.log("⚠️ No payment_intent found in webhook");
+        console.log("⚠️ No payment_intent_id found in payment.paid webhook");
+        console.log("   Available fields:", Object.keys(data?.attributes || {}));
         return res.status(200).json({ success: true });
       }
 
+      console.log("📌 [Webhook] payment.paid using payment_intent_id:", paymentIntent);
       paymentReference = paymentIntent;
       billing = await Billing.findOne({ current_payment_intent: paymentIntent });
     }
 
     if (type === "checkout_session.payment.paid") {
-      // ✅ CRITICAL FIX: Use the payment_intent ID from the webhook, not checkout session ID
-      // The payment_intent is what we saved in the billing record
+      // ✅ CRITICAL FIX: Use the payment_intent ID from the webhook
+      // In checkout_session webhook, payment_intent is nested as an object
       const paymentIntentFromWebhook = data?.payment_intent?.id;
       if (!paymentIntentFromWebhook) {
-        console.log("⚠️ No payment_intent found in checkout_session webhook");
+        console.log("⚠️ No payment_intent.id found in checkout_session webhook");
+        console.log("   Available payment_intent:", data?.payment_intent);
         return res.status(200).json({ success: true });
       }
 
+      console.log("📌 [Webhook] checkout_session.payment.paid using payment_intent.id:", paymentIntentFromWebhook);
       paymentReference = paymentIntentFromWebhook;
-      console.log("📌 [Webhook] Using payment_intent from checkout_session:", paymentIntentFromWebhook);
       billing = await Billing.findOne({ current_payment_intent: paymentIntentFromWebhook });
     }
 
