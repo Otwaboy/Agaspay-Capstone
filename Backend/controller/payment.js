@@ -134,20 +134,29 @@ const payPayment = async (req, res) => {
       checkoutUrl: checkoutSession.attributes.checkout_url,
     });
   } catch (error) {
-    console.error("PayMongo Error:", error.response?.data || error.message);
+    console.error("❌ PAYMENT CREATION ERROR");
+    console.error("  Message:", error.message);
+    console.error("  Code:", error.code);
+    console.error("  Status:", error.response?.status);
+    console.error("  PayMongo Error Response:", JSON.stringify(error.response?.data, null, 2));
+    console.error("  Stack:", error.stack);
 
     if (error.response?.data) {
-      return res.status(400).json({
+      console.error("❌ PayMongo API returned error");
+      return res.status(error.response.status || 400).json({
         success: false,
         message: "PayMongo API Error",
         error: error.response.data,
+        details: error.response.data?.errors?.[0]?.detail || error.message
       });
     }
 
+    console.error("❌ Internal payment error occurred");
     res.status(500).json({
       success: false,
       message: "Payment processing failed",
       error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
@@ -220,21 +229,29 @@ const verifyPayment = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Verify Payment Error:", error.message);
-    
+    console.error("❌ PAYMENT VERIFICATION ERROR");
+    console.error("  Payment Intent ID:", payment_intent_id);
+    console.error("  Error Message:", error.message);
+    console.error("  Status:", error.response?.status);
+    console.error("  PayMongo Response:", JSON.stringify(error.response?.data, null, 2));
+
     // If payment_intent not found, it might be invalid
     if (error.response?.status === 404) {
+      console.error("  ❌ Payment intent not found on PayMongo");
       return res.status(404).json({
         success: false,
         payment_recorded: false,
-        message: "Payment not found"
+        message: "Payment not found on PayMongo",
+        payment_intent_id: payment_intent_id
       });
     }
 
+    console.error("  ❌ PayMongo verification failed");
     return res.status(500).json({
       success: false,
-      message: "Failed to verify payment",
+      message: "Failed to verify payment on PayMongo",
       error: error.message,
+      payment_intent_id: payment_intent_id
     });
   }
 };
