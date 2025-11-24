@@ -94,7 +94,7 @@ router.post("/", async (req, res) => {
       payment_method: paymentMethodUsed,
       payment_type: isPartial ? "partial" : "full",
       payment_status: "confirmed",
-      payment_reference: billing.current_payment_intent,
+      payment_reference: paymentReference,
     });
 
     // Update billing
