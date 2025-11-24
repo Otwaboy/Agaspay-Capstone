@@ -80,12 +80,14 @@ router.post("/", async (req, res) => {
       "gcash";
 
     // Create payment record
+    // ✅ Payment status should be pending (for full) or partially_paid (for partial)
+    // Treasurer will confirm it later - not automatically
     const payment = await Payment.create({
       bill_id: billing._id,
       amount_paid: amountPaid,
       payment_method: paymentMethodUsed,
       payment_type: isPartial ? "partial" : "full",
-      payment_status: "confirmed",
+      payment_status: isPartial ? "partially_paid" : "pending",
       payment_reference: paymentReference,
     });
 
