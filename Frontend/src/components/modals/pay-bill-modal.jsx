@@ -67,7 +67,7 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
               // Find the bill matching the selectedMeter
               let billToPay;
               if (selectedMeter) {
-                billToPay = data.find(bill => bill.meter_no === selectedMeter);
+                billToPay = data.find(bill => bill.meter_no === selectedMeter.meter_no);
                 console.log("🔍 Found bill for selected meter:", billToPay);
               }
 
