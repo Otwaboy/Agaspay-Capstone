@@ -168,13 +168,17 @@ const verifyPayment = async (req, res) => {
     console.log("🔍 Verifying payment:", payment_intent_id);
 
     // 🔹 Check if payment exists in database (webhook has processed it)
-    const payment = await Payment.findOne({ 
-      payment_reference: payment_intent_id 
+    // Payment could be referenced by payment_intent_id OR checkout_session_id (prefixed with "checkout_")
+    const payment = await Payment.findOne({
+      $or: [
+        { payment_reference: payment_intent_id },
+        { payment_reference: new RegExp(`^checkout_`) } // Also check for checkout_session format
+      ]
     }).populate('bill_id');
 
     if (payment) {
       // ✅ Payment found in database - webhook has processed it
-      console.log("✅ Payment found in database:", payment._id);
+      console.log("✅ Payment found in database:", payment._id, "Reference:", payment.payment_reference);
       return res.status(200).json({
         success: true,
         payment_recorded: true,
