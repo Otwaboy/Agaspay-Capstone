@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,13 +14,28 @@ import {
 } from "../components/ui/table";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
-import { History, Search, Droplets, Calendar, TrendingUp, CheckCircle, Clock, XCircle } from "lucide-react";
+import { History, Search, Droplets, Calendar, TrendingUp, CheckCircle, Clock, XCircle, MapPin } from "lucide-react";
 import apiClient from "../lib/api";
 
 export default function ResidentReadingHistory() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMeter, setSelectedMeter] = useState(null);
 
-  // Fetch resident's water connection
+  // Fetch all meters for the resident
+  const { data: metersData, isLoading: metersLoading } = useQuery({
+    queryKey: ["resident-meters"],
+    queryFn: async () => {
+      const res = await apiClient.getResidentMeters();
+      return res.data;
+    },
+    onSuccess: (data) => {
+      if (data && data.length > 0 && !selectedMeter) {
+        setSelectedMeter(data[0]);
+      }
+    }
+  });
+
+  // Fetch resident's water connection (kept for compatibility but use selectedMeter)
   const { data: connectionData } = useQuery({
     queryKey: ["/api/v1/water-connection"],
     queryFn: async () => {
@@ -30,15 +46,15 @@ export default function ResidentReadingHistory() {
 
   // Fetch reading history - using billing data which contains reading information
   const { data: readingsData, isLoading } = useQuery({
-    queryKey: ["/api/v1/billing/history", connectionData?.connection_id],
+    queryKey: ["/api/v1/billing/history", selectedMeter?.connection_id],
     queryFn: async () => {
-      if (!connectionData?.connection_id) return [];
+      if (!selectedMeter?.connection_id) return [];
       // Get billing history which includes reading data
       const res = await apiClient.getCurrentBill();
       // Filter bills for this connection and extract reading info
       return res.data?.filter(bill =>
-        bill.connection_id === connectionData.connection_id ||
-        bill.connection_id?._id === connectionData.connection_id
+        bill.connection_id === selectedMeter.connection_id ||
+        bill.connection_id?._id === selectedMeter.connection_id
       ).map(bill => ({
         _id: bill.bill_id || bill._id,
         reading_date: bill.reading_date || bill.created_at,
@@ -54,7 +70,7 @@ export default function ResidentReadingHistory() {
         createdAt: bill.created_at
       })) || [];
     },
-    enabled: !!connectionData?.connection_id,
+    enabled: !!selectedMeter?.connection_id,
   });
 
   const readings = readingsData || [];
@@ -153,6 +169,37 @@ export default function ResidentReadingHistory() {
                 </div>
               </div>
             </div>
+
+            {/* Meter Selector */}
+            {metersLoading ? (
+              <div className="mb-8">Loading meters...</div>
+            ) : (
+              <div className="mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {metersData?.map((meter) => (
+                    <Button
+                      key={meter.connection_id}
+                      variant={selectedMeter?.connection_id === meter.connection_id ? "default" : "outline"}
+                      className={`h-auto py-4 px-4 flex flex-col items-start text-left space-y-2 ${
+                        selectedMeter?.connection_id === meter.connection_id
+                          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedMeter(meter)}
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <Droplets className="h-4 w-4" />
+                        <span className="font-medium">Meter #{meter.meter_no}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <MapPin className="h-3 w-3" />
+                        <span>Zone {meter.zone}, Purok {meter.purok}</span>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

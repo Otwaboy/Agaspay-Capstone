@@ -20,7 +20,11 @@
       "Bash(findstr:*)",
       "Bash(cmd /c taskkill /PID 14396 /F)",
       "Bash(git checkout:*)",
-      "Bash(cmd /c taskkill /PID 36244 /F)"
+      "Bash(cmd /c taskkill /PID 36244 /F)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

@@ -2,25 +2,35 @@ const mongoose = require('mongoose');
 
 const WaterConnectionSchema = new mongoose.Schema({
      
-  resident_id: 
+  resident_id:
   {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Resident',
-    required: true 
+    required: true
   },
-  meter_no:  
+  meter_no:
   {
-    type: String, 
+    type: String,
     required: [true, 'Meter number is required'],
     unique: true
   },
-  connection_status: 
+  zone: {
+    type: String,
+    enum: ["1", "2", "3"],
+    required: [true, 'Zone is required for this connection']
+  },
+  purok: {
+    type: String,
+    enum: ["1", "2", "3", "4", "5", "6", "7"],
+    required: [true, 'Purok is required for this connection']
+  },
+  connection_status:
   {
     type: String,
     enum: ['pending', 'active', 'request_for_disconnection', 'for_disconnection', 'for_reconnection', 'scheduled_for_disconnection', 'scheduled_for_reconnection', 'disconnected', ],
     default: 'pending'
-  }, 
-  type: 
+  },
+  type:
   {
     type: String,
     enum: ['household', 'restaurant', 'establishment', 'others'],

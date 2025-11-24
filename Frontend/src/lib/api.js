@@ -89,9 +89,12 @@ class ApiClient {
     }
   }
 
-  async getRecentPayment() {
+  async getRecentPayment(connectionId = null) {
     try {
-      return await this.request('/api/v1/payment');
+      const url = connectionId
+        ? `/api/v1/payment?connection_id=${connectionId}`
+        : '/api/v1/payment';
+      return await this.request(url);
     } catch (error) {
       console.log("fetching getrecentpayment:", error);
       throw error;
@@ -133,8 +136,11 @@ class ApiClient {
     }
   } 
 
-  async getCurrentBill() {
-    return await this.request('/api/v1/billing');
+  async getCurrentBill(connectionId = null) {
+    const url = connectionId
+      ? `/api/v1/billing?connection_id=${connectionId}`
+      : '/api/v1/billing';
+    return await this.request(url);
   }
 
   async getAllBilling(params = {}) {
@@ -376,6 +382,17 @@ async getApprovalStats() {
 
   async getDisconnectedConnections() {
     return await this.request('/api/v1/water-connection/disconnected');
+  }
+
+  async getResidentMeters() {
+    return await this.request('/api/v1/water-connection/resident-meters');
+  }
+
+  async addMeterToResident(data) {
+    return await this.request('/api/v1/water-connection/add-meter', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async getDelinquentAccounts() {

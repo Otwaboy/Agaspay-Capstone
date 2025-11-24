@@ -6,11 +6,11 @@ import { Button } from "../ui/button";
 import { Droplets, ArrowRight } from "lucide-react";
 import { apiClient } from "../../lib/api";
 
-export default function ResidentUsageChart() {
+export default function ResidentUsageChart({ connectionId }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["resident-usage-history"],
+    queryKey: ["resident-usage-history", connectionId],
     queryFn: async () => {
-      const res = await apiClient.getCurrentBill();
+      const res = await apiClient.getCurrentBill(connectionId);
       const bills = res.data || [];
       
       const last6Months = bills.slice(-6).map((bill, index) => {

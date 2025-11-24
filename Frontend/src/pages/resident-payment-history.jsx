@@ -14,6 +14,7 @@ import {
 } from "../components/ui/select";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
+import ResidentMultiMeterCards from "../components/dashboard/resident-multi-meter-cards";
 import {
   Receipt,
   CheckCircle,
@@ -27,7 +28,8 @@ import {
   Filter,
   FileText,
   ArrowLeft,
-  Droplets
+  Droplets,
+  MapPin
 } from "lucide-react";
 import apiClient from "../lib/api";
 import { Link } from "wouter";
@@ -40,14 +42,36 @@ export default function ResidentPaymentHistory() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [methodFilter, setMethodFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [selectedMeter, setSelectedMeter] = useState(null);
+
+  // Fetch all meters for the resident
+  const { data: metersData, isLoading: metersLoading } = useQuery({
+    queryKey: ["resident-meters"],
+    queryFn: async () => {
+      const res = await apiClient.getResidentMeters();
+      return res.data;
+    },
+    onSuccess: (data) => {
+      if (data && data.length > 0 && !selectedMeter) {
+        setSelectedMeter(data[0]);
+      }
+    }
+  });
 
   const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
-    queryKey: ['/api/v1/payment'],
+    queryKey: ['/api/v1/payment', selectedMeter?.connection_id],
     queryFn: async () => {
+      if (!selectedMeter?.connection_id) return [];
       const res = await apiClient.getRecentPayment();
-      return res.data || [];
+      const allPayments = res.data || [];
+      // Filter payments for this specific meter
+      return allPayments.filter(payment =>
+        payment.connection_id === selectedMeter.connection_id ||
+        payment.connection_id?._id === selectedMeter.connection_id
+      );
     },
-    retry: 1
+    retry: 1,
+    enabled: !!selectedMeter?.connection_id
   });
 
   const getStatusConfig = (status) => {
@@ -274,6 +298,37 @@ export default function ResidentPaymentHistory() {
                 View all your payment transactions and download receipts
               </p>
             </div>
+
+            {/* Meter Selector */}
+            {metersLoading ? (
+              <div className="mb-8">Loading meters...</div>
+            ) : (
+              <div className="mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {metersData?.map((meter) => (
+                    <Button
+                      key={meter.connection_id}
+                      variant={selectedMeter?.connection_id === meter.connection_id ? "default" : "outline"}
+                      className={`h-auto py-4 px-4 flex flex-col items-start text-left space-y-2 ${
+                        selectedMeter?.connection_id === meter.connection_id
+                          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedMeter(meter)}
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <Droplets className="h-4 w-4" />
+                        <span className="font-medium">Meter #{meter.meter_no}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <MapPin className="h-3 w-3" />
+                        <span>Zone {meter.zone}, Purok {meter.purok}</span>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

@@ -324,13 +324,19 @@ export default function MeterReaderReadings() {
                         <span>Select Resident</span>
                       </Label>
                       <Select value={formData.connection_id} onValueChange={(value) => handleInputChange("connection_id", value)}>
-                        <SelectTrigger className="h-12 text-base">
+                        <SelectTrigger className="h-14 text-base">
                           {selectedConnectionData ? (
                             <div className="flex items-center justify-between w-full">
-                              <span>{selectedConnectionData.full_name}</span>
-                              <Badge variant="outline" className="ml-2">Zone {selectedConnectionData.zone}</Badge>
+                              <div className="flex flex-col items-start">
+                                <span className="font-semibold">{selectedConnectionData.full_name}</span>
+                                <span className="text-xs text-gray-500">Meter #{selectedConnectionData.meter_number}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <Badge variant="outline">Zone {selectedConnectionData.zone}</Badge>
+                                <Badge variant="outline">Purok {selectedConnectionData.purok_no}</Badge>
+                              </div>
                             </div>
-                          ) : <SelectValue placeholder="Search and select resident" />}
+                          ) : <SelectValue placeholder="Search and select resident & meter" />}
                         </SelectTrigger>
                         <SelectContent>
                           <div className="sticky top-0 bg-white p-2 border-b z-10">
@@ -349,7 +355,10 @@ export default function MeterReaderReadings() {
                                 <div className="-ml-4 flex items-center justify-between w-full gap-2">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     {(connection.read_this_month && !connection.is_billed) ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" /> : <div className="h-4 w-4 flex-shrink-0" />}
-                                    <span className="truncate text-lg">{connection.full_name || "Unnamed"}</span>
+                                    <div className="flex flex-col">
+                                      <span className="truncate text-base font-semibold">{connection.full_name || "Unnamed"}</span>
+                                      <span className="text-xs text-gray-500">Meter #{connection.meter_number}</span>
+                                    </div>
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     <Badge variant="secondary" className="text-xs">Purok {connection.purok_no}</Badge>
@@ -369,18 +378,18 @@ export default function MeterReaderReadings() {
                                     selectedConnectionData.reading_status !== "submitted" &&
                                     (selectedConnectionData.reading_status !== "approved" || selectedConnectionData.is_billed) && (
                       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Customer</span>
                             <p className="text-gray-900 font-semibold">{selectedConnectionData.full_name}</p>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Meter Number</span>
-                            <p className="text-gray-900 font-semibold">{selectedConnectionData.meter_number || 'N/A'}</p>
+                            <p className="text-blue-600 font-bold text-base">{selectedConnectionData.meter_number || 'N/A'}</p>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
-                            <span className="font-medium text-gray-600 block mb-1">Purok</span>
-                            <p className="text-gray-900 font-semibold">Purok {selectedConnectionData.purok_no}</p>
+                            <span className="font-medium text-gray-600 block mb-1">Location</span>
+                            <p className="text-gray-900 font-semibold">Zone {selectedConnectionData.zone}, Purok {selectedConnectionData.purok_no}</p>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Previous Reading</span>
@@ -404,18 +413,18 @@ export default function MeterReaderReadings() {
 
                   {["inprogress", "submitted"].includes(selectedConnectionData?.reading_status) &&(
                       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-3">
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Customer</span>
                             <p className="text-gray-900 font-semibold">{selectedConnectionData.full_name}</p>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Meter Number</span>
-                            <p className="text-gray-900 font-semibold">{selectedConnectionData.meter_number || 'N/A'}</p>
+                            <p className="text-blue-600 font-bold text-base">{selectedConnectionData.meter_number || 'N/A'}</p>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
-                            <span className="font-medium text-gray-600 block mb-1">Purok</span>
-                            <p className="text-gray-900 font-semibold">Purok {selectedConnectionData.purok_no}</p>
+                            <span className="font-medium text-gray-600 block mb-1">Location</span>
+                            <p className="text-gray-900 font-semibold">Zone {selectedConnectionData.zone}, Purok {selectedConnectionData.purok_no}</p>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
                             <span className="font-medium text-gray-600 block mb-1">Present Reading</span>

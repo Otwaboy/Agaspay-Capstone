@@ -1,8 +1,9 @@
 const express = require('express')
 const router = express.Router()
 
-const {getLatestConnections, getActiveWaterConnections, getAllWaterConnections, getInactiveWaterConnections, editResidentAccount, updateUserContact, verifyEmail, getConnectionsForDisconnection, getDisconnectedConnections, getConnectionsForReconnection} = require('../controller/water-connection')
+const {getLatestConnections, getActiveWaterConnections, getAllWaterConnections, getInactiveWaterConnections, editResidentAccount, updateUserContact, verifyEmail, getConnectionsForDisconnection, getDisconnectedConnections, getConnectionsForReconnection, getResidentMeters, addMeterToResident} = require('../controller/water-connection')
 const authMiddleware = require('../middleware/authentication')
+const roleMiddleware = require('../middleware/roleMiddleware')
 
 
 router.route('/').get(authMiddleware,  getAllWaterConnections)
@@ -14,7 +15,9 @@ router.route('/disconnected').get(authMiddleware, getDisconnectedConnections)
 router.route('/:connection_id').put(authMiddleware,  editResidentAccount)
 router.route('/latest-reading').get(authMiddleware,  getLatestConnections)
 router.route('/contacts-update').patch(authMiddleware,  updateUserContact)
-router.route('/verify-email').post(authMiddleware, verifyEmail); // <-- new route
+router.route('/verify-email').post(authMiddleware, verifyEmail);
+router.route('/resident-meters').get(authMiddleware, roleMiddleware('resident'), getResidentMeters);
+router.route('/add-meter').post(authMiddleware, roleMiddleware('secretary'), addMeterToResident);
 
 
 

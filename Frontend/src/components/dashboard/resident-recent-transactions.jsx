@@ -7,11 +7,11 @@ import { CreditCard, Download, Eye } from "lucide-react";
 import apiClient from "../../lib/api";
 import { Link } from "wouter";
 
-export default function ResidentRecentTransactions() {
+export default function ResidentRecentTransactions({ connectionId }) {
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['/api/resident/transactions'],
+    queryKey: ['/api/resident/transactions', connectionId],
     queryFn: async () => {
-      const res = await apiClient.getRecentPayment();
+      const res = await apiClient.getRecentPayment(connectionId);
       const paymentHistory = res.data;
 
       return paymentHistory.map((ph) => ({

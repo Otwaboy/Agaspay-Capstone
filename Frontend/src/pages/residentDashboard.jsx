@@ -1,22 +1,38 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
 import ResidentModernStats from "../components/dashboard/resident-modern-stats";
-import ResidentBillPaymentCard from "../components/dashboard/resident-bill-payment-card";
-import ResidentUsageChart from "../components/dashboard/resident-usage-chart";
-import ResidentRecentTransactions from "../components/dashboard/resident-recent-transactions";
+import ResidentMultiMeterCards from "../components/dashboard/resident-multi-meter-cards";
 import ResidentModernAnnouncements from "../components/dashboard/resident-modern-announcements";
 import ResidentFooter from "../components/layout/resident-footer";
 import PayBillModal from "../components/modals/pay-bill-modal";
 import ReportIssueModal from "../components/modals/report-issue-modal";
 import { Loader2 } from "lucide-react";
+import { apiClient } from "../lib/api";
 
 
 export default function ResidentDashboard() {
   const [isPayBillModalOpen, setIsPayBillModalOpen] = useState(false);
   const [isReportIssueModalOpen, setIsReportIssueModalOpen] = useState(false);
+  const [selectedMeter, setSelectedMeter] = useState(null);
+
+  // Fetch all meters for the logged-in resident
+  const { isLoading: metersLoading } = useQuery({
+    queryKey: ["resident-meters"],
+    queryFn: async () => {
+      const res = await apiClient.getResidentMeters();
+      return res.data;
+    },
+    onSuccess: (data) => {
+      // Automatically select the first meter
+      if (data && data.length > 0 && !selectedMeter) {
+        setSelectedMeter(data[0]);
+      }
+    }
+  });
 
   useEffect(() => { 
     const handleOpenPayBillModal = () => setIsPayBillModalOpen(true);
@@ -40,7 +56,7 @@ export default function ResidentDashboard() {
     }
   }, [isAuthenticated, isLoading, setLocation]);
 
-  if (isLoading) {
+  if (isLoading || metersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -49,7 +65,7 @@ export default function ResidentDashboard() {
   }
 
   if (!isAuthenticated) {
-    return null; 
+    return null;
   }
 
   return (
@@ -74,27 +90,10 @@ export default function ResidentDashboard() {
             </div>
 
             {/* Modern Stats Cards */}
-            <ResidentModernStats />
+            <ResidentModernStats connectionId={selectedMeter?.connection_id} />
 
-            {/* Bill Payment and Usage Chart */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              <div className="lg:col-span-1">
-                <ResidentBillPaymentCard />
-              </div>
-              <div className="lg:col-span-2">
-                <ResidentUsageChart />
-              </div>
-            </div>
-
-            {/* Recent Transactions and Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              <div className="lg:col-span-4">
-                <ResidentRecentTransactions />
-              </div>
-              {/* <div className="lg:col-span-1">
-                <ResidentQuickActions />
-              </div> */}
-            </div>
+            {/* Multi-Meter Cards with Switching (includes Bill, Usage, Transactions) */}
+            <ResidentMultiMeterCards selectedMeter={selectedMeter} onMeterChange={setSelectedMeter} />
 
             {/* Announcements */}
             <ResidentModernAnnouncements />
@@ -105,9 +104,10 @@ export default function ResidentDashboard() {
     
       </div>
       
-      <PayBillModal 
-        isOpen={isPayBillModalOpen} 
-        onClose={() => setIsPayBillModalOpen(false)} 
+      <PayBillModal
+        isOpen={isPayBillModalOpen}
+        onClose={() => setIsPayBillModalOpen(false)}
+        selectedMeter={selectedMeter}
       />
       <ReportIssueModal 
         isOpen={isReportIssueModalOpen} 

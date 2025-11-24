@@ -19,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 
 
 
-export default function PayBillModal({ isOpen, onClose }) {
+export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
 
   const [formData, setbillingData] = useState({
     paymentMethod: "",
@@ -32,31 +32,48 @@ export default function PayBillModal({ isOpen, onClose }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Bill Details, 1.5: Payment Type, 2: Payment Method, 3: Confirmation
-  
-  const {data: billingData, isLoadingBilling} = useQuery({
-        queryKey:['Amount-to-pay'],
+
+  const {data: billingData, isLoadingBilling, error: queryError} = useQuery({
+        queryKey: ["Amount-to-pay"],
         queryFn: async () => {
-            const res = await apiClient.getCurrentBill()
-            const data = res.data
+            try {
+              const res = await apiClient.getCurrentBill()
+              const data = res.data
 
-             if(!data || data.length === 0){
-             return null
-              }
-            const billToPay = data[data.length - 1]
+              console.log("🔍 Modal API response:", res);
+              console.log("🔍 Modal data array:", data);
 
-            return{
-              billDetails: {
-                  id: billToPay.bill_id,
-                  accountName: billToPay.full_name,
-                  billPeriod: billToPay.due_date,
-                  meter_no: billToPay.meter_no,
-                  dueDate: billToPay.due_date,
-                  currentReading: billToPay.present_reading,
-                  previousReading: billToPay.previous_reading,
-                  consumption: billToPay.calculated,
-                  totalAmount: billToPay.total_amount,
-                  
+              if(!data || data.length === 0){
+                console.warn("⚠️ No data in API response");
+                return null
               }
+
+              // Use the last bill (modal shows the latest bill to pay)
+              const billToPay = data[data.length - 1];
+              console.log("🔍 Bill to pay object:", billToPay);
+              console.log("🔍 Bill _id:", billToPay._id);
+              console.log("🔍 Bill full_name:", billToPay.full_name);
+              console.log("🔍 Bill due_date:", billToPay.due_date);
+
+              const result = {
+                billDetails: {
+                    id: billToPay.bill_id,
+                    accountName: billToPay.full_name,
+                    billPeriod: billToPay.due_date,
+                    meter_no: billToPay.meter_no,
+                    dueDate: billToPay.due_date,
+                    currentReading: billToPay.present_reading,
+                    previousReading: billToPay.previous_reading,
+                    consumption: billToPay.calculated,
+                    totalAmount: billToPay.total_amount,
+                }
+              };
+              console.log("✅ Modal query result:", result);
+              return result;
+            } catch (error) {
+              console.error("❌ Error in modal query:", error);
+              console.error("❌ Error details:", error.message);
+              return null;
             }
         }
   })
@@ -131,6 +148,9 @@ export default function PayBillModal({ isOpen, onClose }) {
   setIsLoading(true);
 
   try {
+    console.log("💳 Form submission - billingData:", billingData);
+    console.log("💳 Form submission - billDetails:", billingData?.billDetails);
+
     if (!billingData?.billDetails?.id) {
       throw new Error("No bill found. Please refresh.");
     }
@@ -500,12 +520,12 @@ const renderPaymentType = () => (
               <>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">Total Bill:</span>
-                  <span>₱{billingData.billDetails.totalAmount.toFixed(2)}</span>
+                  <span>₱{billingData?.billDetails?.totalAmount?.toFixed(2) || "0.00"}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">Remaining After Payment:</span>
                   <span className="text-orange-600 font-medium">
-                    ₱{(billingData.billDetails.totalAmount - parseFloat(formData.partialAmount)).toFixed(2)}
+                    ₱{(billingData?.billDetails?.totalAmount ? (billingData.billDetails.totalAmount - parseFloat(formData.partialAmount)) : 0).toFixed(2)}
                   </span>
                 </div>
               </>
@@ -529,10 +549,10 @@ const renderPaymentType = () => (
 
         <Button
           onClick={handleSubmit}
-          disabled={!formData.paymentMethod|| isLoading}
+          disabled={!formData.paymentMethod || isLoading || !billingData?.billDetails?.id}
           data-testid="button-pay-now"
         >
-          {isLoading ? "Processing..." : `Pay ₱${formData.paymentType === 'partial'
+          {isLoading ? "Processing..." : !billingData?.billDetails?.id ? "Loading..." : `Pay ₱${formData.paymentType === 'partial'
             ? parseFloat(formData.partialAmount).toFixed(2)
             : billingData.billDetails.totalAmount.toFixed(2)}`}
         </Button>

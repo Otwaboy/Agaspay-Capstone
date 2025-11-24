@@ -6,6 +6,7 @@ import SecretaryTopHeader from "../components/layout/secretary-top-header";
 import CreateResidentModal from "../components/modals/create-resident-modal";
 import EditResidentModal from "../components/modals/edit-resident-modal";
 import GenerateResidentReportModal from "../components/modals/generate-resident-report-modal";
+import AddMeterModal from "../components/modals/add-meter-modal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -32,7 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar, UserPlus, Loader2, FileText } from "lucide-react";
+import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar, UserPlus, Loader2, FileText, Droplets } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 import { queryClient } from "../lib/query-client";
@@ -48,6 +49,8 @@ export default function SecretaryResidents() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [residentToEdit, setResidentToEdit] = useState(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isAddMeterModalOpen, setIsAddMeterModalOpen] = useState(false);
+  const [residentForMeter, setResidentForMeter] = useState(null);
 
   // Fetch water connections from backend
   const { data: residents = [], isLoading, error } = useQuery({
@@ -65,6 +68,7 @@ export default function SecretaryResidents() {
       // Map backend data to frontend format
       return connections.map((conn) => ({
         id: conn.connection_id || conn._id,
+        resident_id: conn.resident_id,  // Add resident_id for multi-meter functionality
         name: conn.full_name,
         address: conn.address,
         contactNo: conn.contact_no,
@@ -110,6 +114,22 @@ export default function SecretaryResidents() {
     setIsEditModalOpen(false);
     setResidentToEdit(null);
     // Refetch water connections after updating a resident
+    queryClient.invalidateQueries({ queryKey: ['/api/water-connections'] });
+  };
+
+  const handleAddMeter = (resident) => {
+    setResidentForMeter({
+      resident_id: resident.resident_id, // Use the resident._id from backend
+      name: resident.name,
+      existing_meters: [] // Could fetch existing meters for this resident
+    });
+    setIsAddMeterModalOpen(true);
+  };
+
+  const handleCloseAddMeterModal = () => {
+    setIsAddMeterModalOpen(false);
+    setResidentForMeter(null);
+    // Refetch water connections after adding a meter
     queryClient.invalidateQueries({ queryKey: ['/api/water-connections'] });
   };
 
@@ -356,6 +376,16 @@ export default function SecretaryResidents() {
                                     <Edit className="h-4 w-4 mr-1" />
                                     Edit
                                   </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleAddMeter(resident)}
+                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                    data-testid={`button-add-meter-${resident.id}`}
+                                  >
+                                    <Droplets className="h-4 w-4 mr-1" />
+                                    Add Meter
+                                  </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -485,6 +515,14 @@ export default function SecretaryResidents() {
       <GenerateResidentReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
+      />
+
+      {/* Add Meter Modal */}
+      <AddMeterModal
+        isOpen={isAddMeterModalOpen}
+        onClose={handleCloseAddMeterModal}
+        resident={residentForMeter}
+        onSuccess={handleCloseAddMeterModal}
       />
     </div>
   );

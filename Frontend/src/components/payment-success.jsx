@@ -61,9 +61,18 @@ export default function PaymentSuccess() {
       console.log("📊 Verification result:", result);
 
       if (result.payment_recorded) {
+        console.log("✅ [PaymentSuccess] Payment recorded! Details:", result.payment_details);
         setPaymentStatus("success");
         setVerificationDetails(result.payment_details);
         localStorage.removeItem("pending_payment");
+
+        // Dispatch event to refresh billing data in dashboard
+        console.log("📢 [PaymentSuccess] Dispatching 'paymentSuccess' event");
+        window.dispatchEvent(new Event("paymentSuccess"));
+
+        // Also dispatch refresh event for modal
+        console.log("📢 [PaymentSuccess] Dispatching 'paymentCompleted' event");
+        window.dispatchEvent(new Event("paymentCompleted"));
 
         toast.success("Payment Successful", { description: "Your water bill payment has been processed successfully" });
       } else if (result.status === "succeeded" || result.status === "pending") {

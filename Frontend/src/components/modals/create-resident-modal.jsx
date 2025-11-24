@@ -20,10 +20,13 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    zone: "",
     purok: "",
+    // Water connection zone and purok (can be different from resident's location)
+    connectionZone: "",
+    connectionPurok: "",
     email: "",
     phone: "",
-    zone: "",
     type: "",
     meterNumber: "",
     username: "",
@@ -35,108 +38,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Store registration response for PDF generation
-  const [registrationData, setRegistrationData] = useState(null);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-
-  // Generate PDF Report for New Resident
-  const generatePDFReport = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const currentDate = new Date().toLocaleDateString('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
-    // Header
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('AGASPAY WATER SYSTEM', pageWidth / 2, 20, { align: 'center' });
-
-    doc.setFontSize(16);
-    doc.text('New Resident Registration Report', pageWidth / 2, 30, { align: 'center' });
-
-    // Line separator
-    doc.setLineWidth(0.5);
-    doc.line(20, 35, pageWidth - 20, 35);
-
-    // Registration Date
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Registration Date: ${currentDate}`, 20, 45);
-
-    // Resident Information Section
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('RESIDENT INFORMATION', 20, 55);
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    let yPos = 65;
-
-    doc.text(`Name: ${registrationData.firstName} ${registrationData.lastName}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Zone: Biking ${registrationData.zone}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Purok: ${registrationData.purok}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Email: ${registrationData.email || 'N/A'}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Phone Number: ${registrationData.phone}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Connection Type: ${registrationData.type.charAt(0).toUpperCase() + registrationData.type.slice(1)}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Meter Number: ${registrationData.meterNumber}`, 20, yPos);
-
-    // Account Details Section
-    yPos += 15;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ACCOUNT DETAILS', 20, yPos);
-
-    yPos += 10;
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Username: ${registrationData.username}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Account Status: Active`, 20, yPos);
-
-    // Installation Schedule Section (if available)
-    if (registrationData.response?.auto_scheduled) {
-      yPos += 15;
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('METER INSTALLATION SCHEDULE', 20, yPos);
-
-      yPos += 10;
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-
-      // Parse the message to extract schedule details
-      const message = registrationData.response.message;
-      doc.text(message, 20, yPos, { maxWidth: pageWidth - 40 });
-    }
-
-    // Footer
-    const footerY = doc.internal.pageSize.getHeight() - 30;
-    doc.setLineWidth(0.5);
-    doc.line(20, footerY, pageWidth - 20, footerY);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'italic');
-    doc.text('This is an official document from AGASPAY Water System', pageWidth / 2, footerY + 10, { align: 'center' });
-    doc.text('Barangay Biking, Daanbantayan, Cebu', pageWidth / 2, footerY + 16, { align: 'center' });
-
-    // Save the PDF
-    const fileName = `Resident_Registration_${registrationData.firstName}_${registrationData.lastName}_${new Date().getTime()}.pdf`;
-    doc.save(fileName);
-
-    toast.success("PDF Generated", {
-      description: `Report has been downloaded as ${fileName}`
-    });
-  };
 
   // Parse MongoDB duplicate key error
   const parseDuplicateKeyError = (errorMessage) => {
@@ -169,6 +70,14 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       // Client-side validation
       const validationErrors = {};
 
+      if (!formData.connectionZone || formData.connectionZone.trim() === "") {
+        validationErrors.connectionZone = "Water connection zone is required";
+      }
+
+      if (!formData.connectionPurok || formData.connectionPurok.trim() === "") {
+        validationErrors.connectionPurok = "Water connection purok is required";
+      }
+
       if (!formData.username || formData.username.trim() === "") {
         validationErrors.username = "Username is required";
       }
@@ -190,12 +99,15 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       const accountData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
+        zone: formData.zone,
         purok: formData.purok,
         email: formData.email.trim() || null,
         contact_no: formData.phone,
-        zone: formData.zone,
         type: formData.type,
         meter_no: formData.meterNumber,
+        // Water connection zone and purok (can be different from resident's location)
+        connection_zone: formData.connectionZone,
+        connection_purok: formData.connectionPurok,
         username: formData.username,
         password: formData.password,
       };
@@ -203,22 +115,33 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       console.log('📤 Creating resident account:', accountData);
       const response = await authManager.createResidentAccount(accountData);
 
-      // Store registration data for PDF generation
-      setRegistrationData({
-        ...formData,
-        response: response
-      });
-
-      // Show success dialog instead of toast
-      setShowSuccessDialog(true);
-
       // Format success message with scheduling details
       const successMessage = response.message || `${formData.firstName} ${formData.lastName} has been registered successfully.`;
 
+      // Show success toast with scheduling details
       toast.success("Resident Created Successfully", {
         description: successMessage,
         duration: 6000, // Show for 6 seconds since there's more info
       });
+
+      // Reset form and close modal
+      setFormData({
+        firstName: "",
+        lastName: "",
+        zone: "",
+        purok: "",
+        connectionZone: "",
+        connectionPurok: "",
+        email: "",
+        phone: "",
+        type: "",
+        meterNumber: "",
+        username: "",
+        password: ""
+      });
+      setErrors({});
+      setIsLoading(false);
+      onClose();
 
     } catch (error) {
       console.error('❌ Error creating resident:', error);
@@ -284,7 +207,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   };
 
   return (
-    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -501,6 +423,72 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             )}
           </div>
 
+          {/* Water Connection Zone and Purok */}
+          <div className="border-t pt-4 mt-4 mb-4">
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Water Connection Location</h3>
+              <p className="text-xs text-gray-500 mb-4">Specify the zone and purok where the water meter is located (can be different from resident address)</p>
+            </div>
+
+            {/* Connection Zone */}
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="connectionZone">Water Connection Zone <span className="text-red-500">*</span></Label>
+              <Select onValueChange={handleChange("connectionZone")} required>
+                <SelectTrigger data-testid="select-connection-zone" className={errors.connectionZone ? "border-red-500 focus:ring-red-500" : ""}>
+                  <SelectValue placeholder="Select Zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Biking 1</SelectItem>
+                  <SelectItem value="2">Biking 2</SelectItem>
+                  <SelectItem value="3">Biking 3</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.connectionZone && (
+                <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{errors.connectionZone}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Connection Purok - Conditional based on selected Zone */}
+            {formData.connectionZone && (
+              <div className="space-y-2">
+                <Label htmlFor="connectionPurok">Water Connection Purok <span className="text-red-500">*</span></Label>
+                <Select onValueChange={handleChange("connectionPurok")} required>
+                  <SelectTrigger data-testid="select-connection-purok" className={errors.connectionPurok ? "border-red-500 focus:ring-red-500" : ""}>
+                    <SelectValue placeholder="Select Purok" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formData.connectionZone === "1" && (
+                      <>
+                        <SelectItem value="4">Purok 4</SelectItem>
+                        <SelectItem value="5">Purok 5</SelectItem>
+                        <SelectItem value="6">Purok 6</SelectItem>
+                      </>
+                    )}
+                    {formData.connectionZone === "2" && (
+                      <>
+                        <SelectItem value="1">Purok 1</SelectItem>
+                        <SelectItem value="2">Purok 2</SelectItem>
+                        <SelectItem value="3">Purok 3</SelectItem>
+                      </>
+                    )}
+                    {formData.connectionZone === "3" && (
+                      <SelectItem value="7">Purok 7</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.connectionPurok && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{errors.connectionPurok}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Account Creation Section */}
           <div className="border-t pt-4 mt-4">
             <div className="flex items-center space-x-2 mb-4">
@@ -609,67 +597,5 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         </form>
       </DialogContent>
     </Dialog>
-
-    {/* Success Dialog with PDF Generation */}
-    {showSuccessDialog && (
-      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-green-600">
-            <FileText className="h-5 w-5" />
-            Registration Successful
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          <p className="text-sm text-gray-700">
-            <strong>{registrationData?.firstName} {registrationData?.lastName}</strong> has been successfully registered!
-          </p>
-
-          {registrationData?.response?.auto_scheduled && (
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-900 font-medium">
-                Meter Installation Scheduled
-              </p>
-              <p className="text-xs text-blue-700 mt-1">
-                {registrationData.response.message}
-              </p>
-            </div>
-          )}
-
-          <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-700">
-              <strong>Username:</strong> {registrationData?.username}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Account has been created and is ready for use.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Button
-            onClick={generatePDFReport}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Generate PDF Report
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setShowSuccessDialog(false);
-              setRegistrationData(null);
-              onClose();
-            }}
-            className="w-full"
-          >
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-    )}
-    </>
   );
 }

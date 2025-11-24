@@ -36,11 +36,13 @@ const createResident = async (user_id, first_name, last_name, email, zone, purok
 };
 
 
-const createWaterConnection = async (resident_id, meter_no, type ) => {
+const createWaterConnection = async (resident_id, meter_no, type, zone, purok) => {
   const connection = await WaterConnection.create({
     resident_id,
     meter_no,
     type,
+    zone,
+    purok,
     connection_status: 'pending'
   });
   return connection;

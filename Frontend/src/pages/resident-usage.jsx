@@ -1,36 +1,106 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Activity, Droplets, TrendingUp, TrendingDown, Minus, Download } from "lucide-react";
+import { Activity, Droplets, TrendingUp, TrendingDown, Minus, Download, MapPin } from "lucide-react";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
 import apiClient from "../lib/api";
 
 export default function ResidentUsage() {
-  
-  const { data: usageData, isLoading } = useQuery({
-    queryKey: ["/api/v1/billing"],
+  const [selectedMeter, setSelectedMeter] = useState(null);
+
+  // Fetch all meters for the resident
+  const { data: metersData, isLoading: metersLoading } = useQuery({
+    queryKey: ["resident-meters"],
     queryFn: async () => {
+      const res = await apiClient.getResidentMeters();
+      return res.data;
+    },
+    onSuccess: (data) => {
+      if (data && data.length > 0 && !selectedMeter) {
+        setSelectedMeter(data[0]);
+      }
+    }
+  });
+
+  const { data: usageData, isLoading } = useQuery({
+    queryKey: ["/api/v1/billing", selectedMeter?.connection_id],
+    queryFn: async () => {
+      if (!selectedMeter?.connection_id) return [];
       const res = await apiClient.getCurrentBill();
-      return res.data || []; // ✅ access the .data array from your payload
+      // Filter by connection_id if the API returns all meters' data
+      const allData = res.data || [];
+      return allData.filter(bill =>
+        bill.connection_id === selectedMeter.connection_id ||
+        bill.connection_id?._id === selectedMeter.connection_id
+      );
     },
     retry: 1,
+    enabled: !!selectedMeter?.connection_id
   });
 
   console.log(usageData);
-  
 
+  if (metersLoading) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+        <ResidentSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <ResidentTopHeader />
+          <main className="flex-1 overflow-auto p-6 relative z-10 flex items-center justify-center">
+            <p className="text-gray-600">Loading meters...</p>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  // If no meters found
+  if (!metersData || metersData.length === 0) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+        <ResidentSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <ResidentTopHeader />
+          <main className="flex-1 overflow-auto p-6 relative z-10">
+            <div className="max-w-7xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900">Water Usage</h1>
+                <p className="text-gray-600 mt-2">Track your water consumption and usage patterns</p>
+              </div>
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Droplets className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-700 font-medium">No water connections found</p>
+                  <p className="text-sm text-gray-500 mt-1">Please add a water connection to view usage data.</p>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  // If loading usage data for the selected meter
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Loading...</p>
+      <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+        <ResidentSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <ResidentTopHeader />
+          <main className="flex-1 overflow-auto p-6 relative z-10 flex items-center justify-center">
+            <p className="text-gray-600">Loading usage data...</p>
+          </main>
+        </div>
       </div>
     );
   }
 
   // ✅ make a shallow copy
-  const sortedData = [...usageData].sort(
-    (a, b) => new Date(a.created_at) - new Date(b.created_at) // basically get first the value of the oldest date 
+  const sortedData = [...(usageData || [])].sort(
+    (a, b) => new Date(a.created_at) - new Date(b.created_at) // basically get first the value of the oldest date
   );
 
   // ✅ Get current month & year
@@ -70,15 +140,15 @@ export default function ResidentUsage() {
     const monthName = date.toLocaleString("default", { month: "short" });
     return {
       month: `${monthName} ${date.getFullYear()}`,
-      consumption: item.calculated,
-      amount: item.total_amount,
+      consumption: item.calculated || 0,
+      amount: item.total_amount || 0,
     };
   });
 
-  const averageConsumption = (
+  const averageConsumption = historicalData.length > 0 ? (
     historicalData.reduce((sum, item) => sum + item.consumption, 0) /
     historicalData.length
-  ).toFixed(1);
+  ).toFixed(1) : 0;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
@@ -89,16 +159,45 @@ export default function ResidentUsage() {
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-8 flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Water Usage
-                </h1>
-                <p className="text-gray-600 mt-2">
-                  Track your water consumption and usage patterns
-                </p>
-              </div>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">
+                Water Usage
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Track your water consumption and usage patterns
+              </p>
             </div>
+
+            {/* Meter Selector */}
+            {metersLoading ? (
+              <div className="mb-8">Loading meters...</div>
+            ) : (
+              <div className="mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {metersData?.map((meter) => (
+                    <Button
+                      key={meter.connection_id}
+                      variant={selectedMeter?.connection_id === meter.connection_id ? "default" : "outline"}
+                      className={`h-auto py-4 px-4 flex flex-col items-start text-left space-y-2 ${
+                        selectedMeter?.connection_id === meter.connection_id
+                          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedMeter(meter)}
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <Droplets className="h-4 w-4" />
+                        <span className="font-medium">Meter #{meter.meter_no}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <MapPin className="h-3 w-3" />
+                        <span>Zone {meter.zone}, Purok {meter.purok}</span>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -162,15 +261,15 @@ export default function ResidentUsage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-600">
-                    {Math.max(...historicalData.map((d) => d.consumption))} m³
+                    {historicalData.length > 0 ? Math.max(...historicalData.map((d) => d.consumption)) : 0} m³
                   </div>
                   <p className="text-sm text-gray-600 mt-2">
                     {
-                      historicalData.find(
+                      historicalData.length > 0 ? historicalData.find(
                         (d) =>
                           d.consumption ===
                           Math.max(...historicalData.map((d) => d.consumption))
-                      )?.month
+                      )?.month : "N/A"
                     }
                   </p>
                 </CardContent>
@@ -185,15 +284,15 @@ export default function ResidentUsage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
-                    {Math.min(...historicalData.map((d) => d.consumption))} m³
+                    {historicalData.length > 0 ? Math.min(...historicalData.map((d) => d.consumption)) : 0} m³
                   </div>
                   <p className="text-sm text-gray-600 mt-2">
                     {
-                      historicalData.find(
+                      historicalData.length > 0 ? historicalData.find(
                         (d) =>
                           d.consumption ===
                           Math.min(...historicalData.map((d) => d.consumption))
-                      )?.month
+                      )?.month : "N/A"
                     }
                   </p>
                 </CardContent>

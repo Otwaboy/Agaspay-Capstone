@@ -79,14 +79,11 @@ const inputReading = async (req, res) => {
     throw new BadRequestError('Meter reader has no assigned zone.');
   }
 
-  const resident = connection.resident_id;
-  if (!resident) {
-    throw new BadRequestError('Resident data not found for this connection.');
-  }
-
-  if (resident.zone !== personnel.assigned_zone) {
+  // Check water connection zone (not resident's home zone)
+  // Resident zone is for incident reporting; water connection zone is for meter coverage
+  if (connection.zone !== personnel.assigned_zone) {
     throw new UnauthorizedError(
-      `You are only allowed to input readings for zone ${personnel.assigned_zone}.`
+      `You are only allowed to input readings for zone ${personnel.assigned_zone}. This connection is in zone ${connection.zone}.`
     );
   }
 
@@ -160,11 +157,12 @@ const submitReading = async (req, res) => {
   const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   // Find all active connections in this zone
-  const connections = await WaterConnection.find({ connection_status: "active" })
-    .populate("resident_id", "zone");
-
-  // Filter connections that belong to meter reader's zone
-  const zoneConnections = connections.filter((c) => c.resident_id?.zone === assignedZone);
+  // Filter by water connection zone (not resident's home zone)
+  // Resident zone is for incident reporting; water connection zone is for meter coverage
+  const zoneConnections = await WaterConnection.find({
+    connection_status: "active",
+    zone: assignedZone
+  });
 
   // Find readings that are in progress for the current billing month
   const readingsInZone = await MeterReading.find({
@@ -297,8 +295,10 @@ const getLatestReadings = async (req, res) => {
               { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
 
               // 3️⃣ Filter by meter reader zone (if applicable)
+              // NOTE: We filter by water connection zone, not resident zone
+              // Resident zone is for incident reporting, water connection zone is for meter coverage
               ...(Object.keys(zoneFilter).length > 0
-                ? [{ $match: { "resident.zone": zoneFilter.zone } }]
+                ? [{ $match: { "zone": zoneFilter.zone } }]
                 : []),
 
               // 4️⃣ Latest reading lookup for CURRENT BILLING MONTH
@@ -374,21 +374,23 @@ const getLatestReadings = async (req, res) => {
 
       return {
         reading_id: reading?._id ? reading._id.toString() : null,
-        connection_status: item.connection_status, // ✅ now correct
+        connection_status: item.connection_status,
         connection_id: item._id ? item._id.toString() : null,
-        connection_type: item.type || "Unknown", // ✅ Fetch from WaterConnection
+        connection_type: item.type || "Unknown",
         inclusive_date: reading?.inclusive_date || null,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
-        purok_no: resident?.purok || "not here purok",
-        zone: resident?.zone || null, // Include zone from resident for display/debugging
+        // Use water connection zone and purok (not resident's home location)
+        // Resident zone is for incident reporting; water connection zone is for meter coverage
+        purok_no: item.purok || "N/A",
+        zone: item.zone || null,
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
         meter_number: item.meter_no,
         reading_status: reading?.reading_status,
         is_billed: !!item.is_billed,
-        read_this_month: read_this_month, // ✅ Monthly status tracker
-        last_read_date: reading?.created_at || null // For reference
+        read_this_month: read_this_month,
+        last_read_date: reading?.created_at || null
       };
     });
 
@@ -396,7 +398,7 @@ const getLatestReadings = async (req, res) => {
     console.log('📊 First 3 aggregation results:', readings.slice(0, 3).map(r => ({
       connection_id: r._id,
       resident_name: r.resident ? `${r.resident.first_name} ${r.resident.last_name}` : 'Unknown',
-      resident_zone: r.resident?.zone,
+      connection_zone: r.zone,
       has_reading: !!r.latestReading
     })));
 

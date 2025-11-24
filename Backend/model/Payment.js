@@ -70,4 +70,38 @@ const PaymentSchema = new mongoose.Schema({
   collection: 'payments'
 });
 
+// ✅ CRITICAL: Enforce unique payment references to prevent duplicates from webhook retries
+PaymentSchema.index({ payment_reference: 1 }, {
+  unique: true,
+  sparse: true,  // Allow null values (for manual payments without payment_reference)
+  name: 'unique_payment_reference'
+});
+
+// ✅ CRITICAL: Prevent "pending" status from ever being saved
+PaymentSchema.pre('save', function(next) {
+  if (this.payment_status === 'pending') {
+    console.warn("⚠️ SECURITY: Attempted to save payment with 'pending' status. Defaulting to 'confirmed'.");
+    this.payment_status = 'confirmed';
+  }
+  next();
+});
+
+// ✅ CRITICAL: Prevent "pending" status from ever being created
+PaymentSchema.pre('insertOne', function(next) {
+  if (this._doc?.payment_status === 'pending') {
+    console.warn("⚠️ SECURITY: Attempted to create payment with 'pending' status. Forcing 'confirmed'.");
+    this._doc.payment_status = 'confirmed';
+  }
+  next();
+});
+
+// ✅ CRITICAL: Catch-all for create operations
+PaymentSchema.pre('create', function(next) {
+  if (this.payment_status === 'pending') {
+    console.warn("⚠️ SECURITY: Attempted to create payment with 'pending' status. Forcing 'confirmed'.");
+    this.payment_status = 'confirmed';
+  }
+  next();
+});
+
 module.exports = mongoose.model('Payment', PaymentSchema);

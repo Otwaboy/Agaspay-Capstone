@@ -41,6 +41,20 @@ const payPayment = async (req, res) => {
       });
     }
 
+    // ✅ CRITICAL: Prevent duplicate payment intent creation for same bill
+    // If bill already has a current_payment_intent, return existing one
+    if (billingInfo.current_payment_intent) {
+      console.log("⚠️ Bill already has a pending payment intent:", billingInfo.current_payment_intent);
+      console.log("⚠️ Returning existing intent to prevent duplicate Payment.create() calls");
+      // Note: This prevents creating a new checkout session, but we can't easily get the old checkout URL
+      // So we'll just return an error to prevent the duplicate
+      return res.status(400).json({
+        success: false,
+        message: "This bill already has a pending payment. Please complete or cancel the previous payment first.",
+        existing_payment_intent_id: billingInfo.current_payment_intent
+      });
+    }
+
     const resident = billingInfo.connection_id?.resident_id;
     const fullName = resident ? `${resident.first_name} ${resident.last_name}` : "Unknown Resident";
     const email = resident?.email || null;
@@ -263,42 +277,64 @@ const verifyPayment = async (req, res) => {
 
 const getPayment = async (req, res) => {
     const user = req.user;
+    const { connection_id } = req.query; // Get connection_id from query params
 
     if (!user) {
         throw new UnauthorizedError("You're not authorized");
     }
 
     let query = {};
-    
+
     // FIX: Build query based on user role (same pattern as getBilling)
     if (user.role === 'resident') {
         // Step 1: Find resident record linked to this user
         const resident = await Resident.findOne({ user_id: user.userId });
 
         if (!resident) {
-            return res.status(StatusCodes.OK).json({ 
+            return res.status(StatusCodes.OK).json({
                 data: [],
                 msg: 'No resident record found for this user'
             });
         }
 
-        // Step 2: Find the water connection for that resident
-        const connection = await WaterConnection.findOne({ resident_id: resident._id });
-        
-        if (!connection) {
-            return res.status(StatusCodes.OK).json({ 
-                data: [],
-                msg: 'No water connection found for this resident'
+        // Step 2: If connection_id provided, use it; otherwise get all connections
+        let connectionIds;
+        if (connection_id) {
+            // Verify this connection belongs to this resident
+            const connection = await WaterConnection.findOne({
+                _id: connection_id,
+                resident_id: resident._id
             });
+
+            if (!connection) {
+                return res.status(StatusCodes.FORBIDDEN).json({
+                    data: [],
+                    msg: 'You do not have access to this water connection'
+                });
+            }
+
+            connectionIds = [connection._id];
+        } else {
+            // Get all connections for this resident
+            const connections = await WaterConnection.find({ resident_id: resident._id });
+
+            if (!connections || connections.length === 0) {
+                return res.status(StatusCodes.OK).json({
+                    data: [],
+                    msg: 'No water connection found for this resident'
+                });
+            }
+
+            connectionIds = connections.map(c => c._id);
         }
 
-        // Step 3: Find bills for that connection
-        const bills = await Billing.find({ connection_id: connection._id }).select('_id');
+        // Step 3: Find bills for those connections
+        const bills = await Billing.find({ connection_id: { $in: connectionIds } }).select('_id');
         const billIds = bills.map(b => b._id);
-        
+
         // Step 4: Filter payments by those bill IDs
         query = { bill_id: { $in: billIds } };
-        
+
     } else if (user.role === 'treasurer' || user.role === 'admin') {
         // TREASURER/ADMIN: No filter, get all payments
         query = {};
@@ -328,6 +364,7 @@ const getPayment = async (req, res) => {
 
         return {
             payment_id: payment._id,
+            connection_id: connection?._id,
             amount_paid: payment.amount_paid,
             payment_method: payment.payment_method,
             payment_type: payment.payment_type,

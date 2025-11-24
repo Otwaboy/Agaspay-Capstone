@@ -1,6 +1,9 @@
 const WaterConnection = require("../model/WaterConnection");
 const Resident = require("../model/Resident");
 const Reading = require("../model/Meter-reading");
+const ScheduleTask = require("../model/Schedule-task");
+const Assignment = require("../model/Assignment");
+const Personnel = require("../model/Personnel");
 const { StatusCodes } = require('http-status-codes');
 
 const nodemailer = require("nodemailer")
@@ -89,6 +92,7 @@ const getAllWaterConnections = async (req, res) => {
 
         return {
           connection_id: conn._id,
+          resident_id: conn.resident_id?._id,  // Add resident_id for multi-meter functionality
           full_name: r ? `${r.first_name} ${r.last_name}` : "Unknown",
           address: r ? `Biking ${r.zone}, Purok ${r.purok}` : "No address available",
           meter_no: conn.meter_no,
@@ -589,6 +593,296 @@ const getConnectionsForReconnection = async (req, res) => {
   }
 };
 
+/**
+ * Get all water connections (meters) for a specific resident
+ * GET /api/v1/water-connections/resident-meters
+ */
+const getResidentMeters = async (req, res) => {
+  try {
+    const userId = req.user.userId; // Get logged-in user ID
+
+    // Find the resident by user_id
+    const resident = await Resident.findOne({ user_id: userId });
+
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        msg: 'Resident not found'
+      });
+    }
+
+    // Get all water connections for this resident
+    const connections = await WaterConnection.find({ resident_id: resident._id })
+      .sort({ created_at: -1 });
+
+    const connectionsData = connections.map(conn => ({
+      connection_id: conn._id,
+      meter_no: conn.meter_no,
+      zone: conn.zone,
+      purok: conn.purok,
+      connection_status: conn.connection_status,
+      type: conn.type,
+      created_at: conn.created_at
+    }));
+
+    return res.status(StatusCodes.OK).json({
+      msg: 'Resident meters fetched successfully',
+      data: connectionsData,
+      total: connectionsData.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching resident meters:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: 'Failed to retrieve resident meters',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Add a new meter to an existing resident (Secretary only)
+ * POST /api/v1/water-connections/add-meter
+ */
+const addMeterToResident = async (req, res) => {
+  try {
+    const { resident_id, meter_no, zone, purok, type } = req.body;
+
+    // Validate required fields
+    if (!resident_id || !meter_no || !zone || !purok || !type) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        msg: 'Please provide all required fields: resident_id, meter_no, zone, purok, type'
+      });
+    }
+
+    // Check if resident exists
+    const resident = await Resident.findById(resident_id);
+    if (!resident) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        msg: 'Resident not found'
+      });
+    }
+
+    // Check if meter number already exists
+    const existingMeter = await WaterConnection.findOne({ meter_no });
+    if (existingMeter) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        msg: 'This meter number is already registered'
+      });
+    }
+
+    // Validate zone-purok mapping
+    const validPuroks = {
+      '1': ['4', '5', '6'],
+      '2': ['1', '2', '3'],
+      '3': ['7']
+    };
+
+    if (!validPuroks[zone].includes(purok)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        msg: `Invalid purok for zone ${zone}. Zone ${zone} only allows puroks: ${validPuroks[zone].join(', ')}`
+      });
+    }
+
+    // Create new water connection
+    const newConnection = await WaterConnection.create({
+      resident_id,
+      meter_no,
+      zone,
+      purok,
+      type,
+      connection_status: 'pending'
+    });
+
+    // --- AUTO-SCHEDULE METER INSTALLATION TASK (Same flow as register.js) ---
+    let scheduleWarning = null;
+    let schedulingDetails = null;
+
+    try {
+      // Find all maintenance personnel (exclude archived)
+      const maintenancePersonnel = await Personnel.find({
+        role: 'maintenance',
+        $or: [
+          { archive_status: null },
+          { archive_status: { $ne: 'archived' } }
+        ]
+      });
+
+      if (maintenancePersonnel.length === 0) {
+        scheduleWarning = 'No maintenance personnel available. Please schedule the meter installation manually.';
+      } else {
+        // Define available time slots (same as register.js)
+        const timeSlots = ['09:30', '10:30', '13:30', '14:30'];
+
+        // Calculate next business day (tomorrow) using Philippine Time (UTC+8)
+        const now = new Date();
+        const philippineTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+        const tomorrow = new Date(philippineTime);
+        tomorrow.setUTCDate(philippineTime.getUTCDate() + 1);
+        tomorrow.setUTCHours(0, 0, 0, 0);
+
+        const scheduleDate = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD
+        console.log(`[AddMeter] 🇵🇭 Philippine Time: ${philippineTime.toISOString()}`);
+        console.log(`[AddMeter] 📅 Schedule date: ${scheduleDate}`);
+
+        let scheduleTime = null;
+        let selectedPersonnel = null;
+
+        // Try to find an available personnel for each time slot
+        for (const slot of timeSlots) {
+          // Find maintenance personnel who are AVAILABLE (not already assigned) at this date and time
+          const availablePersonnel = [];
+          const targetDate = new Date(scheduleDate);
+          targetDate.setHours(0, 0, 0, 0);
+
+          for (const personnel of maintenancePersonnel) {
+            // Check if this personnel has any existing assignment at this exact date and time
+            const existingAssignment = await ScheduleTask.findOne({
+              assigned_personnel: personnel._id,
+              schedule_time: slot
+            });
+
+            // If assignment exists, check if it's for the same date
+            let isBusy = false;
+            if (existingAssignment && existingAssignment.schedule_date) {
+              const existingDate = new Date(existingAssignment.schedule_date);
+
+              // Compare dates (year, month, day only)
+              if (existingDate.getFullYear() === targetDate.getFullYear() &&
+                  existingDate.getMonth() === targetDate.getMonth() &&
+                  existingDate.getDate() === targetDate.getDate()) {
+                isBusy = true;
+              }
+            }
+
+            // Only include personnel who have NO assignments at this time (conflict-free)
+            if (!isBusy) {
+              availablePersonnel.push(personnel);
+            }
+          }
+
+          console.log(`[AddMeter] Time slot ${slot}: ${availablePersonnel.length}/${maintenancePersonnel.length} personnel available`);
+
+          // If ALL personnel are available for this time slot, use it (best option - no conflicts)
+          if (availablePersonnel.length === maintenancePersonnel.length) {
+            // Load balancing: Get task counts for all available personnel
+            const personnelWithCounts = await Promise.all(
+              availablePersonnel.map(async (personnel) => ({
+                personnel,
+                taskCount: await ScheduleTask.countDocuments({ assigned_personnel: personnel._id })
+              }))
+            );
+
+            // Find the minimum task count
+            const minTaskCount = Math.min(...personnelWithCounts.map(p => p.taskCount));
+
+            // Get all personnel with the minimum task count (could be multiple)
+            const leastBusyPersonnel = personnelWithCounts.filter(p => p.taskCount === minTaskCount);
+
+            // If multiple personnel have the same minimum task count, pick first one
+            selectedPersonnel = leastBusyPersonnel[0].personnel;
+            console.log(`[AddMeter] ✅ Using time slot ${slot} - assigned to ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} (${minTaskCount} existing tasks)`);
+
+            scheduleTime = slot;
+            break;
+          }
+
+          // If SOME personnel are available, remember this slot as a fallback
+          if (availablePersonnel.length > 0 && !selectedPersonnel) {
+            // Load balancing: Get task counts for all available personnel
+            const personnelWithCounts = await Promise.all(
+              availablePersonnel.map(async (personnel) => ({
+                personnel,
+                taskCount: await ScheduleTask.countDocuments({ assigned_personnel: personnel._id })
+              }))
+            );
+
+            // Find the minimum task count
+            const minTaskCount = Math.min(...personnelWithCounts.map(p => p.taskCount));
+
+            // Get all personnel with the minimum task count (could be multiple)
+            const leastBusyPersonnel = personnelWithCounts.filter(p => p.taskCount === minTaskCount);
+
+            // Select first one
+            selectedPersonnel = leastBusyPersonnel[0].personnel;
+            console.log(`[AddMeter] ⚠️  Partial availability at ${slot} - assigned to ${selectedPersonnel.first_name} ${selectedPersonnel.last_name} (${minTaskCount} tasks), continuing to check for better slots...`);
+
+            scheduleTime = slot;
+            // Don't break - keep checking for a time slot where ALL personnel are free
+          }
+        }
+
+        // Check if we found an available slot
+        if (!selectedPersonnel) {
+          // All personnel are busy at all time slots - warn user
+          scheduleWarning = `All maintenance personnel are fully booked for ${scheduleDate}. Please manually schedule meter installation through the Assignments page.`;
+        } else {
+          // Get resident location
+          const residentLocation = `Zone ${zone}, Purok ${purok}`;
+
+          // Create the meter installation task
+          const installationTask = await ScheduleTask.create({
+            connection_id: newConnection._id,
+            schedule_date: scheduleDate,
+            schedule_time: scheduleTime,
+            task_status: 'Assigned',
+            assigned_personnel: selectedPersonnel._id,
+            schedule_type: 'Meter Installation',
+            scheduled_by: req.user.userId,
+            location: residentLocation
+          });
+
+          // Create assignment record
+          await Assignment.create({
+            task_id: installationTask._id,
+            assigned_to: selectedPersonnel._id
+          });
+
+          // Store scheduling details for response
+          schedulingDetails = {
+            schedule_date: scheduleDate,
+            schedule_time: scheduleTime,
+            assigned_personnel: {
+              id: selectedPersonnel._id,
+              name: `${selectedPersonnel.first_name} ${selectedPersonnel.last_name}`
+            }
+          };
+
+          console.log(`[AddMeter] ✅ Successfully scheduled meter installation for ${scheduleDate} at ${scheduleTime} with ${selectedPersonnel.first_name} ${selectedPersonnel.last_name}`);
+        }
+      }
+    } catch (scheduleError) {
+      console.error('Error auto-scheduling meter installation:', scheduleError);
+      scheduleWarning = 'Meter added but auto-scheduling failed. Please schedule the installation manually.';
+    }
+
+    // Return response
+    const responseMsg = scheduleWarning
+      ? `New meter added successfully. ${scheduleWarning}`
+      : 'New meter added successfully and meter installation task has been automatically scheduled.';
+
+    return res.status(StatusCodes.CREATED).json({
+      msg: responseMsg,
+      data: {
+        connection_id: newConnection._id,
+        meter_no: newConnection.meter_no,
+        zone: newConnection.zone,
+        purok: newConnection.purok,
+        type: newConnection.type,
+        connection_status: newConnection.connection_status
+      },
+      warning: scheduleWarning,
+      scheduling: schedulingDetails
+    });
+
+  } catch (error) {
+    console.error('Error adding new meter:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: 'Failed to add new meter',
+      error: error.message
+    });
+  }
+};
+
 
 module.exports = {
   getLatestConnections,
@@ -600,5 +894,7 @@ module.exports = {
   verifyEmail,
   getConnectionsForDisconnection,
   getDisconnectedConnections,
-  getConnectionsForReconnection
+  getConnectionsForReconnection,
+  getResidentMeters,
+  addMeterToResident
 };

@@ -13,6 +13,7 @@ const {sendOverdueReminder} = require("../utils/sms")
   
 const getBilling = async (req, res) => {
   const user = req.user;
+  const { connection_id } = req.query; // Get connection_id from query params
   let filter = {};
 
   console.log("Logged-in user:", user.username, "Role:", user.role);
@@ -33,17 +34,35 @@ const getBilling = async (req, res) => {
       });
     }
 
-    // Step 2: Find the water connection for that resident
-    const connection = await WaterConnection.findOne({ resident_id: resident._id });
-    if (!connection) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        msg: 'No water connection found for this resident',
-        billingDetails: []
+    // Step 2: If connection_id is provided in query, use it; otherwise get all connections
+    if (connection_id) {
+      // Verify this connection belongs to this resident
+      const connection = await WaterConnection.findOne({
+        _id: connection_id,
+        resident_id: resident._id
       });
-    }
 
-    // Step 3: Filter by that connection
-    filter.connection_id = connection._id;
+      if (!connection) {
+        return res.status(StatusCodes.FORBIDDEN).json({
+          msg: 'You do not have access to this water connection'
+        });
+      }
+
+      filter.connection_id = connection._id;
+    } else {
+      // Get all connections for this resident
+      const connections = await WaterConnection.find({ resident_id: resident._id });
+
+      if (!connections || connections.length === 0) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          msg: 'No water connection found for this resident',
+          billingDetails: []
+        });
+      }
+
+      // Filter by all connections owned by this resident
+      filter.connection_id = { $in: connections.map(c => c._id) };
+    }
   }
   else {
     // Unauthorized role
@@ -93,7 +112,7 @@ const getBilling = async (req, res) => {
         current_charges: billing?.current_charges ?? 0,      // This month's consumption charges
         total_amount: billing?.total_amount ?? 0,            // Total = previous + current
         amount_paid: billing?.amount_paid ?? 0,              // ✅ Amount paid so far
-        balance: billing?.balance ?? billing?.total_amount ?? 0,  // ✅ Remaining balance
+        balance: (billing?.total_amount ?? 0) - (billing?.amount_paid ?? 0),  // ✅ Always calculate fresh balance
 
         status: billing?.status ?? 'unknown',
 

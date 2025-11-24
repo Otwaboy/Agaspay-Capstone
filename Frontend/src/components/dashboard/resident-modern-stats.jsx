@@ -5,7 +5,7 @@ import { Badge } from "../ui/badge";
 import { Droplets, CreditCard, TrendingUp, CheckCircle, AlertCircle } from "lucide-react";
 import { apiClient } from "../../lib/api";
 
-export default function ResidentModernStats() {
+export default function ResidentModernStats({ connectionId }) {
   const { data: accountData } = useQuery({
     queryKey: ["resident-account"],
     queryFn: async () => {
@@ -15,14 +15,24 @@ export default function ResidentModernStats() {
   });
 
   const { data: billingData } = useQuery({
-    queryKey: ["resident-billing"],
+    queryKey: ["resident-billing", connectionId],
     queryFn: async () => {
+      if (!connectionId) return null;
       const res = await apiClient.getCurrentBill();
-      const bills = res.data;
-      if (!bills || bills.length === 0) return null;
+      const allBills = res.data;
+      if (!allBills || allBills.length === 0) return null;
+
+      // Filter bills for this specific meter
+      const bills = allBills.filter(bill =>
+        bill.connection_id === connectionId ||
+        bill.connection_id?._id === connectionId
+      );
+
+      if (bills.length === 0) return null;
+
       const currentBill = bills[bills.length - 1];
       const previousBill = bills.length > 1 ? bills[bills.length - 2] : null;
-      
+
       return {
         current: currentBill,
         previous: previousBill,
@@ -34,6 +44,7 @@ export default function ResidentModernStats() {
         dueDate: currentBill.due_date
       };
     },
+    enabled: !!connectionId
   });
 
   const stats = [

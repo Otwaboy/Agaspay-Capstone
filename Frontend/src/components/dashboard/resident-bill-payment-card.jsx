@@ -1,18 +1,39 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { CreditCard, Calendar, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import { apiClient } from "../../lib/api";
 
-export default function ResidentBillPaymentCard() {
+export default function ResidentBillPaymentCard({ connectionId }) {
+  const queryClient = useQueryClient();
+
+  // Listen for payment success and refetch billing data
+  useEffect(() => {
+    const handlePaymentSuccess = () => {
+      console.log("🔔 [BillCard] Payment success event received for connectionId:", connectionId);
+      console.log("🔔 [BillCard] Invalidating query key:", ["resident-current-bill", connectionId]);
+      queryClient.invalidateQueries({ queryKey: ["resident-current-bill", connectionId] });
+      console.log("🔔 [BillCard] Query invalidated, will refetch on next render");
+    };
+
+    window.addEventListener("paymentSuccess", handlePaymentSuccess);
+    return () => {
+      window.removeEventListener("paymentSuccess", handlePaymentSuccess);
+    };
+  }, [connectionId, queryClient]);
+
   const { data: billingData, isLoading } = useQuery({
-    queryKey: ["resident-current-bill"], 
+    queryKey: ["resident-current-bill", connectionId],
     queryFn: async () => {
-      const res = await apiClient.getCurrentBill(); // this calls your getBilling controller
+      console.log("📡 [BillCard] Fetching bill data for connectionId:", connectionId);
+      const res = await apiClient.getCurrentBill(connectionId); // this calls your getBilling controller
       const bills = res.data;
+      console.log("📡 [BillCard] Raw response from API:", bills);
       if (!bills || bills.length === 0) return null;
       const currentBill = bills[bills.length - 1];
+      console.log("📡 [BillCard] Current bill from API:", currentBill);
 
       // Find all unpaid bills to get the earliest due date
       const unpaidBills = bills.filter(bill =>
@@ -32,7 +53,7 @@ export default function ResidentBillPaymentCard() {
       const today = new Date();
       const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
-      return {
+      const transformedData = {
         amount: currentBill.balance || currentBill.total_amount,
         totalAmount: currentBill.total_amount,
         amountPaid: currentBill.amount_paid || 0,
@@ -46,6 +67,8 @@ export default function ResidentBillPaymentCard() {
         unpaidBillsCount: unpaidBills.length,
         billingPeriod: new Date(currentBill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       };
+      console.log("✅ [BillCard] Transformed billing data:", transformedData);
+      return transformedData;
     },
   });
 
@@ -74,6 +97,8 @@ export default function ResidentBillPaymentCard() {
       </Card>
     );
   }
+
+  console.log("🎨 [BillCard] Rendering with billingData:", { status: billingData.status, amount: billingData.amount, amountPaid: billingData.amountPaid });
 
   const isPaid = billingData.status === "paid";
   const isPartial = billingData.status === "partial";
