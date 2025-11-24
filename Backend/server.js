@@ -50,7 +50,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions)); // Use the defined options object
 
+//extra packages
+app.use(express.json())
 
+// ✅ CRITICAL: Webhook route MUST be BEFORE express.json() to allow raw body if needed
+app.use("/paymongo/webhook", require("./routes/webhook"));
 
 //import routes
 const authRoutes = require('./routes/auth')
@@ -97,10 +101,6 @@ app.use('/api/v1/reports', reportsRoutes)
 app.use('/api/v1/change-password', changePasswordRoutes)
 app.use('/api/v1/disconnection', disconnectionRequestRoutes)
 app.use('/api/v1/archive-request', archiveRequestRoutes)
-
-
-//paymongo webhooks to to get event when succesfully na maka bayad
-app.use("/paymongo/webhook",require("./routes/webhook"));
 
 //error handler
 app.use(notFoundErrorMiddleware)
