@@ -34,7 +34,7 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
   const [step, setStep] = useState(1); // 1: Bill Details, 1.5: Payment Type, 2: Payment Method, 3: Confirmation
 
   const {data: billingData, isLoadingBilling, error: queryError} = useQuery({
-        queryKey: ["Amount-to-pay"],
+        queryKey: ["Amount-to-pay", selectedMeter],
         queryFn: async () => {
             try {
               const res = await apiClient.getCurrentBill()
@@ -42,14 +42,26 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
 
               console.log("🔍 Modal API response:", res);
               console.log("🔍 Modal data array:", data);
+              console.log("🔍 Selected meter prop:", selectedMeter);
 
               if(!data || data.length === 0){
                 console.warn("⚠️ No data in API response");
                 return null
               }
 
-              // Use the last bill (modal shows the latest bill to pay)
-              const billToPay = data[data.length - 1];
+              // Find the bill matching the selectedMeter
+              let billToPay;
+              if (selectedMeter) {
+                billToPay = data.find(bill => bill.meter_no === selectedMeter);
+                console.log("🔍 Found bill for selected meter:", billToPay);
+              }
+
+              // Fallback to last bill if no meter selected
+              if (!billToPay) {
+                billToPay = data[data.length - 1];
+                console.log("🔍 Using fallback - last bill:", billToPay);
+              }
+
               console.log("🔍 Bill to pay object:", billToPay);
               console.log("🔍 Bill _id:", billToPay._id);
               console.log("🔍 Bill full_name:", billToPay.full_name);
