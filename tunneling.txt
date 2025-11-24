@@ -26,3 +26,5 @@ ngrok http 3000
 delete a folder
 
 Remove-Item -Recurse -Force .\src\assets\attached_assets
+
+cd Backend &&  nnode scripts/clear-stuck-payments.js

@@ -24,7 +24,14 @@
       "Bash(npm run build:*)",
       "Bash(npm run lint:*)",
       "Bash(find:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(cmd /c taskkill /PID 54996 /F)",
+      "Bash(cmd /c:*)",
+      "Bash(timeout /t 4 /nobreak)",
+      "Bash(kill:*)",
+      "Bash(killall:*)"
     ],
     "deny": [],
     "ask": []
