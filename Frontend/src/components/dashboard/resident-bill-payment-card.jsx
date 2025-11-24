@@ -46,7 +46,7 @@ export default function ResidentBillPaymentCard({ connectionId }) {
             const earliestDate = new Date(earliest.due_date);
             const billDate = new Date(bill.due_date);
             return billDate < earliestDate ? bill : earliest;
-          }, unpaidBills[0])
+          }, unpaidBills[0])  
         : currentBill;
 
       const dueDate = new Date(earliestUnpaidBill.due_date);
