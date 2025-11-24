@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,8 +33,23 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Bill Details, 1.5: Payment Type, 2: Payment Method, 3: Confirmation
 
-  const {data: billingData, isLoadingBilling, error: queryError} = useQuery({
-        queryKey: ["Amount-to-pay", selectedMeter],
+  // Reset form and step when modal opens or meter changes
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      setbillingData({
+        paymentMethod: "",
+        paymentType: "",
+        partialAmount: "",
+        referenceNumber: "",
+        phoneNumber: "",
+        email: ""
+      });
+    }
+  }, [isOpen, selectedMeter?.connection_id]);
+
+  const {data: billingData, isLoadingBilling, error: queryError, refetch} = useQuery({
+        queryKey: ["Amount-to-pay", selectedMeter?.connection_id || selectedMeter?.meter_no],
         queryFn: async () => {
             try {
               const res = await apiClient.getCurrentBill()
