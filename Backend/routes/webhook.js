@@ -65,15 +65,9 @@ router.post("/", async (req, res) => {
       return res.status(200).json({ success: true, message: "Payment already processed" });
     }
 
-    // CRITICAL: Check if this exact bill is already being processed by another webhook
-    const pendingBillingUpdate = await Billing.findOne({
-      _id: billing._id,
-      current_payment_intent: null  // If null, another webhook already processed it
-    });
-    if (!pendingBillingUpdate) {
-      console.log("⚠️ Billing already updated by another webhook. Skipping duplicate.");
-      return res.status(200).json({ success: true, message: "Billing already updated" });
-    }
+    // CRITICAL: Check if payment has already been recorded in our system
+    // The duplicate prevention at the Payment level (line 61-66) is sufficient
+    // No need for additional billing-level duplicate check here
 
     const amountPaid = billing.pending_amount || billing.total_amount;
     const isPartial = amountPaid < billing.total_amount;
