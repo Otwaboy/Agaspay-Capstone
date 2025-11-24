@@ -44,14 +44,17 @@ router.post("/", async (req, res) => {
     }
 
     if (type === "checkout_session.payment.paid") {
-      const checkoutSessionId = data?.id;
-      if (!checkoutSessionId) {
-        console.log("⚠️ No checkout_session found in webhook");
+      // ✅ CRITICAL FIX: Use the payment_intent ID from the webhook, not checkout session ID
+      // The payment_intent is what we saved in the billing record
+      const paymentIntentFromWebhook = data?.payment_intent?.id;
+      if (!paymentIntentFromWebhook) {
+        console.log("⚠️ No payment_intent found in checkout_session webhook");
         return res.status(200).json({ success: true });
       }
 
-      paymentReference = checkoutSessionId;
-      billing = await Billing.findOne({ current_checkout_session: checkoutSessionId });
+      paymentReference = paymentIntentFromWebhook;
+      console.log("📌 [Webhook] Using payment_intent from checkout_session:", paymentIntentFromWebhook);
+      billing = await Billing.findOne({ current_payment_intent: paymentIntentFromWebhook });
     }
 
     if (!billing) {
