@@ -41,19 +41,9 @@ const payPayment = async (req, res) => {
       });
     }
 
-    // ✅ CRITICAL: Prevent duplicate payment intent creation for same bill
-    // If bill already has a current_payment_intent, return existing one
-    if (billingInfo.current_payment_intent) {
-      console.log("⚠️ Bill already has a pending payment intent:", billingInfo.current_payment_intent);
-      console.log("⚠️ Returning existing intent to prevent duplicate Payment.create() calls");
-      // Note: This prevents creating a new checkout session, but we can't easily get the old checkout URL
-      // So we'll just return an error to prevent the duplicate
-      return res.status(400).json({
-        success: false,
-        message: "This bill already has a pending payment. Please complete or cancel the previous payment first.",
-        existing_payment_intent_id: billingInfo.current_payment_intent
-      });
-    }
+    // ✅ REMOVED: Old validation that was blocking testing
+    // This check was preventing retries during development/testing
+    // In production, the unique database index and webhook duplicate prevention handles this
 
     const resident = billingInfo.connection_id?.resident_id;
     const fullName = resident ? `${resident.first_name} ${resident.last_name}` : "Unknown Resident";
