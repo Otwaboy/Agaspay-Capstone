@@ -6,6 +6,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import MaintenanceSidebar from "../components/layout/maintenance-sidebar";
 import MaintenanceTopHeader from "../components/layout/maintenance-top-header";
 import MaintenanceFooter from "../components/layout/maintenance-footer";
+import apiClient from "../lib/api";
 import {
   Wrench,
   AlertTriangle,
@@ -24,10 +25,26 @@ import { Link } from "wouter";
 
 export default function MaintenanceDashboard() {
   // Fetch real incident data from backend
-  const { data: incidentsData, isLoading: incidentsLoading } = useQuery({
+  const { data: incidentsData, isLoading } = useQuery({
     queryKey: ['/api/v1/incident-reports/all'],
     staleTime: 2 * 60 * 1000, // 2 minutes
+    queryFn: async () => {
+      const response = await apiClient.getAllIncidentReports();
+      return response;
+    }
   });
+
+  // Fetch assigned tasks from backend
+  const { data: assignmentsData, isLoading: isLoadingAssignments } = useQuery({
+    queryKey: ['/api/v1/assignments'],
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    queryFn: async () => {
+      const response = await apiClient.getAssignments();
+      return response;
+    }
+  });
+
+
 
   // Process incidents data from API
   const processedIncidentsData = incidentsData?.incidents
@@ -54,14 +71,43 @@ export default function MaintenanceDashboard() {
         recentIncidents: []
       };
 
+  // Process assignments data from API - show both assigned and pending tasks
+  const processedAssignmentsData = assignmentsData?.assignments
+    ? assignmentsData.assignments
+        .filter(assignment => {
+          const status = assignment.task?.task_status?.toLowerCase();
+          return status === 'assigned' || status === 'pending';
+        })
+        .slice(0, 2)
+        .map(assignment => ({
+          id: assignment.id,
+          type: assignment.task?.type || assignment.task?.task_type || 'Unknown Task',
+          location: assignment.task?.location || 'N/A',
+          status: assignment.task?.task_status?.toLowerCase() || 'assigned',
+          scheduledDate: assignment.task?.schedule_date
+            ? new Date(assignment.task.schedule_date).toLocaleDateString('en-US')
+            : 'Not scheduled',
+          scheduledTime: assignment.task?.schedule_time || 'N/A',
+          priority: assignment.task?.priority?.toLowerCase() || 'medium',
+          description: assignment.task?.description || ''
+        }))
+    : [];
+
+      
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Pending</Badge>;
+      case 'assigned':
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Assigned</Badge>;
       case 'in_progress':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">In Progress</Badge>;
       case 'completed':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completed</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Cancelled</Badge>;
+      case 'unassigned':
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Unassigned</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
     }
@@ -246,6 +292,7 @@ export default function MaintenanceDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
               {/* Today's Tasks */}
               <div className="lg:col-span-2">
                 <Card>
@@ -265,7 +312,7 @@ export default function MaintenanceDashboard() {
                     </Link>
                   </CardHeader>
                   <CardContent>
-                    {incidentsLoading ? (
+                    {isLoading ? (
                       <div className="space-y-3">
                         {[...Array(3)].map((_, i) => (
                           <Skeleton key={i} className="h-24 w-full" />
@@ -283,7 +330,7 @@ export default function MaintenanceDashboard() {
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2 mb-2">
                                   <h4 className="font-semibold text-gray-900">{task.type}</h4>
-                                  {getStatusBadge(task.status)}
+                                
                                   {getPriorityBadge(task.priority)}
                                 </div>
                                 <div className="space-y-1">
@@ -300,9 +347,7 @@ export default function MaintenanceDashboard() {
                                   </p>
                                 </div>
                               </div>
-                              <Button size="sm" variant="outline" data-testid={`button-update-${task.id}`}>
-                                Update Status
-                              </Button>
+                             
                             </div>
                           </div>
                         ))}
@@ -317,90 +362,63 @@ export default function MaintenanceDashboard() {
                 </Card>
               </div>
 
-              {/* Recent Incidents */}
+              {/* Assigned Tasks */}
               <div>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle className="flex items-center text-base">
-                        <AlertTriangle className="h-5 w-5 mr-2 text-red-600" />
-                        Recent Incidents
+                        <Wrench className="h-5 w-5 mr-2 text-blue-600" />
+                        Assigned Tasks
                       </CardTitle>
                     </div>
-                    <Link href="/maintenance-dashboard/incidents">
-                      <Button variant="ghost" size="sm" data-testid="button-view-all-incidents">
+                    <Link href="/maintenance-dashboard/tasks">
+                      <Button variant="ghost" size="sm" data-testid="button-view-all-assignments">
                         View All
                       </Button>
                     </Link>
                   </CardHeader>
                   <CardContent>
-                    {incidentsLoading ? (
+                    {isLoadingAssignments ? (
                       <div className="space-y-3">
                         {[...Array(2)].map((_, i) => (
                           <Skeleton key={i} className="h-20 w-full" />
                         ))}
                       </div>
-                    ) : processedIncidentsData?.recentIncidents?.length > 0 ? (
+                    ) : processedAssignmentsData?.length > 0 ? (
                       <div className="space-y-3">
-                        {processedIncidentsData.recentIncidents.slice(0, 2).map((incident) => (
+                        {processedAssignmentsData.map((assignment) => (
                           <div
-                            key={incident.id}
+                            key={assignment.id}
                             className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                            data-testid={`incident-card-${incident.id}`}
+                            data-testid={`assignment-card-${assignment.id}`}
                           >
                             <div className="flex items-start justify-between mb-2">
-                              <h5 className="font-medium text-sm text-gray-900">{incident.type}</h5>
-                              {getPriorityBadge(incident.priority)}
+                              <h5 className="font-medium text-sm text-gray-900">{assignment.type}</h5>
+                              {getStatusBadge(assignment.status)}
                             </div>
                             <p className="text-xs text-gray-600 mb-1">
                               <MapPin className="h-3 w-3 inline mr-1" />
-                              {incident.location}
+                              {assignment.location}
                             </p>
-                            <p className="text-xs text-gray-500">
-                              Reporter: {incident.reporter}
+                            <p className="text-xs text-gray-500 mb-1">
+                              <Clock className="h-3 w-3 inline mr-1" />
+                              {assignment.scheduledDate} at {assignment.scheduledTime}
                             </p>
-                            {getStatusBadge(incident.status)}
+                            {getPriorityBadge(assignment.priority)}
                           </div>
                         ))}
                       </div>
                     ) : (
                       <div className="text-center py-6">
-                        <AlertTriangle className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">No recent incidents</p>
+                        <Wrench className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">No assigned tasks</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
-                {/* Quick Stats */}
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center">
-                      <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-                      Incident Stats
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Total Reports</span>
-                        <span className="font-bold text-gray-900">{processedIncidentsData.total || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Pending</span>
-                        <span className="font-bold text-yellow-600">{processedIncidentsData.pending || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">In Progress</span>
-                        <span className="font-bold text-blue-600">{processedIncidentsData.inProgress || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Resolved</span>
-                        <span className="font-bold text-green-600">{processedIncidentsData.resolved || 0}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+               
               </div>
             </div>
 

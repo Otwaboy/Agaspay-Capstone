@@ -32,7 +32,8 @@ import {
   Calendar,
   DollarSign,
   Edit,
-  FileText
+  FileText,
+  Receipt
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
@@ -46,6 +47,8 @@ export default function TreasurerPaymentCollection() {
   const [editingPayment, setEditingPayment] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [editingReceipt, setEditingReceipt] = useState(null);
+  const [isUpdatingReceipt, setIsUpdatingReceipt] = useState(false);
   
   const { data: collections,  refetch } = useQuery({
     queryKey: ['/api/v1/treasurer/collections', filterStatus],
@@ -63,6 +66,7 @@ export default function TreasurerPaymentCollection() {
         amount: p.amount_paid,
         method: p.payment_method,
         status: p.payment_status,
+        officialReceiptStatus: p.official_receipt_status,
         referenceNo: p.payment_reference || 'Pay Onsite',
         date: p.payment_date,
         billPeriod: "August 2024"
@@ -145,19 +149,45 @@ export default function TreasurerPaymentCollection() {
 
   const handleUpdateStatus = async () => {
     if (!editingPayment) return;
-    
+
     setIsUpdating(true);
     try {
       await apiClient.updatePaymentStatus(editingPayment.id);
-      
+
       toast.success("Status Updated", { description: "Payment status has been successfully confirmed." });
-      
+
       await refetch();
       setEditingPayment(null);
     } catch (error) {
       toast.error("Update Failed", { description: error.message || "Failed to update payment status. Please try again." });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleEditReceipt = (payment) => {
+    setEditingReceipt(payment);
+  };
+
+  const handleUpdateReceiptStatus = async () => {
+    if (!editingReceipt) return;
+
+    setIsUpdatingReceipt(true);
+    try {
+      await apiClient.updateOfficialReceiptStatus(editingReceipt.id);
+
+      toast.success("Receipt Status Updated", {
+        description: "Payment has been marked as official receipt."
+      });
+
+      await refetch();
+      setEditingReceipt(null);
+    } catch (error) {
+      toast.error("Update Failed", {
+        description: error.message || "Failed to update receipt status. Please try again."
+      });
+    } finally {
+      setIsUpdatingReceipt(false);
     }
   };
 
@@ -297,7 +327,7 @@ export default function TreasurerPaymentCollection() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Payment ID
+                           Reference No
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Resident
@@ -308,11 +338,12 @@ export default function TreasurerPaymentCollection() {
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Method
                         </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Reference No
-                        </th>
+                      
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Status
+                        </th>
+                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                          Receipt
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Date
@@ -329,7 +360,7 @@ export default function TreasurerPaymentCollection() {
                         return (
                           <tr key={payment.id} data-testid={`payment-row-${payment.id}`}>
                             <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                              {payment.id}
+                              {payment.referenceNo}
                             </td>
                             <td className="py-4 px-6">
                               <div>
@@ -347,9 +378,7 @@ export default function TreasurerPaymentCollection() {
                             <td className="py-4 px-6 text-sm text-gray-600">
                               {payment.method}
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-600">
-                              {payment.referenceNo}
-                            </td>
+                            
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-2">
                                 <Badge className={`${statusConfig.className} flex items-center w-fit`}>
@@ -362,6 +391,31 @@ export default function TreasurerPaymentCollection() {
                                     size="sm"
                                     onClick={() => handleEditStatus(payment)}
                                     data-testid={`button-edit-status-${payment.id}`}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-2">
+                                <Badge
+                                  className={`${
+                                    payment.officialReceiptStatus === "official_receipt"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : "bg-orange-100 text-orange-800"
+                                  } flex items-center w-fit`}
+                                >
+                                  <Receipt className="w-3 h-3 mr-1" />
+                                  {payment.officialReceiptStatus === "official_receipt" ? "Official" : "Temporary"}
+                                </Badge>
+                                {payment.officialReceiptStatus === "temporary_receipt" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditReceipt(payment)}
+                                    data-testid={`button-edit-receipt-${payment.id}`}
                                     className="h-8 w-8 p-0"
                                   >
                                     <Edit className="h-4 w-4 text-gray-500 hover:text-gray-700" />
@@ -402,7 +456,7 @@ export default function TreasurerPaymentCollection() {
               Are you sure you want to confirm payment {editingPayment?.id} from {editingPayment?.residentName}?
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
@@ -426,6 +480,44 @@ export default function TreasurerPaymentCollection() {
               data-testid="button-confirm-update"
             >
               {isUpdating ? "Confirming..." : "Confirm Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Receipt Status Dialog */}
+      <Dialog open={!!editingReceipt} onOpenChange={(open) => !open && setEditingReceipt(null)}>
+        <DialogContent data-testid="dialog-edit-receipt">
+          <DialogHeader>
+            <DialogTitle>Update Receipt Status</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to mark payment {editingReceipt?.id} from {editingReceipt?.residentName} as official receipt?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                This will change the receipt status from <span className="font-semibold">Temporary Receipt</span> to <span className="font-semibold">Official Receipt</span>.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingReceipt(null)}
+              data-testid="button-cancel-receipt-edit"
+              disabled={isUpdatingReceipt}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateReceiptStatus}
+              disabled={isUpdatingReceipt}
+              data-testid="button-confirm-receipt-update"
+            >
+              {isUpdatingReceipt ? "Updating..." : "Update to Official Receipt"}
             </Button>
           </DialogFooter>
         </DialogContent>

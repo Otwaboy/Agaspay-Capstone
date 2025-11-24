@@ -2,18 +2,47 @@ import { useQuery } from "@tanstack/react-query";
 import { Users, AlertTriangle, MapPin, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
+import apiClient from "../../lib/api";
 
 export default function MeterReaderStatsCards() {
-  const { data: readerStats  } = useQuery({
-    queryKey: ['/api/v1/meter-reader/daily-stats'],
+  // Fetch latest readings to get total resident count
+  const { data: readingsData } = useQuery({
+    queryKey: ['/api/v1/meter-reader/latest-readings'],
     staleTime: 2 * 60 * 1000, // 2 minutes
+    queryFn: async () => {
+      const response = await apiClient.getLatestReadings();
+      return response;
+    }
   });
 
-  // Extract stats from API response
-  const stats = readerStats?.stats || {
-    totalResidents: 0,
-    reportedIssues: 0, 
-    zonesCovered: 0,
+  // Fetch incident reports to get reported issues count
+  const { data: incidentsData } = useQuery({
+    queryKey: ['/api/v1/incident-reports'],
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    queryFn: async () => {
+      const response = await apiClient.getIncidentReports();
+      return response;
+    }
+  });
+
+  // Fetch current user to get assigned zone
+  const { data: authUser } = useQuery({
+    queryKey: ["auth-user"],
+    queryFn: async () => {
+      const response = await apiClient.getUserAccount();
+      return response.user;
+    }
+  });
+
+  // Calculate stats from fetched data
+  const totalResidents = readingsData?.total || 0;
+  const reportedIssues = incidentsData?.count || 0;
+  const zonesCovered = authUser?.assigned_zone ? 1 : 0;
+
+  const stats = {
+    totalResidents,
+    reportedIssues,
+    zonesCovered,
     residentChange: "+0%",
     issuesChange: "0%",
     zonesChange: "0%",
@@ -59,7 +88,7 @@ export default function MeterReaderStatsCards() {
       subtitle: "Areas you manage",
       icon: MapPin,
       color: "text-green-600",
-      bgColor: "bg-green-50",
+      bgColor: "bg-green-50", 
       chartColor: "bg-green-500",
       testId: "card-zones-covered"
     },

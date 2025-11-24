@@ -22,6 +22,7 @@ import {
 import MaintenanceSidebar from "../components/layout/maintenance-sidebar";
 import MaintenanceTopHeader from "../components/layout/maintenance-top-header";
 import MaintenanceFooter from "../components/layout/maintenance-footer";
+import apiClient from "../lib/api";
 import {
   AlertTriangle,
   MapPin,
@@ -44,6 +45,10 @@ export default function MaintenanceIncidents() {
   const { data: apiResponse, isLoading } = useQuery({
     queryKey: ['/api/v1/incident-reports/all'],
     staleTime: 2 * 60 * 1000, // 2 minutes
+    queryFn: async () => {
+      const response = await apiClient.getAllIncidentReports();
+      return response;
+    }
   });
 
   // Transform API data to match component structure
@@ -221,7 +226,7 @@ export default function MaintenanceIncidents() {
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-3">
                               <h3 className="text-lg font-semibold text-gray-900">{incident.type}</h3>
-                              {getStatusBadge(incident.status)}
+                            
                               {getPriorityBadge(incident.priority)}
                             </div>
 

@@ -52,17 +52,15 @@ export default function ResidentTopHeader() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="cursor-pointer flex items-center space-x-2 px-3 lg:border lg:border-gray-200 border-0 h-11 lg:h-10"
+                className="cursor-pointer flex items-center space-x-2 px-3 lg:border-gray-200 border-0 h-10 lg:h-10"
                 data-testid="button-user-menu"
               >
-                <div className="w-10 h-10 lg:w-6 lg:h-6 bg-blue-600 rounded-full flex items-center justify-center ">
-                  <span className="text-white text-sm lg:text-xs font-large">
+                <div className="w-10 h-10 lg:w-6 lg:h-10 lg:w-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-full flex items-center justify-center ">
+                  <span className="text-white text-sm lg:text-lg font-large">
                     {user?.fullname?.charAt(0)?.toUpperCase() || 'R'}
                   </span>
                 </div>
-                <span className="text-sm font-medium hidden sm:block">
-                  {user?.fullname || 'Resident'}
-                </span>
+                
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

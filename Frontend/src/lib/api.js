@@ -77,6 +77,18 @@ class ApiClient {
     }
   }
 
+  async updateOfficialReceiptStatus(paymentId) {
+    try {
+      return await this.request(`/api/v1/payment/${paymentId}/update-receipt-status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      console.error("❌ Official receipt status update failed:", error);
+      throw error;
+    }
+  }
+
   async getRecentPayment() {
     try {
       return await this.request('/api/v1/payment');

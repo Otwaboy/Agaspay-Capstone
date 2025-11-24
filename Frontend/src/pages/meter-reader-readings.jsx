@@ -146,7 +146,7 @@ export default function MeterReaderReadings() {
       if (readingIds.length === 0) throw new Error('No readings available to submit.');
       return apiClient.bulkSubmitReadings(readingIds);
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Success", { description: "" });
       queryClient.invalidateQueries({ queryKey: ["connections"] });
     },
@@ -161,7 +161,7 @@ export default function MeterReaderReadings() {
         // Call your apiClient method
         return apiClient.updateReadings(reading_id, data);
       },
-      onSuccess: (response) => {
+      onSuccess: () => {
         toast.success("Success", { description: "" });
         queryClient.invalidateQueries({ queryKey: ["connections"] });
       },

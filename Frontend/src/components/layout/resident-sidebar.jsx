@@ -191,15 +191,15 @@ function ResidentSidebarContent() {
         <div className="flex items-center px-3 py-2 mb-3 bg-gray-50 rounded-lg">
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-medium">
-              {user?.username?.charAt(0)?.toUpperCase() || 'R'}
+              {user?.fullname?.charAt(0)?.toUpperCase() || 'R'}
             </span>
           </div>
           <div className="ml-3 flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.username || 'Resident'}
+              {user?.fullname || 'Resident'}
             </p>
             <p className="text-xs text-gray-500 truncate">
-              {user?.role || 'resident'}
+              {user?.role.toUpperCase() || 'resident'}
             </p>
           </div>
         </div>

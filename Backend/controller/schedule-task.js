@@ -448,10 +448,35 @@ const getTasks = async (req, res) => {
         (a) => a.task_id.toString() === task._id.toString()
       );
 
+      // Format task type for display
+      let displayType;
+      if (task.title) {
+        displayType = task.title;
+      } else if (task.task_type === 'disconnection') {
+        displayType = 'Water Disconnection';
+      } else if (task.task_type === 'reconnection') {
+        displayType = 'Water Reconnection';
+      } else if (task.task_type === 'meter_installation') {
+        displayType = 'Meter Installation';
+      } else if (task.schedule_type === 'Meter Installation' && !task.report_id) {
+        // Meter installation tasks created via registration
+        displayType = 'Meter Installation';
+      } else if (task.report_id?.type) {
+        // This is an incident-related task, use the incident type
+        displayType = task.report_id.type;
+      } else if (task.task_type === 'maintenance') {
+        displayType = 'Maintenance';
+      } else if (task.task_type === 'incident') {
+        displayType = 'Incident';
+      } else {
+        displayType = 'Task';
+      }
+
       return {
         ...task,
-        task_type: task.report_id?.type || 'N/A',
-         schedule_type: task.schedule_type || 'N/A', // ✅ Include schedule_type here
+        type: displayType,
+        task_type: task.task_type || 'incident', // Keep original task_type field
+        schedule_type: task.schedule_type || 'N/A', // ✅ Include schedule_type here
         assigned_to: assignment?.assigned_to
           ? {
               _id: assignment.assigned_to._id,

@@ -563,4 +563,95 @@ const recordManualPayment = async (req, res) => {
   }
 };
 
-module.exports = { payPayment, getPayment, updatePaymentStatus, verifyPayment, recordManualPayment };
+/**
+ * Update Official Receipt Status
+ * - Only treasurer can update official receipt status
+ * - Can only update from 'temporary_receipt' to 'official_receipt'
+ */
+const updateOfficialReceiptStatus = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id: paymentId } = req.params;
+
+    // ✅ Authorization: Only treasurer can update receipt status
+    if (user.role !== 'treasurer') {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Only treasurer can update official receipt status'
+      });
+    }
+
+    // ✅ Find the payment
+    const payment = await Payment.findById(paymentId).populate({
+      path: "bill_id",
+      populate: {
+        path: "connection_id",
+        populate: {
+          path: "resident_id",
+          select: "first_name last_name"
+        }
+      }
+    });
+
+    if (!payment) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+
+    // ✅ Check if current status is temporary_receipt
+    if (payment.official_receipt_status !== 'temporary_receipt') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: `Cannot update receipt status. Current status is '${payment.official_receipt_status}'`
+      });
+    }
+
+    // ✅ Update to official_receipt
+    payment.official_receipt_status = 'official_receipt';
+
+    // ✅ If payment is confirmed but doesn't have confirmed_by, set it
+    if (payment.payment_status === 'confirmed' && !payment.confirmed_by) {
+      payment.confirmed_by = user.userId;
+    }
+
+    await payment.save();
+
+    // ✅ Prepare response
+    const connection = payment.bill_id?.connection_id;
+    const resident = connection?.resident_id;
+    const fullName = resident ? `${resident.first_name} ${resident.last_name}` : null;
+
+    console.log('✅ Official receipt status updated:', {
+      payment_id: payment._id,
+      resident: fullName,
+      updated_by: user.userId
+    });
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Official receipt status updated successfully',
+      data: {
+        payment_id: payment._id,
+        amount_paid: payment.amount_paid,
+        payment_method: payment.payment_method,
+        payment_type: payment.payment_type,
+        payment_status: payment.payment_status,
+        official_receipt_status: payment.official_receipt_status,
+        payment_date: payment.payment_date,
+        residentFullName: fullName
+      }
+    });
+
+  } catch (error) {
+    console.error('🔥 updateOfficialReceiptStatus error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to update official receipt status',
+      error: error.message
+    });
+  }
+};
+
+module.exports = { payPayment, getPayment, updatePaymentStatus, verifyPayment, recordManualPayment, updateOfficialReceiptStatus };

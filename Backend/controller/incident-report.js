@@ -261,13 +261,13 @@ const getAllIncidents = async (req, res) => {
           try {
             let reporterInfo = null;
             if (incident.reported_by_model === 'Resident') {
-              reporterInfo = await Resident.findOne({ user: incident.reported_by }).lean();
+              reporterInfo = await Resident.findOne({ user_id: incident.reported_by }).lean();
             } else {
               reporterInfo = await Personnel.findOne({ user_id: incident.reported_by }).lean();
             }
-            
+
             if (reporterInfo) {
-              const name = reporterInfo.name || 
+              const name = reporterInfo.name ||
                           `${reporterInfo.first_name || ''} ${reporterInfo.last_name || ''}`.trim() ||
                           'Unknown';
               incident.reported_by = name;
