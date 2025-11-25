@@ -279,12 +279,12 @@ const getOverdueBilling = async (req, res) => {
     const currentDate = new Date();
 
     // Find all overdue billings
-    const overdueBillings = await Billing.find({ 
+    const overdueBillings = await Billing.find({
       $or: [
         { status: 'overdue' },
-        { 
-          status: { $in: ['unpaid', 'partial'] }, 
-          due_date: { $lt: currentDate } 
+        {
+          status: { $in: ['unpaid', 'partial', 'consolidated'] },
+          due_date: { $lt: currentDate }
         }
       ]
     })
@@ -298,12 +298,25 @@ const getOverdueBilling = async (req, res) => {
     })
     .sort({ due_date: 1 });
 
+    console.log('📊 Found overdue billings:', overdueBillings.length, 'billings');
+    overdueBillings.forEach(b => {
+      console.log(`  - Bill ${b._id}: status=${b.status}, due_date=${b.due_date}, connection_id=${b.connection_id}`);
+    });
+
     const overdueAccounts = await Promise.all(
       overdueBillings.map(async (billing) => {
         const connection = billing.connection_id;
         const resident = connection?.resident_id;
 
-        if (!resident || !connection) return null;
+        if (!resident || !connection) {
+          console.log('⚠️ Filtering out billing (missing resident/connection):', {
+            billing_id: billing._id,
+            connection_id: billing.connection_id,
+            has_connection: !!connection,
+            has_resident: !!resident
+          });
+          return null;
+        }
         // Fetch ALL unpaid bills for this connection (including consolidated ones)
   const unpaidBills = await Billing.find({
             connection_id: connection._id,
@@ -349,6 +362,7 @@ const getOverdueBilling = async (req, res) => {
     );
 
     const validAccounts = overdueAccounts.filter(account => account !== null);
+    console.log('✅ Valid overdue accounts:', validAccounts.length, '(filtered', overdueAccounts.length - validAccounts.length, 'null records)');
 
     // GROUP BY meterNo so each resident shows only once
     //Think of reduce() as a way to take a whole array and combine it into one final value.
@@ -385,6 +399,11 @@ const getOverdueBilling = async (req, res) => {
     // Summary
     const totalOutstandingBalance = groupedAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
     const criticalCount = groupedAccounts.filter(acc => acc.status === 'critical').length;
+
+    console.log('📈 Final grouped accounts:', groupedAccounts.length, 'accounts');
+    groupedAccounts.forEach(acc => {
+      console.log(`  - ${acc.residentName} (${acc.meterNo}): ₱${acc.totalDue}, ${acc.monthsOverdue} months overdue, status=${acc.status}`);
+    });
 
     return res.status(StatusCodes.OK).json({
       msg: 'Overdue accounts retrieved successfully',
@@ -513,19 +532,43 @@ const sendReminderSMS = async (req, res) => {
         msg: 'Resident contact number not available',
       });
     }
-    // ✅ Calculate months overdue
-    const currentDate = new Date();
-    const dueDate = new Date(billing.due_date);
-    const monthsDiff = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24 * 30));
-    const monthsOverdue = Math.max(1, monthsDiff);
+
+    // ✅ Find ALL unpaid/overdue bills for this connection (same logic as getOverdueBilling)
+    const allOverdueBills = await Billing.find({
+      connection_id: billing.connection_id,
+      status: { $in: ['unpaid', 'partial', 'overdue', 'consolidated'] }
+    }).sort({ due_date: 1 }); // Ascending - earliest first
+
+    if (allOverdueBills.length === 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        msg: 'No overdue bills found for this account',
+      });
+    }
+
+    // ✅ Get the EARLIEST unpaid bill
+    const earliestBill = allOverdueBills[0];
+    const earliestDueDate = new Date(earliestBill.due_date);
+
+    // ✅ Calculate months overdue as the NUMBER of unpaid bills (each bill = 1 month)
+    const monthsOverdue = Math.max(1, allOverdueBills.length);
+
+    // ✅ Calculate total overdue amount (sum of ALL unpaid bills)
+    const totalDueAmount = allOverdueBills.reduce((sum, bill) => sum + (bill.total_amount || 0), 0);
+
     // ✅ Send SMS
     const reminderData = {
       residentName: `${resident.first_name} ${resident.last_name}`,
       contactNo: resident.contact_no,
-      totalDue: billing.total_amount,
+      totalDue: totalDueAmount,
       monthsOverdue: monthsOverdue,
-      dueDate: billing.due_date
+      dueDate: earliestDueDate
     };
+
+    console.log('🔍 Connection ID:', connection._id);
+    console.log('🔍 Earliest unpaid bill due date:', earliestDueDate);
+    console.log('🔍 Total unpaid bills found:', allOverdueBills.length);
+    console.log('📊 Months overdue (count of unpaid bills):', monthsOverdue);
+    console.log('💰 Total unpaid amount:', totalDueAmount);
     console.log('📤 Sending overdue reminder SMS:', reminderData);
     
     const smsResult = await sendOverdueReminder(reminderData);
