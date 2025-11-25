@@ -278,15 +278,10 @@ const getOverdueBilling = async (req, res) => {
 
     const currentDate = new Date();
 
-    // Find all overdue billings
+    // Find all unpaid/outstanding billings (including those not yet due)
+    // Outstanding balances include all unpaid amounts, not just past-due ones
     const overdueBillings = await Billing.find({
-      $or: [
-        { status: 'overdue' },
-        {
-          status: { $in: ['unpaid', 'partial', 'consolidated'] },
-          due_date: { $lt: currentDate }
-        }
-      ]
+      status: { $in: ['unpaid', 'partial', 'overdue', 'consolidated'] }
     })
     .populate({
       path: 'connection_id',
