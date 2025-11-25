@@ -191,12 +191,12 @@ const createBilling = async (req, res) => {
     //ex: calculated is 2 and the the rate is 1 so 2x1 = 2 so the current_charges is 2
     const current_charges = reading.calculated * rate.amount;
 
-    // 💰 CUMULATIVE BILLING: Find all unpaid bills for this connection
-    //ex: so it will get the all billing with status of unpaid
-
+    // 💰 CUMULATIVE BILLING: Find all unpaid bills for this connection (including consolidated)
+    // Consolidated bills must be included because they represent previously unpaid amounts that
+    // are still outstanding and should be carried forward to the new bill
     const unpaidBills = await Billing.find({
       connection_id: reading.connection_id,
-      status: { $in: ['unpaid', 'partial', 'overdue'] }
+      status: { $in: ['unpaid', 'partial', 'overdue', 'consolidated'] }
     });
 
     // 💰 Sum up all unpaid amounts to get previous balance
