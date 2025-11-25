@@ -376,17 +376,21 @@ const getOverdueBilling = async (req, res) => {
             bills: [curr.id]  // Track which bills are included
           };
         } else {
-          // Additional bills for same meter - SUM the totalDue amounts
-          acc[key].totalDue += curr.totalDue;  // ✅ ADD to total due
+          // Additional bills for same meter - with cumulative billing, the latest bill already includes all previous amounts
+          // So we replace with the latest bill instead of summing
           acc[key].bills.push(curr.id);  // Track this bill
 
-          // Keep the latest billing (based on dueDate) for display purposes
+          // Keep the latest billing (based on dueDate) for all amounts
           const existingDueDate = new Date(acc[key].dueDate);
           const currentDueDate = new Date(curr.dueDate);
 
           if (currentDueDate > existingDueDate) {
+            // Current bill is newer - replace with current bill's data (which already includes previous balances)
+            acc[key].totalDue = curr.totalDue;  // ✅ Use latest bill's amount (not sum)
             acc[key].dueDate = curr.dueDate;
             acc[key].billPeriod = curr.billPeriod;
+            acc[key].id = curr.id;
+            acc[key].lastPayment = curr.lastPayment;
           }
 
           // Take highest months overdue
