@@ -60,12 +60,13 @@ export default function ResidentBillPaymentCard({ connectionId }) {
       const currentDueDate = new Date(currentBill.due_date);
       const daysUntilDueCurrent = Math.ceil((currentDueDate - today) / (1000 * 60 * 60 * 24));
 
-      // Calculate total amount due from ALL unpaid bills (including future-due bills)
-      const totalAmountDue = unpaidBills.reduce((sum, bill) => sum + (bill.balance || bill.total_amount || 0), 0);
+      // With cumulative billing, the current bill's total_amount already includes all previous unpaid amounts
+      // So we should only use the current bill's amount, not sum all unpaid bills
+      const totalAmountDue = currentBill.balance || currentBill.total_amount || 0;
 
       const transformedData = {
-        amount: unpaidBills.length > 1 ? totalAmountDue : (currentBill.balance || currentBill.total_amount),
-        totalAmount: unpaidBills.length > 1 ? totalAmountDue : currentBill.total_amount,
+        amount: totalAmountDue,
+        totalAmount: currentBill.total_amount || 0,
         amountPaid: currentBill.amount_paid || 0,
         dueDate: currentBill.due_date,
         status: currentBill.payment_status || currentBill.status || "unpaid",
