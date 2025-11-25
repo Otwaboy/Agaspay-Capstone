@@ -380,11 +380,12 @@ const getOverdueBilling = async (req, res) => {
           // So we replace with the latest bill instead of summing
           acc[key].bills.push(curr.id);  // Track this bill
 
-          // Keep the latest billing (based on dueDate) for all amounts
-          const existingDueDate = new Date(acc[key].dueDate);
-          const currentDueDate = new Date(curr.dueDate);
+          // Keep the latest billing (based on creation date, not due date) for all amounts
+          // Due date might not be chronological, but creation date reflects actual bill sequence
+          const existingCreateDate = new Date(acc[key].billPeriod);
+          const currentCreateDate = new Date(curr.billPeriod);
 
-          if (currentDueDate > existingDueDate) {
+          if (currentCreateDate > existingCreateDate) {
             // Current bill is newer - replace with current bill's data (which already includes previous balances)
             acc[key].totalDue = curr.totalDue;  // ✅ Use latest bill's amount (not sum)
             acc[key].dueDate = curr.dueDate;
