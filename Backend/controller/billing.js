@@ -191,24 +191,19 @@ const createBilling = async (req, res) => {
     //ex: calculated is 2 and the the rate is 1 so 2x1 = 2 so the current_charges is 2
     const current_charges = reading.calculated * rate.amount;
 
-    // 💰 CUMULATIVE BILLING: Find all unpaid bills for this connection (including consolidated)
-    // Consolidated bills must be included because they represent previously unpaid amounts that
-    // are still outstanding and should be carried forward to the new bill
-    const unpaidBills = await Billing.find({
+    // 💰 CUMULATIVE BILLING: Find the latest unpaid bill for this connection
+    // With cumulative billing, we only need the LATEST unpaid/consolidated bill's balance
+    // because it already includes all previous unpaid amounts
+    const latestUnpaidBill = await Billing.findOne({
       connection_id: reading.connection_id,
       status: { $in: ['unpaid', 'partial', 'overdue', 'consolidated'] }
-    });
+    }).sort({ generated_at: -1 }); // Get the most recently generated bill
 
-    // 💰 Sum up all unpaid amounts to get previous balance
-    //accumalator method  hahaha
-    //summing all the array into a one final value
-    //sum started at zero so basically 0 + 2 = 2 then 2 + 4 = 6 , 6+ 12 = 18
-    // ✅ FIX: Use 'balance' instead of 'current_charges' to account for partial payments
-    // If balance doesn't exist, fall back to total_amount (for old bills)
-
-    const previous_balance = unpaidBills.reduce((sum, bill) => {
-      return sum + (bill.balance || bill.total_amount || 0);
-    }, 0); 
+    // 💰 Previous balance is the latest unpaid bill's balance (which already accumulates all previous)
+    // If no unpaid bills exist, start fresh with 0
+    const previous_balance = latestUnpaidBill
+      ? (latestUnpaidBill.balance || latestUnpaidBill.total_amount || 0)
+      : 0; 
 
     // 💰 Total amount = previous unpaid balance + current month charges
     const total_amount = previous_balance + current_charges;
@@ -226,18 +221,20 @@ const createBilling = async (req, res) => {
       balance: total_amount, // ← initialize balance with total_amount
     });
 
-    // ✅ Mark all previous unpaid bills as 'consolidated' to hide them from active view
-    // They're now rolled into the new cumulative bill
-    if (unpaidBills.length > 0) {
+    // ✅ Mark all previous unpaid bills (except the latest one) as 'consolidated' to hide them from active view
+    // The latest bill is already included in the new bill's previous_balance calculation
+    if (latestUnpaidBill) {
       await Billing.updateMany(
         {
-          _id: { $in: unpaidBills.map(b => b._id) }
+          connection_id: reading.connection_id,
+          status: { $in: ['unpaid', 'partial', 'overdue', 'consolidated'] },
+          _id: { $ne: latestUnpaidBill._id } // Don't consolidate the latest one yet
         },
         {
           $set: { status: 'consolidated' }
         }
       );
-      console.log(`✅ Consolidated ${unpaidBills.length} previous unpaid bill(s) into new bill`);
+      console.log(`✅ Consolidated previous unpaid bill(s) into new bill. Latest bill (${latestUnpaidBill._id}) rolled into new bill.`);
     }
 
     console.log("🧾 Billing created successfully with cumulative amounts:");
