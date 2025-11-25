@@ -318,13 +318,14 @@ const getOverdueBilling = async (req, res) => {
             status: { $in: ['unpaid', 'partial', 'overdue', 'consolidated'] }
           }).sort({ due_date: 1 }); // ascending, earliest first
 
-      // Count the number of unpaid bills as months overdue
-      // Each bill represents one billing cycle (one month)
-      const monthsOverdue = Math.max(1, unpaidBills.length);
+      // Count only the PAST-DUE bills (due_date < today) as months overdue
+      // This represents how many consecutive months the account is actually overdue
+      const pastDueBills = unpaidBills.filter(bill => new Date(bill.due_date) < currentDate);
+      const monthsOverdue = Math.max(1, pastDueBills.length);
 
-      // Get the earliest unpaid bill for due date reference
-      const earliestUnpaidBill = unpaidBills[0] || billing;
-      const dueDate = new Date(earliestUnpaidBill.due_date);
+      // Get the earliest past-due bill for due date reference
+      const earliestPastDueBill = pastDueBills[0] || unpaidBills[0] || billing;
+      const dueDate = new Date(earliestPastDueBill.due_date);
 
         const lastPayment = await Payment.findOne({ 
           connection_id: connection._id,
