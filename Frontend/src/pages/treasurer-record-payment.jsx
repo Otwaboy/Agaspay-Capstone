@@ -43,9 +43,9 @@ export default function TreasurerRecordPayment() {
     queryFn: () => apiClient.getCurrentBill(),
   });
 
-  // Filter bills - only show unpaid and partial status
+  // Filter bills - show all unpaid bills (unpaid, partial, consolidated, overdue)
   const unpaidBills = billHistory?.data?.filter(bill =>
-    bill.status === 'unpaid' || bill.status === 'partial'
+    ['unpaid', 'partial', 'consolidated', 'overdue'].includes(bill.status)
   ) || [];
 
   // Filter bills based on search
