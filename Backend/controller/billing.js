@@ -373,14 +373,24 @@ const getOverdueBilling = async (req, res) => {
         const key = curr.meterNo;
 
         if (!acc[key]) {
-          acc[key] = { ...curr };
-        } else { 
-          // Keep only the latest billing (based on dueDate)
+          // First bill for this meter - initialize with current bill data
+          acc[key] = {
+            ...curr,
+            totalDue: curr.totalDue,  // ✅ Start accumulating total due
+            bills: [curr.id]  // Track which bills are included
+          };
+        } else {
+          // Additional bills for same meter - SUM the totalDue amounts
+          acc[key].totalDue += curr.totalDue;  // ✅ ADD to total due
+          acc[key].bills.push(curr.id);  // Track this bill
+
+          // Keep the latest billing (based on dueDate) for display purposes
           const existingDueDate = new Date(acc[key].dueDate);
           const currentDueDate = new Date(curr.dueDate);
 
           if (currentDueDate > existingDueDate) {
-            acc[key] = { ...curr };
+            acc[key].dueDate = curr.dueDate;
+            acc[key].billPeriod = curr.billPeriod;
           }
 
           // Take highest months overdue
@@ -396,22 +406,27 @@ const getOverdueBilling = async (req, res) => {
       }, {})
     );
 
-    // Summary
-    const totalOutstandingBalance = groupedAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
-    const criticalCount = groupedAccounts.filter(acc => acc.status === 'critical').length;
+    // Summary (use cleanedAccounts for accurate calculations)
+    const cleanedAccounts = groupedAccounts.map(acc => {
+      const { bills, ...rest } = acc;
+      return rest;
+    });
 
-    console.log('📈 Final grouped accounts:', groupedAccounts.length, 'accounts');
-    groupedAccounts.forEach(acc => {
+    const totalOutstandingBalance = cleanedAccounts.reduce((sum, acc) => sum + acc.totalDue, 0);
+    const criticalCount = cleanedAccounts.filter(acc => acc.status === 'critical').length;
+
+    console.log('📈 Final grouped accounts:', cleanedAccounts.length, 'accounts');
+    cleanedAccounts.forEach(acc => {
       console.log(`  - ${acc.residentName} (${acc.meterNo}): ₱${acc.totalDue}, ${acc.monthsOverdue} months overdue, status=${acc.status}`);
     });
 
     return res.status(StatusCodes.OK).json({
       msg: 'Overdue accounts retrieved successfully',
-      data: groupedAccounts,
+      data: cleanedAccounts,
       summary: {
         totalOutstandingBalance,
         criticalCount,
-        totalAccounts: groupedAccounts.length
+        totalAccounts: cleanedAccounts.length
       }
     });
 
