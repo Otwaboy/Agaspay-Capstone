@@ -5,12 +5,14 @@ const { StatusCodes } = require('http-status-codes');
 
 /**
  * Request voluntary disconnection (Resident only)
+ * Supports single or multiple connections
  */
 const requestDisconnection = async (req, res) => {
   try {
     const user = req.user;
+    const { connectionIds } = req.body;
 
-    // Get resident's water connection
+    // Get resident's water connection(s)
     const resident = await Resident.findOne({ user_id: user.userId });
     if (!resident) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -19,38 +21,65 @@ const requestDisconnection = async (req, res) => {
       });
     }
 
-    const connection = await WaterConnection.findOne({ resident_id: resident._id });
-    if (!connection) {
+    // If connectionIds provided, use those; otherwise get all resident's connections
+    let connections;
+    if (connectionIds && Array.isArray(connectionIds) && connectionIds.length > 0) {
+      connections = await WaterConnection.find({
+        resident_id: resident._id,
+        _id: { $in: connectionIds }
+      });
+    } else {
+      connections = await WaterConnection.find({ resident_id: resident._id });
+    }
+
+    if (!connections || connections.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: 'No water connection found for this resident'
       });
     }
 
-    // Check if already disconnected or pending
-    if (connection.connection_status === 'disconnected') {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Your account is already disconnected' 
+    // Update each connection
+    const results = [];
+    for (const connection of connections) {
+      // Check if already disconnected or pending
+      if (connection.connection_status === 'disconnected') {
+        results.push({
+          connectionId: connection._id,
+          status: 'error',
+          message: 'Already disconnected'
+        });
+        continue;
+      }
+
+      if (connection.connection_status === 'request_for_disconnection') {
+        results.push({
+          connectionId: connection._id,
+          status: 'error',
+          message: 'Already has pending request'
+        });
+        continue;
+      }
+
+      connection.connection_status = 'request_for_disconnection';
+      connection.disconnection_requested_date = new Date();
+      connection.disconnection_type = 'Voluntary';
+      await connection.save();
+
+      results.push({
+        connectionId: connection._id,
+        meterNo: connection.meter_no,
+        status: 'success',
+        message: 'Disconnection request submitted'
       });
     }
 
-    if (connection.connection_status === 'request_for_disconnection') {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'You already have a pending disconnection request'
-      });
-    }
-  
-    connection.connection_status = 'request_for_disconnection';
-    connection.disconnection_requested_date = new Date();
-    connection.disconnection_type = 'Voluntary';
-    await connection.save();
+    const successCount = results.filter(r => r.status === 'success').length;
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: 'Disconnection request submitted successfully. Awaiting admin approval.',
-      connection
+      message: `${successCount} disconnection request(s) submitted successfully. Awaiting admin approval.`,
+      results
     });
 
   } catch (error) {
@@ -65,6 +94,7 @@ const requestDisconnection = async (req, res) => {
 
 /**
  * Get disconnection status (Resident only)
+ * Returns status for all resident's connections
  */
 const getDisconnectionStatus = async (req, res) => {
   try {
@@ -78,21 +108,36 @@ const getDisconnectionStatus = async (req, res) => {
       });
     }
 
-    const connection = await WaterConnection.findOne({ resident_id: resident._id });
-    if (!connection) {
+    // Get all connections for resident
+    const connections = await WaterConnection.find({ resident_id: resident._id });
+    if (!connections || connections.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: 'No water connection found'
       });
     }
 
+    // Return status for all connections
+    const connectionsStatus = connections.map(conn => ({
+      connectionId: conn._id,
+      meterNo: conn.meter_no,
+      status: conn.connection_status,
+      disconnection_type: conn.disconnection_type,
+      disconnection_requested_date: conn.disconnection_requested_date,
+      disconnection_approved_date: conn.disconnection_approved_date,
+      disconnection_rejection_reason: conn.disconnection_rejection_reason
+    }));
+
+    // For backward compatibility, also return first connection status at top level
+    const firstConn = connections[0];
     res.status(StatusCodes.OK).json({
       success: true,
-      status: connection.connection_status,
-      disconnection_type: connection.disconnection_type,
-      disconnection_requested_date: connection.disconnection_requested_date,
-      disconnection_approved_date: connection.disconnection_approved_date,
-      disconnection_rejection_reason: connection.disconnection_rejection_reason
+      status: firstConn.connection_status,
+      disconnection_type: firstConn.disconnection_type,
+      disconnection_requested_date: firstConn.disconnection_requested_date,
+      disconnection_approved_date: firstConn.disconnection_approved_date,
+      disconnection_rejection_reason: firstConn.disconnection_rejection_reason,
+      connections: connectionsStatus
     });
 
   } catch (error) {

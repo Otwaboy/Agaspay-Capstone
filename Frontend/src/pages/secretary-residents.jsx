@@ -33,7 +33,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar, UserPlus, Loader2, FileText, Droplets } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import { Search, Filter, Eye, Edit, UserCheck, UserX, Phone, Mail, MapPin, Calendar, UserPlus, Loader2, FileText, Droplets, MoreVertical } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 import { queryClient } from "../lib/query-client";
@@ -83,14 +89,57 @@ export default function SecretaryResidents() {
     }
   });
 
-  const filteredResidents = residents.filter(resident => {
+  // Group residents by resident_id and sort by name
+  const groupedResidents = residents.reduce((acc, resident) => {
+    const existingResident = acc.find(r => r.resident_id === resident.resident_id);
+    if (existingResident) {
+      // Add meter to existing resident
+      existingResident.meters.push({
+        id: resident.id,
+        meter_no: resident.meter_no,
+        type: resident.type,
+        connectionStatus: resident.connectionStatus,
+        previousReading: resident.previousReading,
+        presentReading: resident.presentReading
+      });
+    } else {
+      // Create new grouped resident
+      acc.push({
+        resident_id: resident.resident_id,
+        name: resident.name,
+        contactNo: resident.contactNo,
+        email: resident.email,
+        address: resident.address,
+        status: resident.status,
+        meters: [
+          {
+            id: resident.id,
+            meter_no: resident.meter_no,
+            type: resident.type,
+            connectionStatus: resident.connectionStatus,
+            previousReading: resident.previousReading,
+            presentReading: resident.presentReading
+          }
+        ]
+      });
+    }
+    return acc;
+  }, []);
 
-    //search
+  // Sort by name (A-Z)
+  groupedResidents.sort((a, b) => a.name.localeCompare(b.name));
+
+  const filteredResidents = groupedResidents.filter(resident => {
+    // Search in resident info or any meter info
     const matchesSearch = resident.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          resident.contactNo.includes(searchQuery) ||
-                         resident.address.toLowerCase().includes(searchQuery.toLowerCase());
-      //filter
-    const matchesFilter = filterStatus === "all" || resident.connectionStatus === filterStatus;
+                         resident.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         resident.meters.some(m => m.meter_no.includes(searchQuery));
+
+    // Filter by connection status - check if any meter matches or all meters match filter
+    const matchesFilter = filterStatus === "all" ||
+                         resident.meters.some(m => m.connectionStatus === filterStatus);
+
     return matchesSearch && matchesFilter;
   });
 
@@ -319,77 +368,93 @@ export default function SecretaryResidents() {
                       </TableHeader>
                       <TableBody>
                         {filteredResidents.length > 0 ? (
-                          filteredResidents.map((resident) => (
-                            <TableRow key={resident.id} data-testid={`row-resident-${resident.id}`}>
-                              <TableCell className="font-medium">{resident.name}</TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  <div>{resident.contactNo}</div>
-                                  <div className="text-gray-500">{resident.email}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="max-w-xs truncate">{resident.address}</TableCell>
-                              <TableCell>
-                                <span className="font-mono text-sm">{resident.meter_no}</span>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="capitalize">
-                                  {resident.type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                    variant={resident.connectionStatus === "active" ? "success" : "secondary"}
+                          filteredResidents.flatMap((resident) =>
+                            resident.meters.map((meter, meterIdx) => (
+                              <TableRow key={`${resident.resident_id}-${meter.id}`} data-testid={`row-resident-${resident.resident_id}-meter-${meter.id}`}>
+                                {/* Name, Contact, Address - only show for first meter */}
+                                {meterIdx === 0 && (
+                                  <>
+                                    <TableCell className="font-medium" rowSpan={resident.meters.length}>
+                                      {resident.name}
+                                    </TableCell>
+                                    <TableCell rowSpan={resident.meters.length}>
+                                      <div className="text-sm">
+                                        <div>{resident.contactNo}</div>
+                                        <div className="text-gray-500">{resident.email}</div>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="max-w-xs truncate" rowSpan={resident.meters.length}>
+                                      {resident.address}
+                                    </TableCell>
+                                  </>
+                                )}
+
+                                {/* Meter Number */}
+                                <TableCell>
+                                  <span className="font-mono text-sm">{meter.meter_no}</span>
+                                </TableCell>
+
+                                {/* Type */}
+                                <TableCell>
+                                  <Badge variant="outline" className="capitalize">
+                                    {meter.type}
+                                  </Badge>
+                                </TableCell>
+
+                                {/* Status */}
+                                <TableCell>
+                                  <Badge
+                                    variant={meter.connectionStatus === "active" ? "success" : "secondary"}
                                     className={`
                                       ${
-                                        resident.connectionStatus === "active"
+                                        meter.connectionStatus === "active"
                                           ? "bg-green-100 text-green-700 hover:bg-green-100"
-                                          : resident.connectionStatus === "pending"
+                                          : meter.connectionStatus === "pending"
                                           ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                                          : resident.connectionStatus === "disconnected"
+                                          : meter.connectionStatus === "disconnected"
                                           ? "bg-red-100 text-red-700 hover:bg-red-100"
                                           : "bg-gray-100 text-gray-700 hover:bg-gray-100"
                                       }
                                     `}
-                                    data-testid={`badge-status-${resident.id}`}
+                                    data-testid={`badge-status-${meter.id}`}
                                   >
-                                    {resident.connectionStatus.charAt(0).toUpperCase() + resident.connectionStatus.slice(1)}
+                                    {meter.connectionStatus.charAt(0).toUpperCase() + meter.connectionStatus.slice(1)}
                                   </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleViewDetails(resident)}
-                                    data-testid={`button-view-${resident.id}`}
-                                  >
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    View
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleEditResident(resident)}
-                                    data-testid={`button-edit-${resident.id}`}
-                                  >
-                                    <Edit className="h-4 w-4 mr-1" />
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleAddMeter(resident)}
-                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                    data-testid={`button-add-meter-${resident.id}`}
-                                  >
-                                    <Droplets className="h-4 w-4 mr-1" />
-                                    Add Meter
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
+                                </TableCell>
+
+                                {/* Actions - Dropdown Menu - only show for first meter */}
+                                {meterIdx === 0 && (
+                                  <TableCell className="text-right" rowSpan={resident.meters.length}>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          data-testid={`button-actions-${resident.resident_id}`}
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleViewDetails(resident)}>
+                                          <Eye className="h-4 w-4 mr-2" />
+                                          View Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditResident(resident)}>
+                                          <Edit className="h-4 w-4 mr-2" />
+                                          Edit Resident
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleAddMeter(resident)}>
+                                          <Droplets className="h-4 w-4 mr-2" />
+                                          Add Meter
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            ))
+                          )
                         ) : (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8 text-gray-500">
@@ -418,14 +483,11 @@ export default function SecretaryResidents() {
           </DialogHeader>
           {selectedResident && (
             <div className="space-y-6">
+              {/* Resident Personal Information */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Full Name</label>
                   <p className="text-gray-900 mt-1">{selectedResident.name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Meter Number</label>
-                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.meter_no}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Contact Number</label>
@@ -440,36 +502,6 @@ export default function SecretaryResidents() {
                     <Mail className="h-4 w-4 mr-2 text-gray-500" />
                     {selectedResident.email}
                   </p>
-                </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-700">Address</label>
-                  <p className="text-gray-900 mt-1 flex items-center">
-                    <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                    {selectedResident.address}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Connection Type</label>
-                  <p className="text-gray-900 mt-1 capitalize">{selectedResident.type}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Connection Status</label>
-                  <div className="mt-1">
-                    <Badge
-                      variant="outline"
-                      className="capitalize"
-                    >
-                      {selectedResident.connectionStatus}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Previous Reading</label>
-                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.previousReading} m³</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Present Reading</label>
-                  <p className="text-gray-900 mt-1 font-mono">{selectedResident.presentReading} m³</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Status</label>
@@ -486,7 +518,68 @@ export default function SecretaryResidents() {
                     </Badge>
                   </div>
                 </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium text-gray-700">Address</label>
+                  <p className="text-gray-900 mt-1 flex items-center">
+                    <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                    {selectedResident.address}
+                  </p>
+                </div>
               </div>
+
+              {/* Meters Section */}
+              <div className="border-t pt-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
+                  <Droplets className="h-4 w-4 mr-2" />
+                  Water Meters ({selectedResident.meters.length})
+                </h3>
+                <div className="space-y-4">
+                  {selectedResident.meters.map((meter) => (
+                    <div key={meter.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Meter Number</label>
+                          <p className="text-gray-900 mt-1 font-mono">{meter.meter_no}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Connection Type</label>
+                          <p className="text-gray-900 mt-1 capitalize">{meter.type}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Connection Status</label>
+                          <div className="mt-1">
+                            <Badge
+                              variant={meter.connectionStatus === "active" ? "success" : "secondary"}
+                              className={`capitalize
+                                ${
+                                  meter.connectionStatus === "active"
+                                    ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                    : meter.connectionStatus === "pending"
+                                    ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+                                    : meter.connectionStatus === "disconnected"
+                                    ? "bg-red-100 text-red-700 hover:bg-red-100"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                                }
+                              `}
+                            >
+                              {meter.connectionStatus}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Previous Reading</label>
+                          <p className="text-gray-900 mt-1 font-mono">{meter.previousReading} m³</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Present Reading</label>
+                          <p className="text-gray-900 mt-1 font-mono">{meter.presentReading} m³</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setViewDetailsOpen(false)} data-testid="button-close-dialog">
                   Close

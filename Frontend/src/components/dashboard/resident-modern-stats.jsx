@@ -6,13 +6,19 @@ import { Droplets, CreditCard, TrendingUp, CheckCircle, AlertCircle } from "luci
 import { apiClient } from "../../lib/api";
 
 export default function ResidentModernStats({ connectionId }) {
-  const { data: accountData } = useQuery({
-    queryKey: ["resident-account"],
+  // Fetch all meters to find the selected one
+  const { data: metersData } = useQuery({
+    queryKey: ["resident-meters"],
     queryFn: async () => {
-      const res = await apiClient.getUserAccount();
-      return res.user;
-    },
+      const res = await apiClient.getResidentMeters();
+      return res.data;
+    }
   });
+
+  // Get the selected meter's status and zone
+  const selectedMeterData = metersData?.find(meter =>
+    meter.connection_id === connectionId
+  );
 
   const { data: billingData } = useQuery({
     queryKey: ["resident-billing", connectionId],
@@ -91,11 +97,11 @@ export default function ResidentModernStats({ connectionId }) {
     },
     {
       title: "Connection Status",
-      value: accountData?.status?.charAt(0)?.toUpperCase() + accountData?.status?.slice(1) || "Active",
+      value: selectedMeterData?.connection_status?.charAt(0)?.toUpperCase() + selectedMeterData?.connection_status?.slice(1) || "Active",
       icon: TrendingUp,
       iconColor: "text-green-600",
       iconBg: "bg-green-50",
-      subtitle: `Zone ${accountData?.zone || "N/A"}`
+      subtitle: `Zone ${selectedMeterData?.zone || "N/A"}`
     }
   ];
 

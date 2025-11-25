@@ -64,7 +64,7 @@ export default function ResidentDashboard() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated) { 
     return null;
   }
 

@@ -35,35 +35,43 @@ export default function ResidentBillPaymentCard({ connectionId }) {
       const currentBill = bills[bills.length - 1];
       console.log("📡 [BillCard] Current bill from API:", currentBill);
 
-      // Find all unpaid bills to get the earliest due date
+      // Find all unpaid bills to get the earliest due date (for warning message)
       const unpaidBills = bills.filter(bill =>
         ['unpaid', 'partial', 'overdue', 'consolidated'].includes(bill.status || bill.payment_status)
       );
 
-      // Use the earliest unpaid bill's due date for calculating days overdue
-      const earliestUnpaidBill = unpaidBills.length > 0 
+      // Use the earliest unpaid bill's due date ONLY for the overdue warning message
+      const earliestUnpaidBill = unpaidBills.length > 0
         ? unpaidBills.reduce((earliest, bill) => {
             const earliestDate = new Date(earliest.due_date);
             const billDate = new Date(bill.due_date);
             return billDate < earliestDate ? bill : earliest;
-          }, unpaidBills[0])  
+          }, unpaidBills[0])
         : currentBill;
 
-      const dueDate = new Date(earliestUnpaidBill.due_date);
+      const earliestDueDate = new Date(earliestUnpaidBill.due_date);
       const today = new Date();
-      const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+      const daysUntilDueEarliest = Math.ceil((earliestDueDate - today) / (1000 * 60 * 60 * 24));
+
+      // Use CURRENT BILL's due date for the Due Date display
+      const currentDueDate = new Date(currentBill.due_date);
+      const daysUntilDueCurrent = Math.ceil((currentDueDate - today) / (1000 * 60 * 60 * 24));
+
+      // Calculate total amount due from ALL unpaid bills
+      const totalAmountDue = unpaidBills.reduce((sum, bill) => sum + (bill.balance || bill.total_amount || 0), 0);
 
       const transformedData = {
-        amount: currentBill.balance || currentBill.total_amount,
-        totalAmount: currentBill.total_amount,
+        amount: unpaidBills.length > 1 ? totalAmountDue : (currentBill.balance || currentBill.total_amount),
+        totalAmount: unpaidBills.length > 1 ? totalAmountDue : currentBill.total_amount,
         amountPaid: currentBill.amount_paid || 0,
-        dueDate: earliestUnpaidBill.due_date,
+        dueDate: currentBill.due_date,
         status: currentBill.payment_status || currentBill.status || "unpaid",
         connection_status: currentBill.connection_status || "active",
         consumption: currentBill.calculated,
         presentReading: currentBill.present_reading,
         previousReading: currentBill.previous_reading || 0,
-        daysUntilDue,
+        daysUntilDue: daysUntilDueCurrent,
+        daysUntilDueEarliest,
         unpaidBillsCount: unpaidBills.length,
         billingPeriod: new Date(currentBill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       };
@@ -102,7 +110,8 @@ export default function ResidentBillPaymentCard({ connectionId }) {
 
   const isPaid = billingData.status === "paid";
   const isPartial = billingData.status === "partial";
-  const isOverdue = billingData.daysUntilDue < 0;
+  // Overdue if: (1) current bill is past due OR (2) there are multiple unpaid bills (earliest one must be overdue)
+  const isOverdue = billingData.daysUntilDue < 0 || (billingData.unpaidBillsCount > 1 && billingData.daysUntilDueEarliest < 0);
   const isDueSoon = billingData.daysUntilDue <= 3 && billingData.daysUntilDue >= 0;
   const isForDisconnection = billingData.connection_status === "for_disconnection";
   const isScheduledForDisconnection = billingData.connection_status === "scheduled_for_disconnection";
@@ -188,7 +197,7 @@ export default function ResidentBillPaymentCard({ connectionId }) {
               <p className="text-sm font-medium text-red-900">Payment Overdue!</p>
               <p className="text-xs text-red-700 mt-1">
                 {billingData.unpaidBillsCount > 1
-                  ? `You have ${billingData.unpaidBillsCount} unpaid bills. The earliest bill was due ${Math.abs(billingData.daysUntilDue)} days ago. Please pay immediately to avoid service interruption.`
+                  ? `You have ${billingData.unpaidBillsCount} unpaid bills. The earliest bill was due ${Math.abs(billingData.daysUntilDueEarliest)} days ago. Please pay immediately to avoid service interruption.`
                   : `This bill was due ${Math.abs(billingData.daysUntilDue)} days ago. Please pay immediately to avoid service interruption.`
                 }
               </p>

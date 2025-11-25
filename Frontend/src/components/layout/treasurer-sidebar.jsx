@@ -36,6 +36,16 @@ const menuItems = [
     href: "/treasurer-dashboard/approve-readings",
     color: "text-gray-600"
   },
+   {
+    title: "Billing Management",
+    icon: Receipt,
+    color: "text-gray-600",
+    subItems: [
+      { title: "Generate Bills", href: "/treasurer-dashboard/billing/generate" },
+      { title: "Bill History", href: "/treasurer-dashboard/billing/history" },
+      
+    ]
+  },
   {
     title: "Record Payment",
     icon: Wallet,
@@ -51,26 +61,10 @@ const menuItems = [
       { title: "Outstanding Balances", href: "/treasurer-dashboard/revenue/outstanding-balances" },
     ]
   },
-  {
-    title: "Billing Management",
-    icon: Receipt,
-    color: "text-gray-600",
-    subItems: [
-      { title: "Generate Bills", href: "/treasurer-dashboard/billing/generate" },
-      { title: "Bill History", href: "/treasurer-dashboard/billing/history" },
-      { title: "Billing Settings", href: "/treasurer-dashboard/billing/settings" },
-    ]
-  },
-  {
+    {
     title: "Customer Accounts",
     icon: Users,
-    href: "/treasurer-dashboard/accounts",
-    color: "text-gray-600"
-  },
-  {
-    title: "Financial Alerts",
-    icon: AlertCircle,
-    href: "/treasurer-dashboard/alerts",
+    href: "/treasurer-dashboard/customer-accounts",
     color: "text-gray-600"
   },
   {

@@ -707,9 +707,10 @@ async getApprovalStats() {
     // ======================================================
     // 🔌 DISCONNECTION REQUEST (Resident)
     // ======================================================
-    async requestDisconnection() {
+    async requestDisconnection(connectionIds = null) {
       return await this.request('/api/v1/disconnection/request', {
         method: 'POST',
+        body: connectionIds ? JSON.stringify({ connectionIds }) : undefined
       });
     }
 

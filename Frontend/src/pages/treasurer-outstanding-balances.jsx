@@ -32,6 +32,7 @@ export default function TreasurerOutstandingBalances() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sendingReminder, setSendingReminder] = useState(null);
+  const [reminderConfirmModal, setReminderConfirmModal] = useState(null);
   const [disconnectionModal, setDisconnectionModal] = useState(null); // <-- for modal
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
@@ -129,8 +130,15 @@ export default function TreasurerOutstandingBalances() {
       return;
     }
 
-    setSendingReminder(balance.id);
-    sendReminderMutation.mutate(balance.id);
+    // Open confirmation modal instead of sending directly
+    setReminderConfirmModal(balance);
+  };
+
+  const handleConfirmReminder = () => {
+    if (!reminderConfirmModal) return;
+    setSendingReminder(reminderConfirmModal.id);
+    sendReminderMutation.mutate(reminderConfirmModal.id);
+    setReminderConfirmModal(null);
   };
 
   const handleMarkForDisconnection = (balance) => {
@@ -372,11 +380,64 @@ export default function TreasurerOutstandingBalances() {
               </CardContent>
             </Card>
 
+            {/* Modal for Send Reminder Confirmation */}
+            <Dialog
+              open={!!reminderConfirmModal}
+              onOpenChange={(open) => !open && setReminderConfirmModal(null)}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center text-blue-600">
+                    <Send className="h-5 w-5 mr-2" />
+                    Send Payment Reminder
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-700">
+                    Send SMS reminder to <strong>{reminderConfirmModal?.residentName}</strong>
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Note:</strong> An SMS payment reminder will be sent to <span className="font-semibold">{reminderConfirmModal?.contactNo}</span> reminding them of their outstanding balance of <span className="font-semibold">₱{reminderConfirmModal?.totalDue.toLocaleString('en-PH', {minimumFractionDigits: 2})}</span>.
+                    </p>
+                  </div>
+                </div>
+
+                <DialogFooter className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setReminderConfirmModal(null)}
+                    disabled={sendingReminder === reminderConfirmModal?.id}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={handleConfirmReminder}
+                    disabled={sendingReminder === reminderConfirmModal?.id}
+                  >
+                    {sendingReminder === reminderConfirmModal?.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Reminder
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             {/* Modal for Mark for Disconnection */}
-              <Dialog 
-                open={!!disconnectionModal} 
+              <Dialog
+                open={!!disconnectionModal}
                 onOpenChange={(open) => !open && setDisconnectionModal(null)}
-              
+
               >
                 <DialogContent data-testid="dialog-mark-disconnection">
                   <DialogHeader>

@@ -338,10 +338,8 @@ export default function TreasurerRecordPayment() {
                           </Select>
                         </div>
 
-                        {/* Auto Reconnection Notice - Show if for_disconnection, scheduled_for_disconnection, or disconnected */}
-                        {(selectedBill.connection_status === 'for_disconnection' ||
-                          selectedBill.connection_status === 'scheduled_for_disconnection' ||
-                          selectedBill.connection_status === 'disconnected') && (
+                        {/* Auto Reconnection/Active Connection Notice */}
+                        {selectedBill.connection_status === 'disconnected' && (
                           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                             <div className="flex items-start space-x-3">
                               <Power className="h-5 w-5 text-green-600 mt-0.5" />
@@ -351,6 +349,24 @@ export default function TreasurerRecordPayment() {
                                 </p>
                                 <p className="text-xs text-green-700 mt-1">
                                   After payment confirmation, this connection will automatically be marked for reconnection and can be scheduled by the secretary.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Auto Active Connection Notice - For for_disconnection or scheduled_for_disconnection */}
+                        {(selectedBill.connection_status === 'for_disconnection' ||
+                          selectedBill.connection_status === 'scheduled_for_disconnection') && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                              <Power className="h-5 w-5 text-blue-600 mt-0.5" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-blue-900">
+                                  Auto Active Connection
+                                </p>
+                                <p className="text-xs text-blue-700 mt-1">
+                                  After payment confirmation, this connection will automatically be marked as Active.
                                 </p>
                               </div>
                             </div>

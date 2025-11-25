@@ -45,11 +45,23 @@ export default function ResidentSettings() {
 
   // Disconnect Account Modal States
   const [disconnectModalOpen, setDisconnectModalOpen] = useState(false);
+  const [selectedMetersForDisconnect, setSelectedMetersForDisconnect] = useState(new Set());
+  const [selectAllMeters, setSelectAllMeters] = useState(false);
+  const [cancelDisconnectConfirmOpen, setCancelDisconnectConfirmOpen] = useState(false);
 
   // Archive Account Modal States
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
   const [cancelArchiveModalOpen, setCancelArchiveModalOpen] = useState(false);
+
+  // Fetch resident meters
+  const { data: metersData } = useQuery({
+    queryKey: ["resident-meters"],
+    queryFn: async () => {
+      const res = await apiClient.getResidentMeters();
+      return res.data;
+    }
+  });
 
   // Fetch disconnection status
   const { data: disconnectionStatus } = useQuery({
@@ -69,10 +81,12 @@ export default function ResidentSettings() {
 
   // Request Disconnection Mutation
   const requestDisconnectionMutation = useMutation({
-    mutationFn: () => apiClient.requestDisconnection(),
+    mutationFn: (connectionIds) => apiClient.requestDisconnection(connectionIds),
     onSuccess: () => {
       toast.success("Disconnection request submitted successfully!");
       setDisconnectModalOpen(false);
+      setSelectedMetersForDisconnect(new Set());
+      setSelectAllMeters(false);
       window.location.reload(); // Reload to update status
     },
     onError: (error) => {
@@ -242,6 +256,40 @@ export default function ResidentSettings() {
     requestArchiveMutation.mutate({
       reason: archiveReason.trim()
     });
+  };
+
+  // Handle meter selection for disconnect
+  const handleMeterToggle = (meterId) => {
+    const newSelected = new Set(selectedMetersForDisconnect);
+    if (newSelected.has(meterId)) {
+      newSelected.delete(meterId);
+    } else {
+      newSelected.add(meterId);
+    }
+    setSelectedMetersForDisconnect(newSelected);
+    setSelectAllMeters(newSelected.size === metersData?.length && metersData?.length > 0);
+  };
+
+  // Handle select all meters
+  const handleSelectAllMeters = (checked) => {
+    setSelectAllMeters(checked);
+    if (checked && metersData) {
+      const allIds = new Set(metersData.map(meter => meter.connection_id));
+      setSelectedMetersForDisconnect(allIds);
+    } else {
+      setSelectedMetersForDisconnect(new Set());
+    }
+  };
+
+  // Handle disconnect submission
+  const handleDisconnectSubmit = () => {
+    if (selectedMetersForDisconnect.size === 0) {
+      toast.error("Please select at least one meter to disconnect");
+      return;
+    }
+
+    const connectionIds = Array.from(selectedMetersForDisconnect);
+    requestDisconnectionMutation.mutate(connectionIds);
   };
 
   return (
@@ -448,11 +496,7 @@ export default function ResidentSettings() {
                         <Button
                           variant="outline"
                           className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to cancel your disconnection request?")) {
-                              cancelDisconnectionMutation.mutate();
-                            }
-                          }}
+                          onClick={() => setCancelDisconnectConfirmOpen(true)}
                           disabled={cancelDisconnectionMutation.isPending}
                         >
                           {cancelDisconnectionMutation.isPending ? (
@@ -778,38 +822,96 @@ export default function ResidentSettings() {
 
         {/* Disconnect Account Confirmation Modal */}
         <Dialog open={disconnectModalOpen} onOpenChange={setDisconnectModalOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center text-red-600">
                 <AlertTriangle className="h-5 w-5 mr-2" />
                 Disconnect Account
               </DialogTitle>
               <DialogDescription className="text-gray-700">
-                Do you really want to disconnect your water service account?
+                Select which meter(s) you want to disconnect
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-4">
+            <div className="space-y-4 py-4">
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">
                   <strong>Warning:</strong> This action will request disconnection of your water service.
                   Your request will be sent to the administrator for approval.
                 </p>
               </div>
+
+              {/* Select All Option */}
+              {metersData && metersData.length > 1 && (
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <input
+                    type="checkbox"
+                    id="select-all-meters"
+                    checked={selectAllMeters}
+                    onChange={(e) => handleSelectAllMeters(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                  />
+                  <label htmlFor="select-all-meters" className="cursor-pointer flex-1">
+                    <span className="font-medium text-gray-700">Select All Meters</span>
+                  </label>
+                </div>
+              )}
+
+              {/* Meter Options */}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {metersData && metersData.length > 0 ? (
+                  metersData.map((meter) => (
+                    <div
+                      key={meter.connection_id}
+                      className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        id={`meter-${meter.connection_id}`}
+                        checked={selectedMetersForDisconnect.has(meter.connection_id)}
+                        onChange={() => handleMeterToggle(meter.connection_id)}
+                        className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                      />
+                      <label htmlFor={`meter-${meter.connection_id}`} className="cursor-pointer flex-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          Meter {meter.meter_no}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Zone {meter.zone} • {meter.connection_status}
+                        </div>
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">No meters available</p>
+                )}
+              </div>
+
+              {selectedMetersForDisconnect.size > 0 && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>{selectedMetersForDisconnect.size}</strong> meter{selectedMetersForDisconnect.size > 1 ? 's' : ''} selected for disconnection
+                  </p>
+                </div>
+              )}
             </div>
 
             <DialogFooter className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setDisconnectModalOpen(false)}
+                onClick={() => {
+                  setDisconnectModalOpen(false);
+                  setSelectedMetersForDisconnect(new Set());
+                  setSelectAllMeters(false);
+                }}
                 disabled={requestDisconnectionMutation.isPending}
               >
-                No, Cancel
+                Cancel
               </Button>
               <Button
                 className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => requestDisconnectionMutation.mutate()}
-                disabled={requestDisconnectionMutation.isPending}
+                onClick={handleDisconnectSubmit}
+                disabled={requestDisconnectionMutation.isPending || selectedMetersForDisconnect.size === 0}
               >
                 {requestDisconnectionMutation.isPending ? (
                   <>
@@ -817,7 +919,57 @@ export default function ResidentSettings() {
                     Processing...
                   </>
                 ) : (
-                  "Yes, Disconnect"
+                  "Request Disconnection"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Cancel Disconnection Request Confirmation Modal */}
+        <Dialog open={cancelDisconnectConfirmOpen} onOpenChange={setCancelDisconnectConfirmOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center text-orange-600">
+                <AlertTriangle className="h-5 w-5 mr-2" />
+                Cancel Disconnection Request
+              </DialogTitle>
+              <DialogDescription className="text-gray-700">
+                Are you sure you want to cancel your disconnection request?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4">
+              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800">
+                  <strong>Note:</strong> Cancelling will withdraw your disconnection request and restore your service connection to active status.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCancelDisconnectConfirmOpen(false)}
+                disabled={cancelDisconnectionMutation.isPending}
+              >
+                No, Keep Request
+              </Button>
+              <Button
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={() => {
+                  cancelDisconnectionMutation.mutate();
+                  setCancelDisconnectConfirmOpen(false);
+                }}
+                disabled={cancelDisconnectionMutation.isPending}
+              >
+                {cancelDisconnectionMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  "Yes, Cancel Request"
                 )}
               </Button>
             </DialogFooter>

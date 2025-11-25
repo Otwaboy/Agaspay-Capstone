@@ -228,6 +228,18 @@ export default function MeterReaderReadings() {
     return toast.error("Validation Error", { description: "End date cannot be before start date" });
   }
 
+  // Validate that start date is AFTER the previous reading end date
+  if (selectedConnectionData?.inclusive_date?.end) {
+    const previousEndDate = new Date(selectedConnectionData.inclusive_date.end);
+    const newStartDate = new Date(formData.inclusive_date.start);
+
+    if (newStartDate <= previousEndDate) {
+      return toast.error("Validation Error", {
+        description: `Start date must be after the previous reading period end date (${previousEndDate.toLocaleDateString()}). Cannot read from the past.`
+      });
+    }
+  }
+
   const payload = {
     connection_id: formData.connection_id,
     present_reading: Number(formData.present_reading),
@@ -517,13 +529,27 @@ export default function MeterReaderReadings() {
                       )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <Label htmlFor="start_date" className="text-sm font-medium">Start Date</Label>
+                          <Label htmlFor="start_date" className="text-sm font-medium">
+                            Start Date
+                            {selectedConnectionData?.inclusive_date?.end && (
+                              <span className="text-xs text-gray-500 ml-1">
+                                (Must be after {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
+                              </span>
+                            )}
+                          </Label>
                           <Input
                             id="start_date"
                             type="date"
                             value={formData.inclusive_date.start}
                             onChange={(e) => handleInputChange("inclusive_date.start", e.target.value)}
+                            min={selectedConnectionData?.inclusive_date?.end}
+                            disabled={!selectedConnectionData}
                           />
+                          {selectedConnectionData?.inclusive_date?.end && new Date(formData.inclusive_date.start) <= new Date(selectedConnectionData.inclusive_date.end) && formData.inclusive_date.start && (
+                            <p className="text-xs text-red-600 mt-1">
+                              ⚠️ Start date must be after the previous reading end date ({new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString()})
+                            </p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="end_date" className="text-sm font-medium">End Date</Label>
@@ -533,6 +559,7 @@ export default function MeterReaderReadings() {
                             value={formData.inclusive_date.end}
                             onChange={(e) => handleInputChange("inclusive_date.end", e.target.value)}
                             min={formData.inclusive_date.start}
+                            disabled={!selectedConnectionData}
                           />
                         </div>
                       </div>
