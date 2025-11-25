@@ -40,6 +40,10 @@ export default function ResidentBillPaymentCard({ connectionId }) {
         ['unpaid', 'partial', 'overdue', 'consolidated'].includes(bill.status || bill.payment_status)
       );
 
+      // Find only PAST-DUE bills (bills where due_date has already passed)
+      const today = new Date();
+      const pastDueBills = unpaidBills.filter(bill => new Date(bill.due_date) < today);
+
       // Use the earliest unpaid bill's due date ONLY for the overdue warning message
       const earliestUnpaidBill = unpaidBills.length > 0
         ? unpaidBills.reduce((earliest, bill) => {
@@ -50,14 +54,13 @@ export default function ResidentBillPaymentCard({ connectionId }) {
         : currentBill;
 
       const earliestDueDate = new Date(earliestUnpaidBill.due_date);
-      const today = new Date();
       const daysUntilDueEarliest = Math.ceil((earliestDueDate - today) / (1000 * 60 * 60 * 24));
 
       // Use CURRENT BILL's due date for the Due Date display
       const currentDueDate = new Date(currentBill.due_date);
       const daysUntilDueCurrent = Math.ceil((currentDueDate - today) / (1000 * 60 * 60 * 24));
 
-      // Calculate total amount due from ALL unpaid bills
+      // Calculate total amount due from ALL unpaid bills (including future-due bills)
       const totalAmountDue = unpaidBills.reduce((sum, bill) => sum + (bill.balance || bill.total_amount || 0), 0);
 
       const transformedData = {
@@ -72,7 +75,7 @@ export default function ResidentBillPaymentCard({ connectionId }) {
         previousReading: currentBill.previous_reading || 0,
         daysUntilDue: daysUntilDueCurrent,
         daysUntilDueEarliest,
-        unpaidBillsCount: unpaidBills.length,
+        unpaidBillsCount: pastDueBills.length,  // ✅ Count only PAST-DUE bills
         billingPeriod: new Date(currentBill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       };
       console.log("✅ [BillCard] Transformed billing data:", transformedData);
