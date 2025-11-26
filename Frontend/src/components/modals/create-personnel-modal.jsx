@@ -33,26 +33,12 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
   const [errors, setErrors] = useState({});
 
 
-  // Parse MongoDB duplicate key error and backend validation errors
+  // Parse MongoDB duplicate key error
   const parseDuplicateKeyError = (errorMessage) => {
     const newErrors = {};
 
-    // Check for backend custom validation messages
-    const lowerMessage = errorMessage.toLowerCase();
-
-    if (lowerMessage.includes('name') && (lowerMessage.includes('exist') || lowerMessage.includes('already') || lowerMessage.includes('duplicate'))) {
-      // Full name duplication
-      newErrors.firstName = "This full name already exists. Please use a different name.";
-      newErrors.lastName = "This full name already exists. Please use a different name.";
-    } else if (lowerMessage.includes('username')) {
-      newErrors.username = "This username is already taken. Please choose a different username.";
-    } else if (lowerMessage.includes('email')) {
-      newErrors.email = "This email is already in use. Please use a different email.";
-    } else if (lowerMessage.includes('phone') || lowerMessage.includes('contact')) {
-      newErrors.phone = "This phone number is already registered. Please use a different phone number.";
-    }
-    // Check for MongoDB E11000 duplicate key errors
-    else if (errorMessage.includes('E11000 duplicate key error')) {
+    // Only check for MongoDB E11000 duplicate key errors
+    if (errorMessage.includes('E11000 duplicate key error')) {
       if (errorMessage.includes('username_1')) {
         newErrors.username = "This username is already taken. Please choose a different username.";
       } else if (errorMessage.includes('email_1')) {
@@ -185,7 +171,22 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         // If backend sends error message string (check both 'message' and 'msg')
         else if (error.response.data.message || error.response.data.msg) {
           errorMessage = error.response.data.message || error.response.data.msg;
-          parsedErrors = parseDuplicateKeyError(errorMessage);
+
+          // Parse specific backend error messages for field-specific errors
+          if (errorMessage.includes('username') || errorMessage.includes('Username')) {
+            parsedErrors.username = errorMessage;
+          } else if (errorMessage.includes('email') || errorMessage.includes('Email')) {
+            parsedErrors.email = errorMessage;
+          } else if (errorMessage.includes('phone') || errorMessage.includes('contact') || errorMessage.includes('Contact')) {
+            parsedErrors.phone = errorMessage;
+          } else if (errorMessage.includes('full name') || errorMessage.includes('Full Name')) {
+            parsedErrors.firstName = errorMessage;
+            parsedErrors.lastName = errorMessage;
+          }
+          // Also check for MongoDB E11000 errors as fallback
+          else {
+            parsedErrors = parseDuplicateKeyError(errorMessage);
+          }
         }
       }
       // Parse error message directly if no response object
@@ -194,13 +195,12 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         parsedErrors = parseDuplicateKeyError(errorMessage);
       }
 
-      // Set the parsed errors to show below fields
+      // Show error notification
       if (Object.keys(parsedErrors).length > 0) {
         setErrors(parsedErrors);
         // Show field-specific error toast
-        const firstError = Object.values(parsedErrors)[0];
         toast.error("Validation Error", {
-          description: firstError
+          description: errorMessage
         });
       } else if (errorMessage && errorMessage !== "Failed to create personnel. Please try again.") {
         // Show actual backend error message
