@@ -118,8 +118,9 @@ class AuthManager {
       
       // Get error details from backend for all error statuses
       let errorMessage = 'Unknown error occurred';
+      let errorData = {};
       try {
-        const errorData = await response.json();
+        errorData = await response.json();
         errorMessage = errorData.message || errorData.error || `Server error (${response.status})`;
         console.error('Backend error details:', errorData);
       } catch (e) {
@@ -187,8 +188,9 @@ class AuthManager {
       
       // Get error details from backend for all error statuses
       let errorMessage = 'Unknown error occurred';
+      let errorData = {};
       try {
-        const errorData = await response.json();
+        errorData = await response.json();
         errorMessage = errorData.message || errorData.error || `Server error (${response.status})`;
         console.error('Backend error details:', errorData);
       } catch (e) {
