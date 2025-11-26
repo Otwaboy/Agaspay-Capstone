@@ -101,7 +101,9 @@ const PersonnelSchema = new mongoose.Schema(
   }
 );
 
-
-
+// Indexes for duplicate prevention
+PersonnelSchema.index({ email: 1 }, { unique: true, sparse: true });
+PersonnelSchema.index({ contact_no: 1 }, { unique: true, sparse: true });
+PersonnelSchema.index({ first_name: 1, last_name: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Personnel', PersonnelSchema);

@@ -48,7 +48,25 @@ const createWaterConnection = async (resident_id, meter_no, type, zone, purok) =
   return connection;
 };
 
-const createPesonnel = async (user_id, role, first_name, last_name, email, contact_no, purok, assigned_zone ) => {
+const createPesonnel = async (user_id, role, first_name, last_name, email, contact_no, purok, assigned_zone) => {
+  // Check for duplicate email
+  const existingEmail = await Personnel.findOne({ email });
+  if (existingEmail) {
+    throw new BadRequestError('This email is already in use');
+  }
+
+  // Check for duplicate phone/contact number
+  const existingContact = await Personnel.findOne({ contact_no });
+  if (existingContact) {
+    throw new BadRequestError('This phone number is already registered');
+  }
+
+  // Check for duplicate full name
+  const existingFullName = await Personnel.findOne({ first_name, last_name });
+  if (existingFullName) {
+    throw new BadRequestError('A personnel with this full name already exists');
+  }
+
   const personnel = await Personnel.create({
     user_id,
     role,

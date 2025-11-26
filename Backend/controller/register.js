@@ -244,26 +244,51 @@ const registerResident = async (req, res) => {
 
 
  
-// e register and mga brgy personnel ani
+// Register barangay personnel
 const registerPersonnel = async (req, res) => {
-    const { 
-           username, 
-           password, 
-           role,
-           first_name, 
-           last_name, 
-           contact_no,
-           purok,
-           email,
-           assigned_zone, 
+  try {
+    const {
+      username,
+      password,
+      role,
+      first_name,
+      last_name,
+      contact_no,
+      purok,
+      email,
+      assigned_zone
+    } = req.body;
 
-        } = req.body;
+    // Validation: check required fields
+    if (!username || !password || !role || !first_name || !last_name || !contact_no || !purok || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required fields',
+        msg: 'Please provide all required fields'
+      });
+    }
 
+    // Create user account with error handling
+    let user;
+    try {
+      user = await createUser(username, password, role);
+    } catch (userError) {
+      // Handle duplicate username or other user creation errors
+      console.error('User creation error:', userError.message);
+      if (userError.message.includes('username')) {
+        return res.status(400).json({
+          success: false,
+          message: 'This username is already taken',
+          msg: 'This username is already taken'
+        });
+      }
+      throw userError;
+    }
 
-
-    const user = await createUser(username, password, role);
-    const personnel = await createPesonnel
-    (
+    // Create personnel record with error handling
+    let personnel;
+    try {
+      personnel = await createPesonnel(
         user._id,
         role,
         first_name,
@@ -271,29 +296,76 @@ const registerPersonnel = async (req, res) => {
         email,
         contact_no,
         purok,
-        assigned_zone,
-    ) 
+        assigned_zone
+      );
+    } catch (personnelError) {
+      // If personnel creation fails, delete the user we just created
+      await User.findByIdAndDelete(user._id);
 
-     const token = user.createJWT();
+      console.error('Personnel creation error:', personnelError.message);
 
-    res.status(StatusCodes.CREATED).json(
-     {PersonnelField:
-         {
-      message: 'Barangay Personnel successfully registered their account ',
-      user_id: user._id,
-      username: user.username,
-      personnel_id: personnel._id,
-      role: personnel.role,
-      contact_no: personnel.contact_no,
-      email: personnel.email,
-      purok: personnel.purok,
-      assigned_zone: personnel.assigned_zone,
-
-      token
+      // Check for duplicate email
+      if (personnelError.message.includes('email') || personnelError.code === 11000) {
+        if (personnelError.message.includes('email')) {
+          return res.status(400).json({
+            success: false,
+            message: 'This email is already in use',
+            msg: 'This email is already in use'
+          });
         }
+      }
+
+      // Check for duplicate full name
+      if (personnelError.message.includes('first_name') || personnelError.message.includes('full_name')) {
+        return res.status(400).json({
+          success: false,
+          message: 'A personnel with this full name already exists',
+          msg: 'A personnel with this full name already exists'
+        });
+      }
+
+      // Check for duplicate phone/contact
+      if (personnelError.message.includes('contact_no') || personnelError.message.includes('contact')) {
+        return res.status(400).json({
+          success: false,
+          message: 'This phone number is already registered',
+          msg: 'This phone number is already registered'
+        });
+      }
+
+      throw personnelError;
+    }
+
+    const token = user.createJWT();
+
+    res.status(StatusCodes.CREATED).json({
+      PersonnelField: {
+        message: 'Barangay Personnel successfully registered their account',
+        user_id: user._id,
+        username: user.username,
+        personnel_id: personnel._id,
+        role: personnel.role,
+        contact_no: personnel.contact_no,
+        email: personnel.email,
+        purok: personnel.purok,
+        assigned_zone: personnel.assigned_zone,
+        token
+      }
     });
 
+  } catch (error) {
+    console.error('❌ Personnel registration error:', error.message);
 
+    // Return error response with both message and msg fields for compatibility
+    const statusCode = error.statusCode || 400;
+    const errorMessage = error.message || 'Failed to create personnel';
+
+    res.status(statusCode).json({
+      success: false,
+      message: errorMessage,
+      msg: errorMessage
+    });
+  }
 }
 
  
