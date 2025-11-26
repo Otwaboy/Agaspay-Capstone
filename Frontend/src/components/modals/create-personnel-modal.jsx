@@ -106,6 +106,11 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       // If there are validation errors, show them
       if (Object.keys(validationErrors).length > 0) {
         setErrors(validationErrors);
+        // Show first validation error in toast
+        const firstError = Object.values(validationErrors)[0];
+        toast.error("Validation Error", {
+          description: firstError
+        });
         setIsLoading(false);
         return;
       }
