@@ -237,7 +237,13 @@ const registerResident = async (req, res) => {
     await session.abortTransaction();
     session.endSession();
     console.error("❌ Registration failed, all changes rolled back:", error);
-    res.status(400).json({ error: error.message });
+    const statusCode = error.statusCode || 400;
+    const errorMessage = error.message || 'Failed to create resident';
+    res.status(statusCode).json({
+      success: false,
+      message: errorMessage,
+      msg: errorMessage
+    });
   }
 };
 
