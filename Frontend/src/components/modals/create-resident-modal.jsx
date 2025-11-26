@@ -145,16 +145,16 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
     } catch (error) {
       console.error('❌ Error creating resident:', error);
-      
-      let errorMessage = error.message || "Failed to create resident. Please try again.";
+
+      let errorMessage = "Failed to create resident. Please try again.";
       let parsedErrors = {};
 
       // Try to parse the error response
-      if (error.response) {
+      if (error.response && error.response.data) {
         // If backend sends structured errors
-        if (error.response.data && error.response.data.errors) {
+        if (error.response.data.errors) {
           const backendErrors = error.response.data.errors;
-          
+
           if (backendErrors.username) {
             parsedErrors.username = backendErrors.username;
           }
@@ -167,24 +167,59 @@ export default function CreateResidentModal({ isOpen, onClose }) {
           if (backendErrors.contact_no || backendErrors.phone) {
             parsedErrors.phone = backendErrors.contact_no || backendErrors.phone;
           }
-        } 
-        // If backend sends error message string
-        else if (error.response.data && error.response.data.message) {
-          errorMessage = error.response.data.message;
-          parsedErrors = parseDuplicateKeyError(errorMessage);
         }
-      } 
+        // If backend sends error message string (check both 'message' and 'msg')
+        else if (error.response.data.message || error.response.data.msg) {
+          errorMessage = error.response.data.message || error.response.data.msg;
+
+          // Split multiple errors if they're separated by pipe (|)
+          const errorMessages = errorMessage.includes('|')
+            ? errorMessage.split('|').map(msg => msg.trim())
+            : [errorMessage];
+
+          // Parse specific backend error messages for field-specific errors
+          // Check all possible fields to support concurrent validation errors
+          errorMessages.forEach(msg => {
+            if (msg.toLowerCase().includes('username')) {
+              parsedErrors.username = msg;
+            }
+            if (msg.toLowerCase().includes('email')) {
+              parsedErrors.email = msg;
+            }
+            if (msg.toLowerCase().includes('meter')) {
+              parsedErrors.meterNumber = msg;
+            }
+            if (msg.toLowerCase().includes('phone') || msg.toLowerCase().includes('contact')) {
+              parsedErrors.phone = msg;
+            }
+          });
+
+          // If no specific field was matched, check for MongoDB E11000 errors as fallback
+          if (Object.keys(parsedErrors).length === 0) {
+            parsedErrors = parseDuplicateKeyError(errorMessage);
+          }
+        }
+      }
       // Parse error message directly if no response object
-      else if (errorMessage) {
+      else if (error.message && error.message !== "Server error (400)") {
+        errorMessage = error.message;
         parsedErrors = parseDuplicateKeyError(errorMessage);
       }
 
-      // Set the parsed errors to show below fields
+      // Show error notification
       if (Object.keys(parsedErrors).length > 0) {
         setErrors(parsedErrors);
-        // Don't show toast if we're showing field-specific errors
+        // Show field-specific error toast
+        toast.error("Validation Error", {
+          description: errorMessage
+        });
+      } else if (errorMessage && errorMessage !== "Failed to create resident. Please try again.") {
+        // Show actual backend error message
+        toast.error("Error", {
+          description: errorMessage
+        });
       } else {
-        // Only show toast if we couldn't parse specific field errors
+        // Show generic error only if we have no other info
         toast.error("Error", {
           description: errorMessage
         });
@@ -227,14 +262,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 placeholder="Enter first name"
                 required
                 data-testid="input-first-name"
-                className={errors.firstName ? "border-red-500 focus:ring-red-500" : ""}
+                className={errors.firstName ? "border-red-500 border-2 focus:ring-red-500" : ""}
               />
-              {errors.firstName && (
-                <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{errors.firstName}</span>
-                </div>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -246,14 +275,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 placeholder="Enter last name"
                 required
                 data-testid="input-last-name"
-                className={errors.lastName ? "border-red-500 focus:ring-red-500" : ""}
+                className={errors.lastName ? "border-red-500 border-2 focus:ring-red-500" : ""}
               />
-              {errors.lastName && (
-                <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{errors.lastName}</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -261,7 +284,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
           <div className="space-y-2">
             <Label htmlFor="zone">Zone</Label>
             <Select onValueChange={handleChange("zone")} required>
-              <SelectTrigger data-testid="select-zone" className={errors.zone ? "border-red-500 focus:ring-red-500" : ""}>
+              <SelectTrigger data-testid="select-zone" className={errors.zone ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select Zone" />
               </SelectTrigger>
               <SelectContent>
@@ -270,12 +293,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 <SelectItem value="3">Biking 3</SelectItem>
               </SelectContent>
             </Select>
-            {errors.zone && (
-              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{errors.zone}</span>
-              </div>
-            )}
           </div>
 
           {/* selecting purok para sa resident*/}
@@ -284,7 +301,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               <>
                 <Label htmlFor="purok">Purok</Label>
                 <Select onValueChange={handleChange("purok")} required>
-                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 focus:ring-red-500" : ""}>
+                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
                   <SelectContent>
@@ -293,12 +310,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     <SelectItem value="6">Purok 6</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.purok && (
-                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{errors.purok}</span>
-                  </div>
-                )}
               </>
             )}
             {/* zone 2 */}
@@ -306,7 +317,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               <>
                 <Label htmlFor="purok">Purok</Label>
                 <Select onValueChange={handleChange("purok")} required>
-                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 focus:ring-red-500" : ""}>
+                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
                   <SelectContent>
@@ -315,12 +326,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     <SelectItem value="3">Purok 3</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.purok && (
-                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{errors.purok}</span>
-                  </div>
-                )}
               </>
             )}
             {/* zone 3 */}
@@ -328,19 +333,13 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               <>
                 <Label htmlFor="purok">Purok</Label>
                 <Select onValueChange={handleChange("purok")} required>
-                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 focus:ring-red-500" : ""}>
+                  <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="7">Purok 7</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.purok && (
-                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{errors.purok}</span>
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -354,14 +353,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               onChange={(e) => handleChange("email")(e.target.value)}
               placeholder="Enter email address (Optional)"
               data-testid="input-email"
-              className={errors.email ? "border-red-500 focus:ring-red-500" : ""}
+              className={errors.email ? "border-red-500 border-2 focus:ring-red-500" : ""}
             />
-            {errors.email && (
-              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{errors.email}</span>
-              </div>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -373,20 +366,14 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               placeholder="Enter phone number"
               required
               data-testid="input-phone"
-              className={errors.phone ? "border-red-500 focus:ring-red-500" : ""}
+              className={errors.phone ? "border-red-500 border-2 focus:ring-red-500" : ""}
             />
-            {errors.phone && (
-              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{errors.phone}</span>
-              </div>
-            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="type">Type</Label>
             <Select onValueChange={handleChange("type")} required>
-              <SelectTrigger data-testid="select-type" className={errors.type ? "border-red-500 focus:ring-red-500" : ""}>
+              <SelectTrigger data-testid="select-type" className={errors.type ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
@@ -396,12 +383,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 <SelectItem value="others">Others</SelectItem>
               </SelectContent>
             </Select>
-            {errors.type && (
-              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{errors.type}</span>
-              </div>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -413,14 +394,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               placeholder="Enter water meter number"
               required
               data-testid="input-meter-number"
-              className={errors.meterNumber ? "border-red-500 focus:ring-red-500" : ""}
+              className={errors.meterNumber ? "border-red-500 border-2 focus:ring-red-500" : ""}
             />
-            {errors.meterNumber && (
-              <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{errors.meterNumber}</span>
-              </div>
-            )}
           </div>
 
           {/* Water Connection Zone and Purok */}
@@ -434,7 +409,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             <div className="space-y-2 mb-4">
               <Label htmlFor="connectionZone">Water Connection Zone <span className="text-red-500">*</span></Label>
               <Select onValueChange={handleChange("connectionZone")} required>
-                <SelectTrigger data-testid="select-connection-zone" className={errors.connectionZone ? "border-red-500 focus:ring-red-500" : ""}>
+                <SelectTrigger data-testid="select-connection-zone" className={errors.connectionZone ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                   <SelectValue placeholder="Select Zone" />
                 </SelectTrigger>
                 <SelectContent>
@@ -443,12 +418,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   <SelectItem value="3">Biking 3</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.connectionZone && (
-                <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{errors.connectionZone}</span>
-                </div>
-              )}
             </div>
 
             {/* Connection Purok - Conditional based on selected Zone */}
@@ -456,7 +425,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               <div className="space-y-2">
                 <Label htmlFor="connectionPurok">Water Connection Purok <span className="text-red-500">*</span></Label>
                 <Select onValueChange={handleChange("connectionPurok")} required>
-                  <SelectTrigger data-testid="select-connection-purok" className={errors.connectionPurok ? "border-red-500 focus:ring-red-500" : ""}>
+                  <SelectTrigger data-testid="select-connection-purok" className={errors.connectionPurok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
                   <SelectContent>
@@ -479,12 +448,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     )}
                   </SelectContent>
                 </Select>
-                {errors.connectionPurok && (
-                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{errors.connectionPurok}</span>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -507,14 +470,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   placeholder="Enter username for login"
                   required
                   data-testid="input-username"
-                  className={errors.username ? "border-red-500 focus:ring-red-500" : ""}
+                  className={errors.username ? "border-red-500 border-2 focus:ring-red-500" : ""}
                 />
-                {errors.username && (
-                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{errors.username}</span>
-                  </div>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -528,7 +485,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     placeholder="Enter password (min 6 characters)"
                     required
                     data-testid="input-password"
-                    className={errors.password ? "border-red-500 focus:ring-red-500" : ""}
+                    className={errors.password ? "border-red-500 border-2 focus:ring-red-500" : ""}
                   />
                   <Button
                     type="button"
@@ -545,12 +502,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     )}
                   </Button>
                 </div>
-                {errors.password && (
-                  <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{errors.password}</span>
-                  </div>
-                )}
                 {!errors.password && (
                   <p className="text-xs text-gray-500">
                     This account will allow the resident to log into the system
