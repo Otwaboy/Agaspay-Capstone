@@ -172,21 +172,29 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         else if (error.response.data.message || error.response.data.msg) {
           errorMessage = error.response.data.message || error.response.data.msg;
 
+          // Split multiple errors if they're separated by pipe (|)
+          const errorMessages = errorMessage.includes('|')
+            ? errorMessage.split('|').map(msg => msg.trim())
+            : [errorMessage];
+
           // Parse specific backend error messages for field-specific errors
           // Check all possible fields to support concurrent validation errors
-          if (errorMessage.includes('username') || errorMessage.includes('Username')) {
-            parsedErrors.username = errorMessage;
-          }
-          if (errorMessage.includes('email') || errorMessage.includes('Email')) {
-            parsedErrors.email = errorMessage;
-          }
-          if (errorMessage.includes('phone') || errorMessage.includes('contact') || errorMessage.includes('Contact')) {
-            parsedErrors.phone = errorMessage;
-          }
-          if (errorMessage.includes('full name') || errorMessage.includes('Full Name')) {
-            parsedErrors.firstName = errorMessage;
-            parsedErrors.lastName = errorMessage;
-          }
+          errorMessages.forEach(msg => {
+            if (msg.includes('username') || msg.includes('Username')) {
+              parsedErrors.username = msg;
+            }
+            if (msg.includes('email') || msg.includes('Email')) {
+              parsedErrors.email = msg;
+            }
+            if (msg.includes('phone') || msg.includes('contact') || msg.includes('Contact')) {
+              parsedErrors.phone = msg;
+            }
+            if (msg.includes('full name') || msg.includes('Full Name')) {
+              parsedErrors.firstName = msg;
+              parsedErrors.lastName = msg;
+            }
+          });
+
           // If no specific field was matched, check for MongoDB E11000 errors as fallback
           if (Object.keys(parsedErrors).length === 0) {
             parsedErrors = parseDuplicateKeyError(errorMessage);
