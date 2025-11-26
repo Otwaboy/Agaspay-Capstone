@@ -11,7 +11,6 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Checkbox } from "../ui/checkbox";
 import { toast } from "sonner";
 import { authManager } from "../../lib/auth";
 import { Eye, EyeOff } from "lucide-react";
@@ -27,56 +26,119 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
     purok: "",
     assignedZone: "",
     username: "",
-    password: "",
-    createAccount: false
+    password: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
 
+
+  // Parse MongoDB duplicate key error and backend validation errors
+  const parseDuplicateKeyError = (errorMessage) => {
+    const newErrors = {};
+
+    // Check for backend custom validation messages
+    const lowerMessage = errorMessage.toLowerCase();
+
+    if (lowerMessage.includes('name') && (lowerMessage.includes('exist') || lowerMessage.includes('already') || lowerMessage.includes('duplicate'))) {
+      // Full name duplication
+      newErrors.firstName = "This full name already exists. Please use a different name.";
+      newErrors.lastName = "This full name already exists. Please use a different name.";
+    } else if (lowerMessage.includes('username')) {
+      newErrors.username = "This username is already taken. Please choose a different username.";
+    } else if (lowerMessage.includes('email')) {
+      newErrors.email = "This email is already in use. Please use a different email.";
+    } else if (lowerMessage.includes('phone') || lowerMessage.includes('contact')) {
+      newErrors.phone = "This phone number is already registered. Please use a different phone number.";
+    }
+    // Check for MongoDB E11000 duplicate key errors
+    else if (errorMessage.includes('E11000 duplicate key error')) {
+      if (errorMessage.includes('username_1')) {
+        newErrors.username = "This username is already taken. Please choose a different username.";
+      } else if (errorMessage.includes('email_1')) {
+        newErrors.email = "This email is already in use. Please use a different email.";
+      } else if (errorMessage.includes('contact_no_1')) {
+        newErrors.phone = "This phone number is already registered. Please use a different phone number.";
+      } else if (errorMessage.includes('first_name') || errorMessage.includes('full_name')) {
+        newErrors.firstName = "This full name already exists. Please use a different name.";
+        newErrors.lastName = "This full name already exists. Please use a different name.";
+      }
+    }
+
+    return newErrors;
+  };
 
   // functions when submmiting the button
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({}); // Clear previous errors
 
     try {
-      // If create account is checked, validate account fields and create account first
-      if (formData.createAccount) {
-        if (!formData.username || !formData.password) {
-          toast.error("Validation Error", {
-            description: "Username and password are required when creating an account"
-          });
-          return;
-        }
+      // Client-side validation
+      const validationErrors = {};
 
-        if (formData.password.length < 6) {
-          toast.error("Validation Error", {
-            description: "Password must be at least 6 characters long"
-          });
-          return;
-        }
-
-
-  // Create account using authManager which is masave sya sa database
-        const accountData = {
-          username: formData.username,
-          password: formData.password,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          purok: formData.purok,
-          contact_no: formData.phone,
-          role: formData.role, ...(formData.role === 'meter_reader' && {assigned_zone : formData.assignedZone})
-        };
-        await authManager.createAccount(accountData);
+      if (!formData.firstName.trim()) {
+        validationErrors.firstName = "First name is required";
       }
 
-      // Simulate personnel creation (this would normally be a separate API call)
-      // await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const successMessage = formData.createAccount
-        ? `${formData.firstName} ${formData.lastName} has been added as ${formData.role} with login account created`
-        : `${formData.firstName} ${formData.lastName} has been added as ${formData.role}`;
+      if (!formData.lastName.trim()) {
+        validationErrors.lastName = "Last name is required";
+      }
+
+      if (!formData.email.trim()) {
+        validationErrors.email = "Email is required";
+      }
+
+      if (!formData.phone.trim()) {
+        validationErrors.phone = "Phone number is required";
+      }
+
+      if (!formData.role) {
+        validationErrors.role = "Role is required";
+      }
+
+      if (!formData.purok) {
+        validationErrors.purok = "Purok is required";
+      }
+
+      if (formData.role === 'meter_reader' && !formData.assignedZone) {
+        validationErrors.assignedZone = "Assigned zone is required for meter readers";
+      }
+
+      // Username and password are always required (for login purposes)
+      if (!formData.username.trim()) {
+        validationErrors.username = "Username is required";
+      }
+
+      if (!formData.password) {
+        validationErrors.password = "Password is required";
+      } else if (formData.password.length < 6) {
+        validationErrors.password = "Password must be at least 6 characters long";
+      }
+
+      // If there are validation errors, show them
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        setIsLoading(false);
+        return;
+      }
+
+      // Create account with username and password (always required)
+      const accountData = {
+        username: formData.username,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        purok: formData.purok,
+        contact_no: formData.phone,
+        role: formData.role,
+        ...(formData.role === 'meter_reader' && { assigned_zone: formData.assignedZone })
+      };
+      await authManager.createAccount(accountData);
+
+      const successMessage = `${formData.firstName} ${formData.lastName} has been added as ${formData.role} with login account created`;
 
       toast.success("Personnel Created Successfully", {
         description: successMessage
@@ -92,16 +154,65 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         purok: "",
         assignedZone: "",
         username: "",
-        password: "",
-        createAccount: false
+        password: ""
       });
-      
+      setErrors({});
+
       onClose();
 
     } catch (error) {
-      toast.error("Error", {
-        description: error.message || "Failed to create personnel. Please try again."
-      });
+      console.error('❌ Error creating personnel:', error);
+
+      let errorMessage = "Failed to create personnel. Please try again.";
+      let parsedErrors = {};
+
+      // Try to parse the error response
+      if (error.response && error.response.data) {
+        // If backend sends structured errors
+        if (error.response.data.errors) {
+          const backendErrors = error.response.data.errors;
+
+          if (backendErrors.username) {
+            parsedErrors.username = backendErrors.username;
+          }
+          if (backendErrors.email) {
+            parsedErrors.email = backendErrors.email;
+          }
+          if (backendErrors.contact_no || backendErrors.phone) {
+            parsedErrors.phone = backendErrors.contact_no || backendErrors.phone;
+          }
+        }
+        // If backend sends error message string (check both 'message' and 'msg')
+        else if (error.response.data.message || error.response.data.msg) {
+          errorMessage = error.response.data.message || error.response.data.msg;
+          parsedErrors = parseDuplicateKeyError(errorMessage);
+        }
+      }
+      // Parse error message directly if no response object
+      else if (error.message && error.message !== "Server error (400)") {
+        errorMessage = error.message;
+        parsedErrors = parseDuplicateKeyError(errorMessage);
+      }
+
+      // Set the parsed errors to show below fields
+      if (Object.keys(parsedErrors).length > 0) {
+        setErrors(parsedErrors);
+        // Show field-specific error toast
+        const firstError = Object.values(parsedErrors)[0];
+        toast.error("Validation Error", {
+          description: firstError
+        });
+      } else if (errorMessage && errorMessage !== "Failed to create personnel. Please try again.") {
+        // Show actual backend error message
+        toast.error("Error", {
+          description: errorMessage
+        });
+      } else {
+        // Show generic error only if we have no other info
+        toast.error("Error", {
+          description: errorMessage
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -117,6 +228,14 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
 
   const handleChange = (field) => (value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
 
@@ -143,6 +262,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
                 placeholder="Enter first name"
                 required
                 data-testid="input-first-name"
+                className={errors.firstName ? "border-red-500 focus:ring-red-500" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -154,6 +274,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
                 placeholder="Enter last name"
                 required
                 data-testid="input-last-name"
+                className={errors.lastName ? "border-red-500 focus:ring-red-500" : ""}
               />
             </div>
           </div>
@@ -161,8 +282,8 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         {/* selecting purok para sa personnel*/}
           <div className="space-y-2">
             <Label htmlFor="purok">Purok</Label>
-            <Select  onValueChange={handleChange("purok")} required>
-              <SelectTrigger data-testid="select-purok">
+            <Select onValueChange={handleChange("purok")} required>
+              <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select Purok" />
               </SelectTrigger>
               <SelectContent>
@@ -176,7 +297,6 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
               </SelectContent>
             </Select>
           </div>
-  
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -188,6 +308,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
               placeholder="Enter email address"
               required
               data-testid="input-email"
+              className={errors.email ? "border-red-500 focus:ring-red-500" : ""}
             />
           </div>
 
@@ -200,6 +321,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
               placeholder="Enter phone number"
               required
               data-testid="input-phone"
+              className={errors.phone ? "border-red-500 focus:ring-red-500" : ""}
             />
           </div>
 
@@ -207,7 +329,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
             <Select onValueChange={handleChange("role")} required>
-              <SelectTrigger data-testid="select-role">
+              <SelectTrigger data-testid="select-role" className={errors.role ? "border-red-500 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
@@ -221,12 +343,12 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           </div>
 
 
-{/* assigning  zone if the role is meter reader */} 
+{/* assigning  zone if the role is meter reader */}
       {formData.role === 'meter_reader' && (
           <div className="space-y-2">
             <Label htmlFor="assignedZone">Assigned Zone</Label>
             <Select onValueChange={handleChange("assignedZone")} required>
-              <SelectTrigger data-testid="select-zone">
+              <SelectTrigger data-testid="select-zone" className={errors.assignedZone ? "border-red-500 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select zone" />
               </SelectTrigger>
               <SelectContent>
@@ -239,69 +361,55 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       )}
 
 
-  {/* Account Creation Section */}
+  {/* Account Creation Section - Username and Password are always required */}
           <div className="border-t pt-4 mt-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <Checkbox
-                id="createAccount"
-                checked={formData.createAccount}
-                onCheckedChange={(checked) => handleChange("createAccount")(checked)}
-                data-testid="checkbox-create-account"
-              />
-              <Label htmlFor="createAccount" className="text-sm font-medium">
-                Create login account for this personnel
-              </Label>
-            </div>
-           
-
-      {/* this line of code mo render sya if formData.createAccount is true */}
-            {formData.createAccount && (
-              <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={(e) => handleChange("username")(e.target.value)}
-                    placeholder="Enter username for login"
-                    required={formData.createAccount}
-                    data-testid="input-username"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) => handleChange("password")(e.target.value)}
-                      placeholder="Enter password (min 6 characters)"
-                      required={formData.createAccount}
-                      data-testid="input-password"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                      data-testid="button-toggle-password"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    This account will allow the personnel to log into the system
-                  </p>
-                </div>
+            <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username <span className="text-red-500">*</span></Label>
+                <Input
+                  id="username"
+                  value={formData.username}
+                  onChange={(e) => handleChange("username")(e.target.value)}
+                  placeholder="Enter username for login"
+                  required
+                  data-testid="input-username"
+                  className={errors.username ? "border-red-500 focus:ring-red-500" : ""}
+                />
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password <span className="text-red-500">*</span></Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => handleChange("password")(e.target.value)}
+                    placeholder="Enter password (min 6 characters)"
+                    required
+                    data-testid="input-password"
+                    className={errors.password ? "border-red-500 focus:ring-red-500" : ""}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                    data-testid="button-toggle-password"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Personnel login credentials. Password must be at least 6 characters.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
