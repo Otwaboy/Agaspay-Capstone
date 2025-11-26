@@ -173,18 +173,22 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           errorMessage = error.response.data.message || error.response.data.msg;
 
           // Parse specific backend error messages for field-specific errors
+          // Check all possible fields to support concurrent validation errors
           if (errorMessage.includes('username') || errorMessage.includes('Username')) {
             parsedErrors.username = errorMessage;
-          } else if (errorMessage.includes('email') || errorMessage.includes('Email')) {
+          }
+          if (errorMessage.includes('email') || errorMessage.includes('Email')) {
             parsedErrors.email = errorMessage;
-          } else if (errorMessage.includes('phone') || errorMessage.includes('contact') || errorMessage.includes('Contact')) {
+          }
+          if (errorMessage.includes('phone') || errorMessage.includes('contact') || errorMessage.includes('Contact')) {
             parsedErrors.phone = errorMessage;
-          } else if (errorMessage.includes('full name') || errorMessage.includes('Full Name')) {
+          }
+          if (errorMessage.includes('full name') || errorMessage.includes('Full Name')) {
             parsedErrors.firstName = errorMessage;
             parsedErrors.lastName = errorMessage;
           }
-          // Also check for MongoDB E11000 errors as fallback
-          else {
+          // If no specific field was matched, check for MongoDB E11000 errors as fallback
+          if (Object.keys(parsedErrors).length === 0) {
             parsedErrors = parseDuplicateKeyError(errorMessage);
           }
         }

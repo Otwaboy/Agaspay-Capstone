@@ -53,25 +53,34 @@ const createPesonnel = async (user_id, role, first_name, last_name, email, conta
   const trimmedFirstName = first_name.trim();
   const trimmedLastName = last_name.trim();
 
-  // Check for duplicate email
-  const existingEmail = await Personnel.findOne({ email });
+  // Check all duplicate fields concurrently to collect all validation errors
+  const [existingEmail, existingContact, existingFullName] = await Promise.all([
+    Personnel.findOne({ email }),
+    Personnel.findOne({ contact_no }),
+    Personnel.findOne({
+      first_name: { $regex: `^${trimmedFirstName}$`, $options: 'i' },
+      last_name: { $regex: `^${trimmedLastName}$`, $options: 'i' }
+    })
+  ]);
+
+  // Collect all validation errors
+  const validationErrors = [];
+
   if (existingEmail) {
-    throw new BadRequestError('This email is already in use');
+    validationErrors.push('This email is already in use');
   }
 
-  // Check for duplicate phone/contact number
-  const existingContact = await Personnel.findOne({ contact_no });
   if (existingContact) {
-    throw new BadRequestError('This phone number is already registered');
+    validationErrors.push('This phone number is already registered');
   }
 
-  // Check for duplicate full name (case-insensitive)
-  const existingFullName = await Personnel.findOne({
-    first_name: { $regex: `^${trimmedFirstName}$`, $options: 'i' },
-    last_name: { $regex: `^${trimmedLastName}$`, $options: 'i' }
-  });
   if (existingFullName) {
-    throw new BadRequestError('A personnel with this full name already exists');
+    validationErrors.push('A personnel with this full name already exists');
+  }
+
+  // If there are any validation errors, throw them all together
+  if (validationErrors.length > 0) {
+    throw new BadRequestError(validationErrors.join(' | '));
   }
 
   const personnel = await Personnel.create({

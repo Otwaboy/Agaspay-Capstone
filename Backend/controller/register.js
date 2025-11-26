@@ -308,36 +308,14 @@ const registerPersonnel = async (req, res) => {
 
       console.error('Personnel creation error:', personnelError.message);
 
-      // Check for duplicate email
-      if (personnelError.message.includes('email') || personnelError.code === 11000) {
-        if (personnelError.message.includes('email')) {
-          return res.status(400).json({
-            success: false,
-            message: 'This email is already in use',
-            msg: 'This email is already in use'
-          });
-        }
-      }
-
-      // Check for duplicate full name
-      if (personnelError.message.includes('first_name') || personnelError.message.includes('full_name')) {
-        return res.status(400).json({
-          success: false,
-          message: 'A personnel with this full name already exists',
-          msg: 'A personnel with this full name already exists'
-        });
-      }
-
-      // Check for duplicate phone/contact
-      if (personnelError.message.includes('contact_no') || personnelError.message.includes('contact')) {
-        return res.status(400).json({
-          success: false,
-          message: 'This phone number is already registered',
-          msg: 'This phone number is already registered'
-        });
-      }
-
-      throw personnelError;
+      // Return the error message as-is from createPesonnel
+      // which contains specific field information (email, phone, full name, etc.)
+      const errorMessage = personnelError.message || 'Failed to create personnel';
+      return res.status(400).json({
+        success: false,
+        message: errorMessage,
+        msg: errorMessage
+      });
     }
 
     const token = user.createJWT();
