@@ -192,6 +192,10 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             if (msg.toLowerCase().includes('phone') || msg.toLowerCase().includes('contact')) {
               parsedErrors.phone = msg;
             }
+            if (msg.toLowerCase().includes('full name')) {
+              parsedErrors.firstName = msg;
+              parsedErrors.lastName = msg;
+            }
           });
 
           // If no specific field was matched, check for MongoDB E11000 errors as fallback
