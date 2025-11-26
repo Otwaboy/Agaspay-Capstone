@@ -268,6 +268,10 @@ const registerPersonnel = async (req, res) => {
       });
     }
 
+    // Trim whitespace from names for consistency
+    const trimmedFirstName = first_name.trim();
+    const trimmedLastName = last_name.trim();
+
     // Create user account with error handling
     let user;
     try {
@@ -291,8 +295,8 @@ const registerPersonnel = async (req, res) => {
       personnel = await createPesonnel(
         user._id,
         role,
-        first_name,
-        last_name,
+        trimmedFirstName,
+        trimmedLastName,
         email,
         contact_no,
         purok,

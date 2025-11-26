@@ -49,6 +49,10 @@ const createWaterConnection = async (resident_id, meter_no, type, zone, purok) =
 };
 
 const createPesonnel = async (user_id, role, first_name, last_name, email, contact_no, purok, assigned_zone) => {
+  // Trim whitespace from names
+  const trimmedFirstName = first_name.trim();
+  const trimmedLastName = last_name.trim();
+
   // Check for duplicate email
   const existingEmail = await Personnel.findOne({ email });
   if (existingEmail) {
@@ -61,8 +65,11 @@ const createPesonnel = async (user_id, role, first_name, last_name, email, conta
     throw new BadRequestError('This phone number is already registered');
   }
 
-  // Check for duplicate full name
-  const existingFullName = await Personnel.findOne({ first_name, last_name });
+  // Check for duplicate full name (case-insensitive)
+  const existingFullName = await Personnel.findOne({
+    first_name: { $regex: `^${trimmedFirstName}$`, $options: 'i' },
+    last_name: { $regex: `^${trimmedLastName}$`, $options: 'i' }
+  });
   if (existingFullName) {
     throw new BadRequestError('A personnel with this full name already exists');
   }
@@ -70,8 +77,8 @@ const createPesonnel = async (user_id, role, first_name, last_name, email, conta
   const personnel = await Personnel.create({
     user_id,
     role,
-    first_name,
-    last_name,
+    first_name: trimmedFirstName,
+    last_name: trimmedLastName,
     email,
     purok,
     contact_no,
