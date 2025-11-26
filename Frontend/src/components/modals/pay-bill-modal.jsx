@@ -93,6 +93,9 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
                     previousReading: billToPay.previous_reading,
                     consumption: billToPay.calculated,
                     totalAmount: billToPay.total_amount,
+                    originalAmount: billToPay.total_amount,
+                    amountPaid: billToPay.amount_paid || 0,
+                    remainingBalance: billToPay.balance || (billToPay.total_amount - (billToPay.amount_paid || 0)),
                 }
               };
               console.log("✅ Modal query result:", result);
@@ -185,7 +188,7 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
     // Calculate the amount to pay based on payment type
     const amountToPay = formData.paymentType === 'partial'
       ? parseFloat(formData.partialAmount)
-      : billingData.billDetails.totalAmount;
+      : billingData.billDetails.remainingBalance;
 
     const paymentData = {
       bill_id: billingData.billDetails.id,   // ✅ real bill id from backend
@@ -307,13 +310,31 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
             </div>
           </div>
           <hr className="my-3" />
-          <div className="flex justify-between text-lg font-bold">
-            <span>Total Amount Due:</span>
-            <span>
-              ₱{billingData?.billDetails?.totalAmount !== undefined
-                ? billingData.billDetails.totalAmount.toFixed(2)
-                : "Loading..."}
-            </span>
+          <div className="space-y-2">
+            {billingData?.billDetails?.amountPaid > 0 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Original Total:</span>
+                  <span>
+                    ₱{billingData?.billDetails?.originalAmount?.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Already Paid:</span>
+                  <span className="text-green-600">
+                    -₱{billingData?.billDetails?.amountPaid?.toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between text-lg font-bold border-t pt-2">
+              <span>Remaining Balance Due:</span>
+              <span className="text-blue-600">
+                ₱{billingData?.billDetails?.remainingBalance !== undefined
+                  ? billingData.billDetails.remainingBalance.toFixed(2)
+                  : "Loading..."}
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -342,11 +363,17 @@ const renderPaymentType = () => (
       <CardContent className="pt-6">
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Total Amount Due:</span>
+            <span className="text-gray-600">Remaining Balance Due:</span>
             <span className="font-semibold text-gray-900">
-              ₱{billingData?.billDetails?.totalAmount?.toFixed(2)}
+              ₱{billingData?.billDetails?.remainingBalance?.toFixed(2)}
             </span>
           </div>
+          {billingData?.billDetails?.amountPaid > 0 && (
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>Original Total: ₱{billingData?.billDetails?.originalAmount?.toFixed(2)}</span>
+              <span>Already Paid: ₱{billingData?.billDetails?.amountPaid?.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Account Name:</span>
             <span className="font-medium">{billingData?.billDetails?.accountName}</span>
@@ -381,9 +408,9 @@ const renderPaymentType = () => (
                 <Wallet className="h-5 w-5 text-blue-600" />
                 <p className="font-semibold text-gray-900">Full Payment</p>
               </div>
-              <p className="text-sm text-gray-600 mt-1">Pay the complete bill amount</p>
+              <p className="text-sm text-gray-600 mt-1">Pay the remaining balance in full</p>
               <p className="text-lg font-bold text-blue-600 mt-2">
-                ₱{billingData?.billDetails?.totalAmount?.toFixed(2)}
+                ₱{billingData?.billDetails?.remainingBalance?.toFixed(2)}
               </p>
             </div>
             {formData.paymentType === 'full' && (
@@ -419,7 +446,7 @@ const renderPaymentType = () => (
                       type="number"
                       step="0.01"
                       min="1"
-                      max={billingData?.billDetails?.totalAmount}
+                      max={billingData?.billDetails?.remainingBalance}
                       value={formData.partialAmount}
                       onChange={(e) => handleChange("partialAmount")(e.target.value)}
                       className="pl-7"
@@ -428,12 +455,12 @@ const renderPaymentType = () => (
                     />
                   </div>
                   <p className="text-xs text-gray-500">
-                    Maximum: ₱{billingData?.billDetails?.totalAmount?.toFixed(2)}
+                    Maximum: ₱{billingData?.billDetails?.remainingBalance?.toFixed(2)}
                   </p>
                   {formData.partialAmount && parseFloat(formData.partialAmount) > 0 && (
                     <p className="text-sm font-medium text-orange-600">
                       Remaining balance after payment: ₱
-                      {(billingData?.billDetails?.totalAmount - parseFloat(formData.partialAmount)).toFixed(2)}
+                      {(billingData?.billDetails?.remainingBalance - parseFloat(formData.partialAmount)).toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -546,13 +573,13 @@ const renderPaymentType = () => (
             {formData.paymentType === 'partial' && (
               <>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Total Bill:</span>
-                  <span>₱{billingData?.billDetails?.totalAmount?.toFixed(2) || "0.00"}</span>
+                  <span className="text-gray-600">Current Balance:</span>
+                  <span>₱{billingData?.billDetails?.remainingBalance?.toFixed(2) || "0.00"}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">Remaining After Payment:</span>
                   <span className="text-orange-600 font-medium">
-                    ₱{(billingData?.billDetails?.totalAmount ? (billingData.billDetails.totalAmount - parseFloat(formData.partialAmount)) : 0).toFixed(2)}
+                    ₱{(billingData?.billDetails?.remainingBalance ? (billingData.billDetails.remainingBalance - parseFloat(formData.partialAmount)) : 0).toFixed(2)}
                   </span>
                 </div>
               </>
@@ -562,7 +589,7 @@ const renderPaymentType = () => (
               <span className="text-2xl font-bold text-blue-600">
                 ₱{formData.paymentType === 'partial'
                   ? parseFloat(formData.partialAmount).toFixed(2)
-                  : billingData.billDetails.totalAmount.toFixed(2)}
+                  : billingData.billDetails.remainingBalance.toFixed(2)}
               </span>
             </div>
           </div>
@@ -581,7 +608,7 @@ const renderPaymentType = () => (
         >
           {isLoading ? "Processing..." : !billingData?.billDetails?.id ? "Loading..." : `Pay ₱${formData.paymentType === 'partial'
             ? parseFloat(formData.partialAmount).toFixed(2)
-            : billingData.billDetails.totalAmount.toFixed(2)}`}
+            : billingData.billDetails.remainingBalance.toFixed(2)}`}
         </Button>
       </div>
     </div>
@@ -655,13 +682,13 @@ const renderPaymentType = () => (
               {formData.paymentType === 'partial' && (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Bill:</span>
-                    <span className="font-medium">₱{billingData.billDetails.totalAmount.toFixed(2)}</span>
+                    <span className="text-gray-600">Current Balance:</span>
+                    <span className="font-medium">₱{billingData.billDetails.remainingBalance.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Remaining Balance:</span>
+                    <span className="text-gray-600">Remaining Balance After Payment:</span>
                     <span className="font-medium text-orange-600">
-                      ₱{(billingData.billDetails.totalAmount - amountPaid).toFixed(2)}
+                      ₱{(billingData.billDetails.remainingBalance - amountPaid).toFixed(2)}
                     </span>
                   </div>
                 </>

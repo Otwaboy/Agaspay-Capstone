@@ -70,41 +70,81 @@ router.post("/", async (req, res) => {
     // No need for additional billing-level duplicate check here
 
     const amountPaid = billing.pending_amount || billing.total_amount;
-    const isPartial = amountPaid < billing.total_amount;
+    const previousAmountPaid = billing.amount_paid || 0;
+    const newAmountPaid = previousAmountPaid + amountPaid;
+    const newBalance = billing.total_amount - newAmountPaid;
 
-    console.log("💰 [Webhook] Processing payment - Total:", billing.total_amount, "Pending:", billing.pending_amount, "Amount to pay:", amountPaid, "Is Partial:", isPartial);
+    console.log("💰 [Webhook] Processing payment - Total:", billing.total_amount, "Previous Paid:", previousAmountPaid, "Amount to pay:", amountPaid, "New Total Paid:", newAmountPaid, "New Balance:", newBalance);
 
     const paymentMethodUsed =
       data?.attributes?.payment_method_used ||
       data?.attributes?.payments?.[0]?.attributes?.source?.type ||
       "gcash";
 
+    // Determine payment type and billing status based on remaining balance
+    let payment_type;
+    let new_billing_status;
+    let payment_status; // Payment status for the Payment record
+
+    if (newBalance === 0) {
+      // Full payment: automatically mark as confirmed since bill is fully paid
+      payment_type = 'full';
+      new_billing_status = 'paid';
+      payment_status = 'confirmed';
+    } else {
+      // Partial payment: keep as pending, only treasurer can confirm
+      payment_type = 'partial';
+      new_billing_status = 'partial';
+      payment_status = 'pending'; // Treasurer must confirm partial payments
+    }
+
     // Create payment record
-    // ✅ Payment status should be pending (for full) or partially_paid (for partial)
-    // Treasurer will confirm it later - not automatically
     const payment = await Payment.create({
       bill_id: billing._id,
       amount_paid: amountPaid,
       payment_method: paymentMethodUsed,
-      payment_type: isPartial ? "partial" : "full",
-      payment_status: isPartial ? "partially_paid" : "pending",
+      payment_type: payment_type,
+      payment_status: payment_status, // Partial payments are 'pending' until treasurer confirms
       payment_reference: paymentReference,
     });
 
     // Update billing
     const oldStatus = billing.status;
     const oldAmountPaid = billing.amount_paid;
-    billing.status = isPartial ? "partial" : "paid";
-    billing.amount_paid = (billing.amount_paid || 0) + amountPaid;
+    billing.status = new_billing_status;
+    billing.amount_paid = newAmountPaid;
+    billing.balance = newBalance;
     billing.current_payment_intent = null;
     billing.current_checkout_session = null;
     billing.pending_amount = null;
     await billing.save();
 
+    // ✅ If bill is fully paid, mark all bills included in its previous_balance as paid
+    // This implements cascade payment logic for online payments (same as manual payments)
+    if (newBalance === 0 && billing.previous_balance > 0) {
+      const olderBills = await Billing.find({
+        connection_id: billing.connection_id,
+        status: { $in: ['unpaid', 'partial', 'consolidated'] },
+        generated_at: { $lt: billing.generated_at }
+      }).sort({ generated_at: -1 });
+
+      if (olderBills.length > 0) {
+        await Billing.updateMany(
+          {
+            connection_id: billing.connection_id,
+            status: { $in: ['unpaid', 'partial', 'consolidated'] },
+            generated_at: { $lt: billing.generated_at }
+          },
+          { $set: { status: 'paid' } }
+        );
+        console.log(`✅ [Webhook] Marked ${olderBills.length} older bills as paid because they're included in this bill's previous_balance`);
+      }
+    }
+
     console.log("✅ [Webhook] Payment processed and billing updated:");
     console.log("   - Status: %s → %s", oldStatus, billing.status);
     console.log("   - Amount Paid: %d → %d", oldAmountPaid, billing.amount_paid);
-    console.log("   - Balance: %d", billing.total_amount - billing.amount_paid);
+    console.log("   - Balance: %d", newBalance);
     console.log("   - Payment ID:", payment._id);
     console.log("   - Billing ID:", billing._id);
 

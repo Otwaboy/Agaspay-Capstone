@@ -148,14 +148,7 @@ export default function ResidentRecentTransactions({ connectionId }) {
                       {transaction.status}
                     </Badge>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <Button variant="outline" size="sm" className="p-2">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="p-2">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
+                 
                 </div>
               </div>
             ))}
@@ -174,7 +167,7 @@ export default function ResidentRecentTransactions({ connectionId }) {
           </div>
         </div>
         <Button variant="outline" className="w-full">
-          Download Payment History
+         Recent Transactions History
         </Button>
       </CardContent>
     </Card>

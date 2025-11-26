@@ -555,6 +555,30 @@ const recordManualPayment = async (req, res) => {
     billing.status = new_billing_status;
     await billing.save();
 
+    // ✅ If bill is fully paid, mark all bills included in its previous_balance as paid
+    // Because this bill includes all previous unpaid amounts
+    if (newBalance === 0 && billing.previous_balance > 0) {
+      // Find all bills for this connection that are older and have unpaid/consolidated status
+      const olderBills = await Billing.find({
+        connection_id: billing.connection_id._id,
+        status: { $in: ['unpaid', 'partial', 'consolidated'] },
+        generated_at: { $lt: billing.generated_at }
+      }).sort({ generated_at: -1 });
+
+      if (olderBills.length > 0) {
+        // Mark all older unpaid/consolidated bills as paid
+        await Billing.updateMany(
+          {
+            connection_id: billing.connection_id._id,
+            status: { $in: ['unpaid', 'partial', 'consolidated'] },
+            generated_at: { $lt: billing.generated_at }
+          },
+          { $set: { status: 'paid' } }
+        );
+        console.log(`✅ Marked ${olderBills.length} older bills as paid because they're included in this bill's previous_balance`);
+      }
+    }
+
     // ✅ Auto update connection status to for_reconnection if in disconnection flow
     let reconnectionUpdated = false;
     if (billing.connection_id && connection_status) {

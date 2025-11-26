@@ -16,7 +16,7 @@ export default function ResidentBillingSummary() {
       const res = await apiClient.getCurrentBill();  
       const data = res.data;
 
-      if(!data || data.length === 0){
+      if(!data || data.length === 0){ 
         return null
       }
       const currentBill = data[data.length - 1]

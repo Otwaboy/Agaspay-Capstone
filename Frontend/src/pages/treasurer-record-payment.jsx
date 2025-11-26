@@ -43,10 +43,29 @@ export default function TreasurerRecordPayment() {
     queryFn: () => apiClient.getCurrentBill(),
   });
 
-  // Filter bills - show all unpaid bills (unpaid, partial, consolidated, overdue)
-  const unpaidBills = billHistory?.data?.filter(bill =>
-    ['unpaid', 'partial', 'consolidated', 'overdue'].includes(bill.status)
-  ) || [];
+  // Filter bills - show unpaid/partial/overdue/consolidated bills
+  const unpaidBills = (() => {
+    const filteredByStatus = billHistory?.data?.filter(bill =>
+      ['unpaid', 'partial', 'overdue', 'consolidated'].includes(bill.status)
+    ) || [];
+
+    // Group by meter_no and keep only the latest bill (by generated_at - actual creation time)
+    const groupedByMeter = {};
+    filteredByStatus.forEach(bill => {
+      if (!groupedByMeter[bill.meter_no]) {
+        groupedByMeter[bill.meter_no] = bill;
+      } else {
+        // Compare by generated_at (when bill was created) to get the latest bill
+        const existingDate = new Date(groupedByMeter[bill.meter_no].generated_at);
+        const currentDate = new Date(bill.generated_at);
+        if (currentDate > existingDate) {
+          groupedByMeter[bill.meter_no] = bill;
+        }
+      }
+    });
+
+    return Object.values(groupedByMeter);
+  })();
 
   // Filter bills based on search
   const filteredBills = unpaidBills.filter(bill => {
@@ -63,17 +82,18 @@ export default function TreasurerRecordPayment() {
   const recordPaymentMutation = useMutation({
     mutationFn: (paymentData) => apiClient.recordManualPayment(paymentData),
     onSuccess: (data) => {
-      toast.success(data.message || "Payment recorded successfully!");
+      // Refetch data FIRST to ensure UI is updated
+      queryClient.refetchQueries({
+        queryKey: ['/api/v1/treasurer/unpaid-bills']
+      }).then(() => {
+        toast.success(data.message || "Payment recorded successfully!");
 
-      // Reset form
-      setSelectedBill(null);
-      setAmountPaid("");
-      setPaymentMethod("cash");
-      setSearchTerm("");
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['/api/v1/treasurer/unpaid-bills']);
-      queryClient.invalidateQueries(['/api/v1/treasurer/bill-history']);
+        // Reset form AFTER data is refreshed
+        setSelectedBill(null);
+        setAmountPaid("");
+        setPaymentMethod("cash");
+        setSearchTerm("");
+      });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to record payment");

@@ -75,8 +75,8 @@ export default function AdminPersonnel() {
       admin: { label: "Admin", className: "bg-purple-100 text-purple-800" },
       treasurer: { label: "Treasurer", className: "bg-blue-100 text-blue-800" },
       secretary: { label: "Secretary", className: "bg-green-100 text-green-800" },
-      "meter reader": { label: "Meter Reader", className: "bg-orange-100 text-orange-800" },
-      maintenance: { label: "Maintenance", className: "bg-gray-100 text-gray-800" }
+      meter_reader: { label: "Meter Reader", className: "bg-gray-100 text-gray-800" },
+      maintenance: { label: "Maintenance", className: "bg-orange-100 text-orange-800" }
     };
     return config[role] || { label: role, className: "bg-gray-100 text-gray-800" };
   };
@@ -187,13 +187,7 @@ export default function AdminPersonnel() {
                     <p className="text-gray-600">Manage staff members and their roles</p>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => setIsModalOpen(true)}
-                  data-testid="button-add-personnel"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Personnel
-                </Button>
+           
               </div>
             </div>
 
@@ -245,6 +239,14 @@ export default function AdminPersonnel() {
                     <Filter className="h-4 w-4 mr-2" />
                     More Filters
                   </Button>
+
+                       <Button 
+                  onClick={() => setIsModalOpen(true)}
+                  data-testid="button-add-personnel"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Personnel
+                </Button>
                 </div>
               </CardContent>
             </Card>
@@ -306,7 +308,7 @@ export default function AdminPersonnel() {
                               </Badge>
                             </td>
                          
-                            <td className="py-4 px-6 text-sm text-gray-900">{person.assigned_zone || 'All Zones'}</td>
+                            <td className="py-4 px-6 text-sm text-gray-900">{person.assigned_zone || 'Not meter reader'}</td>
                             <td className="py-4 px-6">
                               <Badge className={statusConfig.className}>
                                 {statusConfig.label}

@@ -92,7 +92,7 @@ export default function ResidentMultiMeterCards({ selectedMeter, onMeterChange }
               >
                 <div className="flex items-center justify-between w-full">
                   <span className="font-semibold text-base">
-                    Meter #{meter.meter_no}
+                    Meter No: {meter.meter_no}
                   </span>
                   <Badge
                     className={`text-xs ${
@@ -109,7 +109,7 @@ export default function ResidentMultiMeterCards({ selectedMeter, onMeterChange }
                   <span>Zone {meter.zone}, Purok {meter.purok}</span>
                 </div>
                 <div className="text-xs opacity-90">
-                  {meter.type.charAt(0).toUpperCase() + meter.type.slice(1)} Connection
+                 Connection Type: {meter.type.charAt(0).toUpperCase() + meter.type.slice(1)} 
                 </div>
               </Button>
             ))}

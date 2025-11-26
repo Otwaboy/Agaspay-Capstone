@@ -121,6 +121,7 @@ const getBilling = async (req, res) => {
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
         due_date: billing?.due_date ?? null,
+        generated_at: billing?.generated_at ?? null,
         created_at: reading?.created_at ?? null,
         paid_date: paid_date  // ✅ Payment date for paid bills
       };
