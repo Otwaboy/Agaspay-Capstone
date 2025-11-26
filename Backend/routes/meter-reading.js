@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const {getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading, getSubmittedReadings, getApprovalStats} = require('../controller/meter-reading')
+const {getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading, getSubmittedReadings, getApprovalStats, getReadingHistory} = require('../controller/meter-reading')
 
 const authMiddleware = require('../middleware/authentication')
 const roleMiddleware = require('../middleware/roleMiddleware')
@@ -27,5 +27,9 @@ router.route('/submitted-readings')
 // Get approval statistics
 router.route('/approval-stats')
   .get(authMiddleware, roleMiddleware('treasurer'), getApprovalStats);
+
+// Get reading history (all readings, not just latest)
+router.route('/reading-history')
+  .get(authMiddleware, roleMiddleware('admin', 'treasurer'), getReadingHistory);
 
 module.exports = router     

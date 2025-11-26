@@ -240,6 +240,10 @@ class ApiClient {
     return await this.request('/api/v1/meter-reader/latest-readings');
   }
 
+  async getReadingHistory() {
+    return await this.request('/api/v1/meter-reader/reading-history');
+  }
+
   async getCurrentReading() {
     return await this.request(`/api/v1/meter-reader}`);
   }

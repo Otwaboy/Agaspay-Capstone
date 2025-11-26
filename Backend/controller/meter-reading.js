@@ -663,6 +663,86 @@ const getApprovalStats = async (req, res) => {
 
 
 
+/**
+ * ✅ Get Reading History (for admin dashboard)
+ * GET /api/v1/meter-reader/reading-history
+ * Returns all meter readings (not just latest) organized by zone
+ */
+const getReadingHistory = async (req, res) => {
+  try {
+    const readings = await WaterConnection.aggregate([
+      // 1️⃣ Filter only active connections
+      { $match: { connection_status: "active" } },
+
+      // 2️⃣ Attach resident info
+      {
+        $lookup: {
+          from: "residents",
+          localField: "resident_id",
+          foreignField: "_id",
+          as: "resident"
+        }
+      },
+      { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
+
+      // 3️⃣ Get ALL readings (not just latest)
+      {
+        $lookup: {
+          from: "meterreadings",
+          let: { connId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$connection_id", "$$connId"] } } },
+            { $sort: { created_at: -1 } } // Sort by newest first
+          ],
+          as: "readings"
+        }
+      },
+
+      // 4️⃣ Unwind the readings array to get one row per reading
+      { $unwind: { path: "$readings", preserveNullAndEmptyArrays: true } },
+
+      // 5️⃣ Skip connections without readings
+      { $match: { "readings._id": { $exists: true } } }
+    ]);
+
+    // Format the response
+    const readingHistory = readings.map(item => {
+      const reading = item.readings;
+      const resident = item.resident;
+
+      return {
+        reading_id: reading?._id ? reading._id.toString() : null,
+        connection_id: item._id ? item._id.toString() : null,
+        meter_number: item.meter_no,
+        full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
+        zone: item.zone || null,
+        purok_no: item.purok || "N/A",
+        previous_reading: reading?.previous_reading ?? 0,
+        present_reading: reading?.present_reading ?? 0,
+        calculated: reading?.calculated ?? 0,
+        inclusive_date: reading?.inclusive_date || null,
+        reading_status: reading?.reading_status,
+        remarks: reading?.remarks || "Normal Reading",
+        recorded_by: reading?.recorded_by || null,
+        created_at: reading?.created_at || null
+      };
+    });
+
+    return res.status(StatusCodes.OK).json({
+      message: "Reading history fetched successfully",
+      data: readingHistory,
+      total: readingHistory.length
+    });
+
+  } catch (error) {
+    console.error('🔥 getReadingHistory error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to fetch reading history",
+      error: error.message
+    });
+  }
+};
+
 module.exports = { getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading,
-                    getSubmittedReadings, getApprovalStats
+                    getSubmittedReadings, getApprovalStats, getReadingHistory
 };
