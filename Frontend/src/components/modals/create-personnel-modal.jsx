@@ -185,16 +185,21 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           // Parse specific backend error messages for field-specific errors
           // Check all possible fields to support concurrent validation errors
           errorMessages.forEach(msg => {
-            if (msg.includes('username') || msg.includes('Username')) {
+            console.log('Processing error message:', msg);
+            if (msg.toLowerCase().includes('username')) {
+              console.log('Matched username error');
               parsedErrors.username = msg;
             }
-            if (msg.includes('email') || msg.includes('Email')) {
+            if (msg.toLowerCase().includes('email')) {
+              console.log('Matched email error');
               parsedErrors.email = msg;
             }
-            if (msg.includes('phone') || msg.includes('contact') || msg.includes('Contact')) {
+            if (msg.toLowerCase().includes('phone') || msg.toLowerCase().includes('contact')) {
+              console.log('Matched phone error');
               parsedErrors.phone = msg;
             }
-            if (msg.includes('full name') || msg.includes('Full Name')) {
+            if (msg.toLowerCase().includes('full name')) {
+              console.log('Matched full name error');
               parsedErrors.firstName = msg;
               parsedErrors.lastName = msg;
             }
@@ -213,7 +218,9 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       }
 
       // Show error notification
+      console.log('parsedErrors keys:', Object.keys(parsedErrors), 'parsedErrors:', parsedErrors);
       if (Object.keys(parsedErrors).length > 0) {
+        console.log('Setting errors state:', parsedErrors);
         setErrors(parsedErrors);
         // Show field-specific error toast
         toast.error("Validation Error", {
@@ -221,11 +228,13 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         });
       } else if (errorMessage && errorMessage !== "Failed to create personnel. Please try again.") {
         // Show actual backend error message
+        console.log('No parsed errors, showing generic error toast');
         toast.error("Error", {
           description: errorMessage
         });
       } else {
         // Show generic error only if we have no other info
+        console.log('Showing fallback error toast');
         toast.error("Error", {
           description: errorMessage
         });
@@ -279,7 +288,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
                 placeholder="Enter first name"
                 required
                 data-testid="input-first-name"
-                className={errors.firstName ? "border-red-500 focus:ring-red-500" : ""}
+                className={errors.firstName ? "border-red-500 border-2 focus:ring-red-500" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -291,7 +300,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
                 placeholder="Enter last name"
                 required
                 data-testid="input-last-name"
-                className={errors.lastName ? "border-red-500 focus:ring-red-500" : ""}
+                className={errors.lastName ? "border-red-500 border-2 focus:ring-red-500" : ""}
               />
             </div>
           </div>
@@ -300,7 +309,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           <div className="space-y-2">
             <Label htmlFor="purok">Purok</Label>
             <Select onValueChange={handleChange("purok")} required>
-              <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 focus:ring-red-500" : ""}>
+              <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select Purok" />
               </SelectTrigger>
               <SelectContent>
@@ -325,7 +334,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
               placeholder="Enter email address"
               required
               data-testid="input-email"
-              className={errors.email ? "border-red-500 focus:ring-red-500" : ""}
+              className={errors.email ? "border-red-500 border-2 focus:ring-red-500" : ""}
             />
           </div>
 
@@ -338,7 +347,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
               placeholder="Enter phone number"
               required
               data-testid="input-phone"
-              className={errors.phone ? "border-red-500 focus:ring-red-500" : ""}
+              className={errors.phone ? "border-red-500 border-2 focus:ring-red-500" : ""}
             />
           </div>
 
@@ -346,7 +355,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
             <Select onValueChange={handleChange("role")} required>
-              <SelectTrigger data-testid="select-role" className={errors.role ? "border-red-500 focus:ring-red-500" : ""}>
+              <SelectTrigger data-testid="select-role" className={errors.role ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
@@ -365,7 +374,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
           <div className="space-y-2">
             <Label htmlFor="assignedZone">Assigned Zone</Label>
             <Select onValueChange={handleChange("assignedZone")} required>
-              <SelectTrigger data-testid="select-zone" className={errors.assignedZone ? "border-red-500 focus:ring-red-500" : ""}>
+              <SelectTrigger data-testid="select-zone" className={errors.assignedZone ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select zone" />
               </SelectTrigger>
               <SelectContent>
@@ -390,7 +399,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
                   placeholder="Enter username for login"
                   required
                   data-testid="input-username"
-                  className={errors.username ? "border-red-500 focus:ring-red-500" : ""}
+                  className={errors.username ? "border-red-500 border-2 focus:ring-red-500" : ""}
                 />
               </div>
 
@@ -405,7 +414,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
                     placeholder="Enter password (min 6 characters)"
                     required
                     data-testid="input-password"
-                    className={errors.password ? "border-red-500 focus:ring-red-500" : ""}
+                    className={errors.password ? "border-red-500 border-2 focus:ring-red-500" : ""}
                   />
                   <Button
                     type="button"

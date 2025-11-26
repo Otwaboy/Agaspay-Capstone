@@ -136,7 +136,9 @@ class AuthManager {
       }
 
       if (response.status === 400) {
-        throw new Error(errorMessage);
+        const error = new Error(errorMessage);
+        error.response = { data: errorData };
+        throw error;
       }
 
       if (response.status === 500) {
@@ -203,7 +205,9 @@ class AuthManager {
       }
 
       if (response.status === 400) {
-        throw new Error(errorMessage);
+        const error = new Error(errorMessage);
+        error.response = { data: errorData };
+        throw error;
       }
 
       if (response.status === 500) {
