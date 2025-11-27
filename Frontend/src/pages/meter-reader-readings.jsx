@@ -177,13 +177,21 @@ export default function MeterReaderReadings() {
         return apiClient.updateReadings(reading_id, data);
       },
       onSuccess: () => {
-        toast.success("Success", { description: "" });
+        toast.success("Success", { description: "Reading updated successfully" });
+        // Reset form
+        const currentPeriod = savedPeriod || { start: "", end: "" };
+        setFormData({
+          connection_id: "",
+          present_reading: "",
+          inclusive_date: currentPeriod,
+          remarks: ""
+        });
         queryClient.invalidateQueries({ queryKey: ["connections"] });
       },
       onError: (error) => {
         toast.error("Error", { description: error.message || "Failed to update reading" });
       }
-    });
+    }); 
   // ------------------ HANDLERS ------------------
   const handleInputChange = (field, value) => {
     if (field.includes(".")) {
@@ -248,8 +256,8 @@ export default function MeterReaderReadings() {
     return toast.error("Validation Error", { description: "End date cannot be before start date" });
   }
 
-  // Validate that start date is AFTER the previous reading end date
-  if (selectedConnectionData?.inclusive_date?.end) {
+  // Validate that start date is AFTER the previous reading end date (only for new readings, not edits)
+  if (!isEditing && selectedConnectionData?.inclusive_date?.end) {
     const previousEndDate = new Date(selectedConnectionData.inclusive_date.end);
     const newStartDate = new Date(formData.inclusive_date.start);
 
@@ -274,7 +282,7 @@ export default function MeterReaderReadings() {
   if (selectedConnectionData?.reading_status === "inprogress") {
     // ✅ Update existing reading
     updateReadingMutation.mutate({
-      reading_id: selectedConnectionData._id,
+      reading_id: selectedConnectionData.reading_id,
       data: payload
     });
   } else {

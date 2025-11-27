@@ -434,96 +434,76 @@ const getLatestReadings = async (req, res) => {
   }
 };
 
-const updateReadings = async (req, res) => {
-  const { reading_id } = req.params;
-  const { present_reading, inclusive_date, remarks, can_read_status } = req.body;
-  const user = req.user;
+const updateReadings = async (req, res, next) => {
+  try {
+    const { reading_id } = req.params;
+    const { present_reading, inclusive_date, remarks, can_read_status } = req.body;
+    const user = req.user;
 
-  // ✅ Only meter readers can update
-  if (user.role !== 'meter_reader') {
-    throw new UnauthorizedError('Only meter readers can update readings.');
+    console.log('🔄 updateReadings called with:', {
+      reading_id,
+      present_reading,
+      inclusive_date,
+      remarks,
+      can_read_status,
+      user_role: user?.role
+    });
+
+    // ✅ Validate input
+    if (!reading_id) throw new BadRequestError('Reading ID is required.');
+    if (present_reading === undefined && !inclusive_date && !remarks && !can_read_status) {
+      throw new BadRequestError('At least one field (present_reading, inclusive_date, remarks, can_read_status) is required.');
+    }
+
+    // ✅ Fetch the reading
+    const reading = await MeterReading.findById(reading_id).populate('connection_id');
+
+    if (!reading) throw new BadRequestError('Reading not found.');
+
+    // ✅ Check status
+    if (reading.reading_status === 'approved') {
+      throw new BadRequestError('Cannot update reading. Reading has already been approved.');
+    }
+
+    // ✅ Check if meter reader is allowed to update this reading (zone match)
+    const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
+    if (!personnel || !personnel.assigned_zone) {
+      throw new BadRequestError('Meter reader has no assigned zone.');
+    }
+
+    // Check water connection zone (not resident's home zone)
+    // Resident zone is for incident reporting; water connection zone is for meter coverage
+    const connectionZone = reading.connection_id.zone;
+    if (connectionZone !== personnel.assigned_zone) {
+      throw new UnauthorizedError(`You can only update readings in your assigned zone (${personnel.assigned_zone}). This connection is in zone ${connectionZone}.`);
+    }
+
+    // ✅ Validate remarks if switching to cannot_read
+    if (can_read_status === 'cannot_read' && !remarks) {
+      throw new BadRequestError('Please provide remarks explaining why the meter cannot be read');
+    }
+
+    // ✅ If present_reading is being updated (and not cannot_read), ensure it's >= previous_reading
+    if (present_reading !== undefined && can_read_status !== 'cannot_read' && present_reading < reading.previous_reading) {
+      throw new BadRequestError('Present reading cannot be less than previous reading.');
+    }
+
+    // ✅ Update fields
+    if (present_reading !== undefined) reading.present_reading = present_reading;
+    if (inclusive_date) reading.inclusive_date = inclusive_date;
+    if (remarks) reading.remarks = remarks;
+    if (can_read_status) reading.can_read_status = can_read_status;
+
+    await reading.save(); // pre-save hook recalculates "calculated"
+
+    res.status(StatusCodes.OK).json({
+      message: 'Reading updated successfully.',
+      data: reading
+    });
+  } catch (error) {
+    next(error);
   }
-
-  // ✅ Validate input
-  if (!reading_id) throw new BadRequestError('Reading ID is required.');
-  if (present_reading === undefined && !inclusive_date && !remarks && !can_read_status) {
-    throw new BadRequestError('At least one field (present_reading, inclusive_date, remarks, can_read_status) is required.');
-  }
-
-  // ✅ Fetch the reading
-  const reading = await MeterReading.findById(reading_id).populate({
-    path: 'connection_id',
-    populate: { path: 'resident_id', select: 'zone' }
-  });
-
-  if (!reading) throw new BadRequestError('Reading not found.');
-
-  // ✅ Check status
-  if (reading.reading_status === 'approved') {
-    throw new BadRequestError('Cannot update reading. Reading has already been approved.');
-  }
-
-  // ✅ Check if meter reader is allowed to update this reading (zone match)
-  const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
-  if (!personnel || !personnel.assigned_zone) {
-    throw new BadRequestError('Meter reader has no assigned zone.');
-  }
-
-  const residentZone = reading.connection_id.resident_id?.zone;
-  if (residentZone !== personnel.assigned_zone) {
-    throw new UnauthorizedError(`You can only update readings in your assigned zone (${personnel.assigned_zone}).`);
-  }
-
-  // ✅ Validate remarks if switching to cannot_read
-  if (can_read_status === 'cannot_read' && !remarks) {
-    throw new BadRequestError('Please provide remarks explaining why the meter cannot be read');
-  }
-
-  // ✅ If present_reading is being updated (and not cannot_read), ensure it's >= previous_reading
-  if (present_reading !== undefined && can_read_status !== 'cannot_read' && present_reading < reading.previous_reading) {
-    throw new BadRequestError('Present reading cannot be less than previous reading.');
-  }
-
-  // ✅ Update fields
-  if (present_reading !== undefined) reading.present_reading = present_reading;
-  if (inclusive_date) reading.inclusive_date = inclusive_date;
-  if (remarks) reading.remarks = remarks;
-  if (can_read_status) reading.can_read_status = can_read_status;
-
-  await reading.save(); // pre-save hook recalculates "calculated"
-
-  res.status(StatusCodes.OK).json({
-    message: 'Reading updated successfully.',
-    data: reading
-  });
 };
-
-// const approveReading = async (req, res) => {
-//   const user = req.user;
-
-//   // Only treasurer can approve readings
-//   if (user.role !== 'treasurer') {
-//     return res.status(403).json({ msg: 'Unauthorized. Only treasurer can approve readings.' });
-//   }
-
-//   // Get all readings that are submitted
-//   const readingsToApprove = await MeterReading.find({ reading_status: 'submitted' });
-
-//   if (readingsToApprove.length === 0) {
-//     return res.status(400).json({ msg: 'No submitted readings found to approve.' });
-//   }
-
-//   // Bulk update
-//   const result = await MeterReading.updateMany(
-//     { reading_status: 'submitted' },
-//     { $set: { reading_status: 'approved' } }
-//   );
-
-//   res.status(200).json({
-//     msg: 'All submitted readings have been approved successfully',
-//     total_approved: result.modifiedCount
-//   });
-// };
 
 
 /**
