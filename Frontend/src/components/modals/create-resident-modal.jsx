@@ -30,7 +30,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     type: "",
     meterNumber: "",
     username: "",
-    password: ""
+    password: "",
+    confirmPassword: ""
   });
 
   // Validation errors state
@@ -38,6 +39,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Parse MongoDB duplicate key error
   const parseDuplicateKeyError = (errorMessage) => {
@@ -86,6 +88,12 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         validationErrors.password = "Password is required";
       } else if (formData.password.length < 6) {
         validationErrors.password = "Password must be at least 6 characters long";
+      }
+
+      if (!formData.confirmPassword || formData.confirmPassword.trim() === "") {
+        validationErrors.confirmPassword = "Confirm password is required";
+      } else if (formData.password !== formData.confirmPassword) {
+        validationErrors.confirmPassword = "Passwords do not match";
       }
 
       // If there are validation errors, show them
@@ -137,7 +145,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         type: "",
         meterNumber: "",
         username: "",
-        password: ""
+        password: "",
+        confirmPassword: ""
       });
       setErrors({});
       setIsLoading(false);
@@ -510,6 +519,39 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   <p className="text-xs text-gray-500">
                     This account will allow the resident to log into the system
                   </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password <span className="text-red-500">*</span></Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleChange("confirmPassword")(e.target.value)}
+                    placeholder="Re-enter password to confirm"
+                    required
+                    data-testid="input-confirm-password"
+                    className={errors.confirmPassword ? "border-red-500 border-2 focus:ring-red-500" : ""}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    data-testid="button-toggle-confirm-password"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-xs text-red-500">{errors.confirmPassword}</p>
                 )}
               </div>
             </div>
