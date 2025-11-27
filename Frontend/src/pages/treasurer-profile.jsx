@@ -182,10 +182,13 @@ export default function TreasurerProfile() {
                             {personnelData?.position || "Treasurer"}
                           </div>
                         </div>
+                        
                         <div>
-                          <Label className="text-sm text-gray-500">Employee ID</Label>
+                          <Label className="text-sm text-gray-500">Purok</Label>
                           <div className="mt-1 px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold">
-                            {personnelData?.personnel_id || "N/A"}
+                            {personnelData?.purok
+                              ? `Purok ${personnelData.purok}`
+                              : "N/A"}
                           </div>
                         </div>
                       </div>

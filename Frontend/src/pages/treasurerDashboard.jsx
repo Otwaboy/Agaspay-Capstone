@@ -110,10 +110,7 @@ export default function TreasurerDashboard() {
 
             
 
-            <div className="grid grid-cols-1 gap-6">
-              <TreasurerFinancialSummary />
-            </div>
-
+           
             <TreasurerFooter />
           </div>
         </main>

@@ -53,13 +53,19 @@ export default function AdminPersonnel() {
   const [selectedPersonnel, setSelectedPersonnel] = useState(null);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [personnelToArchive, setPersonnelToArchive] = useState(null);
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
+  const [viewingPersonnel, setViewingPersonnel] = useState(null);
   const queryClient = useQueryClient();
+
   const { data, isLoading } = useQuery({
     queryKey: ['personnel', roleFilter],
     queryFn: () => apiClient.getAllPersonnel({ role: roleFilter !== 'all' ? roleFilter : undefined })
   });
 
   const personnel = data?.personnel || [];
+
+  // Get all admin users from personnel data
+  const adminUsers = personnel.filter(person => person.role === 'admin');
 
   const archiveMutation = useMutation({
     mutationFn: (id) => apiClient.archivePersonnel(id),
@@ -73,10 +79,13 @@ export default function AdminPersonnel() {
   });
 
   const filteredPersonnel = personnel.filter(person => {
+    // Exclude admin users from staff members list
+    if (person.role === 'admin') return false;
+
     const fullName = `${person.first_name} ${person.last_name}`.toLowerCase();
     const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
       person.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     return matchesSearch;
   });
 
@@ -119,6 +128,11 @@ export default function AdminPersonnel() {
   const handleEdit = (person) => {
     setSelectedPersonnel(person);
     setIsEditModalOpen(true);
+  };
+
+  const handleViewDetails = (person) => {
+    setViewingPersonnel(person);
+    setIsViewDetailsOpen(true);
   };
 
   const handleEditSuccess = () => {
@@ -268,6 +282,68 @@ export default function AdminPersonnel() {
               </CardContent>
             </Card>
 
+            {adminUsers.length > 0 && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Administrators ({adminUsers.length})</CardTitle>
+                </CardHeader>
+                <CardContent className="overflow-visible">
+                  <div className="overflow-x-auto" style={{ overflowY: 'auto' }}>
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Personnel Info
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Role
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Assigned Zone
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Status
+                          </th>
+                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                            Join Date
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {adminUsers.map((admin) => (
+                          <tr key={admin._id}>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                                  <span className="text-purple-600 font-medium">
+                                    {admin?.first_name?.charAt(0) || 'A'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{admin?.first_name} {admin?.last_name}</p>
+                                  <p className="text-sm text-gray-500">{admin?.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <Badge className="bg-purple-100 text-purple-800">Administrator</Badge>
+                            </td>
+                            <td className="py-4 px-6 text-sm text-gray-900">{admin?.assigned_zone || 'All Zone'}</td>
+                            <td className="py-4 px-6">
+                              <Badge variant="outline" className="text-green-700 border-green-300">Active</Badge>
+                            </td>
+                            <td className="py-4 px-6 text-sm text-gray-900">
+                              {admin?.created_at ? new Date(admin?.created_at).toLocaleDateString() : 'N/A'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="overflow-visible">
               <CardHeader>
                 <CardTitle>Staff Members ({filteredPersonnel.length})</CardTitle>
@@ -333,31 +409,35 @@ export default function AdminPersonnel() {
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-900">{joinDate}</td>
                             <td className="py-4 px-6 relative z-50">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" data-testid={`button-actions-${person._id}`}>
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" side="top" sideOffset={10}>
-                                  <DropdownMenuItem>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEdit(person)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit Personnel
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-red-600"
-                                    onClick={() => handleArchive(person)}
-                                    disabled={archiveMutation.isPending}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Archive
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              {person.role === 'admin' ? (
+                                <span className="text-xs text-gray-500 font-medium">No actions</span>
+                              ) : (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" data-testid={`button-actions-${person._id}`}>
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" side="top" sideOffset={10}>
+                                    <DropdownMenuItem onClick={() => handleViewDetails(person)}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleEdit(person)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Personnel
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-red-600"
+                                      onClick={() => handleArchive(person)}
+                                      disabled={archiveMutation.isPending}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Archive
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
                             </td>
                           </tr>
                         );
@@ -440,6 +520,91 @@ export default function AdminPersonnel() {
               disabled={archiveMutation.isPending}
             >
               {archiveMutation.isPending ? "Archiving..." : "Archive Personnel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog open={isViewDetailsOpen} onOpenChange={setIsViewDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Eye className="h-5 w-5 mr-2" />
+              Personnel Details
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewingPersonnel && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl text-purple-600 font-medium">
+                    {viewingPersonnel.first_name?.charAt(0) || 'P'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Full Name</p>
+                  <p className="text-sm text-gray-900">{viewingPersonnel.first_name} {viewingPersonnel.last_name}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Email</p>
+                  <p className="text-sm text-gray-900">{viewingPersonnel.email}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Role</p>
+                  <Badge className={getRoleBadge(viewingPersonnel.role).className}>
+                    {getRoleBadge(viewingPersonnel.role).label}
+                  </Badge>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Assigned Zone</p>
+                  <p className="text-sm text-gray-900">{viewingPersonnel.assigned_zone || 'Not assigned'}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Status</p>
+                  <Badge className={getStatusBadge(viewingPersonnel).className}>
+                    {getStatusBadge(viewingPersonnel).label}
+                  </Badge>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Join Date</p>
+                  <p className="text-sm text-gray-900">
+                    {viewingPersonnel.created_at ? new Date(viewingPersonnel.created_at).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+
+                {viewingPersonnel.phone && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase">Phone</p>
+                    <p className="text-sm text-gray-900">{viewingPersonnel.phone}</p>
+                  </div>
+                )}
+
+                {viewingPersonnel.address && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase">Address</p>
+                    <p className="text-sm text-gray-900">{viewingPersonnel.address}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsViewDetailsOpen(false)}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

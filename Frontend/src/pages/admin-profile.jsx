@@ -72,10 +72,13 @@ export default function AdminProfile() {
                             {personnelData?.position || "Administrator"}
                           </div>
                         </div>
+                    
                         <div>
-                          <Label className="text-sm text-gray-500">Employee ID</Label>
+                          <Label className="text-sm text-gray-500">Purok</Label>
                           <div className="mt-1 px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold">
-                            {personnelData?.personnel_id || "N/A"}
+                            {personnelData?.purok
+                              ? `Purok ${personnelData.purok}`
+                              : "N/A"}
                           </div>
                         </div>
                       </div>
@@ -189,13 +192,7 @@ export default function AdminProfile() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-blue-50 border-blue-200">
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-blue-800">
-                      <strong>Note:</strong> This is a read-only view of your profile. To update your information, please contact the system administrator.
-                    </p>
-                  </CardContent>
-                </Card>
+                
               </div>
 
             </div>
