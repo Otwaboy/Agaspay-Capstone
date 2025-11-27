@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle, XCircle } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle, XCircle, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
@@ -616,8 +616,36 @@ export default function MeterReaderReadings() {
                     </div>
                     )}
 
+                    {/* Show approval message when reading is approved */}
+                    {selectedConnectionData?.reading_status === "approved" && !selectedConnectionData?.is_billed && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            <CheckCircle2 className="h-8 w-8 text-green-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-green-900 mb-2">
+                              Your Reading Has Been Approved
+                            </h3>
+                            <div className="text-green-800 space-y-2 text-sm">
+                              <p>
+                                Your meter reading has been reviewed and approved by the administrator. Thank you for your diligent work!
+                              </p>
+                              <p>
+                                <strong>Next Steps:</strong> The treasurer will now generate the billing for this reading cycle. Once billing is complete, you'll be able to record readings for the next month.
+                              </p>
+                              <p className="flex items-center gap-2 mt-3">
+                                <AlertCircle className="h-4 w-4" />
+                                You can record new readings for this connection after the next billing cycle begins.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* FORM INPUTS */}
-                    {!isCannotRead && (
+                    {selectedConnectionData?.reading_status !== "approved" && !isCannotRead && (
                       <div className="space-y-2">
                         <Label htmlFor="present_reading" className="flex items-center space-x-2 text-base">
                           <Gauge className="h-4 w-4" />
@@ -631,89 +659,88 @@ export default function MeterReaderReadings() {
                           value={formData.present_reading}
                           onChange={(e) => handleInputChange("present_reading", e.target.value)}
                           className="h-12 text-base text-lg font-semibold"
-                          disabled={
-                                    !selectedConnectionData ||
-                                    (selectedConnectionData?.reading_status === "approved" && !selectedConnectionData?.is_billed)
-                                  }/>
+                          disabled={!selectedConnectionData}
+                        />
                       </div>
                     )}
 
                     {/* Date and Remarks Inputs */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="flex items-center space-x-2 text-base">
-                          <Calendar className="h-4 w-4" />
-                          <span>Reading Period</span>
-                        </Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleSavePeriod}
-                          className="flex items-center gap-2"
-                        >
-                          <Save className="h-3.5 w-3.5" />
-                          Save Period
-                        </Button>
-                      </div>
-                      {savedPeriod && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-sm text-blue-700">
-                          <span className="font-medium">Saved:</span> {new Date(savedPeriod.start).toLocaleDateString()} - {new Date(savedPeriod.end).toLocaleDateString()}
-                        </div>
-                      )}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="start_date" className="text-sm font-medium">
-                            Start Date
-                            {selectedConnectionData?.inclusive_date?.end && (
-                              <span className="text-xs text-gray-500 ml-1">
-                                (Must be after {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
-                              </span>
-                            )}
+                    {selectedConnectionData?.reading_status !== "approved" && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Label className="flex items-center space-x-2 text-base">
+                            <Calendar className="h-4 w-4" />
+                            <span>Reading Period</span>
                           </Label>
-                          <Input
-                            id="start_date"
-                            type="date"
-                            value={formData.inclusive_date.start}
-                            onChange={(e) => handleInputChange("inclusive_date.start", e.target.value)}
-                            min={selectedConnectionData?.inclusive_date?.end}
-                            disabled={!selectedConnectionData}
-                          />
-                          {selectedConnectionData?.inclusive_date?.end && new Date(formData.inclusive_date.start) <= new Date(selectedConnectionData.inclusive_date.end) && formData.inclusive_date.start && (
-                            <p className="text-xs text-red-600 mt-1">
-                              ⚠️ Start date must be after the previous reading end date ({new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString()})
-                            </p>
-                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSavePeriod}
+                            className="flex items-center gap-2"
+                          >
+                            <Save className="h-3.5 w-3.5" />
+                            Save Period
+                          </Button>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="end_date" className="text-sm font-medium">End Date</Label>
-                          <Input
-                            id="end_date"
-                            type="date"
-                            value={formData.inclusive_date.end}
-                            onChange={(e) => handleInputChange("inclusive_date.end", e.target.value)}
-                            min={formData.inclusive_date.start}
-                            disabled={!selectedConnectionData}
-                          />
+                        {savedPeriod && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-sm text-blue-700">
+                            <span className="font-medium">Saved:</span> {new Date(savedPeriod.start).toLocaleDateString()} - {new Date(savedPeriod.end).toLocaleDateString()}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="start_date" className="text-sm font-medium">
+                              Start Date
+                              {selectedConnectionData?.inclusive_date?.end && (
+                                <span className="text-xs text-gray-500 ml-1">
+                                  (Must be after {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
+                                </span>
+                              )}
+                            </Label>
+                            <Input
+                              id="start_date"
+                              type="date"
+                              value={formData.inclusive_date.start}
+                              onChange={(e) => handleInputChange("inclusive_date.start", e.target.value)}
+                              min={selectedConnectionData?.inclusive_date?.end}
+                              disabled={!selectedConnectionData}
+                            />
+                            {selectedConnectionData?.inclusive_date?.end && new Date(formData.inclusive_date.start) <= new Date(selectedConnectionData.inclusive_date.end) && formData.inclusive_date.start && (
+                              <p className="text-xs text-red-600 mt-1">
+                                ⚠️ Start date must be after the previous reading end date ({new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString()})
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="end_date" className="text-sm font-medium">End Date</Label>
+                            <Input
+                              id="end_date"
+                              type="date"
+                              value={formData.inclusive_date.end}
+                              onChange={(e) => handleInputChange("inclusive_date.end", e.target.value)}
+                              min={formData.inclusive_date.start}
+                              disabled={!selectedConnectionData}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="flex justify-end space-x-3">
-                     <Button
-                        type="submit"
-                        className="bg-blue-600 hover:bg-blue-700 text-white h-12"
-                        disabled={
-                          recordReadingMutation.isPending ||
-                          selectedConnectionData?.reading_status === "inprogress" ||
-                          selectedConnectionData?.reading_status === "submitted" ||
-                          (selectedConnectionData?.reading_status === "approved" && !selectedConnectionData?.is_billed)
-                        }
-                      >
-                        {recordReadingMutation.isPending ? "Recording..." : "Record Reading"}
-                      </Button>
-                      {/* i want here to disabled the button if the reading.status is submitted my current style is im using the selectedConnectionData but what i want is not only the selected but all data that have readingstatus of submitted */}
-                       <Button
+                    {selectedConnectionData?.reading_status !== "approved" && (
+                      <div className="flex justify-end space-x-3">
+                        <Button
+                          type="submit"
+                          className="bg-blue-600 hover:bg-blue-700 text-white h-12"
+                          disabled={
+                            recordReadingMutation.isPending ||
+                            selectedConnectionData?.reading_status === "inprogress" ||
+                            selectedConnectionData?.reading_status === "submitted"
+                          }
+                        >
+                          {recordReadingMutation.isPending ? "Recording..." : "Record Reading"}
+                        </Button>
+                        <Button
                           type="button"
                           disabled={
                             submitAllReadingsMutation.isPending ||
@@ -726,7 +753,8 @@ export default function MeterReaderReadings() {
                         >
                           {submitAllReadingsMutation.isPending ? "Submitting..." : "Submit All Readings"}
                         </Button>
-                    </div>
+                      </div>
+                    )}
                   </form>
                 </CardContent>
               </Card>
