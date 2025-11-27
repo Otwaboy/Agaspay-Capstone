@@ -44,10 +44,11 @@ export default function MeterReaderReadings() {
     }
   }, []);
 
-  // Fetch connections
+  // Fetch connections with refetching every 5 seconds to detect billing updates
   const { data: connectionsResponse, isLoading: connectionsLoading } = useQuery({
     queryKey: ["connections"],
-    queryFn: async () => apiClient.getLatestReadings()
+    queryFn: async () => apiClient.getLatestReadings(),
+    refetchInterval: 5000 // Auto-refetch every 5 seconds
   });
 
   // Fetch current user
@@ -90,10 +91,10 @@ export default function MeterReaderReadings() {
   const overallReadingStatus = (() => {
   if (zoneConnections.length === 0) return "No Data";
 
-  // Only consider unbilled readings for status
-  const unbilledConnections = zoneConnections.filter(c => !c.is_billed);
+  // Only consider unbilled readings for status (exclude cannot_read meters as they don't need billing)
+  const unbilledConnections = zoneConnections.filter(c => !c.is_billed && c.can_read_status !== 'cannot_read');
 
-  if (unbilledConnections.length === 0) return "Ready to read"; // All billed, ready for new readings
+  if (unbilledConnections.length === 0) return "Ready to read"; // All readable meters billed, ready for new readings
 
   const allApproved = unbilledConnections.every(c => c.reading_status === "approved");
   const anySubmitted = unbilledConnections.some(c => c.reading_status === "submitted");
@@ -108,11 +109,13 @@ export default function MeterReaderReadings() {
   // Check if approval message should show (only when approved AND not yet billed)
   const shouldShowApprovalMessage = overallReadingStatus === "Approved" && zoneConnections.some(c => c.reading_status === "approved" && !c.is_billed);
 
-  // Monthly progress - based on ALL zone connections, not filtered by search
+  // Monthly progress - based on ALL zone connections that CAN be read (exclude cannot_read), not filtered by search
   const readCount = zoneConnections.filter(conn => conn.read_this_month && !conn.is_billed).length;
   console.log('read count', readCount);
 
-  const totalCount = zoneConnections.length;
+  // Only count connections that CAN be read (exclude those marked as cannot_read)
+  const readableConnections = zoneConnections.filter(conn => conn.can_read_status !== 'cannot_read');
+  const totalCount = readableConnections.length;
   const progressPercentage = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
 
   const selectedConnectionData = filteredConnections.find(
