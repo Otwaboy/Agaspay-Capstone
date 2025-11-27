@@ -616,8 +616,8 @@ export default function MeterReaderReadings() {
                     </div>
                     )}
 
-                    {/* Show approval message when reading is approved */}
-                    {selectedConnectionData?.reading_status === "approved" && (
+                    {/* Show approval message when overall reading status is approved */}
+                    {overallReadingStatus === "Approved" && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">
