@@ -339,6 +339,7 @@ export default function TreasurerApproveReadings() {
                                   <TableHead className="text-right">Present</TableHead>
                                   <TableHead className="text-right">Consumption</TableHead>
                                   <TableHead>Period</TableHead>
+                                  <TableHead>Read Status</TableHead>
                                   <TableHead>Status</TableHead>
                                   <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
@@ -367,6 +368,17 @@ export default function TreasurerApproveReadings() {
                                             reading.inclusive_date.end
                                           ).toLocaleDateString()}`
                                         : "N/A"}
+                                    </TableCell>
+                                    <TableCell>
+                                      {reading.can_read_status === 'cannot_read' ? (
+                                        <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                                          Can't Read
+                                        </Badge>
+                                      ) : (
+                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                                          Read
+                                        </Badge>
+                                      )}
                                     </TableCell>
                                     <TableCell>
                                       <Badge variant="secondary">
@@ -499,6 +511,25 @@ export default function TreasurerApproveReadings() {
                                                     : "Date not available"}
                                                 </p>
                                               </div>
+
+                                              {selectedReading.can_read_status === 'cannot_read' && (
+                                                <div className="border-t pt-4">
+                                                  <h4 className="font-semibold mb-2">
+                                                    Reading Status
+                                                  </h4>
+                                                  <Badge className="bg-red-100 text-red-700 hover:bg-red-100 mb-2">
+                                                    Can't Read
+                                                  </Badge>
+                                                  <div>
+                                                    <p className="text-sm text-muted-foreground mb-1">
+                                                      Remarks:
+                                                    </p>
+                                                    <p className="text-sm bg-red-50 p-2 rounded border border-red-200">
+                                                      {selectedReading.remarks || "No remarks provided"}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              )}
 
                                               <div className="flex gap-2 pt-4">
                                                 <Button
