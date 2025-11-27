@@ -403,7 +403,7 @@ export default function Login() {
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">or</span>
+                <span className="px-4 bg-white text-gray-500"><Droplets></Droplets></span>
               </div>
             </div>
 
@@ -414,8 +414,8 @@ export default function Login() {
                 variant="outline"
                 className="w-full h-12 border-2 border-gray-200 hover:bg-gray-50"
               >
-                <Users className="mr-2 h-5 w-5 text-gray-600" />
-                Sign in as Guest
+                <Droplets className="mr-2 h-5 w-5 text-gray-600" />
+                Welcome to Agaspay
               </Button>
             </div>
 
@@ -1115,9 +1115,9 @@ export default function Login() {
       {/* Support Center Modal */}
       {showSupportModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white relative">
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white relative flex-shrink-0">
               <button
                 onClick={() => setShowSupportModal(false)}
                 className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
@@ -1134,7 +1134,7 @@ export default function Login() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+            <div className="p-6 overflow-y-auto flex-1">
               <div className="space-y-6">
                 {/* FAQ Section */}
                 <div>
@@ -1241,7 +1241,7 @@ export default function Login() {
             </div>
 
             {/* Modal Footer */}
-            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between items-center">
+            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between items-center flex-shrink-0">
               <p className="text-xs text-gray-600">
                 Still need help? Visit us at the Barangay Hall
               </p>
