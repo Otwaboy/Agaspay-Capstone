@@ -535,7 +535,7 @@ export default function MeterReaderReadings() {
 
                     {/* Can't Read Toggle */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-6">
                         <div>
                           <p className="text-sm font-semibold text-gray-900">Unable to Read Meter?</p>
                           <p className="text-xs text-gray-500 mt-1">Mark as unable to read if meter is inaccessible or broken</p>
@@ -557,6 +557,21 @@ export default function MeterReaderReadings() {
                           {isCannotRead ? "Marked as Unable to Read" : "Mark as Unable to Read"}
                         </Button>
                       </div>
+
+                      {isCannotRead && (
+                        <div className="space-y-2">
+                          <Label className="flex items-center space-x-2 text-base">
+                            <AlertCircle className="h-4 w-4 text-red-600" />
+                            <span>Reason Why Meter Cannot Be Read <span className="text-red-600">*</span></span>
+                          </Label>
+                          <Textarea
+                            placeholder="Explain why the meter cannot be read (e.g., meter is broken, meter not found, access blocked, etc.)"
+                            value={formData.remarks}
+                            onChange={(e) => handleInputChange("remarks", e.target.value)}
+                            className="min-h-24"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* FORM INPUTS */}
@@ -641,20 +656,6 @@ export default function MeterReaderReadings() {
                         </div>
                       </div>
 
-                      {isCannotRead && (
-                        <>
-                          <Label className="flex items-center space-x-2 text-base">
-                            <AlertCircle className="h-4 w-4 text-red-600" />
-                            <span>Reason Why Meter Cannot Be Read <span className="text-red-600">*</span></span>
-                          </Label>
-                          <Textarea
-                            placeholder="Explain why the meter cannot be read (e.g., meter is broken, meter not found, access blocked, etc.)"
-                            value={formData.remarks}
-                            onChange={(e) => handleInputChange("remarks", e.target.value)}
-                            className="min-h-24"
-                          />
-                        </>
-                      )}
                       {!isCannotRead && (
                         <>
                           <Label className="flex items-center space-x-2 text-base">
