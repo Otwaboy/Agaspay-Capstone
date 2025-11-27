@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -39,8 +40,10 @@ import { apiClient } from "../lib/api";
 
 
 
-//useStates 
+//useStates
 export default function TreasurerGenerateBills() {
+  const queryClient = useQueryClient();
+
   const [selectedTab, setSelectedTab] = useState("single");
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -183,9 +186,12 @@ export default function TreasurerGenerateBills() {
     try {
       setIsGeneratingBill(true);
       await apiClient.createBilling(billData);
-      
+
       toast.success("Success", { description: "Bill generated successfully" });
-      
+
+      // Invalidate meter reader connections query to reflect is_billed flag
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+
       // Clear form
       setFormData({
         connection_id: "",
@@ -197,7 +203,7 @@ export default function TreasurerGenerateBills() {
       });
       setSearchTerm("");
       setShowSearchResults(false);
-      
+
       // Refresh data
       fetchConnections();
       fetchExistingBills();
@@ -261,6 +267,9 @@ export default function TreasurerGenerateBills() {
       // This allows them to set a new period for the next billing cycle
       localStorage.removeItem('meterReadingPeriod');
       console.log('✅ Saved reading period cleared for next billing cycle');
+
+      // Invalidate meter reader connections query to reflect is_billed flag
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
 
       toast.success("Bulk Generation Complete", { description: "" });
 
