@@ -273,7 +273,7 @@ export default function AdminPersonnel() {
                 <CardTitle>Staff Members ({filteredPersonnel.length})</CardTitle>
               </CardHeader>
               <CardContent className="overflow-visible">
-                <div className="overflow-x-auto overflow-y-visible">
+                <div className="overflow-x-auto" style={{ overflowY: 'auto' }}>
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
@@ -339,7 +339,7 @@ export default function AdminPersonnel() {
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="z-50">
+                                <DropdownMenuContent align="end" side="top" sideOffset={10}>
                                   <DropdownMenuItem>
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details

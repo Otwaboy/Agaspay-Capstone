@@ -225,7 +225,7 @@ export default function AdminConnections() {
                 <CardTitle>Water Service Connections ({filteredConnections.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto" style={{ overflowY: 'auto' }}>
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
@@ -294,7 +294,7 @@ export default function AdminConnections() {
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent align="end" side="top" sideOffset={10}>
                                   <DropdownMenuItem>
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details

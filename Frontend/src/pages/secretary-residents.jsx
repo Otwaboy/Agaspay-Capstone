@@ -277,7 +277,7 @@ export default function SecretaryResidents() {
             </div>
 
             {/* Main Content */}
-            <Card className="overflow-visible">
+            <Card className="overflow-visible h-full flex flex-col">
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
@@ -306,10 +306,10 @@ export default function SecretaryResidents() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="overflow-x-auto overflow-y-visible">
+              <CardContent className="p-0 flex-1 flex flex-col min-h-0">
 
                 {/* Search and Filter */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6 px-6">
+                <div className="flex flex-col md:flex-row gap-4 mb-6 px-6 pt-6">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
@@ -344,7 +344,7 @@ export default function SecretaryResidents() {
 
                 {/* Error State */}
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 mx-6">
                     <p className="text-red-800 text-sm">
                       <strong>Error loading residents:</strong> {error.message}
                     </p>
@@ -353,120 +353,121 @@ export default function SecretaryResidents() {
 
                 {/* Table */}
                 {!isLoading && !error && (
-                  <div className="border rounded-lg mx-6 mb-6 overflow-hidden">
-                    <div className="overflow-x-auto overflow-y-visible">
+                  <div className="flex-1 flex flex-col mx-6 mb-6 border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto flex-1" style={{ overflowY: 'auto' }}>
                       <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead>Name</TableHead>
-                          <TableHead>Contact</TableHead>
-                          <TableHead>Address</TableHead>
-                          <TableHead>Meter No.</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredResidents.length > 0 ? (
-                          filteredResidents.flatMap((resident) =>
-                            resident.meters.map((meter, meterIdx) => (
-                              <TableRow key={`${resident.resident_id}-${meter.id}`} data-testid={`row-resident-${resident.resident_id}-meter-${meter.id}`}>
-                                {/* Name, Contact, Address - only show for first meter */}
-                                {meterIdx === 0 && (
-                                  <>
-                                    <TableCell className="font-medium" rowSpan={resident.meters.length}>
-                                      {resident.name}
-                                    </TableCell>
-                                    <TableCell rowSpan={resident.meters.length}>
-                                      <div className="text-sm">
-                                        <div>{resident.contactNo}</div>
-                                        <div className="text-gray-500">{resident.email}</div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="max-w-xs truncate" rowSpan={resident.meters.length}>
-                                      {resident.address}
-                                    </TableCell>
-                                  </>
-                                )}
-
-                                {/* Meter Number */}
-                                <TableCell>
-                                  <span className="font-mono text-sm">{meter.meter_no}</span>
-                                </TableCell>
-
-                                {/* Type */}
-                                <TableCell>
-                                  <Badge variant="outline" className="capitalize">
-                                    {meter.type}
-                                  </Badge>
-                                </TableCell>
-
-                                {/* Status */}
-                                <TableCell>
-                                  <Badge
-                                    variant={meter.connectionStatus === "active" ? "success" : "secondary"}
-                                    className={`
-                                      ${
-                                        meter.connectionStatus === "active"
-                                          ? "bg-green-100 text-green-700 hover:bg-green-100"
-                                          : meter.connectionStatus === "pending"
-                                          ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                                          : meter.connectionStatus === "disconnected"
-                                          ? "bg-red-100 text-red-700 hover:bg-red-100"
-                                          : "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                                      }
-                                    `}
-                                    data-testid={`badge-status-${meter.id}`}
-                                  >
-                                    {meter.connectionStatus.charAt(0).toUpperCase() + meter.connectionStatus.slice(1)}
-                                  </Badge>
-                                </TableCell>
-
-                                {/* Actions - Dropdown Menu - only show for first meter */}
-                                {meterIdx === 0 && (
-                                  <TableCell className="text-right relative z-50" rowSpan={resident.meters.length}>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          data-testid={`button-actions-${resident.resident_id}`}
-                                        >
-                                          <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" side="bottom" sideOffset={8} avoidCollisions={false} className="z-[9999]">
-                                        <DropdownMenuItem onClick={() => handleViewDetails(resident)}>
-                                          <Eye className="h-4 w-4 mr-2" />
-                                          View Details
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleEditResident(resident)}>
-                                          <Edit className="h-4 w-4 mr-2" />
-                                          Edit Resident
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleAddMeter(resident)}>
-                                          <Droplets className="h-4 w-4 mr-2" />
-                                          Add Meter
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            ))
-                          )
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                              No residents found matching your criteria
-                            </TableCell>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50 sticky top-0 z-10">
+                            <TableHead>Name</TableHead>
+                            <TableHead>Contact</TableHead>
+                            <TableHead>Address</TableHead>
+                            <TableHead>Meter No.</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredResidents.length > 0 ? (
+                            filteredResidents.flatMap((resident) =>
+                              resident.meters.map((meter, meterIdx) => (
+                                <TableRow key={`${resident.resident_id}-${meter.id}`} data-testid={`row-resident-${resident.resident_id}-meter-${meter.id}`}>
+                                  {/* Name, Contact, Address - only show for first meter */}
+                                  {meterIdx === 0 && (
+                                    <>
+                                      <TableCell className="font-medium" rowSpan={resident.meters.length}>
+                                        {resident.name}
+                                      </TableCell>
+                                      <TableCell rowSpan={resident.meters.length}>
+                                        <div className="text-sm">
+                                          <div>{resident.contactNo}</div>
+                                          <div className="text-gray-500">{resident.email}</div>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="max-w-xs truncate" rowSpan={resident.meters.length}>
+                                        {resident.address}
+                                      </TableCell>
+                                    </>
+                                  )}
+
+                                  {/* Meter Number */}
+                                  <TableCell>
+                                    <span className="font-mono text-sm">{meter.meter_no}</span>
+                                  </TableCell>
+
+                                  {/* Type */}
+                                  <TableCell>
+                                    <Badge variant="outline" className="capitalize">
+                                      {meter.type}
+                                    </Badge>
+                                  </TableCell>
+
+                                  {/* Status */}
+                                  <TableCell>
+                                    <Badge
+                                      variant={meter.connectionStatus === "active" ? "success" : "secondary"}
+                                      className={`
+                                        ${
+                                          meter.connectionStatus === "active"
+                                            ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                            : meter.connectionStatus === "pending"
+                                            ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+                                            : meter.connectionStatus === "disconnected"
+                                            ? "bg-red-100 text-red-700 hover:bg-red-100"
+                                            : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                                        }
+                                      `}
+                                      data-testid={`badge-status-${meter.id}`}
+                                    >
+                                      {meter.connectionStatus.charAt(0).toUpperCase() + meter.connectionStatus.slice(1)}
+                                    </Badge>
+                                  </TableCell>
+
+                                  {/* Actions - Dropdown Menu - only show for first meter */}
+                                  {meterIdx === 0 && (
+                                    <TableCell className="text-right" rowSpan={resident.meters.length}>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            data-testid={`button-actions-${resident.resident_id}`}
+                                          >
+                                            <MoreVertical className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" side="top" sideOffset={10}>
+                                          <DropdownMenuItem onClick={() => handleViewDetails(resident)}>
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            View Details
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleEditResident(resident)}>
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Resident
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleAddMeter(resident)}>
+                                            <Droplets className="h-4 w-4 mr-2" />
+                                            Add Meter
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </TableCell>
+                                  )}
+                                </TableRow>
+                              ))
+                            )
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                                No residents found matching your criteria
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
                     </div>
                   </div>
+                  
                 )}
               </CardContent>
             </Card>

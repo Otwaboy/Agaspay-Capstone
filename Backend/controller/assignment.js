@@ -937,6 +937,7 @@ const rescheduleAssignment = async (req, res) => {
     task.schedule_date = new Date(new_date);
     task.schedule_time = new_time;
     task.assigned_personnel = targetPersonnelId;
+    task.task_status = 'Assigned'; // Reset status to Assigned when rescheduling
     await task.save();
 
     // ✅ Update the assignment if personnel changed

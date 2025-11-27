@@ -224,7 +224,7 @@ export default function ReadingHistory() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto" style={{ overflowY: 'auto' }}>
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
@@ -312,7 +312,7 @@ export default function ReadingHistory() {
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent align="end" side="top" sideOffset={10}>
                                   <DropdownMenuItem>
                                     <Eye className="h-4 w-4 mr-2" />
                                     {reading.can_read_status === 'cannot_read' ? 'View Remarks' : 'View Details'}
