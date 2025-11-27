@@ -5,9 +5,9 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
@@ -65,28 +65,33 @@ export default function MeterReaderReadings() {
   const meterReaderZone = authUser?.assigned_zone;
 
   console.log('all connection get in the latest reading', connectionList);
-  
 
-  // Filtered connections by zone + search query
-  const filteredConnections = connectionList
+  // Connections filtered by zone only (for overall statistics)
+  const zoneConnections = connectionList
     .filter((conn) => {
       const matchesZone = meterReaderZone ? conn.zone === meterReaderZone : true;
+      return matchesZone;
+    })
+    .sort((a, b) => Number(a.purok_no) - Number(b.purok_no));
+
+  // Filtered connections by zone + search query (for dropdown)
+  const filteredConnections = zoneConnections
+    .filter((conn) => {
       const matchesSearch = searchQuery
         ? conn.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           conn.purok_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           conn.meter_number?.toLowerCase().includes(searchQuery.toLowerCase())
         : true;
-      return matchesZone && matchesSearch;
-    })
-    .sort((a, b) => Number(a.purok_no) - Number(b.purok_no));
+      return matchesSearch;
+    });
 
   console.log('filtter', filteredConnections);
 
   const overallReadingStatus = (() => {
-  if (filteredConnections.length === 0) return "No Data";
+  if (zoneConnections.length === 0) return "No Data";
 
   // Only consider unbilled readings for status
-  const unbilledConnections = filteredConnections.filter(c => !c.is_billed);
+  const unbilledConnections = zoneConnections.filter(c => !c.is_billed);
 
   if (unbilledConnections.length === 0) return "Ready to read"; // All billed, ready for new readings
 
@@ -100,11 +105,11 @@ export default function MeterReaderReadings() {
   return "In Progress"; // fallback
 })();
 
-  // Monthly progress - only count unbilled readings
-  const readCount = filteredConnections.filter(conn => conn.read_this_month && !conn.is_billed).length;
+  // Monthly progress - based on ALL zone connections, not filtered by search
+  const readCount = zoneConnections.filter(conn => conn.read_this_month && !conn.is_billed).length;
   console.log('read count', readCount);
 
-  const totalCount = filteredConnections.length;
+  const totalCount = zoneConnections.length;
   const progressPercentage = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
 
   const selectedConnectionData = filteredConnections.find(
@@ -349,7 +354,7 @@ export default function MeterReaderReadings() {
                             <div className="flex items-center justify-between w-full">
                               <div className="flex flex-col items-start">
                                 <span className="font-semibold">{selectedConnectionData.full_name}</span>
-                                <span className="text-xs text-gray-500">Meter #{selectedConnectionData.meter_number}</span>
+                                <span className="text-xs text-gray-500">Meter No. {selectedConnectionData.meter_number}</span>
                               </div>
                               <div className="flex gap-2">
                                 <Badge variant="outline">Zone {selectedConnectionData.zone}</Badge>
@@ -359,10 +364,10 @@ export default function MeterReaderReadings() {
                           ) : <SelectValue placeholder="Search and select resident & meter" />}
                         </SelectTrigger>
                         <SelectContent>
-                          <div className="sticky top-0 bg-white p-2 border-b z-10">
+                          <div className="sticky top-0 bg-white p-0 border-b z-10">
                             <div className="relative">
-                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                              <Input type="text" placeholder="Search by name, purok, or meter number..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9 text-sm" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                              <Input type="text" placeholder="Search by name, purok, or meter number..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-14 text-base border-none rounded-none" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
                             </div>
                           </div>
                           <div className="max-h-[300px] overflow-y-auto">
@@ -370,23 +375,33 @@ export default function MeterReaderReadings() {
                               <SelectItem value="loading" disabled>Loading connections...</SelectItem>
                             ) : filteredConnections.length === 0 ? (
                               <SelectItem value="no-connections" disabled>{searchQuery ? "No residents found" : "No connections in your zone"}</SelectItem>
-                            ) : filteredConnections.map((connection) => (
-                              <SelectItem key={connection.connection_id} value={String(connection.connection_id)}>
-                                <div className="-ml-4 flex items-center justify-between w-full gap-2">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    {(connection.read_this_month && !connection.is_billed) ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" /> : <div className="h-4 w-4 flex-shrink-0" />}
-                                    <div className="flex flex-col">
-                                      <span className="truncate text-base font-semibold">{connection.full_name || "Unnamed"}</span>
-                                      <span className="text-xs text-gray-500">Meter #{connection.meter_number}</span>
+                            ) : filteredConnections.map((connection) => {
+                              const getStatusBadge = () => {
+                                if (connection.can_read_status === 'cannot_read') {
+                                  return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 text-xs">Can't Read</Badge>;
+                                }
+                                return (connection.read_this_month && !connection.is_billed)
+                                  ? <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">Read</Badge>
+                                  : <Badge variant="outline" className="text-gray-500 text-xs">Not Read</Badge>;
+                              };
+                              return (
+                                <SelectItem key={connection.connection_id} value={String(connection.connection_id)}>
+                                  <div className="-ml-4 flex items-center justify-between w-full gap-2">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      {(connection.read_this_month && !connection.is_billed) ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" /> : <div className="h-4 w-4 flex-shrink-0" />}
+                                      <div className="flex flex-col">
+                                        <span className="truncate text-base font-semibold">{connection.full_name || "Unnamed"}</span>
+                                        <span className="text-xs text-gray-500">Meter No. {connection.meter_number}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                      <Badge variant="secondary" className="text-xs">Purok {connection.purok_no}</Badge>
+                                      {getStatusBadge()}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-1 flex-shrink-0">
-                                    <Badge variant="secondary" className="text-xs">Purok {connection.purok_no}</Badge>
-                                    {(connection.read_this_month && !connection.is_billed) ? <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">Read</Badge> : <Badge variant="outline" className="text-gray-500 text-xs">Not Read</Badge>}
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))}
+                                </SelectItem>
+                              );
+                            })}
                           </div>
                         </SelectContent>
                       </Select>
