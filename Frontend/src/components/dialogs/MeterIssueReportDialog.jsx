@@ -67,14 +67,19 @@ export default function MeterIssueReportDialog({
       });
     }
 
-    createIssueMutation.mutate({
+    const issueData = {
       type: "Meter Issue",
       connection_id: connection._id || connection.connection_id,
       location: connection?.meter_number || "Unknown Meter",
       description: `${issueType}: ${description.trim()}`,
       urgency_level: "high",
       reported_issue_status: "Pending"
-    });
+    };
+
+    console.log("Submitting meter issue:", issueData);
+    console.log("Connection object:", connection);
+
+    createIssueMutation.mutate(issueData);
   };
 
   return (
