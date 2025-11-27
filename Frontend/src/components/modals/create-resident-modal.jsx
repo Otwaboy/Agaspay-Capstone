@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { toast } from "sonner";
 import { authManager } from "../../lib/auth";
 import { apiClient } from "../../lib/api";
-import { Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function CreateResidentModal({ isOpen, onClose }) {
   
@@ -43,25 +43,29 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [meterValidation, setMeterValidation] = useState({ checking: false, valid: null });
 
-  // Parse MongoDB duplicate key error
+  // Parse MongoDB duplicate key error and other backend errors into user-friendly messages
   const parseDuplicateKeyError = (errorMessage) => {
     const newErrors = {};
+    let userFriendlyMessage = errorMessage;
 
-    // Check for MongoDB duplicate key error
-    if (errorMessage.includes('E11000 duplicate key error')) {
-      // Extract the field name from the error
-      if (errorMessage.includes('username_1')) {
+    // Check for MongoDB duplicate key error (E11000)
+    if (errorMessage.includes('E11000 duplicate key error') || errorMessage.includes('duplicate key error')) {
+      if (errorMessage.includes('username') || errorMessage.includes('username_1')) {
         newErrors.username = "This username is already taken. Please choose a different username.";
-      } else if (errorMessage.includes('email_1')) {
+        userFriendlyMessage = "This username is already taken. Please choose a different one.";
+      } else if (errorMessage.includes('email') || errorMessage.includes('email_1')) {
         newErrors.email = "This email is already registered. Please use a different email.";
-      } else if (errorMessage.includes('meter_no_1') || errorMessage.includes('meterNumber')) {
-        newErrors.meterNumber = "This meter number is already registered. Please check and enter a different meter number.";
-      } else if (errorMessage.includes('contact_no_1') || errorMessage.includes('phone')) {
+        userFriendlyMessage = "This email is already registered. Please use a different email.";
+      } else if (errorMessage.includes('meter_no') || errorMessage.includes('meter_no_1') || errorMessage.includes('meter')) {
+        newErrors.meterNumber = "This meter number is already registered. Please enter a different meter number.";
+        userFriendlyMessage = "This meter number is already registered. Please enter a different one.";
+      } else if (errorMessage.includes('contact_no') || errorMessage.includes('contact_no_1') || errorMessage.includes('phone')) {
         newErrors.phone = "This phone number is already registered. Please use a different phone number.";
+        userFriendlyMessage = "This phone number is already registered. Please use a different one.";
       }
     }
 
-    return newErrors;
+    return { errors: newErrors, message: userFriendlyMessage };
   };
 
   // functions when submmiting the button
@@ -71,8 +75,16 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     setErrors({}); // Clear previous errors
 
     try {
-      // Client-side validation
+      // Client-side validation - single object for all errors
       const validationErrors = {};
+
+      if (!formData.firstName || formData.firstName.trim() === "") {
+        validationErrors.firstName = "First name is required";
+      }
+
+      if (!formData.lastName || formData.lastName.trim() === "") {
+        validationErrors.lastName = "Last name is required";
+      }
 
       if (!formData.connectionZone || formData.connectionZone.trim() === "") {
         validationErrors.connectionZone = "Water connection zone is required";
@@ -98,14 +110,20 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         validationErrors.confirmPassword = "Passwords do not match";
       }
 
-      // Check if meter number is valid (not duplicate)
-      if (meterValidation.valid === false) {
+      if (!formData.meterNumber || formData.meterNumber.trim() === "") {
+        validationErrors.meterNumber = "Meter number is required";
+      } else if (meterValidation.valid === false) {
         validationErrors.meterNumber = "This meter number is already in use. Please enter a different meter number.";
       }
 
       // If there are validation errors, show them
       if (Object.keys(validationErrors).length > 0) {
         setErrors(validationErrors);
+        // Show first validation error in toast
+        const firstError = Object.values(validationErrors)[0];
+        toast.error("Validation Error", {
+          description: firstError
+        });
         setIsLoading(false);
         return;
       }
@@ -188,56 +206,75 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         else if (error.response.data.message || error.response.data.msg) {
           errorMessage = error.response.data.message || error.response.data.msg;
 
-          // Split multiple errors if they're separated by pipe (|)
-          const errorMessages = errorMessage.includes('|')
-            ? errorMessage.split('|').map(msg => msg.trim())
-            : [errorMessage];
+          // Check if it's a MongoDB duplicate key error first
+          if (errorMessage.includes('E11000 duplicate key error') || errorMessage.includes('duplicate key error')) {
+            const result = parseDuplicateKeyError(errorMessage);
+            parsedErrors = result.errors;
+            errorMessage = result.message;
+          } else {
+            // Split multiple errors if they're separated by pipe (|)
+            const errorMessages = errorMessage.includes('|')
+              ? errorMessage.split('|').map(msg => msg.trim())
+              : [errorMessage];
 
-          // Parse specific backend error messages for field-specific errors
-          // Check all possible fields to support concurrent validation errors
-          errorMessages.forEach(msg => {
-            if (msg.toLowerCase().includes('username')) {
-              parsedErrors.username = msg;
-            }
-            if (msg.toLowerCase().includes('email')) {
-              parsedErrors.email = msg;
-            }
-            if (msg.toLowerCase().includes('meter')) {
-              parsedErrors.meterNumber = msg;
-            }
-            if (msg.toLowerCase().includes('phone') || msg.toLowerCase().includes('contact')) {
-              parsedErrors.phone = msg;
-            }
-            if (msg.toLowerCase().includes('full name')) {
-              parsedErrors.firstName = msg;
-              parsedErrors.lastName = msg;
-            }
-          });
-
-          // If no specific field was matched, check for MongoDB E11000 errors as fallback
-          if (Object.keys(parsedErrors).length === 0) {
-            parsedErrors = parseDuplicateKeyError(errorMessage);
+            // Parse specific backend error messages for field-specific errors
+            // Check all possible fields to support concurrent validation errors
+            errorMessages.forEach(msg => {
+              if (msg.toLowerCase().includes('full name')) {
+                parsedErrors.firstName = msg;
+                parsedErrors.lastName = msg;
+              } else if (msg.toLowerCase().includes('username')) {
+                parsedErrors.username = msg;
+              } else if (msg.toLowerCase().includes('email')) {
+                parsedErrors.email = msg;
+              } else if (msg.toLowerCase().includes('meter')) {
+                parsedErrors.meterNumber = msg;
+              } else if (msg.toLowerCase().includes('phone') || msg.toLowerCase().includes('contact')) {
+                parsedErrors.phone = msg;
+              }
+            });
           }
         }
       }
       // Parse error message directly if no response object
       else if (error.message && error.message !== "Server error (400)") {
         errorMessage = error.message;
-        parsedErrors = parseDuplicateKeyError(errorMessage);
+        const result = parseDuplicateKeyError(errorMessage);
+        parsedErrors = result.errors;
+        errorMessage = result.message;
       }
 
       // Show error notification
       if (Object.keys(parsedErrors).length > 0) {
         setErrors(parsedErrors);
-        // Show field-specific error toast
+        // Get user-friendly message from parsedErrors
+        let userFriendlyMsg = errorMessage;
+        if (parsedErrors.email) {
+          userFriendlyMsg = parsedErrors.email;
+        } else if (parsedErrors.username) {
+          userFriendlyMsg = parsedErrors.username;
+        } else if (parsedErrors.meterNumber) {
+          userFriendlyMsg = parsedErrors.meterNumber;
+        } else if (parsedErrors.phone) {
+          userFriendlyMsg = parsedErrors.phone;
+        }
         toast.error("Validation Error", {
-          description: errorMessage
+          description: userFriendlyMsg
         });
       } else if (errorMessage && errorMessage !== "Failed to create resident. Please try again.") {
-        // Show actual backend error message
-        toast.error("Error", {
-          description: errorMessage
-        });
+        // Check if it's a raw MongoDB error and make it friendly
+        if (errorMessage.includes('E11000 duplicate key error') || errorMessage.includes('duplicate key error')) {
+          const result = parseDuplicateKeyError(errorMessage);
+          setErrors(result.errors);
+          toast.error("Validation Error", {
+            description: result.message
+          });
+        } else {
+          // Show actual backend error message
+          toast.error("Error", {
+            description: errorMessage
+          });
+        }
       } else {
         // Show generic error only if we have no other info
         toast.error("Error", {
@@ -407,104 +444,101 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="type">Type</Label>
-            <Select onValueChange={handleChange("type")} required>
-              <SelectTrigger data-testid="select-type" className={errors.type ? "border-red-500 border-2 focus:ring-red-500" : ""}>
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="household">Household</SelectItem>
-                <SelectItem value="restaurant">Restaurant</SelectItem>
-                <SelectItem value="establishment">Establishment</SelectItem>
-                <SelectItem value="others">Others</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="meterNumber">Meter Number</Label>
-            <div className="relative">
-              <Input
-                id="meterNumber"
-                value={formData.meterNumber}
-                onChange={(e) => handleChange("meterNumber")(e.target.value)}
-                placeholder="Enter water meter number"
-                required
-                data-testid="input-meter-number"
-                className={`${errors.meterNumber ? "border-red-500 border-2 focus:ring-red-500" : meterValidation.valid === true && formData.meterNumber ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
-              />
-              {meterValidation.checking && formData.meterNumber && (
-                <div className="absolute right-3 top-3">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-                </div>
-              )}
-              {meterValidation.valid === true && formData.meterNumber && !meterValidation.checking && (
-                <div className="absolute right-3 top-3 text-green-500">
-                  ✓
-                </div>
-              )}
-            </div>
-            {errors.meterNumber && (
-              <p className="text-xs text-red-500">{errors.meterNumber}</p>
-            )}
-            {meterValidation.valid === true && formData.meterNumber && !errors.meterNumber && (
-              <p className="text-xs text-green-600">Meter number is available</p>
-            )}
-          </div>
-
-          {/* Water Connection Zone and Purok */}
+          {/* Water Connection Details */}
           <div className="border-t pt-4 mt-4 mb-4">
-            <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Water Connection Location</h3>
-              <p className="text-xs text-gray-500 mb-4">Specify the zone and purok where the water meter is located (can be different from resident address)</p>
-            </div>
-
-            {/* Connection Zone */}
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="connectionZone">Water Connection Zone <span className="text-red-500">*</span></Label>
-              <Select onValueChange={handleChange("connectionZone")} required>
-                <SelectTrigger data-testid="select-connection-zone" className={errors.connectionZone ? "border-red-500 border-2 focus:ring-red-500" : ""}>
-                  <SelectValue placeholder="Select Zone" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Biking 1</SelectItem>
-                  <SelectItem value="2">Biking 2</SelectItem>
-                  <SelectItem value="3">Biking 3</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Connection Purok - Conditional based on selected Zone */}
-            {formData.connectionZone && (
+            {/* Connection Type, Meter Number, and Zone */}
+            <div className="space-y-4 bg-blue-50 p-4 rounded-lg">
               <div className="space-y-2">
-                <Label htmlFor="connectionPurok">Water Connection Purok <span className="text-red-500">*</span></Label>
-                <Select onValueChange={handleChange("connectionPurok")} required>
-                  <SelectTrigger data-testid="select-connection-purok" className={errors.connectionPurok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
-                    <SelectValue placeholder="Select Purok" />
+                <Label htmlFor="type">Connection Type <span className="text-red-500">*</span></Label>
+                <Select onValueChange={handleChange("type")} required>
+                  <SelectTrigger data-testid="select-type" className={errors.type ? "border-red-500 border-2 focus:ring-red-500" : ""}>
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {formData.connectionZone === "1" && (
-                      <>
-                        <SelectItem value="4">Purok 4</SelectItem>
-                        <SelectItem value="5">Purok 5</SelectItem>
-                        <SelectItem value="6">Purok 6</SelectItem>
-                      </>
-                    )}
-                    {formData.connectionZone === "2" && (
-                      <>
-                        <SelectItem value="1">Purok 1</SelectItem>
-                        <SelectItem value="2">Purok 2</SelectItem>
-                        <SelectItem value="3">Purok 3</SelectItem>
-                      </>
-                    )}
-                    {formData.connectionZone === "3" && (
-                      <SelectItem value="7">Purok 7</SelectItem>
-                    )}
+                    <SelectItem value="household">Household</SelectItem>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="establishment">Establishment</SelectItem>
+                    <SelectItem value="others">Others</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label htmlFor="meterNumber">Meter Number <span className="text-red-500">*</span></Label>
+                <div className="relative">
+                  <Input
+                    id="meterNumber"
+                    value={formData.meterNumber}
+                    onChange={(e) => handleChange("meterNumber")(e.target.value)}
+                    placeholder="Enter water meter number"
+                    data-testid="input-meter-number"
+                    className={`${errors.meterNumber ? "border-red-500 border-2 focus:ring-red-500" : meterValidation.valid === true && formData.meterNumber ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                  />
+                  {meterValidation.checking && formData.meterNumber && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                    </div>
+                  )}
+                  {meterValidation.valid === true && formData.meterNumber && !meterValidation.checking && (
+                    <div className="absolute right-3 top-3 text-green-500">
+                      ✓
+                    </div>
+                  )}
+                </div>
+                {errors.meterNumber && (
+                  <p className="text-xs text-red-500">{errors.meterNumber}</p>
+                )}
+                {meterValidation.valid === true && formData.meterNumber && !errors.meterNumber && (
+                  <p className="text-xs text-green-600">Meter number is available</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="connectionZoneBlue">Water Connection Zone <span className="text-red-500">*</span></Label>
+                <Select onValueChange={handleChange("connectionZone")} value={formData.connectionZone}>
+                  <SelectTrigger data-testid="select-connection-zone-blue" className={errors.connectionZone ? "border-red-500 border-2 focus:ring-red-500" : ""}>
+                    <SelectValue placeholder="Select Zone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Biking 1</SelectItem>
+                    <SelectItem value="2">Biking 2</SelectItem>
+                    <SelectItem value="3">Biking 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Connection Purok - Conditional based on selected Zone */}
+              {formData.connectionZone && (
+                <div className="space-y-2">
+                  <Label htmlFor="connectionPurok">Water Connection Purok <span className="text-red-500">*</span></Label>
+                  <Select onValueChange={handleChange("connectionPurok")} required>
+                    <SelectTrigger data-testid="select-connection-purok" className={errors.connectionPurok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
+                      <SelectValue placeholder="Select Purok" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {formData.connectionZone === "1" && (
+                        <>
+                          <SelectItem value="4">Purok 4</SelectItem>
+                          <SelectItem value="5">Purok 5</SelectItem>
+                          <SelectItem value="6">Purok 6</SelectItem>
+                        </>
+                      )}
+                      {formData.connectionZone === "2" && (
+                        <>
+                          <SelectItem value="1">Purok 1</SelectItem>
+                          <SelectItem value="2">Purok 2</SelectItem>
+                          <SelectItem value="3">Purok 3</SelectItem>
+                        </>
+                      )}
+                      {formData.connectionZone === "3" && (
+                        <SelectItem value="7">Purok 7</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Account Creation Section */}

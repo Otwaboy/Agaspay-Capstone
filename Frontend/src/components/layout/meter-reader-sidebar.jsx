@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 import {
   Home,
   Droplets,
@@ -71,6 +72,7 @@ function MeterReaderSidebarContent() {
   const [location, setLocation] = useLocation();
   const { logout, user } = useAuth();
   const [expandedItems, setExpandedItems] = useState({});
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const isActive = (href) =>
     location === href || (href !== "/meter-reader-dashboard" && location.startsWith(href));
@@ -100,6 +102,10 @@ function MeterReaderSidebarContent() {
     subItems?.some(item => isActive(item.href));
 
   const handleLogout = () => {
+    setLogoutConfirmOpen(true);
+  };
+
+  const confirmLogout = () => {
     logout();
     setLocation("/login");
   };
@@ -186,15 +192,15 @@ function MeterReaderSidebarContent() {
         <div className="flex items-center px-3 py-2 mb-3 bg-gray-50 rounded-lg">
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-medium">
-              {user?.username?.charAt(0)?.toUpperCase() || 'M'}
+              {user?.fullname?.charAt(0)?.toUpperCase() || 'M'}
             </span>
           </div>
           <div className="ml-3 flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.username || 'Meter Reader'}
+              {user?.fullname || 'Meter Reader'}
             </p>
             <p className="text-xs text-gray-500 truncate">
-              {user?.role || 'meter reader'}
+              {user?.role.toUpperCase() || 'meter reader'}
             </p>
           </div>
         </div>
@@ -207,6 +213,33 @@ function MeterReaderSidebarContent() {
           Sign Out
         </Button>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <Dialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Sign Out</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to sign out? You'll need to log in again to access your account.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setLogoutConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={confirmLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

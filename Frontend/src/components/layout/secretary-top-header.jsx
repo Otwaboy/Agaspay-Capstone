@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
@@ -9,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 
 import {
   Bell,
@@ -27,9 +29,15 @@ import { Link } from "wouter";
 export default function SecretaryTopHeader() {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const handleLogout = () => {
+    setLogoutConfirmOpen(true);
+  };
+
+  const confirmLogout = () => {
     logout();
+    setLocation("/login");
   };
 
   return (
@@ -43,53 +51,7 @@ export default function SecretaryTopHeader() {
 
         {/* Right Side Actions */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="cursor-pointer relative"
-                data-testid="button-notifications"
-              >
-                <Bell className="cursor-pointer h-4 w-4" />
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center text-xs p-0"
-                >
-                  3
-                </Badge>
-              </Button>
-            </DropdownMenuTrigger>
-
-            {/* display when clicking the notification bell */}
-
-            <DropdownMenuContent align="end" className="w-56 sm:w-64 md:w-72 lg:w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-start space-x-3 p-3">
-                <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">Water Outage Reported</p>
-                  <p className="text-xs text-gray-500">Zone 3, Purok 5 - 2 minutes ago</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-start space-x-3 p-3">
-                <MessageSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">New Payment Received</p>
-                  <p className="text-xs text-gray-500">Juan Dela Cruz - ₱450.00 - 5 minutes ago</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-start space-x-3 p-3">
-                <User className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">New Resident Registration</p>
-                  <p className="text-xs text-gray-500">Maria Santos - 10 minutes ago</p>
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        
 
 
           {/* User Menu */}
@@ -102,12 +64,14 @@ export default function SecretaryTopHeader() {
               >
                 <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-medium">
-                    {user?.username?.charAt(0)?.toUpperCase() || 'S'}
+                    {user?.fullname?.charAt(0)?.toUpperCase() || 'S'}
                   </span>
                 </div>
-                <span className="text-sm font-medium hidden sm:block">
-                  {user?.username || 'Secretary'}
-                </span>
+                 <span className="text-sm font-medium hidden sm:block">
+                    {(user?.role || 'Administrator')
+                      .charAt(0).toUpperCase() +
+                      (user?.role || 'Administrator').slice(1).toLowerCase()}
+                  </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -135,6 +99,33 @@ export default function SecretaryTopHeader() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <Dialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Sign Out</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to sign out? You'll need to log in again to access your account.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setLogoutConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={confirmLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

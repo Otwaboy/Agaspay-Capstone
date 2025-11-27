@@ -11,10 +11,12 @@ import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
 import { Settings as SettingsIcon, Bell, Mail, Lock, Eye, Shield, EyeOff, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 
 export default function ResidentSettings() {
+  const queryClient = useQueryClient();
+
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -87,7 +89,8 @@ export default function ResidentSettings() {
       setDisconnectModalOpen(false);
       setSelectedMetersForDisconnect(new Set());
       setSelectAllMeters(false);
-      window.location.reload(); // Reload to update status
+      // Invalidate and refetch disconnection status
+      queryClient.invalidateQueries({ queryKey: ["disconnection-status"] });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to submit disconnection request");
@@ -99,7 +102,9 @@ export default function ResidentSettings() {
     mutationFn: () => apiClient.cancelDisconnectionRequest(),
     onSuccess: () => {
       toast.success("Disconnection request cancelled successfully!");
-      window.location.reload(); // Reload to update status
+      setCancelDisconnectConfirmOpen(false);
+      // Invalidate and refetch disconnection status
+      queryClient.invalidateQueries({ queryKey: ["disconnection-status"] });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to cancel disconnection request");
@@ -113,7 +118,8 @@ export default function ResidentSettings() {
       toast.success("Archive request submitted successfully!");
       setArchiveModalOpen(false);
       setArchiveReason("");
-      window.location.reload(); // Reload to update status
+      // Invalidate and refetch archive status
+      queryClient.invalidateQueries({ queryKey: ["archive-status"] });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to submit archive request");
@@ -125,7 +131,9 @@ export default function ResidentSettings() {
     mutationFn: () => apiClient.cancelArchiveRequest(),
     onSuccess: () => {
       toast.success("Archive request cancelled successfully!");
-      window.location.reload(); // Reload to update status
+      setCancelArchiveModalOpen(false);
+      // Invalidate and refetch archive status
+      queryClient.invalidateQueries({ queryKey: ["archive-status"] });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to cancel archive request");
@@ -959,7 +967,6 @@ export default function ResidentSettings() {
                 className="bg-orange-600 hover:bg-orange-700 text-white"
                 onClick={() => {
                   cancelDisconnectionMutation.mutate();
-                  setCancelDisconnectConfirmOpen(false);
                 }}
                 disabled={cancelDisconnectionMutation.isPending}
               >
@@ -1073,7 +1080,6 @@ export default function ResidentSettings() {
                 className="bg-orange-600 hover:bg-orange-700 text-white"
                 onClick={() => {
                   cancelArchiveMutation.mutate();
-                  setCancelArchiveModalOpen(false);
                 }}
                 disabled={cancelArchiveMutation.isPending}
               >
