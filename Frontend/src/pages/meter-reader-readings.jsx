@@ -617,7 +617,7 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* Show approval message when reading is approved */}
-                    {selectedConnectionData?.reading_status === "approved" && !selectedConnectionData?.is_billed && (
+                    {selectedConnectionData?.reading_status === "approved" && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">
