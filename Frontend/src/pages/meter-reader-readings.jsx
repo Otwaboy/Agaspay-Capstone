@@ -399,7 +399,13 @@ export default function MeterReaderReadings() {
                                 <SelectItem key={connection.connection_id} value={String(connection.connection_id)}>
                                   <div className="-ml-4 flex items-center justify-between w-full gap-2">
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                                      {(connection.read_this_month && !connection.is_billed) ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" /> : <div className="h-4 w-4 flex-shrink-0" />}
+                                      {connection.can_read_status === 'cannot_read' ? (
+                                        <X className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                      ) : (connection.read_this_month && !connection.is_billed) ? (
+                                        <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                      ) : (
+                                        <div className="h-4 w-4 flex-shrink-0" />
+                                      )}
                                       <div className="flex flex-col">
                                         <span className="truncate text-base font-semibold">{connection.full_name || "Unnamed"}</span>
                                         <span className="text-xs text-gray-500">Meter No. {connection.meter_number}</span>
