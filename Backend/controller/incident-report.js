@@ -25,15 +25,27 @@ const createReports = async (req, res) => {
     throw new BadRequestError('Please provide location for this incident type.');
   }
 
-  // ✅ Determine reporter model based on user role
-  const reported_by_model = user.role === 'resident' ? 'Resident' : 'Personnel';
+  // ✅ Determine reporter model based on user role and get their record ID
+  let reported_by_model, reported_by_id;
+
+  if (user.role === 'resident') {
+    reported_by_model = 'Resident';
+    // Find resident by user_id
+    const resident = await Resident.findOne({ user_id: user.userId });
+    reported_by_id = resident ? resident._id : user.userId;
+  } else {
+    reported_by_model = 'Personnel';
+    // Find personnel by user_id
+    const personnel = await Personnel.findOne({ user_id: user.userId });
+    reported_by_id = personnel ? personnel._id : user.userId;
+  }
 
   // ✅ Create the report
   const reportData = {
     type,
     description,
     reported_issue_status: reported_issue_status || 'Pending',
-    reported_by: user.userId,
+    reported_by: reported_by_id,
     reported_by_model: reported_by_model
   };
 
@@ -280,7 +292,10 @@ const getAllIncidents = async (req, res) => {
           model: 'Resident'
         }
       })
-      .populate('reported_by', 'name first_name last_name')
+      .populate({
+        path: 'reported_by',
+        select: 'first_name last_name full_name name'
+      })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -288,32 +303,23 @@ const getAllIncidents = async (req, res) => {
     const populatedIncidents = await Promise.all(
       incidents.map(async (incident) => {
         // Handle reported_by population
-        if (incident.reported_by && typeof incident.reported_by === 'string') {
-          try {
-            let reporterInfo = null;
+        if (incident.reported_by) {
+          if (typeof incident.reported_by === 'object') {
+            // Already populated - extract name
+            let name = 'Unknown';
             if (incident.reported_by_model === 'Resident') {
-              reporterInfo = await Resident.findOne({ user_id: incident.reported_by }).lean();
+              name = incident.reported_by.full_name || 'Unknown';
             } else {
-              reporterInfo = await Personnel.findOne({ user_id: incident.reported_by }).lean();
+              // Personnel - construct name from first_name and last_name
+              name = incident.reported_by.name ||
+                     `${incident.reported_by.first_name || ''} ${incident.reported_by.last_name || ''}`.trim() ||
+                     'Unknown';
             }
-
-            if (reporterInfo) {
-              const name = reporterInfo.name ||
-                          `${reporterInfo.first_name || ''} ${reporterInfo.last_name || ''}`.trim() ||
-                          'Unknown';
-              incident.reported_by = name;
-            } else {
-              incident.reported_by = 'Unknown';
-            }
-          } catch (err) {
+            incident.reported_by = name;
+          } else {
+            // Fallback - should not happen with proper population
             incident.reported_by = 'Unknown';
           }
-        } else if (incident.reported_by && typeof incident.reported_by === 'object') {
-          // Already populated
-          const name = incident.reported_by.name ||
-                      `${incident.reported_by.first_name || ''} ${incident.reported_by.last_name || ''}`.trim() ||
-                      'Unknown';
-          incident.reported_by = name;
         }
 
         // Handle connection resident name for meter issues
