@@ -584,6 +584,48 @@ const unarchivePersonnel = async (req, res) => {
   }
 };
 
+// Direct archive by admin (immediate action)
+const archivePersonnelDirect = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const personnel = await Personnel.findById(id);
+    if (!personnel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Personnel not found'
+      });
+    }
+
+    // Check if already archived
+    if (personnel.archive_status === 'archived') {
+      return res.status(400).json({
+        success: false,
+        message: 'Personnel is already archived'
+      });
+    }
+
+    // Directly archive the personnel
+    personnel.archive_status = 'archived';
+    personnel.archive_approved_date = new Date();
+    await personnel.save();
+
+    // Also update user account status to inactive
+    if (personnel.user_id) {
+      await User.findByIdAndUpdate(personnel.user_id, { status: 'inactive' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Personnel archived successfully',
+      data: personnel
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllPersonnel,
   getPersonnel,
@@ -597,5 +639,6 @@ module.exports = {
   cancelPersonnelArchiveRequest,
   approvePersonnelArchive,
   rejectPersonnelArchive,
-  unarchivePersonnel
+  unarchivePersonnel,
+  archivePersonnelDirect
 };

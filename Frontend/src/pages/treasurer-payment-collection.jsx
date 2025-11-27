@@ -348,9 +348,7 @@ export default function TreasurerPaymentCollection() {
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Date
                         </th>
-                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                          Actions
-                        </th>
+                      
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -388,7 +386,7 @@ export default function TreasurerPaymentCollection() {
                                 {payment.status === "pending" && (
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                     size="sm"
                                     onClick={() => handleEditStatus(payment)}
                                     data-testid={`button-edit-status-${payment.id}`}
                                     className="h-8 w-8 p-0"
@@ -426,15 +424,7 @@ export default function TreasurerPaymentCollection() {
                             <td className="py-4 px-6 text-sm text-gray-600">
                               {formatDate(payment.date)}
                             </td>
-                            <td className="py-4 px-6">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                data-testid={`button-view-${payment.id}`}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </td>
+                           
                           </tr>
                         );
                       })}

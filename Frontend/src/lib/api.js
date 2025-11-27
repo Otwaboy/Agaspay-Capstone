@@ -829,6 +829,12 @@ async getApprovalStats() {
       });
     }
 
+    async archivePersonnel(personnelId) {
+      return await this.request(`/api/v1/personnel/${personnelId}/archive`, {
+        method: 'PATCH',
+      });
+    }
+
     // ======================================================
     // 📊 REPORTS API (Admin)
     // ======================================================

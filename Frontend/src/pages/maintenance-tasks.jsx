@@ -52,7 +52,7 @@ export default function MaintenanceTasks() {
       return response;
     },
     retry: 1
-  });
+  }); 
 
   console.log('list', assignmentsResponse);
   
@@ -107,7 +107,7 @@ const tasksData = assignmentsResponse?.assignments?.map(assignment => {
           setSelectedTask(null);
           setNewStatus("");
           setRemarks("");
-          refetch();
+          refetch(); 
         },
         onError: (error) => {
           toast.error("Error", { description: error?.message || "Failed to update task status." });

@@ -50,7 +50,6 @@ export default function TreasurerBillHistory() {
     bill_period: new Date(bill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   })) || [];
 
-  // const mockBillHistory = [
   //   {
   //     id: "BILL-2408-001",
   //     residentName: "Juan Dela Cruz",
@@ -370,7 +369,7 @@ export default function TreasurerBillHistory() {
                               </Badge>
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-600">
-                              {bill.paid_date ? formatDate(bill.paid_date) : "N/A"}
+                              {bill.payment_date ? formatDate(bill.paid_date) : "N/A"}
                             </td>
                             <td className="py-4 px-6">
                               <Button

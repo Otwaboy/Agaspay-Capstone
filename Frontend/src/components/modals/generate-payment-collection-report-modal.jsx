@@ -28,11 +28,14 @@ export default function GeneratePaymentCollectionReportModal({ isOpen, onClose }
   const [isGenerating, setIsGenerating] = useState(false);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-PH', {
+    // Format for PDF without HTML entities
+    const formatted = new Intl.NumberFormat('en-PH', {
       style: 'currency',
       currency: 'PHP',
       minimumFractionDigits: 2,
     }).format(amount);
+    // Replace the peso symbol with plain text for PDF compatibility
+    return formatted.replace('₱', 'PHP ');
   };
 
   const months = [
@@ -129,8 +132,8 @@ export default function GeneratePaymentCollectionReportModal({ isOpen, onClose }
       // Summary section
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Total Collected (Confirmed): ${formatCurrency(totalCollected)} (${confirmedCount} payments)`, 14, 44);
-      doc.text(`Pending Amount: ${formatCurrency(pendingAmount)} (${pendingCount} payments)`, 14, 50);
+      doc.text(`Total Collected (Confirmed): ${formatCurrency(totalCollected)} (${confirmedCount} payments)`, pageWidth / 2, 44, { align: 'center' });
+      doc.text(`Pending Amount: ${formatCurrency(pendingAmount)} (${pendingCount} payments)`, pageWidth / 2, 50, { align: 'center' });
 
       // Prepare table data
       const tableData = filteredPayments.map((payment, index) => {

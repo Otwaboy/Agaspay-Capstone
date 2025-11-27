@@ -18,6 +18,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 import Sidebar from "../components/layout/sidebar";
 import TopHeader from "../components/layout/top-header";
 import CreatePersonnelModal from "../components/modals/create-personnel-modal";
@@ -43,6 +51,8 @@ export default function AdminPersonnel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedPersonnel, setSelectedPersonnel] = useState(null);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [personnelToArchive, setPersonnelToArchive] = useState(null);
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['personnel', roleFilter],
@@ -51,14 +61,14 @@ export default function AdminPersonnel() {
 
   const personnel = data?.personnel || [];
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => apiClient.deletePersonnel(id),
+  const archiveMutation = useMutation({
+    mutationFn: (id) => apiClient.archivePersonnel(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['personnel']);
-      toast.success("Success", { description: "Personnel deleted successfully" });
+      toast.success("Success", { description: "Personnel archived successfully" });
     },
     onError: (error) => {
-      toast.error("Error", { description: error.response?.data?.msg || "Failed to delete personnel" });
+      toast.error("Error", { description: error.response?.data?.message || "Failed to archive personnel" });
     }
   });
 
@@ -93,9 +103,16 @@ export default function AdminPersonnel() {
       : { label: "Active", className: "bg-green-100 text-green-800" };
   };
 
-  const handleDelete = (id) => {
-    if (confirm("Are you sure you want to remove this personnel?")) {
-      deleteMutation.mutate(id);
+  const handleArchive = (person) => {
+    setPersonnelToArchive(person);
+    setIsArchiveDialogOpen(true);
+  };
+
+  const confirmArchive = () => {
+    if (personnelToArchive) {
+      archiveMutation.mutate(personnelToArchive._id);
+      setIsArchiveDialogOpen(false);
+      setPersonnelToArchive(null);
     }
   };
 
@@ -251,12 +268,12 @@ export default function AdminPersonnel() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="overflow-visible">
               <CardHeader>
                 <CardTitle>Staff Members ({filteredPersonnel.length})</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
+              <CardContent className="overflow-visible">
+                <div className="overflow-x-auto overflow-y-visible">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
@@ -315,14 +332,14 @@ export default function AdminPersonnel() {
                               </Badge>
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-900">{joinDate}</td>
-                            <td className="py-4 px-6">
+                            <td className="py-4 px-6 relative z-50">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm" data-testid={`button-actions-${person._id}`}>
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent align="end" className="z-50">
                                   <DropdownMenuItem>
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
@@ -333,11 +350,11 @@ export default function AdminPersonnel() {
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-red-600"
-                                    onClick={() => handleDelete(person._id)}
-                                    disabled={deleteMutation.isPending}
+                                    onClick={() => handleArchive(person)}
+                                    disabled={archiveMutation.isPending}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    Remove
+                                    Archive
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -378,6 +395,55 @@ export default function AdminPersonnel() {
         personnel={selectedPersonnel}
         onSuccess={handleEditSuccess}
       />
+
+      {/* Archive Confirmation Dialog */}
+      <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-red-600">
+              <Trash2 className="h-5 w-5 mr-2" />
+              Archive Personnel
+            </DialogTitle>
+            <DialogDescription>
+              This action will archive this personnel account.
+            </DialogDescription>
+          </DialogHeader>
+
+          {personnelToArchive && (
+            <div className="py-4">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Are you sure?</strong> You are about to archive{" "}
+                  <strong>
+                    {personnelToArchive.first_name} {personnelToArchive.last_name}
+                  </strong>
+                  . This personnel will not be able to log in to their account.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsArchiveDialogOpen(false);
+                setPersonnelToArchive(null);
+              }}
+              disabled={archiveMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={confirmArchive}
+              disabled={archiveMutation.isPending}
+            >
+              {archiveMutation.isPending ? "Archiving..." : "Archive Personnel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

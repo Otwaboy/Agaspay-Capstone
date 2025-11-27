@@ -277,7 +277,7 @@ export default function SecretaryResidents() {
             </div>
 
             {/* Main Content */}
-            <Card>
+            <Card className="overflow-visible">
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
@@ -306,10 +306,10 @@ export default function SecretaryResidents() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                
+              <CardContent className="overflow-x-auto overflow-y-visible">
+
                 {/* Search and Filter */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex flex-col md:flex-row gap-4 mb-6 px-6">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
@@ -353,8 +353,9 @@ export default function SecretaryResidents() {
 
                 {/* Table */}
                 {!isLoading && !error && (
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
+                  <div className="border rounded-lg mx-6 mb-6 overflow-hidden">
+                    <div className="overflow-x-auto overflow-y-visible">
+                      <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50">
                           <TableHead>Name</TableHead>
@@ -424,7 +425,7 @@ export default function SecretaryResidents() {
 
                                 {/* Actions - Dropdown Menu - only show for first meter */}
                                 {meterIdx === 0 && (
-                                  <TableCell className="text-right" rowSpan={resident.meters.length}>
+                                  <TableCell className="text-right relative z-50" rowSpan={resident.meters.length}>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <Button
@@ -435,7 +436,7 @@ export default function SecretaryResidents() {
                                           <MoreVertical className="h-4 w-4" />
                                         </Button>
                                       </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
+                                      <DropdownMenuContent align="end" side="bottom" sideOffset={8} avoidCollisions={false} className="z-[9999]">
                                         <DropdownMenuItem onClick={() => handleViewDetails(resident)}>
                                           <Eye className="h-4 w-4 mr-2" />
                                           View Details
@@ -464,6 +465,7 @@ export default function SecretaryResidents() {
                         )}
                       </TableBody>
                     </Table>
+                    </div>
                   </div>
                 )}
               </CardContent>

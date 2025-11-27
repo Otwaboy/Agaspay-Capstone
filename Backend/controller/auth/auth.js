@@ -13,7 +13,7 @@ const createUser = async (username, password, role = 'resident') => {
   const existingUser = await User.findOne({ username });
   if (existingUser) 
     {
-        throw new BadRequestError('Username already taken hehe');
+        throw new BadRequestError('Username already taken');
     }
 
   const user = await User.create({ username, password, role });

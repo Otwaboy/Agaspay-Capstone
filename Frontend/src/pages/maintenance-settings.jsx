@@ -6,12 +6,11 @@ import { Switch } from "../components/ui/switch";
 import { Separator } from "../components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
 import MaintenanceSidebar from "../components/layout/maintenance-sidebar";
 import MaintenanceTopHeader from "../components/layout/maintenance-top-header";
-import { Settings as SettingsIcon, Bell, Mail, Lock, Eye, Shield, EyeOff, Loader2, AlertTriangle } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Mail, Lock, Eye, Shield, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import apiClient from "../lib/api";
 
 export default function MaintenanceSettings() {
@@ -41,44 +40,6 @@ export default function MaintenanceSettings() {
     verificationCode: ""
   });
 
-  // Archive Account Modal States
-  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
-  const [archiveReason, setArchiveReason] = useState("");
-  const [cancelArchiveModalOpen, setCancelArchiveModalOpen] = useState(false);
-
-  // Fetch archive status
-  const { data: archiveStatus } = useQuery({
-    queryKey: ["personnel-archive-status"],
-    queryFn: () => apiClient.getPersonnelArchiveStatus(),
-    retry: false,
-    enabled: true
-  });
-
-  // Request Archive Mutation
-  const requestArchiveMutation = useMutation({
-    mutationFn: (data) => apiClient.requestPersonnelArchive(data),
-    onSuccess: () => {
-      toast.success("Archive request submitted successfully!");
-      setArchiveModalOpen(false);
-      setArchiveReason("");
-      window.location.reload();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to submit archive request");
-    }
-  });
-
-  // Cancel Archive Mutation
-  const cancelArchiveMutation = useMutation({
-    mutationFn: () => apiClient.cancelPersonnelArchiveRequest(),
-    onSuccess: () => {
-      toast.success("Archive request cancelled successfully!");
-      window.location.reload();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to cancel archive request");
-    }
-  });
 
   const handleSaveSettings = () => {
     toast.success("Settings Saved", { description: "Your preferences have been updated successfully" });
@@ -174,21 +135,6 @@ export default function MaintenanceSettings() {
     });
   };
 
-  const handleArchiveSubmit = () => {
-    if (!archiveReason || archiveReason.trim().length === 0) {
-      toast.error("Please provide a reason for archiving your account");
-      return;
-    }
-
-    if (archiveReason.trim().length < 10) {
-      toast.error("Reason must be at least 10 characters long");
-      return;
-    }
-
-    requestArchiveMutation.mutate({
-      reason: archiveReason.trim()
-    });
-  };
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
@@ -340,62 +286,6 @@ export default function MaintenanceSettings() {
                       Change Password
                     </Button>
 
-                    {/* Archive Account Button */}
-                    {archiveStatus?.data?.archive_status === 'pending_archive' ? (
-                      <div className="space-y-2">
-                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <div className="flex items-start space-x-2">
-                            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-yellow-900">Archive Request Pending</p>
-                              <p className="text-xs text-yellow-700 mt-1">
-                                Your archive request is awaiting admin approval.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
-                          onClick={() => setCancelArchiveModalOpen(true)}
-                        >
-                          Cancel Request
-                        </Button>
-                      </div>
-                    ) : archiveStatus?.data?.archive_status === 'archived' ? (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-red-900">Account Archived</p>
-                            <p className="text-xs text-red-700 mt-1">
-                              Your account has been archived.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : archiveStatus?.data?.archive_rejection_reason ? (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900">Archive Request Not Approved</p>
-                            <p className="text-xs text-blue-700 mt-1">
-                              {archiveStatus.data.archive_rejection_reason}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full border-orange-200 text-orange-600 hover:bg-orange-50"
-                        onClick={() => setArchiveModalOpen(true)}
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Request Account Archive
-                      </Button>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -611,119 +501,6 @@ export default function MaintenanceSettings() {
           </DialogContent>
         </Dialog>
 
-        {/* Archive Account Request Modal */}
-        <Dialog open={archiveModalOpen} onOpenChange={setArchiveModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center text-orange-600">
-                <AlertTriangle className="h-5 w-5 mr-2" />
-                Request Account Archive
-              </DialogTitle>
-              <DialogDescription className="text-gray-700">
-                Please provide a reason for archiving your account
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                <p className="text-sm text-orange-800">
-                  <strong>Important:</strong> Archiving your account will prevent you from logging in.
-                  This request will be sent to the administrator for approval.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="archive-reason">Reason for Archive</Label>
-                <Textarea
-                  id="archive-reason"
-                  placeholder="Please explain why you want to archive your account (minimum 10 characters)"
-                  value={archiveReason}
-                  onChange={(e) => setArchiveReason(e.target.value)}
-                  rows={4}
-                  className="resize-none"
-                />
-                <p className="text-xs text-gray-500">
-                  {archiveReason.length}/10 characters minimum
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setArchiveModalOpen(false);
-                  setArchiveReason("");
-                }}
-                disabled={requestArchiveMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-                onClick={handleArchiveSubmit}
-                disabled={requestArchiveMutation.isPending || !archiveReason || archiveReason.trim().length < 10}
-              >
-                {requestArchiveMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Submit Request"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Cancel Archive Request Modal */}
-        <Dialog open={cancelArchiveModalOpen} onOpenChange={setCancelArchiveModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center text-orange-600">
-                <AlertTriangle className="h-5 w-5 mr-2" />
-                Cancel Archive Request
-              </DialogTitle>
-              <DialogDescription>
-                Are you sure you want to cancel your archive request?
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="py-4">
-              <p className="text-sm text-gray-600">
-                This will remove your pending archive request. You can submit a new request anytime.
-              </p>
-            </div>
-
-            <DialogFooter className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setCancelArchiveModalOpen(false)}
-                disabled={cancelArchiveMutation.isPending}
-              >
-                No, Keep Request
-              </Button>
-              <Button
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-                onClick={() => {
-                  cancelArchiveMutation.mutate();
-                  setCancelArchiveModalOpen(false);
-                }}
-                disabled={cancelArchiveMutation.isPending}
-              >
-                {cancelArchiveMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Cancelling...
-                  </>
-                ) : (
-                  "Yes, Cancel Request"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

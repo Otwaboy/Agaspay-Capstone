@@ -358,7 +358,7 @@ const getOverdueBilling = async (req, res) => {
             status,
             connection_status: connection.connection_status || 'N/A', // ✅ actual status
             contactNo: resident.contact_no || 'N/A',
-            billPeriod: billing.generated_at
+            billPeriod: billing.generated_at,
           };
       })
     );

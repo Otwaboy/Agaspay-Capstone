@@ -150,14 +150,7 @@ export default function ResidentReportIssue() {
                         </p>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>Attach Photo (Optional)</Label>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
-                          <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600">Click to upload photo</p>
-                          <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
-                        </div>
-                      </div>
+                      
 
                       <div className="flex gap-3">
                         <Button

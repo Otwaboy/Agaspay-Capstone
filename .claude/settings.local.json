@@ -4,7 +4,10 @@
       "Bash(git clean:*)",
       "Bash(del nul)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx eslint:*)",
+      "Bash(ls \"c:\\Users\\joshua\\Desktop\\Agaspay-Capstone\\Frontend\\src\\components\\ui\"\" | grep -i \"dialog|modal|alert \")"
     ],
     "deny": [],
     "ask": []

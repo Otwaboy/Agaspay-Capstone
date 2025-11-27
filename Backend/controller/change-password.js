@@ -3,6 +3,7 @@ const Resident = require('../model/Resident');
 const { StatusCodes } = require('http-status-codes');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const Personnel = require('../model/Personnel');
 
 // Store verification codes temporarily (in production, use Redis or database)
 const verificationCodes = new Map();
@@ -49,24 +50,34 @@ const requestPasswordChange = async (req, res) => {
       });
     }
 
-    // Get resident's email
-    const resident = await Resident.findOne({ user_id: user.userId });
-    if (!resident) {
+    // Get user's email - try resident first, then personnel
+    let userRecord = await Resident.findOne({ user_id: user.userId });
+    let userEmail = userRecord?.email;
+    let userFirstName = userRecord?.first_name;
+
+    // If not a resident, check if they're personnel
+    if (!userRecord) {
+      userRecord = await Personnel.findOne({ user_id: user.userId });
+      userEmail = userRecord?.email;
+      userFirstName = userRecord?.first_name;
+    }
+
+    // Check if we found any record (resident or personnel)
+    if (!userRecord) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: 'Resident record not found'
+        message: 'User record not found'
       });
     }
 
-    // Check if resident has an email
-    if (!resident.email) {
+    // Check if user has an email
+    if (!userEmail) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: 'No email address found. Please add an email to your profile first.',
         noEmail: true
       });
     }
-
     // Generate 6-digit verification code
     const verificationCode = crypto.randomInt(100000, 999999).toString();
 
@@ -90,12 +101,12 @@ const requestPasswordChange = async (req, res) => {
 
     const mailOptions = {
       from: `"AGASPAY" <${process.env.EMAIL_USER}>`,
-      to: resident.email,
+      to: userEmail,
       subject: 'Password Change Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">AGASPAY - Password Change Request</h2>
-          <p>Hello ${resident.first_name},</p>
+          <p>Hello ${userFirstName},</p>
           <p>You have requested to change your password. Please use the verification code below:</p>
           <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0;">
             <h1 style="color: #1f2937; font-size: 36px; letter-spacing: 8px; margin: 0;">
@@ -116,8 +127,8 @@ const requestPasswordChange = async (req, res) => {
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: `Verification code sent to ${resident.email}`,
-      email: resident.email
+      message: `Verification code sent to ${userEmail}`,
+      email: userEmail
     });
 
   } catch (error) {

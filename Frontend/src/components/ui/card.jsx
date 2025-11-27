@@ -35,7 +35,7 @@ export function CardDescription({ className, ...props }) {
 }
 
 export function CardContent({ className, ...props }) {
-  return <div className={cn("p-6 pt-0", className)} {...props} />;
+  return <div className={cn("p-6 pt-0 overflow-visible", className)} {...props} />;
 }
 
 export function CardFooter({ className, ...props }) {

@@ -100,7 +100,7 @@ You have an overdue balance of ${formattedAmount} (${monthsOverdue} month${month
 
 Due Date: ${formattedDate}
 
-Please settle your balance at the end of time.
+Please settle your balance within 7 days or else we will disconnect your account.
 
 Thank you.
 - Barangay Biking Water Works (AGASPAY)`;

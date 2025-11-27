@@ -27,11 +27,14 @@ export default function GenerateDelinquencyReportModal({ isOpen, onClose }) {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-PH', {
+    // Format for PDF without HTML entities
+    const formatted = new Intl.NumberFormat('en-PH', {
       style: 'currency',
       currency: 'PHP',
       minimumFractionDigits: 2,
     }).format(amount);
+    // Replace the peso symbol with plain text for PDF compatibility
+    return formatted.replace('₱', 'PHP ');
   };
 
   const handleGenerateReport = async () => {

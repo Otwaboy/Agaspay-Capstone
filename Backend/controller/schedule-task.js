@@ -590,14 +590,27 @@ const updateTaskStatus = async (req, res) => {
       }
     }
 
-    // ✅ If task is linked to an incident report, update report status
+    // ✅ If task is linked to an incident report, update report status and handle broken meters
     if (task.report_id && task_status === 'Completed') {
-      await IncidentReports.findByIdAndUpdate(task.report_id, {
+      const report = await IncidentReports.findByIdAndUpdate(task.report_id, {
         reported_issue_status: 'Completed',
         date_handled: new Date()
-      });
+      }, { new: true });
       console.log(`✅ Incident report ${task.report_id} marked as Completed`);
+
+      // 🔧 If this is a broken meter incident, reconnect the water connection
+      if (report && report.type === 'Broken Meter' && report.connection_id) {
+        console.log(`🔄 BROKEN METER REPAIR COMPLETED - Reconnecting water connection ${report.connection_id}`);
+        const connection = await WaterConnection.findById(report.connection_id);
+        if (connection) {
+          connection.connection_status = 'active';
+          await connection.save();
+          console.log(`✅ Water connection ${connection._id} status set to active for completed broken meter repair`);
+        }
+      }
     }
+
+   
 
     console.log('✅ Task status updated:', taskId);
 

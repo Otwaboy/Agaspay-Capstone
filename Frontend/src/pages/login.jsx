@@ -313,7 +313,7 @@ export default function Login() {
                 <Droplets className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome back
+                Hello, Welcome 
               </h3>
               <p className="text-gray-600">
                 Sign in to access your dashboard
@@ -646,7 +646,7 @@ export default function Login() {
             {/* Right Content - Stats */}
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <div className="text-4xl font-bold text-blue-600 mb-2">500+</div>
+                <div className="text-4xl font-bold text-blue-600 mb-2">900+</div>
                 <div className="text-gray-600">Active Connections</div>
               </div>
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">

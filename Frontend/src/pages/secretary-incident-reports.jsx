@@ -385,7 +385,7 @@ export default function SecretaryIncidentReports() {
                                 {report._id?.substring(0, 8)}...
                               </TableCell>
                               <TableCell className="font-medium">
-                                {report.reported_by || "Unknown"}
+                                {report.reported_by || "Unknown"} 
                               </TableCell>
                               <TableCell>{report.type}</TableCell>
                               <TableCell className="max-w-xs truncate">{report.location}</TableCell>
