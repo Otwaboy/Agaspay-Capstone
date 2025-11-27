@@ -13,7 +13,8 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
 import { authManager } from "../../lib/auth";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { apiClient } from "../../lib/api";
+import { Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function CreateResidentModal({ isOpen, onClose }) {
   
@@ -40,6 +41,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [meterValidation, setMeterValidation] = useState({ checking: false, valid: null });
 
   // Parse MongoDB duplicate key error
   const parseDuplicateKeyError = (errorMessage) => {
@@ -94,6 +96,11 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         validationErrors.confirmPassword = "Confirm password is required";
       } else if (formData.password !== formData.confirmPassword) {
         validationErrors.confirmPassword = "Passwords do not match";
+      }
+
+      // Check if meter number is valid (not duplicate)
+      if (meterValidation.valid === false) {
+        validationErrors.meterNumber = "This meter number is already in use. Please enter a different meter number.";
       }
 
       // If there are validation errors, show them
@@ -252,6 +259,23 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         return newErrors;
       });
     }
+    // Check meter number validity if field is meterNumber
+    if (field === 'meterNumber' && value.trim()) {
+      checkMeterNumberAvailability(value.trim());
+    }
+  };
+
+  const checkMeterNumberAvailability = async (meterNo) => {
+    setMeterValidation({ checking: true, valid: null });
+    try {
+      const result = await apiClient.checkMeterNumberExists(meterNo);
+      // If exists is true, the meter is NOT available
+      setMeterValidation({ checking: false, valid: !result.exists });
+    } catch (error) {
+      // If error, assume not available (safe approach)
+      setMeterValidation({ checking: false, valid: false });
+      console.error('Error checking meter number:', error);
+    }
   };
 
   return (
@@ -400,15 +424,33 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
           <div className="space-y-2">
             <Label htmlFor="meterNumber">Meter Number</Label>
-            <Input
-              id="meterNumber"
-              value={formData.meterNumber}
-              onChange={(e) => handleChange("meterNumber")(e.target.value)}
-              placeholder="Enter water meter number"
-              required
-              data-testid="input-meter-number"
-              className={errors.meterNumber ? "border-red-500 border-2 focus:ring-red-500" : ""}
-            />
+            <div className="relative">
+              <Input
+                id="meterNumber"
+                value={formData.meterNumber}
+                onChange={(e) => handleChange("meterNumber")(e.target.value)}
+                placeholder="Enter water meter number"
+                required
+                data-testid="input-meter-number"
+                className={`${errors.meterNumber ? "border-red-500 border-2 focus:ring-red-500" : meterValidation.valid === true && formData.meterNumber ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+              />
+              {meterValidation.checking && formData.meterNumber && (
+                <div className="absolute right-3 top-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                </div>
+              )}
+              {meterValidation.valid === true && formData.meterNumber && !meterValidation.checking && (
+                <div className="absolute right-3 top-3 text-green-500">
+                  ✓
+                </div>
+              )}
+            </div>
+            {errors.meterNumber && (
+              <p className="text-xs text-red-500">{errors.meterNumber}</p>
+            )}
+            {meterValidation.valid === true && formData.meterNumber && !errors.meterNumber && (
+              <p className="text-xs text-green-600">Meter number is available</p>
+            )}
           </div>
 
           {/* Water Connection Zone and Purok */}

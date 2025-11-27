@@ -883,6 +883,43 @@ const addMeterToResident = async (req, res) => {
   }
 };
 
+// ✅ Check if meter number already exists
+const checkMeterNumber = async (req, res) => {
+  try {
+    const { meterNo } = req.params;
+
+    if (!meterNo || meterNo.trim() === "") {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Meter number is required"
+      });
+    }
+
+    // Check if meter number exists
+    const existingMeter = await WaterConnection.findOne({ meter_no: meterNo.trim() });
+
+    if (existingMeter) {
+      return res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: `Meter number '${meterNo}' is already in use`,
+        exists: true
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Meter number is available",
+      exists: false
+    });
+  } catch (error) {
+    console.error("❌ Error checking meter number:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to check meter number",
+      error: error.message
+    });
+  }
+};
 
 module.exports = {
   getLatestConnections,
@@ -896,5 +933,6 @@ module.exports = {
   getDisconnectedConnections,
   getConnectionsForReconnection,
   getResidentMeters,
-  addMeterToResident
+  addMeterToResident,
+  checkMeterNumber
 };

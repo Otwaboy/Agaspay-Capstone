@@ -392,6 +392,18 @@ async getApprovalStats() {
     return await this.request('/api/v1/water-connection/resident-meters');
   }
 
+  async checkMeterNumberExists(meterNo) {
+    try {
+      return await this.request(`/api/v1/water-connection/check-meter/${encodeURIComponent(meterNo)}`);
+    } catch (error) {
+      // If meter exists, backend will return 409 conflict
+      if (error.message && error.message.includes('409')) {
+        return { exists: true };
+      }
+      throw error;
+    }
+  }
+
   async addMeterToResident(data) {
     return await this.request('/api/v1/water-connection/add-meter', {
       method: 'POST',
