@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git clean:*)",
-      "Bash(del nul)"
+      "Bash(del nul)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
