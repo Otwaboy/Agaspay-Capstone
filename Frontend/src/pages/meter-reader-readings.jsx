@@ -534,16 +534,16 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* Can't Read Toggle */}
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-6">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <AlertCircle className="h-5 w-5 text-amber-600" />
-                          <span className="font-medium text-amber-900">Unable to Read Meter?</span>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Unable to Read Meter?</p>
+                          <p className="text-xs text-gray-500 mt-1">Mark as unable to read if meter is inaccessible or broken</p>
                         </div>
                         <Button
                           type="button"
                           variant={isCannotRead ? "default" : "outline"}
-                          className={isCannotRead ? "bg-red-600 hover:bg-red-700" : ""}
+                          className={isCannotRead ? "bg-blue-600 hover:bg-blue-700" : ""}
                           onClick={() => {
                             setIsCannotRead(!isCannotRead);
                             if (!isCannotRead) {
@@ -554,7 +554,7 @@ export default function MeterReaderReadings() {
                           }}
                           disabled={!selectedConnectionData}
                         >
-                          {isCannotRead ? "✓ Can't Read Selected" : "Mark as Can't Read"}
+                          {isCannotRead ? "Marked as Unable to Read" : "Mark as Unable to Read"}
                         </Button>
                       </div>
                     </div>
