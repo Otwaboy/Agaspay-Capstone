@@ -87,10 +87,10 @@ router.post("/", async (req, res) => {
     let payment_status; // Payment status for the Payment record
 
     if (newBalance === 0) {
-      // Full payment: automatically mark as confirmed since bill is fully paid
+      // Full payment: keep as pending, only treasurer can confirm all online payments
       payment_type = 'full';
       new_billing_status = 'paid';
-      payment_status = 'confirmed';
+      payment_status = 'pending'; // Treasurer must confirm even full online payments
     } else {
       // Partial payment: keep as pending, only treasurer can confirm
       payment_type = 'partial';

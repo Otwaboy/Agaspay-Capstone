@@ -278,7 +278,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
   return (
 
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-white sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Personnel</DialogTitle>
           <DialogDescription>
