@@ -20,8 +20,8 @@ const createReports = async (req, res) => {
     throw new BadRequestError('Please provide all required fields: type and description.');
   }
 
-  // For meter issues, location is the meter number, for regular incidents it's required
-  if (type !== 'Meter Issue' && !location) {
+  // For broken meter issues, location is the meter number, for regular incidents it's required
+  if (type !== 'Broken Meter' && !location) {
     throw new BadRequestError('Please provide location for this incident type.');
   }
 
@@ -44,8 +44,8 @@ const createReports = async (req, res) => {
 
   const report = await IncidentReport.create(reportData);
 
-  // ✅ Update connection status to disconnected if meter issue
-  if (type === 'Meter Issue' && connection_id) {
+  // ✅ Update connection status to disconnected if broken meter
+  if (type === 'Broken Meter' && connection_id) {
     const WaterConnection = require('../model/WaterConnection');
     await WaterConnection.findByIdAndUpdate(
       connection_id,

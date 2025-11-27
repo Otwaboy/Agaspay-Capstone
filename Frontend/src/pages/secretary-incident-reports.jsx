@@ -80,7 +80,7 @@ export default function SecretaryIncidentReports() {
     "Water Quality Issue",
     "Meter Problem",
     "Damaged Infrastructure",
-    "Meter Issue",
+    "Broken Meter",
     "Other"
   ];
 
@@ -520,20 +520,20 @@ export default function SecretaryIncidentReports() {
               {/* Reporter/Resident Information */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-900 mb-3">
-                  {selectedReport.type === "Meter Issue" ? "Meter & Resident Information" : "Reporter Information"}
+                  {selectedReport.type === "Broken Meter" ? "Meter & Resident Information" : "Reporter Information"}
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-700">
-                      {selectedReport.type === "Meter Issue" ? "Meter Number" : "Reporter Name"}
+                      {selectedReport.type === "Broken Meter" ? "Meter Number" : "Reporter Name"}
                     </label>
                     <p className="text-gray-900 mt-1 font-mono">
-                      {selectedReport.type === "Meter Issue"
+                      {selectedReport.type === "Broken Meter"
                         ? selectedReport.connection_id?.meter_no || "N/A"
                         : selectedReport.reported_by || "Unknown"}
                     </p>
                   </div>
-                  {selectedReport.type === "Meter Issue" && (
+                  {selectedReport.type === "Broken Meter" && (
                     <div>
                       <label className="text-sm font-medium text-gray-700">Resident</label>
                       <p className="text-gray-900 mt-1">

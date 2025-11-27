@@ -5,7 +5,7 @@ const IncidentReportSchema = new mongoose.Schema(
     type: {
       type: String,
       required: [true, 'Please specify the type of incident'],
-      enum: ['No Water Supply', 'Low Water Pressure', 'Pipe Leak', 'Water Quality Issue', 'Meter Problem', 'Damaged Infrastructure', 'Other', 'Meter Issue'],
+      enum: ['No Water Supply', 'Low Water Pressure', 'Pipe Leak', 'Water Quality Issue', 'Meter Problem', 'Damaged Infrastructure', 'Other', 'Broken Meter']
     },
     location: {
       type: String,

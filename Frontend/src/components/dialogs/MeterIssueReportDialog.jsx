@@ -28,7 +28,6 @@ export default function MeterIssueReportDialog({
   connection,
   meterReader
 }) {
-  const [issueType, setIssueType] = useState("");
   const [description, setDescription] = useState("");
   const queryClient = useQueryClient();
 
@@ -37,10 +36,9 @@ export default function MeterIssueReportDialog({
       return apiClient.createMeterIssue(issueData);
     },
     onSuccess: () => {
-      toast.success("Issue Reported", {
-        description: "Meter issue has been reported successfully. Connection status changed to disconnected."
+      toast.success("Broken Meter Reported", {
+        description: "Broken meter has been reported successfully. Connection status changed to disconnected."
       });
-      setIssueType("");
       setDescription("");
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ["connections"] });
@@ -55,12 +53,6 @@ export default function MeterIssueReportDialog({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!issueType) {
-      return toast.error("Validation Error", {
-        description: "Please select an issue type"
-      });
-    }
-
     if (!description.trim()) {
       return toast.error("Validation Error", {
         description: "Please provide a description of the issue"
@@ -68,10 +60,10 @@ export default function MeterIssueReportDialog({
     }
 
     const issueData = {
-      type: "Meter Issue",
+      type: "Broken Meter",
       connection_id: connection._id || connection.connection_id,
       location: connection?.meter_number || "Unknown Meter",
-      description: `${issueType}: ${description.trim()}`,
+      description: description.trim(),
       urgency_level: "high",
       reported_issue_status: "Pending"
     };
@@ -97,38 +89,11 @@ export default function MeterIssueReportDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Issue Type Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="issue-type" className="text-base font-semibold">
-              Issue Type <span className="text-red-600">*</span>
-            </Label>
-            <Select value={issueType} onValueChange={setIssueType}>
-              <SelectTrigger id="issue-type">
-                <SelectValue placeholder="Select the type of issue" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Broken Meter">
-                  <div className="flex items-center gap-2">
-                    <span>Broken Meter</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="Inaccessible">
-                  <div className="flex items-center gap-2">
-                    <span>Meter Inaccessible</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="No Water Flow">
-                  <div className="flex items-center gap-2">
-                    <span>No Water Flow</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="Other">
-                  <div className="flex items-center gap-2">
-                    <span>Other</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Broken Meter Type Info */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm font-medium text-blue-900">
+              Meter Type: <strong>Broken Meter</strong>
+            </p>
           </div>
 
           {/* Description */}
