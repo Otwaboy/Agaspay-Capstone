@@ -949,9 +949,9 @@ export default function Login() {
       {/* Learn More Modal */}
       {showLearnMoreModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white relative">
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white relative flex-shrink-0">
               <button
                 onClick={() => setShowLearnMoreModal(false)}
                 className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
@@ -968,7 +968,7 @@ export default function Login() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+            <div className="p-6 overflow-y-auto flex-1">
               <div className="space-y-6">
                 {/* Who Can Use */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
@@ -1097,7 +1097,7 @@ export default function Login() {
             </div>
 
             {/* Modal Footer */}
-            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between items-center">
+            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between items-center flex-shrink-0">
               <p className="text-xs text-gray-600">
                 Need more details? Contact the Barangay Hall
               </p>
