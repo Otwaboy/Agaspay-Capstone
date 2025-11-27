@@ -648,7 +648,7 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* FORM INPUTS */}
-                    {selectedConnectionData && (selectedConnectionData?.reading_status !== "approved" || selectedConnectionData?.is_billed) && !isCannotRead && (
+                    {(overallReadingStatus !== "Approved" || (overallReadingStatus === "Approved" && zoneConnections.some(c => c.is_billed))) && selectedConnectionData && !isCannotRead && (
                       <div className="space-y-2">
                         <Label htmlFor="present_reading" className="flex items-center space-x-2 text-base">
                           <Gauge className="h-4 w-4" />
@@ -668,7 +668,7 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* Date and Remarks Inputs */}
-                    {selectedConnectionData && (selectedConnectionData?.reading_status !== "approved" || selectedConnectionData?.is_billed) && (
+                    {(overallReadingStatus !== "Approved" || (overallReadingStatus === "Approved" && zoneConnections.some(c => c.is_billed))) && selectedConnectionData && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <Label className="flex items-center space-x-2 text-base">
@@ -730,7 +730,7 @@ export default function MeterReaderReadings() {
                       </div>
                     )}
 
-                    {selectedConnectionData && (selectedConnectionData?.reading_status !== "approved" || selectedConnectionData?.is_billed) && (
+                    {(overallReadingStatus !== "Approved" || (overallReadingStatus === "Approved" && zoneConnections.some(c => c.is_billed))) && selectedConnectionData && (
                       <div className="flex justify-end space-x-3">
                         <Button
                           type="submit"
