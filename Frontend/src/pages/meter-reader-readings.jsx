@@ -543,7 +543,7 @@ export default function MeterReaderReadings() {
                         <Button
                           type="button"
                           variant={isCannotRead ? "default" : "outline"}
-                          className={isCannotRead ? "bg-blue-600 hover:bg-blue-700" : ""}
+                          className={isCannotRead ? "bg-red-600 hover:bg-red-700" : ""}
                           onClick={() => {
                             setIsCannotRead(!isCannotRead);
                             if (!isCannotRead) {
