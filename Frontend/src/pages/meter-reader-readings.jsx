@@ -574,7 +574,7 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* Can't Read Toggle */}
-                    {selectedConnectionData && (
+                    {selectedConnectionData && selectedConnectionData?.reading_status !== "approved" && (
                     <div className="bg-white border border-gray-200 rounded-lg p-6">
                       <div className="flex items-center justify-between mb-6">
                         <div>
