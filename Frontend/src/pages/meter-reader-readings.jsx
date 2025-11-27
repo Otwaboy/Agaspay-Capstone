@@ -576,8 +576,8 @@ export default function MeterReaderReadings() {
                       </div>
                     )}
 
-                    {/* Can't Read Toggle */}
-                    {selectedConnectionData && selectedConnectionData?.reading_status !== "approved" && (
+                    {/* Can't Read Toggle - show unless approved and not billed */}
+                    {selectedConnectionData && (selectedConnectionData?.reading_status !== "approved" || selectedConnectionData?.is_billed) && (
                     <div className="bg-white border border-gray-200 rounded-lg p-6">
                       <div className="flex items-center justify-between mb-6">
                         <div>
@@ -648,7 +648,7 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* FORM INPUTS */}
-                    {selectedConnectionData && selectedConnectionData?.reading_status !== "approved" && !isCannotRead && (
+                    {selectedConnectionData && (selectedConnectionData?.reading_status !== "approved" || selectedConnectionData?.is_billed) && !isCannotRead && (
                       <div className="space-y-2">
                         <Label htmlFor="present_reading" className="flex items-center space-x-2 text-base">
                           <Gauge className="h-4 w-4" />
@@ -668,7 +668,7 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* Date and Remarks Inputs */}
-                    {selectedConnectionData && selectedConnectionData?.reading_status !== "approved" && (
+                    {selectedConnectionData && (selectedConnectionData?.reading_status !== "approved" || selectedConnectionData?.is_billed) && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <Label className="flex items-center space-x-2 text-base">
@@ -730,7 +730,7 @@ export default function MeterReaderReadings() {
                       </div>
                     )}
 
-                    {selectedConnectionData && selectedConnectionData?.reading_status !== "approved" && (
+                    {selectedConnectionData && (selectedConnectionData?.reading_status !== "approved" || selectedConnectionData?.is_billed) && (
                       <div className="flex justify-end space-x-3">
                         <Button
                           type="submit"
