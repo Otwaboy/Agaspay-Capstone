@@ -62,7 +62,7 @@ export default function MeterIssueReportDialog({
     const issueData = {
       type: "Broken Meter",
       connection_id: connection._id || connection.connection_id,
-      location: connection?.meter_number || "Unknown Meter",
+      location: `Zone ${connection?.zone || 'N/A'}, Purok ${connection?.purok_no || 'N/A'}`,
       description: description.trim(),
       urgency_level: "high",
       reported_issue_status: "Pending"
