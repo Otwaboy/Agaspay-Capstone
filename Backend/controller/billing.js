@@ -238,6 +238,14 @@ const createBilling = async (req, res) => {
       console.log(`✅ Consolidated previous unpaid bill(s) into new bill. Latest bill (${latestUnpaidBill._id}) rolled into new bill.`);
     }
 
+    // ✅ Mark the water connection as billed for this reading cycle
+    await WaterConnection.findByIdAndUpdate(
+      reading.connection_id,
+      { is_billed: true },
+      { new: true }
+    );
+    console.log(`✅ Marked water connection as billed for reading cycle`);
+
     console.log("🧾 Billing created successfully with cumulative amounts:");
     console.log("- reading_id:", reading._id.toString());
     console.log("- rate_id:", rate._id.toString());

@@ -105,6 +105,9 @@ export default function MeterReaderReadings() {
   return "In Progress"; // fallback
 })();
 
+  // Check if approval message should show (only when approved AND not yet billed)
+  const shouldShowApprovalMessage = overallReadingStatus === "Approved" && zoneConnections.some(c => c.reading_status === "approved" && !c.is_billed);
+
   // Monthly progress - based on ALL zone connections, not filtered by search
   const readCount = zoneConnections.filter(conn => conn.read_this_month && !conn.is_billed).length;
   console.log('read count', readCount);
@@ -616,8 +619,8 @@ export default function MeterReaderReadings() {
                     </div>
                     )}
 
-                    {/* Show approval message when overall reading status is approved */}
-                    {overallReadingStatus === "Approved" && (
+                    {/* Show approval message when overall reading status is approved and not yet billed */}
+                    {shouldShowApprovalMessage && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">
