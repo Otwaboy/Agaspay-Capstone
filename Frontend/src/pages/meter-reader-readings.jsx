@@ -7,7 +7,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2, Save, AlertCircle } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
@@ -397,69 +397,50 @@ export default function MeterReaderReadings() {
                                     selectedConnectionData.reading_status !== "inprogress" &&
                                     selectedConnectionData.reading_status !== "submitted" &&
                                     (selectedConnectionData.reading_status !== "approved" || selectedConnectionData.is_billed) && (
-                      <div className="space-y-4">
-                        {/* Header Card */}
-                        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg p-5 text-white shadow-md">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                              <User className="h-6 w-6" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-blue-100">Customer Information</p>
-                              <p className="text-xl font-bold">{selectedConnectionData.full_name}</p>
-                            </div>
-                          </div>
+                      <div className="bg-white rounded-lg border border-gray-200 p-6">
+                        <div className="mb-6">
+                          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <User className="h-5 w-5 text-gray-600" />
+                            Customer Information
+                          </h3>
                         </div>
 
-                        {/* Info Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                          {/* Customer Name */}
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Customer Name</p>
+                            <p className="text-base font-semibold text-gray-900">{selectedConnectionData.full_name}</p>
+                          </div>
+
                           {/* Meter Number */}
-                          <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Gauge className="h-4 w-4 text-blue-600" />
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Meter #</span>
-                            </div>
-                            <p className="text-lg font-bold text-blue-600">{selectedConnectionData.meter_number || 'N/A'}</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Meter Number</p>
+                            <p className="text-base font-semibold text-gray-900">{selectedConnectionData.meter_number || 'N/A'}</p>
                           </div>
 
                           {/* Location */}
-                          <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-2 mb-2">
-                              <MapPin className="h-4 w-4 text-green-600" />
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</span>
-                            </div>
-                            <p className="text-sm font-bold text-gray-900">Zone {selectedConnectionData.zone}</p>
-                            <p className="text-xs text-gray-600 mt-1">Purok {selectedConnectionData.purok_no}</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Location</p>
+                            <p className="text-base font-semibold text-gray-900">Zone {selectedConnectionData.zone}, Purok {selectedConnectionData.purok_no}</p>
                           </div>
 
                           {/* Previous Reading */}
-                          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200 shadow-sm">
-                            <div className="flex items-center gap-2 mb-2">
-                              <TrendingUp className="h-4 w-4 text-blue-600" />
-                              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Prev. Reading</span>
-                            </div>
-                            <p className="text-xl font-bold text-blue-700">{previousReading}</p>
-                            <p className="text-xs text-blue-600 mt-1">m³</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Previous Reading</p>
+                            <p className="text-base font-semibold text-gray-900">{previousReading} m³</p>
                           </div>
 
                           {/* Consumption Estimate */}
-                          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200 shadow-sm">
-                            <div className="flex items-center gap-2 mb-2">
-                              <TrendingUp className="h-4 w-4 text-green-600" />
-                              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Est. Consumption</span>
-                            </div>
-                            <p className="text-xl font-bold text-green-700">{consumption.toFixed(2)}</p>
-                            <p className="text-xs text-green-600 mt-1">m³ (estimate)</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Est. Consumption</p>
+                            <p className="text-base font-semibold text-gray-900">{consumption.toFixed(2)} m³</p>
                           </div>
 
                           {/* Previous Reading Period */}
                           {selectedConnectionData.inclusive_date?.start && selectedConnectionData.inclusive_date?.end && (
-                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200 shadow-sm md:col-span-2 lg:col-span-2">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Calendar className="h-4 w-4 text-purple-600" />
-                                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Previous Period</span>
-                              </div>
-                              <p className="text-sm font-bold text-gray-900">
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Previous Period</p>
+                              <p className="text-base font-semibold text-gray-900">
                                 {new Date(selectedConnectionData.inclusive_date.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </p>
                             </div>
@@ -469,82 +450,59 @@ export default function MeterReaderReadings() {
                     )}
 
                   {["inprogress", "submitted"].includes(selectedConnectionData?.reading_status) &&(
-                      <div className="space-y-4">
-                        {/* Header Card with Status Badge */}
-                        <div className="bg-gradient-to-r from-orange-600 to-amber-600 rounded-lg p-5 text-white shadow-md">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                                <User className="h-6 w-6" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-orange-100">Editing Reading</p>
-                                <p className="text-xl font-bold">{selectedConnectionData.full_name}</p>
-                              </div>
-                            </div>
-                            <Badge className="bg-white text-orange-600 capitalize">{selectedConnectionData.reading_status}</Badge>
-                          </div>
+                      <div className="bg-white rounded-lg border border-gray-200 p-6">
+                        <div className="mb-6 flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <User className="h-5 w-5 text-gray-600" />
+                            Edit Reading
+                          </h3>
+                          <Badge variant="outline" className="capitalize">
+                            {selectedConnectionData.reading_status}
+                          </Badge>
                         </div>
 
-                        {/* Info Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
+                          {/* Customer Name */}
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Customer Name</p>
+                            <p className="text-base font-semibold text-gray-900">{selectedConnectionData.full_name}</p>
+                          </div>
+
                           {/* Meter Number */}
-                          <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Gauge className="h-4 w-4 text-blue-600" />
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Meter #</span>
-                            </div>
-                            <p className="text-lg font-bold text-blue-600">{selectedConnectionData.meter_number || 'N/A'}</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Meter Number</p>
+                            <p className="text-base font-semibold text-gray-900">{selectedConnectionData.meter_number || 'N/A'}</p>
                           </div>
 
                           {/* Location */}
-                          <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-2 mb-2">
-                              <MapPin className="h-4 w-4 text-green-600" />
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</span>
-                            </div>
-                            <p className="text-sm font-bold text-gray-900">Zone {selectedConnectionData.zone}</p>
-                            <p className="text-xs text-gray-600 mt-1">Purok {selectedConnectionData.purok_no}</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Location</p>
+                            <p className="text-base font-semibold text-gray-900">Zone {selectedConnectionData.zone}, Purok {selectedConnectionData.purok_no}</p>
                           </div>
 
                           {/* Present Reading */}
-                          <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-lg p-4 border border-cyan-200 shadow-sm">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Gauge className="h-4 w-4 text-cyan-600" />
-                              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Present Reading</span>
-                            </div>
-                            <p className="text-xl font-bold text-cyan-700">{selectedConnectionData.present_reading}</p>
-                            <p className="text-xs text-cyan-600 mt-1">m³</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Present Reading</p>
+                            <p className="text-base font-semibold text-gray-900">{selectedConnectionData.present_reading} m³</p>
                           </div>
 
                           {/* Previous Reading */}
-                          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200 shadow-sm">
-                            <div className="flex items-center gap-2 mb-2">
-                              <TrendingUp className="h-4 w-4 text-blue-600" />
-                              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Prev. Reading</span>
-                            </div>
-                            <p className="text-xl font-bold text-blue-700">{selectedConnectionData.previous_reading}</p>
-                            <p className="text-xs text-blue-600 mt-1">m³</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Previous Reading</p>
+                            <p className="text-base font-semibold text-gray-900">{selectedConnectionData.previous_reading} m³</p>
                           </div>
 
                           {/* Consumption */}
-                          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200 shadow-sm">
-                            <div className="flex items-center gap-2 mb-2">
-                              <TrendingUp className="h-4 w-4 text-green-600" />
-                              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Consumption</span>
-                            </div>
-                            <p className="text-xl font-bold text-green-700">{selectedConnectionData.calculated.toFixed(2)}</p>
-                            <p className="text-xs text-green-600 mt-1">m³</p>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Consumption</p>
+                            <p className="text-base font-semibold text-gray-900">{selectedConnectionData.calculated.toFixed(2)} m³</p>
                           </div>
 
                           {/* Reading Period */}
                           {selectedConnectionData.inclusive_date?.start && selectedConnectionData.inclusive_date?.end && (
-                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200 shadow-sm md:col-span-2 lg:col-span-2">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Calendar className="h-4 w-4 text-purple-600" />
-                                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Reading Period</span>
-                              </div>
-                              <p className="text-sm font-bold text-gray-900">
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Reading Period</p>
+                              <p className="text-base font-semibold text-gray-900">
                                 {new Date(selectedConnectionData.inclusive_date.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </p>
                             </div>
@@ -552,9 +510,9 @@ export default function MeterReaderReadings() {
                         </div>
 
                         {/* Action Button */}
-                        <div className="flex justify-end">
+                        <div className="flex justify-end border-t border-gray-200 pt-6">
                           <Button
-                            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white h-11 px-6 shadow-md"
+                            className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-6"
                             disabled={!formData.present_reading || formData.present_reading === ""}
                             onClick={() => {
                               const updatedPayload = {
@@ -569,7 +527,7 @@ export default function MeterReaderReadings() {
                               });
                             }}
                           >
-                            {updateReadingMutation.isPending ? "Updating..." : "✓ Update Reading"}
+                            {updateReadingMutation.isPending ? "Updating..." : "Update Reading"}
                           </Button>
                         </div>
                       </div>
