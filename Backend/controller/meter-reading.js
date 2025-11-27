@@ -485,7 +485,9 @@ const updateReadings = async (req, res, next) => {
 
     // ✅ If present_reading is being updated (and not cannot_read), ensure it's >= previous_reading
     if (present_reading !== undefined && can_read_status !== 'cannot_read' && present_reading < reading.previous_reading) {
-      throw new BadRequestError('Present reading cannot be less than previous reading.');
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: 'Present reading cannot be less than previous reading.'
+      });
     }
 
     // ✅ Update fields
