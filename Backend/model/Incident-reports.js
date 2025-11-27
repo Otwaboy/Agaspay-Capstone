@@ -5,10 +5,10 @@ const IncidentReportSchema = new mongoose.Schema(
     type: {
       type: String,
       required: [true, 'Please specify the type of incident'],
-      enum: ['No Water Supply', 'Low Water Pressure', 'Pipe Leak', 'Water Quality Issue', 'Meter Problem', 'Damaged Infrastructure', 'Other'],
+      enum: ['No Water Supply', 'Low Water Pressure', 'Pipe Leak', 'Water Quality Issue', 'Meter Problem', 'Damaged Infrastructure', 'Other', 'Meter Issue'],
     },
     location: {
-      type: String, 
+      type: String,
       required: [true, 'Please provide the location of the incident'],
     },
     urgency_level:{
@@ -17,7 +17,7 @@ const IncidentReportSchema = new mongoose.Schema(
         required: [true, 'Please indicated and urgency level']
     },
     description: {
-      type: String, 
+      type: String,
       required: [true, 'Please provide a short description or remarks'],
     },
     reported_issue_status: {
@@ -27,7 +27,7 @@ const IncidentReportSchema = new mongoose.Schema(
     },
     reported_at: {
       type: Date,
-      default: Date.now, 
+      default: Date.now,
     },
     date_handled: {
       type: Date,
@@ -41,7 +41,12 @@ const IncidentReportSchema = new mongoose.Schema(
     type: String,
     required: true,
     enum: ['Resident', 'Personnel'],
-},
+    },
+    connection_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'WaterConnection',
+      default: null
+    }
   },
   { timestamps: true }
 );

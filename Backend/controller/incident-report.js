@@ -5,7 +5,7 @@ const Resident = require('../model/Resident')
 const Personnel = require('../model/Personnel')
 
 const createReports = async (req, res) => {
-  const { type, location, urgency_level, description, reported_issue_status } = req.body;
+  const { type, location, urgency_level, description, reported_issue_status, connection_id } = req.body;
   const user = req.user;
 
   console.log('req.user:', req.user);
@@ -13,31 +13,51 @@ const createReports = async (req, res) => {
   // ✅ Fix: Correct role checking
   if (user.role !== 'meter_reader' && user.role !== 'resident' && user.role !== 'admin' && user.role !== 'secretary') {
     throw new UnauthorizedError('Only meter readers and residents can create reports.');
-  } 
+  }
 
-  // ✅ Validate required fields 
-  if (!type || !location || !description) {
-    throw new BadRequestError('Please provide all required fields: type, location, and description.');
+  // ✅ Validate required fields
+  if (!type || !description) {
+    throw new BadRequestError('Please provide all required fields: type and description.');
+  }
+
+  // For meter issues, location is the meter number, for regular incidents it's required
+  if (type !== 'Meter Issue' && !location) {
+    throw new BadRequestError('Please provide location for this incident type.');
   }
 
   // ✅ Determine reporter model based on user role
   const reported_by_model = user.role === 'resident' ? 'Resident' : 'Personnel';
 
   // ✅ Create the report
-  const report = await IncidentReport.create({
+  const reportData = {
     type,
-    location,
-    description, 
-    urgency_level,
+    description,
     reported_issue_status: reported_issue_status || 'Pending',
     reported_by: user.userId,
     reported_by_model: reported_by_model
-  });
+  };
+
+  // Add optional fields
+  if (location) reportData.location = location;
+  if (urgency_level) reportData.urgency_level = urgency_level;
+  if (connection_id) reportData.connection_id = connection_id;
+
+  const report = await IncidentReport.create(reportData);
+
+  // ✅ Update connection status to disconnected if meter issue
+  if (type === 'Meter Issue' && connection_id) {
+    const WaterConnection = require('../model/WaterConnection');
+    await WaterConnection.findByIdAndUpdate(
+      connection_id,
+      { connection_status: 'disconnected' },
+      { new: true }
+    );
+  }
 
   // ✅ Respond with success
   res.status(201).json({
     success: true,
-    message: 'Incident report created successfully.',
+    message: 'Report created successfully.',
     data: report,
   });
 };
@@ -245,19 +265,30 @@ const updateIncidentStatus = async (req, res) => {
 const getAllIncidents = async (req, res) => {
   try {
     const { status, priority } = req.query;
-    
+
     let filter = {};
     if (status && status !== 'all') filter.reported_issue_status = status;
     if (priority && priority !== 'all') filter.urgency_level = priority;
-    
+
     const incidents = await IncidentReport.find(filter)
+      .populate({
+        path: 'connection_id',
+        select: 'meter_no zone resident_id',
+        populate: {
+          path: 'resident_id',
+          select: 'full_name',
+          model: 'Resident'
+        }
+      })
+      .populate('reported_by', 'name first_name last_name')
       .sort({ createdAt: -1 })
       .lean();
-    
-    // Populate reporter names
+
+    // Populate reporter names for manual population (for legacy data that might not have proper references)
     const populatedIncidents = await Promise.all(
       incidents.map(async (incident) => {
-        if (incident.reported_by) {
+        // Handle reported_by population
+        if (incident.reported_by && typeof incident.reported_by === 'string') {
           try {
             let reporterInfo = null;
             if (incident.reported_by_model === 'Resident') {
@@ -277,11 +308,23 @@ const getAllIncidents = async (req, res) => {
           } catch (err) {
             incident.reported_by = 'Unknown';
           }
+        } else if (incident.reported_by && typeof incident.reported_by === 'object') {
+          // Already populated
+          const name = incident.reported_by.name ||
+                      `${incident.reported_by.first_name || ''} ${incident.reported_by.last_name || ''}`.trim() ||
+                      'Unknown';
+          incident.reported_by = name;
         }
+
+        // Handle connection resident name for meter issues
+        if (incident.connection_id && incident.connection_id.resident_id) {
+          incident.resident_name = incident.connection_id.resident_id.full_name || 'Unknown';
+        }
+
         return incident;
       })
     );
-    
+
     res.status(200).json({
       success: true,
       incidents: populatedIncidents,

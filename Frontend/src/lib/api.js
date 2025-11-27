@@ -871,6 +871,66 @@ async getApprovalStats() {
       const queryString = new URLSearchParams(filteredParams).toString();
       return await this.request(`/api/v1/reports/incidents${queryString ? `?${queryString}` : ''}`);
     }
+
+  // ======================================================
+  // 🔧 METER READER ISSUE API (now part of Incident Reports)
+  // ======================================================
+  async createMeterIssue(issueData) {
+    // Meter issues are now created as incident reports with type "Meter Issue"
+    return await this.request('/api/v1/incident-report', {
+      method: 'POST',
+      body: JSON.stringify(issueData)
+    });
+  }
+
+  async getAllMeterIssues(status = null) {
+    // Get all incidents of type "Meter Issue"
+    const url = status && status !== 'all'
+      ? `/api/v1/incident-report/all?status=${status}`
+      : '/api/v1/incident-report/all';
+    return await this.request(url);
+  }
+
+  async getMyMeterIssues() {
+    // Get incident reports created by current meter reader
+    return await this.request('/api/v1/incident-report');
+  }
+
+  async getMeterIssueById(id) {
+    return await this.request(`/api/v1/incident-report/${id}`);
+  }
+
+  async assignMeterIssue(id, maintenancePersonnelId) {
+    // For now, assign via task creation
+    // This creates a schedule task that connects the maintenance personnel to the incident
+    return await this.request('/api/v1/schedule-task', {
+      method: 'POST',
+      body: JSON.stringify({
+        report_id: id,
+        assigned_personnel: maintenancePersonnelId,
+        description: 'Meter issue repair'
+      })
+    });
+  }
+
+  async startMeterRepair(id) {
+    // Update incident status to "In Progress"
+    return await this.request(`/api/v1/incident-report/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reported_issue_status: 'In Progress' })
+    });
+  }
+
+  async completeMeterRepair(id, completionNotes = '') {
+    // Update incident status to "Resolved" and connection back to active
+    return await this.request(`/api/v1/incident-report/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        reported_issue_status: 'Resolved',
+        resolution_notes: completionNotes
+      })
+    });
+  }
 }
 
 

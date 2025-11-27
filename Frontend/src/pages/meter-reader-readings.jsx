@@ -12,6 +12,7 @@ import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
 import { Badge } from "../components/ui/badge";
+import MeterIssueReportDialog from "../components/dialogs/MeterIssueReportDialog";
 
 
 export default function MeterReaderReadings() {
@@ -25,6 +26,7 @@ export default function MeterReaderReadings() {
   const [searchQuery, setSearchQuery] = useState("");
   const [savedPeriod, setSavedPeriod] = useState(null);
   const [isCannotRead, setIsCannotRead] = useState(false);
+  const [showIssueDialog, setShowIssueDialog] = useState(false);
   const queryClient = useQueryClient();
 
   // Load saved reading period from localStorage on mount
@@ -606,17 +608,28 @@ export default function MeterReaderReadings() {
                       </div>
 
                       {isCannotRead && (
-                        <div className="space-y-2">
-                          <Label className="flex items-center space-x-2 text-base">
-                            <AlertCircle className="h-4 w-4 text-red-600" />
-                            <span>Reason Why Meter Cannot Be Read <span className="text-red-600">*</span></span>
-                          </Label>
-                          <Textarea
-                            placeholder="Explain why the meter cannot be read (e.g., meter is broken, meter not found, access blocked, etc.)"
-                            value={formData.remarks}
-                            onChange={(e) => handleInputChange("remarks", e.target.value)}
-                            className="min-h-24"
-                          />
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label className="flex items-center space-x-2 text-base">
+                              <AlertCircle className="h-4 w-4 text-red-600" />
+                              <span>Reason Why Meter Cannot Be Read <span className="text-red-600">*</span></span>
+                            </Label>
+                            <Textarea
+                              placeholder="Explain why the meter cannot be read (e.g., meter is broken, meter not found, access blocked, etc.)"
+                              value={formData.remarks}
+                              onChange={(e) => handleInputChange("remarks", e.target.value)}
+                              className="min-h-24"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            className="w-full bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => setShowIssueDialog(true)}
+                            disabled={!formData.remarks.trim()}
+                          >
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            Report This Issue
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -768,6 +781,14 @@ export default function MeterReaderReadings() {
           </div>
         </main>
       </div>
+
+      {/* Meter Issue Report Dialog */}
+      <MeterIssueReportDialog
+        open={showIssueDialog}
+        onOpenChange={setShowIssueDialog}
+        connection={selectedConnectionData}
+        meterReader={authUser}
+      />
     </div>
   );
 }
