@@ -51,7 +51,7 @@ const getAllConnectionIDs = async (req, res) => {
 
 
 const inputReading = async (req, res) => {
-  const { connection_id, present_reading, inclusive_date, remarks } = req.body;
+  const { connection_id, present_reading, inclusive_date, remarks, can_read_status } = req.body;
   const user = req.user;
 
   // Validate role
@@ -66,6 +66,11 @@ const inputReading = async (req, res) => {
 
   if (!inclusive_date.start || !inclusive_date.end) {
     throw new BadRequestError('Please provide inclusive start date and end date');
+  }
+
+  // Validate remarks if cannot read
+  if (can_read_status === 'cannot_read' && !remarks) {
+    throw new BadRequestError('Please provide remarks explaining why the meter cannot be read');
   }
 
   const connection = await WaterConnection.findById(connection_id).populate('resident_id');
@@ -114,8 +119,8 @@ const inputReading = async (req, res) => {
     previous_reading = lastReadingAnyMonth ? lastReadingAnyMonth.present_reading : 0;
   }
 
-  // Validate present >= previous
-  if (present_reading < previous_reading) {
+  // Validate present >= previous (only for can_read status)
+  if (can_read_status === 'can_read' && present_reading < previous_reading) {
     throw new BadRequestError('Present reading cannot be less than previous reading');
   }
 
@@ -126,7 +131,8 @@ const inputReading = async (req, res) => {
     previous_reading,
     present_reading,
     calculated: present_reading - previous_reading,
-    remarks,
+    remarks: remarks || "Normal Reading",
+    can_read_status: can_read_status || 'can_read',
     recorded_by: user.userId,
     billing_month // 🔹 save the billing month
   });
@@ -388,6 +394,8 @@ const getLatestReadings = async (req, res) => {
         calculated: reading?.calculated ?? 0,
         meter_number: item.meter_no,
         reading_status: reading?.reading_status,
+        can_read_status: reading?.can_read_status || 'can_read',
+        remarks: reading?.remarks || "Normal Reading",
         is_billed: !!item.is_billed,
         read_this_month: read_this_month,
         last_read_date: reading?.created_at || null
@@ -428,7 +436,7 @@ const getLatestReadings = async (req, res) => {
 
 const updateReadings = async (req, res) => {
   const { reading_id } = req.params;
-  const { present_reading, inclusive_date, remarks } = req.body;
+  const { present_reading, inclusive_date, remarks, can_read_status } = req.body;
   const user = req.user;
 
   // ✅ Only meter readers can update
@@ -438,8 +446,8 @@ const updateReadings = async (req, res) => {
 
   // ✅ Validate input
   if (!reading_id) throw new BadRequestError('Reading ID is required.');
-  if (present_reading === undefined && !inclusive_date && !remarks) {
-    throw new BadRequestError('At least one field (present_reading, inclusive_date, remarks) is required.');
+  if (present_reading === undefined && !inclusive_date && !remarks && !can_read_status) {
+    throw new BadRequestError('At least one field (present_reading, inclusive_date, remarks, can_read_status) is required.');
   }
 
   // ✅ Fetch the reading
@@ -466,8 +474,13 @@ const updateReadings = async (req, res) => {
     throw new UnauthorizedError(`You can only update readings in your assigned zone (${personnel.assigned_zone}).`);
   }
 
-  // ✅ If present_reading is being updated, ensure it's >= previous_reading
-  if (present_reading !== undefined && present_reading < reading.previous_reading) {
+  // ✅ Validate remarks if switching to cannot_read
+  if (can_read_status === 'cannot_read' && !remarks) {
+    throw new BadRequestError('Please provide remarks explaining why the meter cannot be read');
+  }
+
+  // ✅ If present_reading is being updated (and not cannot_read), ensure it's >= previous_reading
+  if (present_reading !== undefined && can_read_status !== 'cannot_read' && present_reading < reading.previous_reading) {
     throw new BadRequestError('Present reading cannot be less than previous reading.');
   }
 
@@ -475,6 +488,7 @@ const updateReadings = async (req, res) => {
   if (present_reading !== undefined) reading.present_reading = present_reading;
   if (inclusive_date) reading.inclusive_date = inclusive_date;
   if (remarks) reading.remarks = remarks;
+  if (can_read_status) reading.can_read_status = can_read_status;
 
   await reading.save(); // pre-save hook recalculates "calculated"
 
@@ -722,6 +736,7 @@ const getReadingHistory = async (req, res) => {
         calculated: reading?.calculated ?? 0,
         inclusive_date: reading?.inclusive_date || null,
         reading_status: reading?.reading_status,
+        can_read_status: reading?.can_read_status || 'can_read',
         remarks: reading?.remarks || "Normal Reading",
         recorded_by: reading?.recorded_by || null,
         created_at: reading?.created_at || null

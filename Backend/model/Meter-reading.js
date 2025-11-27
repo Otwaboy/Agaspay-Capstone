@@ -31,8 +31,13 @@ const MeterReadingSchema = new mongoose.Schema({
     default: 0
   },
   remarks: {
-    type: String, 
+    type: String,
     default: "Normal Reading"
+  },
+  can_read_status: {
+    type: String,
+    enum: ['can_read', 'cannot_read'],
+    default: 'can_read'
   },
   reading_status: {
     type: String,

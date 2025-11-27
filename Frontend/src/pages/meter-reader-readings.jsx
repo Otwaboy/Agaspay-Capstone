@@ -7,7 +7,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2, Save } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, TrendingUp, CheckCircle2, Save, AlertCircle } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
 import { apiClient } from "../lib/api";
@@ -19,10 +19,12 @@ export default function MeterReaderReadings() {
     connection_id: "",
     present_reading: "",
     inclusive_date: { start: "", end: "" },
-    remarks: ""
+    remarks: "",
+    can_read_status: "can_read"
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [savedPeriod, setSavedPeriod] = useState(null);
+  const [isCannotRead, setIsCannotRead] = useState(false);
   const queryClient = useQueryClient();
 
   // Load saved reading period from localStorage on mount
@@ -208,12 +210,17 @@ export default function MeterReaderReadings() {
     return toast.error("Validation Error", { description: "Please select a water connection" });
   }
 
-  if (!formData.present_reading) {
+  // For can_read status - require remarks if cannot read
+  if (isCannotRead && !formData.remarks) {
+    return toast.error("Validation Error", { description: "Please provide remarks explaining why the meter cannot be read" });
+  }
+
+  // For normal reading - require present reading value
+  if (!isCannotRead && !formData.present_reading) {
     return toast.error("Validation Error", { description: "Please enter the present reading" });
   }
 
-
-  if (!isEditing && presentReading < previousReading) {
+  if (!isCannotRead && !isEditing && presentReading < previousReading) {
     return toast.error("Validation Error", {
       description: `Present reading cannot be less than previous reading (${previousReading})`
     });
@@ -242,12 +249,13 @@ export default function MeterReaderReadings() {
 
   const payload = {
     connection_id: formData.connection_id,
-    present_reading: Number(formData.present_reading),
+    present_reading: isCannotRead ? 0 : Number(formData.present_reading),
     inclusive_date: {
       start: formData.inclusive_date.start,
       end: formData.inclusive_date.end
     },
-    remarks: formData.remarks
+    remarks: formData.remarks,
+    can_read_status: isCannotRead ? "cannot_read" : "can_read"
   };
 
   if (selectedConnectionData?.reading_status === "inprogress") {
@@ -484,25 +492,53 @@ export default function MeterReaderReadings() {
                       </div>
                     )}
 
-                    {/* FORM INPUTS */}
-                    <div className="space-y-2">
-                      <Label htmlFor="present_reading" className="flex items-center space-x-2 text-base">
-                        <Gauge className="h-4 w-4" />
-                        <span>Present Reading (m³)</span>
-                      </Label>
-                      <Input
-                        id="present_reading"
-                        type="number"
-                        step="0.1"
-                        placeholder="Enter current meter reading"
-                        value={formData.present_reading}
-                        onChange={(e) => handleInputChange("present_reading", e.target.value)}
-                        className="h-12 text-base text-lg font-semibold"
-                        disabled={
-                                  !selectedConnectionData ||
-                                  (selectedConnectionData?.reading_status === "approved" && !selectedConnectionData?.is_billed)
-                                }/>
+                    {/* Can't Read Toggle */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <AlertCircle className="h-5 w-5 text-amber-600" />
+                          <span className="font-medium text-amber-900">Unable to Read Meter?</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant={isCannotRead ? "default" : "outline"}
+                          className={isCannotRead ? "bg-red-600 hover:bg-red-700" : ""}
+                          onClick={() => {
+                            setIsCannotRead(!isCannotRead);
+                            if (!isCannotRead) {
+                              setFormData(prev => ({...prev, present_reading: "", can_read_status: "cannot_read"}));
+                            } else {
+                              setFormData(prev => ({...prev, can_read_status: "can_read"}));
+                            }
+                          }}
+                          disabled={!selectedConnectionData}
+                        >
+                          {isCannotRead ? "✓ Can't Read Selected" : "Mark as Can't Read"}
+                        </Button>
+                      </div>
                     </div>
+
+                    {/* FORM INPUTS */}
+                    {!isCannotRead && (
+                      <div className="space-y-2">
+                        <Label htmlFor="present_reading" className="flex items-center space-x-2 text-base">
+                          <Gauge className="h-4 w-4" />
+                          <span>Present Reading (m³)</span>
+                        </Label>
+                        <Input
+                          id="present_reading"
+                          type="number"
+                          step="0.1"
+                          placeholder="Enter current meter reading"
+                          value={formData.present_reading}
+                          onChange={(e) => handleInputChange("present_reading", e.target.value)}
+                          className="h-12 text-base text-lg font-semibold"
+                          disabled={
+                                    !selectedConnectionData ||
+                                    (selectedConnectionData?.reading_status === "approved" && !selectedConnectionData?.is_billed)
+                                  }/>
+                      </div>
+                    )}
 
                     {/* Date and Remarks Inputs */}
                     <div className="space-y-4">
@@ -564,10 +600,32 @@ export default function MeterReaderReadings() {
                         </div>
                       </div>
 
-                      <Label className="flex items-center space-x-2 text-base">
-                        <span>Remarks</span>
-                      </Label>
-                      <Textarea placeholder="Enter any remarks" value={formData.remarks} onChange={(e) => handleInputChange("remarks", e.target.value)} />
+                      {isCannotRead && (
+                        <>
+                          <Label className="flex items-center space-x-2 text-base">
+                            <AlertCircle className="h-4 w-4 text-red-600" />
+                            <span>Reason Why Meter Cannot Be Read <span className="text-red-600">*</span></span>
+                          </Label>
+                          <Textarea
+                            placeholder="Explain why the meter cannot be read (e.g., meter is broken, meter not found, access blocked, etc.)"
+                            value={formData.remarks}
+                            onChange={(e) => handleInputChange("remarks", e.target.value)}
+                            className="min-h-24"
+                          />
+                        </>
+                      )}
+                      {!isCannotRead && (
+                        <>
+                          <Label className="flex items-center space-x-2 text-base">
+                            <span>Remarks (Optional)</span>
+                          </Label>
+                          <Textarea
+                            placeholder="Enter any remarks about this reading"
+                            value={formData.remarks}
+                            onChange={(e) => handleInputChange("remarks", e.target.value)}
+                          />
+                        </>
+                      )}
                     </div>
 
                     <div className="flex justify-end space-x-3">

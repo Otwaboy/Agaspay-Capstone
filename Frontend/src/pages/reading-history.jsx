@@ -28,6 +28,7 @@ import {
   MoreVertical,
   Eye,
   History,
+  AlertCircle,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 
@@ -82,6 +83,14 @@ export default function ReadingHistory() {
       3: { label: "Zone 3", className: "bg-pink-100 text-pink-800" },
     };
     return config[zone] || { label: `Zone ${zone}`, className: "bg-gray-100 text-gray-800" };
+  };
+
+  const getReadStatusBadge = (canReadStatus) => {
+    const config = {
+      can_read: { label: "Read", className: "bg-green-100 text-green-800", icon: Eye },
+      cannot_read: { label: "Unable to Read", className: "bg-red-100 text-red-800", icon: AlertCircle }
+    };
+    return config[canReadStatus] || { label: "Unknown", className: "bg-gray-100 text-gray-800", icon: AlertCircle };
   };
 
   if (isLoading) {
@@ -229,6 +238,9 @@ export default function ReadingHistory() {
                           Zone
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
+                          Status
+                        </th>
+                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                           Previous Reading
                         </th>
                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
@@ -248,6 +260,7 @@ export default function ReadingHistory() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredReadings.map((reading) => {
                         const zoneBadge = getZoneBadge(reading.zone);
+                        const readStatusBadge = getReadStatusBadge(reading.can_read_status);
                         const readingDate = reading.inclusive_date?.end
                           ? new Date(reading.inclusive_date.end).toLocaleDateString()
                           : reading.created_at
@@ -269,14 +282,22 @@ export default function ReadingHistory() {
                                 {zoneBadge.label}
                               </Badge>
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-900">
-                              {(reading.previous_reading ?? 0).toFixed(2)}
+                            <td className="py-4 px-6">
+                              <Badge
+                                className={`${readStatusBadge.className} flex items-center w-fit gap-1`}
+                              >
+                                <readStatusBadge.icon className="h-3 w-3" />
+                                {readStatusBadge.label}
+                              </Badge>
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-900">
-                              {(reading.present_reading ?? 0).toFixed(2)}
+                              {reading.can_read_status === 'cannot_read' ? 'N/A' : (reading.previous_reading ?? 0).toFixed(2)}
+                            </td>
+                            <td className="py-4 px-6 text-sm text-gray-900">
+                              {reading.can_read_status === 'cannot_read' ? 'N/A' : (reading.present_reading ?? 0).toFixed(2)}
                             </td>
                             <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                              {(reading.calculated ?? 0).toFixed(2)}
+                              {reading.can_read_status === 'cannot_read' ? 'N/A' : (reading.calculated ?? 0).toFixed(2)}
                             </td>
                             <td className="py-4 px-6 text-sm text-gray-500">
                               {readingDate}
@@ -294,7 +315,7 @@ export default function ReadingHistory() {
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem>
                                     <Eye className="h-4 w-4 mr-2" />
-                                    View Details
+                                    {reading.can_read_status === 'cannot_read' ? 'View Remarks' : 'View Details'}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -305,7 +326,7 @@ export default function ReadingHistory() {
                       {filteredReadings.length === 0 && (
                         <tr>
                           <td
-                            colSpan="8"
+                            colSpan="9"
                             className="p-8 text-center text-gray-500"
                           >
                             No reading records found
