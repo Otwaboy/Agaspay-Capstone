@@ -9,12 +9,12 @@ const IncidentReportSchema = new mongoose.Schema(
     },
     location: {
       type: String,
-      required: [true, 'Please provide the location of the incident'],
+      default: null,
     },
     urgency_level:{
         type: String,
         enum: ['low', 'medium', 'high', 'critical'],
-        required: [true, 'Please indicated and urgency level']
+        default: 'medium'
     },
     description: {
       type: String,
@@ -22,7 +22,7 @@ const IncidentReportSchema = new mongoose.Schema(
     },
     reported_issue_status: {
       type: String,
-      enum: ['Pending','Completed', 'Scheduled','Cancelled'],
+      enum: ['Pending','Completed', 'Scheduled','Cancelled', 'In Progress', 'Resolved', 'Closed'],
       default: 'Pending',
     },
     reported_at: {
