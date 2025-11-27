@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle, X } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle, XCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
@@ -400,7 +400,7 @@ export default function MeterReaderReadings() {
                                   <div className="-ml-4 flex items-center justify-between w-full gap-2">
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
                                       {connection.can_read_status === 'cannot_read' ? (
-                                        <X className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                        <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
                                       ) : (connection.read_this_month && !connection.is_billed) ? (
                                         <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
                                       ) : (
@@ -697,19 +697,6 @@ export default function MeterReaderReadings() {
                           />
                         </div>
                       </div>
-
-                      {!isCannotRead && (
-                        <>
-                          <Label className="flex items-center space-x-2 text-base">
-                            <span>Remarks (Optional)</span>
-                          </Label>
-                          <Textarea
-                            placeholder="Enter any remarks about this reading"
-                            value={formData.remarks}
-                            onChange={(e) => handleInputChange("remarks", e.target.value)}
-                          />
-                        </>
-                      )}
                     </div>
 
                     <div className="flex justify-end space-x-3">
