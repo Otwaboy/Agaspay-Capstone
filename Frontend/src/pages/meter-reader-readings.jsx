@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
@@ -367,7 +367,18 @@ export default function MeterReaderReadings() {
                           <div className="sticky top-0 bg-white p-0 border-b z-10">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                              <Input type="text" placeholder="Search by name, purok, or meter number..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-14 text-base border-none rounded-none" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
+                              <Input type="text" placeholder="Search by name, purok, or meter number..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 pr-10 h-14 text-base border-none rounded-none" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
+                              {searchQuery && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSearchQuery("");
+                                  }}
+                                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                  <X className="h-5 w-5" />
+                                </button>
+                              )}
                             </div>
                           </div>
                           <div className="max-h-[300px] overflow-y-auto">
@@ -520,6 +531,14 @@ export default function MeterReaderReadings() {
                               <p className="text-base font-semibold text-gray-900">
                                 {new Date(selectedConnectionData.inclusive_date.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </p>
+                            </div>
+                          )}
+
+                          {/* Can't Read Status */}
+                          {selectedConnectionData.can_read_status === 'cannot_read' && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Status</p>
+                              <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Can't Read</Badge>
                             </div>
                           )}
                         </div>
