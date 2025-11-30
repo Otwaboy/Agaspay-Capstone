@@ -74,7 +74,8 @@ export default function AdminPersonnel() {
       toast.success("Success", { description: "Personnel archived successfully" });
     },
     onError: (error) => {
-      toast.error("Error", { description: error.response?.data?.message || "Failed to archive personnel" });
+      const errorMessage = error.response?.data?.message || error.message || "Failed to archive personnel";
+      toast.error("Error", { description: errorMessage });
     }
   });
 
@@ -401,7 +402,7 @@ export default function AdminPersonnel() {
                               </Badge>
                             </td>
                          
-                            <td className="py-4 px-6 text-sm text-gray-900">{person.assigned_zone || 'Not meter reader'}</td>
+                            <td className="py-4 px-6 text-sm text-gray-900">{person.assigned_zone || 'N/A'}</td>
                             <td className="py-4 px-6">
                               <Badge className={statusConfig.className}>
                                 {statusConfig.label}

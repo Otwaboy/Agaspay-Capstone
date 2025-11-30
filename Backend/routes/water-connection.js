@@ -16,7 +16,7 @@ router.route('/:connection_id').put(authMiddleware,  editResidentAccount)
 router.route('/latest-reading').get(authMiddleware,  getLatestConnections)
 router.route('/contacts-update').patch(authMiddleware,  updateUserContact)
 router.route('/verify-email').post(authMiddleware, verifyEmail);
-router.route('/resident-meters').get(authMiddleware, roleMiddleware('resident'), getResidentMeters);
+router.route('/resident-meters').get(authMiddleware, getResidentMeters);
 router.route('/check-meter/:meterNo').get(authMiddleware, checkMeterNumber);
 router.route('/add-meter').post(authMiddleware, roleMiddleware('secretary'), addMeterToResident);
 

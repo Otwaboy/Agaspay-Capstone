@@ -1,6 +1,7 @@
 // Personnel management controller
 const Personnel = require('../model/Personnel');
 const User = require('../model/User');
+const ScheduleTask = require('../model/Schedule-task');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
@@ -603,6 +604,22 @@ const archivePersonnelDirect = async (req, res) => {
         success: false,
         message: 'Personnel is already archived'
       });
+    }
+
+    // Check if personnel is maintenance with pending or assigned tasks
+    if (personnel.role === 'maintenance') {
+      const pendingTasks = await ScheduleTask.find({
+        assigned_personnel: id,
+        task_status: { $in: ['Pending', 'Assigned'] }
+      });
+
+      if (pendingTasks.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `⚠️ Cannot Archive - ${personnel.first_name} ${personnel.last_name} has ${pendingTasks.length} pending or assigned task(s). Please complete all tasks before archiving this staff member.`,
+          pendingTasksCount: pendingTasks.length
+        });
+      }
     }
 
     // Directly archive the personnel
