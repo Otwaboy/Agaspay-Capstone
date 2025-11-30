@@ -55,13 +55,47 @@ export default function MeterReaderReadings() {
 
   console.log('all connection get in the latest reading', connectionList);
 
+  // 📅 Helper function to get the effective start date (next_period_dates if available, otherwise inclusive_date)
+  const getReadingStartDate = (conn) => {
+    const dateSource = conn?.next_period_dates || conn?.inclusive_date;
+    return dateSource?.start ? new Date(dateSource.start) : null;
+  };
+
+  // 📅 Helper function to check if reading period includes today
+  const isScheduledToday = (conn) => {
+    const dateSource = conn?.next_period_dates || conn?.inclusive_date;
+    if (!dateSource?.start || !dateSource?.end) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(dateSource.start);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(dateSource.end);
+    endDate.setHours(0, 0, 0, 0);
+
+    // Check if today is within the reading period (inclusive)
+    return today >= startDate && today <= endDate;
+  };
+
   // Connections filtered by zone only (for overall statistics)
   const zoneConnections = connectionList
     .filter((conn) => {
       const matchesZone = meterReaderZone ? conn.zone === meterReaderZone : true;
       return matchesZone;
     })
-    .sort((a, b) => Number(a.purok_no) - Number(b.purok_no));
+    .sort((a, b) => {
+      // 📅 Sort by reading period start date (nearest to today first)
+      const dateA = getReadingStartDate(a);
+      const dateB = getReadingStartDate(b);
+
+      if (!dateA && !dateB) return Number(a.purok_no) - Number(b.purok_no); // Fallback to purok
+      if (!dateA) return 1; // Connections without dates go to the end
+      if (!dateB) return -1;
+
+      return dateA.getTime() - dateB.getTime(); // Sort by nearest date to today
+    });
 
   // Filtered connections by zone + search query (for dropdown)
   const filteredConnections = zoneConnections
@@ -446,9 +480,20 @@ export default function MeterReaderReadings() {
                                       <div className="flex flex-col">
                                         <span className="truncate text-base font-semibold">{connection.full_name || "Unnamed"}</span>
                                         <span className="text-xs text-gray-500">Meter No. {connection.meter_number}</span>
+                                        {(() => {
+                                          const dateSource = connection?.next_period_dates || connection?.inclusive_date;
+                                          return dateSource?.start && dateSource?.end ? (
+                                            <span className="text-xs text-gray-400 mt-0.5">
+                                              Reading: {new Date(dateSource.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(dateSource.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </span>
+                                          ) : null;
+                                        })()}
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">
+                                      {isScheduledToday(connection) && (
+                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs font-semibold">✓ Scheduled Today</Badge>
+                                      )}
                                       <Badge variant="secondary" className="text-xs">Purok {connection.purok_no}</Badge>
                                       {getStatusBadge()}
                                     </div>
