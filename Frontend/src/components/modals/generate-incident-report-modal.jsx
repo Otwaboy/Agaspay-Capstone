@@ -105,8 +105,17 @@ export default function GenerateIncidentReportModal({ isOpen, onClose }) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       const monthName = months.find(m => m.value === selectedMonth)?.label;
+      const generatedTime = new Date().toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
       doc.text(`Period: ${monthName} ${selectedYear}`, pageWidth / 2, 30, { align: 'center' });
       doc.text(`Total Incidents: ${filteredIncidents.length}`, pageWidth / 2, 36, { align: 'center' });
+      doc.text(`Generated report on: ${generatedTime}`, pageWidth / 2, 42, { align: 'center' });
 
       // Prepare table data
       const tableData = filteredIncidents.map((incident, index) => {
@@ -136,7 +145,7 @@ export default function GenerateIncidentReportModal({ isOpen, onClose }) {
       autoTable(doc, {
         head: [['#', 'Type', 'Description', 'Location', 'Reporter', 'Reported Date', 'Status', 'Priority']],
         body: tableData,
-        startY: 42,
+        startY: 48,
         theme: 'striped',
         headStyles: {
           fillColor: [239, 68, 68], // Red color for incidents

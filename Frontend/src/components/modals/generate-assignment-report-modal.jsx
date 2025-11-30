@@ -79,12 +79,15 @@ export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
 
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      const generatedDate = new Date().toLocaleDateString('en-PH', {
+      const generatedTime = new Date().toLocaleString('en-PH', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
       });
-      doc.text(`Generated: ${generatedDate}`, pageWidth / 2, 30, { align: 'center' });
+      doc.text(`Generated report on: ${generatedTime}`, pageWidth / 2, 30, { align: 'center' });
       doc.text(`Status Filter: ${selectedStatus.toUpperCase()}`, pageWidth / 2, 36, { align: 'center' });
       doc.text(`Total Assignments: ${filteredAssignments.length}`, pageWidth / 2, 42, { align: 'center' });
 

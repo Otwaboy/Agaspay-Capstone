@@ -71,8 +71,17 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
       month: 'long',
       day: 'numeric'
     });
+    const generatedTime = new Date().toLocaleString('en-PH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
     doc.text(`Period: ${startDateFormatted} to ${endDateFormatted}`, pageWidth / 2, 30, { align: 'center' });
     doc.text(`Total Residents: ${residents.length}`, pageWidth / 2, 36, { align: 'center' });
+    doc.text(`Generated report on: ${generatedTime}`, pageWidth / 2, 42, { align: 'center' });
 
     // Prepare table data
     const tableData = residents.map((resident, index) => [
@@ -89,7 +98,7 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
     autoTable(doc, {
       head: [['#', 'Name', 'Address', 'Meter No.', 'Type', 'Contact', 'Registered']],
       body: tableData,
-      startY: 42,
+      startY: 48,
       theme: 'striped',
       headStyles: {
         fillColor: [41, 128, 185],

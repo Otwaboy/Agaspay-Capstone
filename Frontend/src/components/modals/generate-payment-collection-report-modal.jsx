@@ -126,14 +126,23 @@ export default function GeneratePaymentCollectionReportModal({ isOpen, onClose }
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       const monthName = months.find(m => m.value === selectedMonth)?.label;
+      const generatedTime = new Date().toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
       doc.text(`Period: ${monthName} ${selectedYear}`, pageWidth / 2, 30, { align: 'center' });
       doc.text(`Total Payments: ${filteredPayments.length}`, pageWidth / 2, 36, { align: 'center' });
+      doc.text(`Generated report on: ${generatedTime}`, pageWidth / 2, 42, { align: 'center' });
 
       // Summary section
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Total Collected (Confirmed): ${formatCurrency(totalCollected)} (${confirmedCount} payments)`, pageWidth / 2, 44, { align: 'center' });
-      doc.text(`Pending Amount: ${formatCurrency(pendingAmount)} (${pendingCount} payments)`, pageWidth / 2, 50, { align: 'center' });
+      doc.text(`Total Collected (Confirmed): ${formatCurrency(totalCollected)} (${confirmedCount} payments)`, pageWidth / 2, 50, { align: 'center' });
+      doc.text(`Pending Amount: ${formatCurrency(pendingAmount)} (${pendingCount} payments)`, pageWidth / 2, 56, { align: 'center' });
 
       // Prepare table data
       const tableData = filteredPayments.map((payment, index) => {
@@ -162,7 +171,7 @@ export default function GeneratePaymentCollectionReportModal({ isOpen, onClose }
       autoTable(doc, {
         head: [['#', 'Resident Name', 'Purok', 'Amount', 'Method', 'Reference', 'Date', 'Status']],
         body: tableData,
-        startY: 56,
+        startY: 62,
         theme: 'striped',
         headStyles: {
           fillColor: [34, 197, 94], // Green color for payment collection
