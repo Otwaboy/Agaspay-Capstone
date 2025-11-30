@@ -29,6 +29,18 @@ const WaterConnectionSchema = new mongoose.Schema({
     required: false,
     default: null
   },
+  inclusive_date: {
+    start: {
+      type: Date,
+      required: false,
+      default: null
+    },
+    end: {
+      type: Date,
+      required: false,
+      default: null
+    }
+  },
   connection_status:
   {
     type: String,

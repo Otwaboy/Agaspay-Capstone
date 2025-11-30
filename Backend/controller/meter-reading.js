@@ -60,12 +60,8 @@ const inputReading = async (req, res) => {
   }
 
   // Validate input
-  if (!connection_id || present_reading === undefined || !inclusive_date) {
-    throw new BadRequestError('All fields are required.');
-  }
-
-  if (!inclusive_date.start || !inclusive_date.end) {
-    throw new BadRequestError('Please provide inclusive start date and end date');
+  if (!connection_id || present_reading === undefined) {
+    throw new BadRequestError('Connection ID and present reading are required.');
   }
 
   // Validate remarks if cannot read
@@ -90,6 +86,18 @@ const inputReading = async (req, res) => {
     throw new UnauthorizedError(
       `You are only allowed to input readings for zone ${personnel.assigned_zone}. This connection is in zone ${connection.zone}.`
     );
+  }
+
+  // 📅 Use inclusive_date from connection or from request (if provided for manual override)
+  let readingInclusiveDate = inclusive_date;
+  if (!readingInclusiveDate && connection.inclusive_date) {
+    // Auto-use the calculated inclusive_date from the water connection
+    readingInclusiveDate = connection.inclusive_date;
+    console.log(`📅 Using auto-calculated inclusive_date from connection: Start: ${readingInclusiveDate.start}, End: ${readingInclusiveDate.end}`);
+  }
+
+  if (!readingInclusiveDate || !readingInclusiveDate.start || !readingInclusiveDate.end) {
+    throw new BadRequestError('Inclusive start and end dates must be set. Please complete meter installation first or provide dates.');
   }
 
   // 🔹 Determine current billing month
@@ -127,7 +135,7 @@ const inputReading = async (req, res) => {
   // Create meter reading
   const reading = await MeterReading.create({
     connection_id,
-    inclusive_date,
+    inclusive_date: readingInclusiveDate,
     previous_reading,
     present_reading,
     calculated: present_reading - previous_reading,
@@ -370,8 +378,8 @@ const getLatestReadings = async (req, res) => {
     const connectionDetails = readings.map(item => {
       const reading = item.latestReading;
       const resident = item.resident;
-     
-     
+
+
 
       // 📅 Check if reading exists for current billing month
       // Since we're now filtering by billing_month in the lookup,
@@ -383,7 +391,8 @@ const getLatestReadings = async (req, res) => {
         connection_status: item.connection_status,
         connection_id: item._id ? item._id.toString() : null,
         connection_type: item.type || "Unknown",
-        inclusive_date: reading?.inclusive_date || null,
+        // 📅 Priority: Use inclusive_date from latest reading if exists, otherwise use connection's inclusive_date
+        inclusive_date: reading?.inclusive_date || item.inclusive_date || null,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
         // Use water connection zone and purok (not resident's home location)
         // Resident zone is for incident reporting; water connection zone is for meter coverage
@@ -740,6 +749,143 @@ const getReadingHistory = async (req, res) => {
   }
 };
 
+// 🔧 Admin endpoint to manually update inclusive_date for a water connection
+const updateInclusiveDate = async (req, res) => {
+  try {
+    const { connection_id, start_date, end_date } = req.body;
+    const user = req.user;
+
+    // Validate admin role
+    if (user.role !== 'admin') {
+      throw new UnauthorizedError('Only admins can update inclusive dates');
+    }
+
+    // Validate input
+    if (!connection_id || !start_date || !end_date) {
+      throw new BadRequestError('connection_id, start_date, and end_date are required');
+    }
+
+    // Find and update the connection
+    const connection = await WaterConnection.findById(connection_id);
+    if (!connection) {
+      throw new BadRequestError('Water connection not found');
+    }
+
+    const newStartDate = new Date(start_date);
+    const newEndDate = new Date(end_date);
+
+    // Validate dates
+    if (newStartDate >= newEndDate) {
+      throw new BadRequestError('Start date must be before end date');
+    }
+
+    // Update inclusive_date
+    connection.inclusive_date = {
+      start: newStartDate,
+      end: newEndDate
+    };
+
+    await connection.save();
+
+    console.log(`📅 Admin updated inclusive_date for connection ${connection_id}`);
+    console.log(`   Old dates: ${connection.inclusive_date ? `${connection.inclusive_date.start.toISOString().split('T')[0]} to ${connection.inclusive_date.end.toISOString().split('T')[0]}` : 'None'}`);
+    console.log(`   New dates: ${newStartDate.toISOString().split('T')[0]} to ${newEndDate.toISOString().split('T')[0]}`);
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Inclusive date updated successfully',
+      data: {
+        connection_id: connection._id,
+        inclusive_date: {
+          start: newStartDate.toISOString().split('T')[0],
+          end: newEndDate.toISOString().split('T')[0]
+        }
+      }
+    });
+  } catch (error) {
+    console.error('🔥 updateInclusiveDate error:', error);
+    return res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Failed to update inclusive date",
+      error: error.message
+    });
+  }
+};
+
+// 🔧 Admin endpoint to sync WaterConnection inclusive_date from latest reading
+const syncInclusiveDates = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Validate admin role
+    if (user.role !== 'admin') {
+      throw new UnauthorizedError('Only admins can sync inclusive dates');
+    }
+
+    // Get all connections with readings
+    const connections = await WaterConnection.find({
+      inclusive_date: { $exists: true, $ne: null }
+    });
+
+    let syncCount = 0;
+    const results = [];
+
+    for (const connection of connections) {
+      // Find latest reading for this connection
+      const latestReading = await MeterReading.findOne({
+        connection_id: connection._id
+      }).sort({ created_at: -1 });
+
+      if (latestReading && latestReading.inclusive_date) {
+        const connectionStartStr = connection.inclusive_date.start ? new Date(connection.inclusive_date.start).toISOString().split('T')[0] : 'null';
+        const connectionEndStr = connection.inclusive_date.end ? new Date(connection.inclusive_date.end).toISOString().split('T')[0] : 'null';
+        const readingStartStr = new Date(latestReading.inclusive_date.start).toISOString().split('T')[0];
+        const readingEndStr = new Date(latestReading.inclusive_date.end).toISOString().split('T')[0];
+
+        // Check if dates are different
+        if (connectionStartStr !== readingStartStr || connectionEndStr !== readingEndStr) {
+          console.log(`🔄 Syncing connection ${connection._id}`);
+          console.log(`   Old: ${connectionStartStr} to ${connectionEndStr}`);
+          console.log(`   New: ${readingStartStr} to ${readingEndStr}`);
+
+          connection.inclusive_date = {
+            start: latestReading.inclusive_date.start,
+            end: latestReading.inclusive_date.end
+          };
+          await connection.save();
+          syncCount++;
+
+          results.push({
+            connection_id: connection._id,
+            old_dates: {
+              start: connectionStartStr,
+              end: connectionEndStr
+            },
+            new_dates: {
+              start: readingStartStr,
+              end: readingEndStr
+            }
+          });
+        }
+      }
+    }
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: `Synced ${syncCount} water connections with their latest reading dates`,
+      synced_count: syncCount,
+      details: results
+    });
+  } catch (error) {
+    console.error('🔥 syncInclusiveDates error:', error);
+    return res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Failed to sync inclusive dates",
+      error: error.message
+    });
+  }
+};
+
 module.exports = { getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading,
-                    getSubmittedReadings, getApprovalStats, getReadingHistory
+                    getSubmittedReadings, getApprovalStats, getReadingHistory, updateInclusiveDate, syncInclusiveDates
 };

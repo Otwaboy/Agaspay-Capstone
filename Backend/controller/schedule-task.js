@@ -568,8 +568,25 @@ const updateTaskStatus = async (req, res) => {
       const connection = await WaterConnection.findById(task.connection_id);
       if (connection) {
         connection.connection_status ='active';
+
+        // 📅 Calculate inclusive_date for meter reading
+        // Start date: 30 days after installation completion
+        // End date: 7 days after start date
+        const installationDate = new Date(task.schedule_date);
+        const startDate = new Date(installationDate);
+        startDate.setDate(startDate.getDate() + 30); // 30 days after installation
+
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 7); // 7 days reading period
+
+        connection.inclusive_date = {
+          start: startDate,
+          end: endDate
+        };
+
         await connection.save();
         console.log(`✅ Water connection ${connection._id} status set to active`);
+        console.log(`📅 Inclusive date calculated - Start: ${startDate.toISOString().split('T')[0]}, End: ${endDate.toISOString().split('T')[0]}`);
       }
     }
 

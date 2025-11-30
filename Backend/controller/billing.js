@@ -148,7 +148,7 @@ const getBilling = async (req, res) => {
  */
 const createBilling = async (req, res) => {
   try {
-    const { reading_id, rate_id, due_date } = req.body;
+    const { reading_id, rate_id, due_date: manualDueDate } = req.body;
     const user = req.user;
 
     // ✅ Only treasurer can generate bills
@@ -186,6 +186,22 @@ const createBilling = async (req, res) => {
         message: "A bill already exists for this reading.",
         billing: existingBill,
       });
+    }
+
+    // 📅 Auto-calculate due_date from reading period
+    // Logic: Due date = Reading Period Start Date + 30 days
+    // (Customers get 30 days from the start of reading period to pay)
+    let due_date = manualDueDate;
+    if (!due_date && reading.inclusive_date?.start) {
+      const readingStartDate = new Date(reading.inclusive_date.start);
+      const calculatedDueDate = new Date(readingStartDate);
+      calculatedDueDate.setDate(calculatedDueDate.getDate() + 30);
+      due_date = calculatedDueDate;
+      console.log(`📅 Auto-calculated due_date - Start: ${readingStartDate.toISOString().split('T')[0]}, Due: ${due_date.toISOString().split('T')[0]}`);
+    }
+
+    if (!due_date) {
+      throw new BadRequestError("Due date must be provided or reading must have inclusive_date set");
     }
 
     // ✅ so the value of the current_charges is to multipy the calculated and the amount rate

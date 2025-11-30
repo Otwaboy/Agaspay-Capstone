@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const {getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading, getSubmittedReadings, getApprovalStats, getReadingHistory} = require('../controller/meter-reading')
+const {getAllConnectionIDs, inputReading, getLatestReadings, submitReading, updateReadings, approveReading, getSubmittedReadings, getApprovalStats, getReadingHistory, updateInclusiveDate, syncInclusiveDates} = require('../controller/meter-reading')
 
 const authMiddleware = require('../middleware/authentication')
 const roleMiddleware = require('../middleware/roleMiddleware')
@@ -31,5 +31,13 @@ router.route('/approval-stats')
 // Get reading history (all readings, not just latest)
 router.route('/reading-history')
   .get(authMiddleware, roleMiddleware('admin', 'treasurer'), getReadingHistory);
+
+// Admin endpoint to manually update inclusive_date for a water connection
+router.route('/admin/update-inclusive-date')
+  .patch(authMiddleware, roleMiddleware('admin'), updateInclusiveDate);
+
+// Admin endpoint to sync WaterConnection inclusive_date from latest readings
+router.route('/admin/sync-inclusive-dates')
+  .post(authMiddleware, roleMiddleware('admin'), syncInclusiveDates);
 
 module.exports = router     

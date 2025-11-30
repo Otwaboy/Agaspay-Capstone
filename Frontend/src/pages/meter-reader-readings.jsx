@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
-import { Gauge, Calendar, User, MapPin, Plus, Search, Filter, CheckCircle2, Save, AlertCircle, XCircle, X } from "lucide-react";
+import { Gauge, Calendar, User, MapPin, Search, CheckCircle2, AlertCircle, XCircle, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
@@ -24,27 +24,13 @@ export default function MeterReaderReadings() {
     can_read_status: "can_read"
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const [savedPeriod, setSavedPeriod] = useState(null);
   const [isCannotRead, setIsCannotRead] = useState(false);
   const [showIssueDialog, setShowIssueDialog] = useState(false);
+  const [isEditingDates, setIsEditingDates] = useState(false);
+  const [editedDates, setEditedDates] = useState({ start: "", end: "" });
+  // Store test dates per connection ID so they persist when switching between connections
+  const [testDatesByConnection, setTestDatesByConnection] = useState({});
   const queryClient = useQueryClient();
-
-  // Load saved reading period from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('meterReadingPeriod');
-    if (saved) {
-      try {
-        const period = JSON.parse(saved);
-        setSavedPeriod(period);
-        setFormData(prev => ({
-          ...prev,
-          inclusive_date: period
-        }));
-      } catch (error) {
-        console.error('Failed to load saved period:', error);
-      }
-    }
-  }, []);
 
   // Fetch connections with refetching every 5 seconds to detect billing updates
   const { data: connectionsResponse, isLoading: connectionsLoading } = useQuery({
@@ -124,7 +110,15 @@ export default function MeterReaderReadings() {
     (conn) => String(conn.connection_id) === String(formData.connection_id)
   );
 
-  console.log('selected bitch', selectedConnectionData);
+  console.log('selected connection:', {
+    connection_id: selectedConnectionData?.connection_id,
+    meter_number: selectedConnectionData?.meter_number,
+    full_name: selectedConnectionData?.full_name,
+    inclusive_date_start: selectedConnectionData?.inclusive_date?.start,
+    inclusive_date_end: selectedConnectionData?.inclusive_date?.end,
+    inclusive_date_start_formatted: selectedConnectionData?.inclusive_date?.start ? new Date(selectedConnectionData.inclusive_date.start).toISOString().split('T')[0] : null,
+    inclusive_date_end_formatted: selectedConnectionData?.inclusive_date?.end ? new Date(selectedConnectionData.inclusive_date.end).toISOString().split('T')[0] : null
+  });
 
   const previousReading = selectedConnectionData?.present_reading || 0;
   const presentReading = parseFloat(formData.present_reading) || 0;
@@ -132,17 +126,61 @@ export default function MeterReaderReadings() {
 
   const isEditing = selectedConnectionData?.reading_status === "inprogress";
 
+  // 📅 Auto-populate inclusive_date when connection is selected
+  useEffect(() => {
+    if (selectedConnectionData?.inclusive_date?.start && selectedConnectionData?.inclusive_date?.end && !isEditing) {
+      const connectionId = selectedConnectionData.connection_id;
+
+      // Check if there are stored test dates for this connection
+      if (testDatesByConnection[connectionId]) {
+        const testDates = testDatesByConnection[connectionId];
+        setFormData(prev => ({
+          ...prev,
+          inclusive_date: {
+            start: testDates.start,
+            end: testDates.end
+          }
+        }));
+        console.log(`📅 Applied test dates for connection ${connectionId}: Start: ${testDates.start}, End: ${testDates.end}`);
+      } else {
+        // Auto-fill the date fields from the selected connection's inclusive_date
+        const connectionStartDate = new Date(selectedConnectionData.inclusive_date.start).toISOString().split('T')[0];
+        const connectionEndDate = new Date(selectedConnectionData.inclusive_date.end).toISOString().split('T')[0];
+
+        setFormData(prev => ({
+          ...prev,
+          inclusive_date: {
+            start: connectionStartDate,
+            end: connectionEndDate
+          }
+        }));
+
+        console.log(`📅 Auto-filled inclusive_date from connection: Start: ${connectionStartDate}, End: ${connectionEndDate}`);
+      }
+    }
+  }, [selectedConnectionData?.connection_id, isEditing, testDatesByConnection]);
+
   // ------------------ MUTATIONS ------------------
   const recordReadingMutation = useMutation({
     mutationFn: async (readingData) => apiClient.inputReading(readingData),
-    onSuccess: () => {
-      toast.success("Success", { description: "" });
-      // ✅ Keep saved period when resetting form
-      const currentPeriod = savedPeriod || { start: "", end: "" };
+    onSuccess: (data, variables) => {
+      // Store the test dates used in this reading so they persist on the frontend
+      const connectionId = variables.connection_id;
+      if (formData.inclusive_date.start && formData.inclusive_date.end) {
+        setTestDatesByConnection(prev => ({
+          ...prev,
+          [connectionId]: {
+            start: formData.inclusive_date.start,
+            end: formData.inclusive_date.end
+          }
+        }));
+      }
+
+      toast.success("Success", { description: "Meter reading recorded successfully" });
       setFormData({
         connection_id: "",
         present_reading: "",
-        inclusive_date: currentPeriod,
+        inclusive_date: { start: "", end: "" },
         remarks: ""
       });
       queryClient.invalidateQueries({ queryKey: ["connections"] });
@@ -171,27 +209,36 @@ export default function MeterReaderReadings() {
   });
 
   // Update reading mutation
- const updateReadingMutation = useMutation({
-      mutationFn: async ({ reading_id, data }) => {
-        // Call your apiClient method
-        return apiClient.updateReadings(reading_id, data);
-      },
-      onSuccess: () => {
-        toast.success("Success", { description: "Reading updated successfully" });
-        // Reset form
-        const currentPeriod = savedPeriod || { start: "", end: "" };
-        setFormData({
-          connection_id: "",
-          present_reading: "",
-          inclusive_date: currentPeriod,
-          remarks: ""
-        });
-        queryClient.invalidateQueries({ queryKey: ["connections"] });
-      },
-      onError: (error) => {
-        toast.error("Error", { description: error.message || "Failed to update reading" });
+  const updateReadingMutation = useMutation({
+    mutationFn: async ({ reading_id, data }) => {
+      return apiClient.updateReadings(reading_id, data);
+    },
+    onSuccess: () => {
+      // Store the test dates used in this reading so they persist on the frontend
+      const connectionId = selectedConnectionData?.connection_id;
+      if (connectionId && formData.inclusive_date.start && formData.inclusive_date.end) {
+        setTestDatesByConnection(prev => ({
+          ...prev,
+          [connectionId]: {
+            start: formData.inclusive_date.start,
+            end: formData.inclusive_date.end
+          }
+        }));
       }
-    }); 
+
+      toast.success("Success", { description: "Reading updated successfully" });
+      setFormData({
+        connection_id: "",
+        present_reading: "",
+        inclusive_date: { start: "", end: "" },
+        remarks: ""
+      });
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+    },
+    onError: (error) => {
+      toast.error("Error", { description: error.message || "Failed to update reading" });
+    }
+  }); 
   // ------------------ HANDLERS ------------------
   const handleInputChange = (field, value) => {
     if (field.includes(".")) {
@@ -202,33 +249,26 @@ export default function MeterReaderReadings() {
     }
   };
 
-  // ✅ Save reading period to localStorage
-  const handleSavePeriod = () => {
-    if (!formData.inclusive_date.start || !formData.inclusive_date.end) {
-      return toast.error("Validation Error", { description: "Please enter both start and end dates before saving" });
-    }
-
-    // Validate that end date is not before start date
-    if (new Date(formData.inclusive_date.end) < new Date(formData.inclusive_date.start)) {
-      return toast.error("Validation Error", { description: "End date cannot be before start date" });
-    }
-
-    const period = {
-      start: formData.inclusive_date.start,
-      end: formData.inclusive_date.end
-    };
-
-    localStorage.setItem('meterReadingPeriod', JSON.stringify(period));
-    setSavedPeriod(period);
-
-    toast.success("Success", { description: "Reading period saved! It will be used for all future readings." });
-  };
-
- const handleSubmit = (e) => {
+  const handleSubmit = (e) => {
   e.preventDefault();
 
   if (!formData.connection_id) {
     return toast.error("Validation Error", { description: "Please select a water connection" });
+  }
+
+  // 📅 Validate reading period - cannot read before start date
+  const dateToCheck = formData.inclusive_date.start || selectedConnectionData?.inclusive_date?.start;
+  if (dateToCheck) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(dateToCheck);
+    startDate.setHours(0, 0, 0, 0);
+
+    if (today < startDate) {
+      return toast.error("Validation Error", {
+        description: `Cannot record reading yet. Reading period starts on ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. Today is ${today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`
+      });
+    }
   }
 
   // For can_read status - require remarks if cannot read
@@ -245,27 +285,6 @@ export default function MeterReaderReadings() {
     return toast.error("Validation Error", {
       description: `Present reading cannot be less than previous reading (${previousReading})`
     });
-  }
-
-  if (!formData.inclusive_date.start || !formData.inclusive_date.end) {
-    return toast.error("Validation Error", { description: "Please enter both start and end dates" });
-  }
-
-  // Validate that end date is not before start date
-  if (new Date(formData.inclusive_date.end) < new Date(formData.inclusive_date.start)) {
-    return toast.error("Validation Error", { description: "End date cannot be before start date" });
-  }
-
-  // Validate that start date is AFTER the previous reading end date (only for new readings, not edits)
-  if (!isEditing && selectedConnectionData?.inclusive_date?.end) {
-    const previousEndDate = new Date(selectedConnectionData.inclusive_date.end);
-    const newStartDate = new Date(formData.inclusive_date.start);
-
-    if (newStartDate <= previousEndDate) {
-      return toast.error("Validation Error", {
-        description: `Start date must be after the previous reading period end date (${previousEndDate.toLocaleDateString()}). Cannot read from the past.`
-      });
-    }
   }
 
   const payload = {
@@ -553,6 +572,7 @@ export default function MeterReaderReadings() {
                               <p className="text-base font-semibold text-gray-900">
                                 {new Date(selectedConnectionData.inclusive_date.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </p>
+                             
                             </div>
                           )}
 
@@ -692,65 +712,156 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* Date and Remarks Inputs */}
-                    {(overallReadingStatus !== "Approved" || (overallReadingStatus === "Approved" && zoneConnections.some(c => c.is_billed))) && (
+                    {(overallReadingStatus !== "Approved" || (overallReadingStatus === "Approved" && zoneConnections.some(c => c.is_billed))) && !isEditing && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <Label className="flex items-center space-x-2 text-base">
                             <Calendar className="h-4 w-4" />
                             <span>Reading Period</span>
                           </Label>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleSavePeriod}
-                            className="flex items-center gap-2"
-                          >
-                            <Save className="h-3.5 w-3.5" />
-                            Save Period
-                          </Button>
+                          {selectedConnectionData?.inclusive_date?.start && selectedConnectionData?.inclusive_date?.end && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (!isEditingDates) {
+                                  const startStr = new Date(selectedConnectionData.inclusive_date.start).toISOString().split('T')[0];
+                                  const endStr = new Date(selectedConnectionData.inclusive_date.end).toISOString().split('T')[0];
+                                  setEditedDates({ start: startStr, end: endStr });
+                                }
+                                setIsEditingDates(!isEditingDates);
+                              }}
+                              className="text-xs"
+                            >
+                              {isEditingDates ? 'Cancel' : 'Edit (Test)'}
+                            </Button>
+                          )}
                         </div>
-                        {savedPeriod && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-sm text-blue-700">
-                            <span className="font-medium">Saved:</span> {new Date(savedPeriod.start).toLocaleDateString()} - {new Date(savedPeriod.end).toLocaleDateString()}
+                        {selectedConnectionData?.inclusive_date?.start && selectedConnectionData?.inclusive_date?.end ? (() => {
+                          const connectionId = selectedConnectionData.connection_id;
+                          const storedTestDates = testDatesByConnection[connectionId];
+                          const displayStartDate = isEditingDates ? new Date(editedDates.start) : (storedTestDates ? new Date(storedTestDates.start) : (formData.inclusive_date.start ? new Date(formData.inclusive_date.start) : new Date(selectedConnectionData.inclusive_date.start)));
+                          const displayEndDate = isEditingDates ? new Date(editedDates.end) : (storedTestDates ? new Date(storedTestDates.end) : (formData.inclusive_date.end ? new Date(formData.inclusive_date.end) : new Date(selectedConnectionData.inclusive_date.end)));
+
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const startDate = new Date(displayStartDate);
+                          startDate.setHours(0, 0, 0, 0);
+                          const endDate = new Date(displayEndDate);
+                          endDate.setHours(0, 0, 0, 0);
+
+                          const isBeforeStart = today < startDate;
+                          const isWithinPeriod = today >= startDate && today <= endDate;
+                          const isAfterEnd = today > endDate;
+
+                          return (
+                            <div className={`border rounded-lg p-4 space-y-3 ${isBeforeStart ? 'bg-yellow-50 border-yellow-200' : isWithinPeriod ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+                              <div className="flex items-center justify-between">
+                                <p className={`text-sm font-medium ${isBeforeStart ? 'text-yellow-800' : isWithinPeriod ? 'text-green-800' : 'text-blue-800'}`}>
+                                  {isBeforeStart ? '⏳ Reading Not Yet Available' : isWithinPeriod ? '✅ Reading Period Active' : '📖 Reading Period Ended (Late Recording)'}
+                                </p>
+                              </div>
+                              <p className={`text-xs ${isBeforeStart ? 'text-yellow-700' : isWithinPeriod ? 'text-green-700' : 'text-blue-700'}`}>
+                                {isEditingDates ? '(Testing mode - editing dates)' : 'Reading dates automatically set from meter installation'}
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="start_date" className="text-sm font-medium">Start Date</Label>
+                                  {isEditingDates ? (
+                                    <Input
+                                      type="date"
+                                      value={editedDates.start}
+                                      onChange={(e) => setEditedDates(prev => ({ ...prev, start: e.target.value }))}
+                                      className="text-base"
+                                    />
+                                  ) : (
+                                    <div className={`border rounded-md p-3 text-base font-semibold ${isBeforeStart ? 'bg-white border-yellow-300 text-yellow-900' : isWithinPeriod ? 'bg-white border-green-300 text-green-900' : 'bg-white border-blue-300 text-gray-900'}`}>
+                                      {displayStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="end_date" className="text-sm font-medium">End Date</Label>
+                                  {isEditingDates ? (
+                                    <Input
+                                      type="date"
+                                      value={editedDates.end}
+                                      onChange={(e) => setEditedDates(prev => ({ ...prev, end: e.target.value }))}
+                                      className="text-base"
+                                    />
+                                  ) : (
+                                    <div className={`border rounded-md p-3 text-base font-semibold ${isBeforeStart ? 'bg-white border-yellow-300 text-yellow-900' : isWithinPeriod ? 'bg-white border-green-300 text-green-900' : 'bg-white border-blue-300 text-gray-900'}`}>
+                                      {displayEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {isEditingDates && (
+                                <div className="flex justify-end space-x-2 pt-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsEditingDates(false)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    onClick={() => {
+                                      if (editedDates.start && editedDates.end) {
+                                        const connectionId = selectedConnectionData.connection_id;
+                                        // Store test dates per connection so they persist across page refreshes/switches
+                                        setTestDatesByConnection(prev => ({
+                                          ...prev,
+                                          [connectionId]: {
+                                            start: editedDates.start,
+                                            end: editedDates.end
+                                          }
+                                        }));
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          inclusive_date: {
+                                            start: editedDates.start,
+                                            end: editedDates.end
+                                          }
+                                        }));
+                                        setIsEditingDates(false);
+                                        toast.success("Test dates updated", {
+                                          description: `Start: ${new Date(editedDates.start).toLocaleDateString()}, End: ${new Date(editedDates.end).toLocaleDateString()}`
+                                        });
+                                      } else {
+                                        toast.error("Please select both dates");
+                                      }
+                                    }}
+                                  >
+                                    Save Dates
+                                  </Button>
+                                </div>
+                              )}
+                              {!isEditingDates && isBeforeStart && (
+                                <div className="bg-yellow-100 border border-yellow-300 rounded p-2 text-xs text-yellow-900">
+                                  <strong>Note:</strong> You cannot record a reading yet. Reading will be available starting {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.
+                                </div>
+                              )}
+                              {!isEditingDates && isAfterEnd && (
+                                <div className="bg-blue-100 border border-blue-300 rounded p-2 text-xs text-blue-900">
+                                  <strong>Note:</strong> Reading period ended on {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. If you encounter issues, you may still record the reading.
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })() : (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p className="text-sm text-yellow-800">
+                              <AlertCircle className="inline h-4 w-4 mr-2" />
+                              Reading period will be automatically set once meter installation is completed by maintenance personnel.
+                            </p>
                           </div>
                         )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label htmlFor="start_date" className="text-sm font-medium">
-                              Start Date
-                              {selectedConnectionData?.inclusive_date?.end && (
-                                <span className="text-xs text-gray-500 ml-1">
-                                  (Must be after {new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
-                                </span>
-                              )}
-                            </Label>
-                            <Input
-                              id="start_date"
-                              type="date"
-                              value={formData.inclusive_date.start}
-                              onChange={(e) => handleInputChange("inclusive_date.start", e.target.value)}
-                              min={selectedConnectionData?.inclusive_date?.end}
-                              disabled={!selectedConnectionData}
-                            />
-                            {selectedConnectionData?.inclusive_date?.end && new Date(formData.inclusive_date.start) <= new Date(selectedConnectionData.inclusive_date.end) && formData.inclusive_date.start && (
-                              <p className="text-xs text-red-600 mt-1">
-                                ⚠️ Start date must be after the previous reading end date ({new Date(selectedConnectionData.inclusive_date.end).toLocaleDateString()})
-                              </p>
-                            )}
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="end_date" className="text-sm font-medium">End Date</Label>
-                            <Input
-                              id="end_date"
-                              type="date"
-                              value={formData.inclusive_date.end}
-                              onChange={(e) => handleInputChange("inclusive_date.end", e.target.value)}
-                              min={formData.inclusive_date.start}
-                              disabled={!selectedConnectionData}
-                            />
-                          </div>
-                        </div>
                       </div>
                     )}
 
