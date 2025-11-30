@@ -113,7 +113,7 @@ export default function ResidentReportIssue() {
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select urgency level" />
-                            <SelectValue />
+                          
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="low">Low - Minor inconvenience</SelectItem>

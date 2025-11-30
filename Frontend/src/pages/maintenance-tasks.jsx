@@ -360,16 +360,7 @@ updateTaskMutation.mutate({
               </Select>
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Remarks (Optional)</label>
-              <Textarea
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Add any notes or remarks about this task..."
-                rows={4}
-                data-testid="textarea-remarks"
-              />
-            </div>
+           
           </div>
 
           <DialogFooter>

@@ -17,6 +17,7 @@ import AdminDisconnectRequests from "./pages/admin-disconnect-requests";
 import AdminArchiveRequests from "./pages/admin-archive-requests";
 import AdminArchivedUsers from "./pages/admin-archived-users";
 import AdminDeliquencyList from "./pages/admin-deliquency-list";
+import AdminReadingHistory from "./pages/admin-reading-history";
 
 //secretary
 import SecretaryDashboard from "./pages/secretaryDashboard";
@@ -611,6 +612,14 @@ function App() {
               {() => (
                 <AdminRoute>
                   <AdminDeliquencyList />
+                </AdminRoute>
+              )}
+            </Route>
+
+            <Route path="/admin-dashboard/reading-history">
+              {() => (
+                <AdminRoute>
+                  <AdminReadingHistory />
                 </AdminRoute>
               )}
             </Route>

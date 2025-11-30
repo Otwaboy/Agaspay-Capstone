@@ -82,8 +82,11 @@ const createTask = async (req, res) => {
     let selectedPersonnel = null;
     let autoScheduledMessage = '';
 
-    // Get all maintenance personnel
-    const maintenancePersonnel = await Personnel.find({ role: 'maintenance' });
+    // Get all maintenance personnel (excluding archived ones)
+    const maintenancePersonnel = await Personnel.find({
+      role: 'maintenance',
+      archive_status: { $ne: 'archived' }
+    });
 
     if (maintenancePersonnel.length === 0) {
       return res.status(400).json({

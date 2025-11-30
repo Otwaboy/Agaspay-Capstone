@@ -37,6 +37,7 @@ const menuItems = [
       { title: "All Residents", href: "/admin-dashboard/users" },
       { title: "Disconnect Requests", href: "/admin-dashboard/disconnect-requests" },
       { title: "Deliquency List", href: "/admin-dashboard/deliquency-list" },
+      { title: "Reading History", href: "/admin-dashboard/reading-history" },
     ]
   },
   {

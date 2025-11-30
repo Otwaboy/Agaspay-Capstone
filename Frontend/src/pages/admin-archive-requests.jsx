@@ -328,17 +328,7 @@ export default function AdminArchiveRequests() {
                       <User className="h-4 w-4 mr-2" />
                       Residents ({residentArchiveRequests.length})
                     </Button>
-                    <Button
-                      variant={activeTab === "personnel" ? "default" : "outline"}
-                      onClick={() => {
-                        setActiveTab("personnel");
-                        setSearchTerm("");
-                      }}
-                      className={activeTab === "personnel" ? "bg-purple-600 hover:bg-purple-700" : ""}
-                    >
-                      <Briefcase className="h-4 w-4 mr-2" />
-                      Personnel ({personnelArchiveRequests.length})
-                    </Button>
+                   
                   </div>
                 </div>
               </CardHeader>

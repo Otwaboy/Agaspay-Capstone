@@ -286,7 +286,7 @@ export default function AdminArchivedUsers() {
                             <>
                               <th className="text-left py-3 px-4 font-semibold text-gray-700">Personnel Name</th>
                               <th className="text-left py-3 px-4 font-semibold text-gray-700">Role</th>
-                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Department</th>
+                              <th className="text-left py-3 px-4 font-semibold text-gray-700">Assigned Zone</th>
                               <th className="text-left py-3 px-4 font-semibold text-gray-700">Archived Date</th>
                               <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                               <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
@@ -348,7 +348,7 @@ export default function AdminArchivedUsers() {
                                   </Badge>
                                 </td>
                                 <td className="py-3 px-4 text-gray-700">
-                                  {item.department || 'N/A'}
+                                  {item.assigned_zone || 'N/A'}
                                 </td>
                                 <td className="py-3 px-4 text-gray-700">
                                   <div className="flex items-center">
