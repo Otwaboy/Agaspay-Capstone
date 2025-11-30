@@ -26,6 +26,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     // Water connection zone and purok (can be different from resident's location)
     connectionZone: "",
     connectionPurok: "",
+    specificAddress: "",
     email: "",
     phone: "",
     type: "",
@@ -141,6 +142,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         // Water connection zone and purok (can be different from resident's location)
         connection_zone: formData.connectionZone,
         connection_purok: formData.connectionPurok,
+        specific_address: formData.specificAddress,
         username: formData.username,
         password: formData.password,
       };
@@ -165,6 +167,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         purok: "",
         connectionZone: "",
         connectionPurok: "",
+        specificAddress: "",
         email: "",
         phone: "",
         type: "",
@@ -326,7 +329,15 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          <div className="border-t pt-4 mt-2 mb-4">
+              <div className="flex items-center space-x-2 mb-4">
+              <Label htmlFor="createAccount" className="text-sm font-medium">
+               Resident Personnel Information Details
+              </Label>
+            </div>
           <div className="grid grid-cols-2 gap-4">
+            
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
               <Input
@@ -443,13 +454,20 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               className={errors.phone ? "border-red-500 border-2 focus:ring-red-500" : ""}
             />
           </div>
+           </div>
 
 
           {/* Water Connection Details */}
           <div className="border-t pt-4 mt-4 mb-4">
+             <div className="flex items-center space-x-2 mb-4">
+              <Label htmlFor="createAccount" className="text-sm font-medium">
+                Water Connection Details
+              </Label>
+            </div>
             {/* Connection Type, Meter Number, and Zone */}
             <div className="space-y-4 bg-blue-50 p-4 rounded-lg">
               <div className="space-y-2">
+                
                 <Label htmlFor="type">Connection Type <span className="text-red-500">*</span></Label>
                 <Select onValueChange={handleChange("type")} required>
                   <SelectTrigger data-testid="select-type" className={errors.type ? "border-red-500 border-2 focus:ring-red-500" : ""}>
@@ -511,6 +529,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               {/* Connection Purok - Conditional based on selected Zone */}
               {formData.connectionZone && (
                 <div className="space-y-2">
+
                   <Label htmlFor="connectionPurok">Water Connection Purok <span className="text-red-500">*</span></Label>
                   <Select onValueChange={handleChange("connectionPurok")} required>
                     <SelectTrigger data-testid="select-connection-purok" className={errors.connectionPurok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
@@ -538,6 +557,18 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   </Select>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label htmlFor="specificAddress">Specific Address</Label>
+                <Input
+                  id="specificAddress"
+                  value={formData.specificAddress}
+                  onChange={(e) => handleChange("specificAddress")(e.target.value)}
+                  placeholder="Enter specific address (e.g., House number, street name)"
+                  data-testid="input-specific-address"
+                  className={errors.specificAddress ? "border-red-500 border-2 focus:ring-red-500" : ""}
+                />
+              </div>
             </div>
           </div>
 

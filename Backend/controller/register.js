@@ -27,7 +27,7 @@ const registerResident = async (req, res) => {
 
     const {
       username, password, first_name, last_name, zone, email, purok, contact_no,
-      type, meter_no, connection_zone, connection_purok
+      type, meter_no, connection_zone, connection_purok, specific_address
     } = req.body;
 
     if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type || !meter_no || !connection_zone || !connection_purok) {
@@ -48,7 +48,7 @@ const registerResident = async (req, res) => {
     // ✅ All DB write operations must be attached to the session:
     const user = await User.create([{ username, password, role: 'resident' }], { session });
     const resident = await Resident.create([{ user_id: user[0]._id, first_name, last_name, email, zone, purok, contact_no }], { session });
-    const waterConnection = await WaterConnection.create([{ resident_id: resident[0]._id, meter_no, type, zone: waterConnectionZone, purok: waterConnectionPurok }], { session });
+    const waterConnection = await WaterConnection.create([{ resident_id: resident[0]._id, meter_no, type, zone: waterConnectionZone, purok: waterConnectionPurok, specific_address }], { session });
 
     // ✅ AUTOMATIC SCHEDULING: Find available maintenance personnel
     let installationTask = null;

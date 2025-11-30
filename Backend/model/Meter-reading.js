@@ -15,7 +15,7 @@ const MeterReadingSchema = new mongoose.Schema({
     min: [0, 'Previous reading cannot be negative']
   },
   present_reading: {
-    type: Number,
+    type: Number, 
     required: [true, 'Present reading is required'],
     min: [0, 'Present reading cannot be negative'], 
     validate: {

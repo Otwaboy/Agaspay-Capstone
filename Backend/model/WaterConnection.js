@@ -24,6 +24,11 @@ const WaterConnectionSchema = new mongoose.Schema({
     enum: ["1", "2", "3", "4", "5", "6", "7"],
     required: [true, 'Purok is required for this connection']
   },
+  specific_address: {
+    type: String,
+    required: false,
+    default: null
+  },
   connection_status:
   {
     type: String,
