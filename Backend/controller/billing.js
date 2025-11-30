@@ -262,6 +262,42 @@ const createBilling = async (req, res) => {
     );
     console.log(`✅ Marked water connection as billed for reading cycle`);
 
+    // 📅 AUTO-UPDATE READING PERIOD: Move to next monthly cycle
+    // Roll forward 1 month while maintaining the same day-of-month
+    if (reading.inclusive_date?.start && reading.inclusive_date?.end) {
+      const currentStart = new Date(reading.inclusive_date.start);
+      const currentEnd = new Date(reading.inclusive_date.end);
+
+      // Store the original day of month for both dates
+      const startDayOfMonth = currentStart.getDate();
+      const endDayOfMonth = currentEnd.getDate();
+
+      // Roll forward to next month: add 1 month to both dates
+      const nextStart = new Date(currentStart);
+      nextStart.setMonth(nextStart.getMonth() + 1); // Add 1 month
+      nextStart.setDate(startDayOfMonth); // Keep same day of month
+
+      const nextEnd = new Date(currentEnd);
+      nextEnd.setMonth(nextEnd.getMonth() + 1); // Add 1 month
+      nextEnd.setDate(endDayOfMonth); // Keep same day of month
+
+      // Update the water connection's inclusive_date for next reading
+      await WaterConnection.findByIdAndUpdate(
+        reading.connection_id,
+        { inclusive_date: { start: nextStart, end: nextEnd } },
+        { new: true }
+      );
+
+      const oldStartStr = currentStart.toISOString().split('T')[0];
+      const oldEndStr = currentEnd.toISOString().split('T')[0];
+      const newStartStr = nextStart.toISOString().split('T')[0];
+      const newEndStr = nextEnd.toISOString().split('T')[0];
+
+      console.log(`📅 AUTO-UPDATED reading period to next monthly cycle`);
+      console.log(`   Old period: ${oldStartStr} to ${oldEndStr}`);
+      console.log(`   New period: ${newStartStr} to ${newEndStr}`);
+    }
+
     console.log("🧾 Billing created successfully with cumulative amounts:");
     console.log("- reading_id:", reading._id.toString());
     console.log("- rate_id:", rate._id.toString());

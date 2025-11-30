@@ -391,8 +391,12 @@ const getLatestReadings = async (req, res) => {
         connection_status: item.connection_status,
         connection_id: item._id ? item._id.toString() : null,
         connection_type: item.type || "Unknown",
-        // 📅 Priority: Use inclusive_date from latest reading if exists, otherwise use connection's inclusive_date
+        // 📅 Always use reading's inclusive_date if available (current reading period)
+        // If no reading exists, use connection's inclusive_date (next period waiting to be read)
         inclusive_date: reading?.inclusive_date || item.inclusive_date || null,
+        // 📅 For "Previous Period" display: Show connection's inclusive_date when reading is billed (the next period to read)
+        // Otherwise show the reading's inclusive_date
+        next_period_dates: item.is_billed ? item.inclusive_date : null,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
         // Use water connection zone and purok (not resident's home location)
         // Resident zone is for incident reporting; water connection zone is for meter coverage

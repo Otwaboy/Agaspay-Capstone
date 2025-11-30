@@ -61,7 +61,6 @@ export default function TreasurerGenerateBills() {
     reading_id: "",
     rate_per_cubic: "",
     fixed_charge: 0,
-    due_date: "",
     notes: ""
   });  
 
@@ -165,11 +164,20 @@ export default function TreasurerGenerateBills() {
   // Calculate bill amount
   const calculateBillAmount = (connection) => {
   if (!connection) return 0;
-  
+
     const calculated = connection.present_reading - connection.previous_reading;
     const waterCharge = calculated * formData.rate_per_cubic;
 
     return waterCharge + formData.fixed_charge;
+  };
+
+  // Calculate due date (reading period start + 30 days)
+  const calculateDueDate = (connection) => {
+    if (!connection?.inclusive_date?.start) return "N/A";
+    const startDate = new Date(connection.inclusive_date.start);
+    const dueDate = new Date(startDate);
+    dueDate.setDate(dueDate.getDate() + 30);
+    return dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
 
@@ -198,7 +206,6 @@ export default function TreasurerGenerateBills() {
         reading_id: "",
         rate_per_cubic: "",
         fixed_charge: "",
-        due_date: "",
         notes: ""
       });
       setSearchTerm("");
@@ -330,16 +337,11 @@ export default function TreasurerGenerateBills() {
       return;
     }
 
-    if (!formData.due_date) {
-      toast.error("Validation Error", { description: "Please set a due date" });
-      return;
-    }
-
     // Format data according to your MongoDB backend schema
+    // Note: due_date is now auto-calculated by backend from reading period start date + 30 days
     const billData = {
       reading_id: formData.reading_id,
-      rate_id: formData.rate_id, 
-      due_date: formData.due_date
+      rate_id: formData.rate_id
     };
 
 
@@ -347,15 +349,10 @@ export default function TreasurerGenerateBills() {
   };
 
 
-  // can generate all and select bill 
+  // can generate all and select bill
   const handleBulkBillSubmit = async () => {
     if (selectedConnections.length === 0) {
       toast.error("Validation Error", { description: "Please select at least one connection" });
-      return;
-    }
-
-    if (!formData.due_date) {
-      toast.error("Validation Error", { description: "Please set a due date" });
       return;
     }
 
@@ -363,9 +360,8 @@ export default function TreasurerGenerateBills() {
       const connection = availableConnections.find(c => c.connection_id === connectionId);
       return {
         reading_id: connection.reading_id,   // ✅ correct
-        rate_id: formData.rate_id,           // ✅ take from treasurer’s selected rate
-        due_date: formData.due_date          // ✅ required
-        // ❌ no total_amount, backend computes
+        rate_id: formData.rate_id            // ✅ take from treasurer's selected rate
+        // Note: due_date is now auto-calculated by backend from reading period start date + 30 days
       };
     });
 
@@ -643,17 +639,6 @@ export default function TreasurerGenerateBills() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="due_date">Due Date</Label>
-                      <Input
-                        id="due_date"
-                        type="date"
-                        value={formData.due_date}
-                        onChange={(e) => handleInputChange('due_date', e.target.value)}
-                        data-testid="input-due-date"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="notes">Notes (Optional)</Label>
                       <Input
                         id="notes"
@@ -762,8 +747,6 @@ export default function TreasurerGenerateBills() {
                               reading_id: "",
                               rate_per_cubic: 25,
                               fixed_charge: 50,
-                              due_date: "",
-                              // billing_period: { start_date: "", end_date: "" },
                               notes: ""
                             });
                             setSearchTerm("");
@@ -826,6 +809,9 @@ export default function TreasurerGenerateBills() {
                                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
                                   Amount
                                 </th>
+                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+                                  Due Date
+                                </th>
                               </tr>
                             </thead>
                             
@@ -841,13 +827,14 @@ export default function TreasurerGenerateBills() {
                                     <td className="py-4 px-4"><Skeleton className="h-4 w-16" /></td>
                                     <td className="py-4 px-4"><Skeleton className="h-4 w-12" /></td>
                                     <td className="py-4 px-4"><Skeleton className="h-4 w-16" /></td>
+                                    <td className="py-4 px-4"><Skeleton className="h-4 w-20" /></td>
                                   </tr>
                                 ))
 
                                 // if the length is zero 
                               ) : filteredConnections.length === 0 ? (
                                 <tr>
-                                  <td colSpan="6" className="py-8 px-4 text-center text-gray-500">
+                                  <td colSpan="7" className="py-8 px-4 text-center text-gray-500">
                                     No unbilled connections available
                                   </td>
                                 </tr>
@@ -876,6 +863,9 @@ export default function TreasurerGenerateBills() {
                                     </td>
                                     <td className="py-4 px-4 text-sm font-medium text-gray-900">
                                       ₱{calculateBillAmount(connection).toFixed(2)}
+                                    </td>
+                                    <td className="py-4 px-4 text-sm text-gray-900">
+                                      {calculateDueDate(connection)}
                                     </td>
                                   </tr>
                                 ))
@@ -928,7 +918,7 @@ export default function TreasurerGenerateBills() {
                         </Button>
                         <Button
                           onClick={handleBulkBillSubmit}
-                          disabled={isGeneratingBulkBills || selectedConnections.length === 0 || !formData.due_date}
+                          disabled={isGeneratingBulkBills || selectedConnections.length === 0}
                           data-testid="button-generate-bulk-bills"
                         >
                           {isGeneratingBulkBills ? "Generating..." : `Generate ${selectedConnections.length} Bills`}

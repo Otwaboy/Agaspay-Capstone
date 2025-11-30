@@ -143,9 +143,10 @@ export default function MeterReaderReadings() {
         }));
         console.log(`📅 Applied test dates for connection ${connectionId}: Start: ${testDates.start}, End: ${testDates.end}`);
       } else {
-        // Auto-fill the date fields from the selected connection's inclusive_date
-        const connectionStartDate = new Date(selectedConnectionData.inclusive_date.start).toISOString().split('T')[0];
-        const connectionEndDate = new Date(selectedConnectionData.inclusive_date.end).toISOString().split('T')[0];
+        // Auto-fill with next_period_dates if available (when reading is billed), otherwise use inclusive_date
+        const dateSource = selectedConnectionData?.next_period_dates || selectedConnectionData?.inclusive_date;
+        const connectionStartDate = new Date(dateSource.start).toISOString().split('T')[0];
+        const connectionEndDate = new Date(dateSource.end).toISOString().split('T')[0];
 
         setFormData(prev => ({
           ...prev,
@@ -155,10 +156,11 @@ export default function MeterReaderReadings() {
           }
         }));
 
-        console.log(`📅 Auto-filled inclusive_date from connection: Start: ${connectionStartDate}, End: ${connectionEndDate}`);
+        const source = selectedConnectionData?.next_period_dates ? "next_period_dates (rolled-over)" : "inclusive_date";
+        console.log(`📅 Auto-filled inclusive_date from ${source}: Start: ${connectionStartDate}, End: ${connectionEndDate}`);
       }
     }
-  }, [selectedConnectionData?.connection_id, isEditing, testDatesByConnection]);
+  }, [selectedConnectionData?.connection_id, selectedConnectionData?.inclusive_date, selectedConnectionData?.next_period_dates, isEditing, testDatesByConnection]);
 
   // ------------------ MUTATIONS ------------------
   const recordReadingMutation = useMutation({
@@ -719,15 +721,18 @@ export default function MeterReaderReadings() {
                             <Calendar className="h-4 w-4" />
                             <span>Reading Period</span>
                           </Label>
-                          {selectedConnectionData?.inclusive_date?.start && selectedConnectionData?.inclusive_date?.end && (
+                          {/* Show the next period dates to use for input (either current reading period or rolled-over connection period) */}
+                          {(selectedConnectionData?.inclusive_date?.start && selectedConnectionData?.inclusive_date?.end) || (selectedConnectionData?.next_period_dates?.start && selectedConnectionData?.next_period_dates?.end) ? (
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
                               onClick={() => {
                                 if (!isEditingDates) {
-                                  const startStr = new Date(selectedConnectionData.inclusive_date.start).toISOString().split('T')[0];
-                                  const endStr = new Date(selectedConnectionData.inclusive_date.end).toISOString().split('T')[0];
+                                  // Use next_period_dates if available (when billed), otherwise use inclusive_date
+                                  const dateSource = selectedConnectionData?.next_period_dates || selectedConnectionData?.inclusive_date;
+                                  const startStr = new Date(dateSource.start).toISOString().split('T')[0];
+                                  const endStr = new Date(dateSource.end).toISOString().split('T')[0];
                                   setEditedDates({ start: startStr, end: endStr });
                                 }
                                 setIsEditingDates(!isEditingDates);
@@ -736,13 +741,15 @@ export default function MeterReaderReadings() {
                             >
                               {isEditingDates ? 'Cancel' : 'Edit (Test)'}
                             </Button>
-                          )}
+                          ) : null}
                         </div>
                         {selectedConnectionData?.inclusive_date?.start && selectedConnectionData?.inclusive_date?.end ? (() => {
                           const connectionId = selectedConnectionData.connection_id;
                           const storedTestDates = testDatesByConnection[connectionId];
-                          const displayStartDate = isEditingDates ? new Date(editedDates.start) : (storedTestDates ? new Date(storedTestDates.start) : (formData.inclusive_date.start ? new Date(formData.inclusive_date.start) : new Date(selectedConnectionData.inclusive_date.start)));
-                          const displayEndDate = isEditingDates ? new Date(editedDates.end) : (storedTestDates ? new Date(storedTestDates.end) : (formData.inclusive_date.end ? new Date(formData.inclusive_date.end) : new Date(selectedConnectionData.inclusive_date.end)));
+                          // Use next_period_dates if this reading is billed (showing next period to read), otherwise use inclusive_date
+                          const periodDatesToUse = selectedConnectionData?.next_period_dates || selectedConnectionData?.inclusive_date;
+                          const displayStartDate = isEditingDates ? new Date(editedDates.start) : (storedTestDates ? new Date(storedTestDates.start) : (formData.inclusive_date.start ? new Date(formData.inclusive_date.start) : new Date(periodDatesToUse.start)));
+                          const displayEndDate = isEditingDates ? new Date(editedDates.end) : (storedTestDates ? new Date(storedTestDates.end) : (formData.inclusive_date.end ? new Date(formData.inclusive_date.end) : new Date(periodDatesToUse.end)));
 
                           const today = new Date();
                           today.setHours(0, 0, 0, 0);
