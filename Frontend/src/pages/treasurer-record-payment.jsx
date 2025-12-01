@@ -102,8 +102,9 @@ export default function TreasurerRecordPayment() {
 
   const handleBillSelect = (bill) => {
     setSelectedBill(bill);
-    // Calculate remaining balance
-    const remaining = bill.total_amount - (bill.amount_paid || 0);
+    // Calculate remaining balance (including disconnection fee if applicable)
+    const totalAmount = bill.total_with_fee || bill.total_amount;
+    const remaining = totalAmount - (bill.amount_paid || 0);
     setAmountPaid(remaining.toString());
   };
 
@@ -148,7 +149,9 @@ export default function TreasurerRecordPayment() {
   };
 
   const getRemainingBalance = (bill) => {
-    return bill.total_amount - (bill.amount_paid || 0);
+    // Use total_with_fee if available (includes disconnection fee), otherwise use total_amount
+    const totalAmount = bill.total_with_fee || bill.total_amount;
+    return totalAmount - (bill.amount_paid || 0);
   };
 
   const getStatusBadge = (status) => {
@@ -298,8 +301,21 @@ export default function TreasurerRecordPayment() {
                             <p className="text-gray-600">Purok: {selectedBill.purok_no}</p>
                             <div className="pt-2 mt-2 border-t border-blue-200">
                               <div className="flex justify-between font-semibold">
-                                <span>Total Amount:</span>
+                                <span>Bill Amount:</span>
                                 <span>{formatCurrency(selectedBill.total_amount)}</span>
+                              </div>
+                              {selectedBill.disconnection_fee > 0 && (
+                                <div className="flex justify-between text-red-600 font-semibold">
+                                  <span className="flex items-center gap-1">
+                                    <Power className="h-4 w-4" />
+                                    Disconnection Fee:
+                                  </span>
+                                  <span>+ {formatCurrency(selectedBill.disconnection_fee)}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between font-bold text-blue-600 bg-blue-100 p-2 rounded mt-2">
+                                <span>Total to Pay:</span>
+                                <span>{formatCurrency(selectedBill.total_with_fee || selectedBill.total_amount)}</span>
                               </div>
                               {selectedBill.amount_paid > 0 && (
                                 <div className="flex justify-between text-green-600">
@@ -351,9 +367,6 @@ export default function TreasurerRecordPayment() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="cash">Cash</SelectItem>
-                              <SelectItem value="walk-in">Walk-in</SelectItem>
-                              <SelectItem value="gcash">GCash</SelectItem>
-                              <SelectItem value="paymaya">PayMaya</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

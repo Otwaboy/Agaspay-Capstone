@@ -65,6 +65,39 @@ export default function ResidentSettings() {
     }
   });
 
+  // Fetch bills for each meter to check for pending balances
+  const { data: metersWithBills } = useQuery({
+    queryKey: ["resident-meters-with-bills"],
+    queryFn: async () => {
+      if (!metersData || metersData.length === 0) return [];
+
+      const metersWithBillsData = await Promise.all(
+        metersData.map(async (meter) => {
+          try {
+            const billRes = await apiClient.getCurrentBill(meter.connection_id);
+            const currentBill = billRes?.data?.[billRes.data.length - 1];
+
+            return {
+              ...meter,
+              currentBill: currentBill,
+              hasPendingBalance: currentBill && currentBill.balance > 0
+            };
+          } catch (error) {
+            console.error(`Error fetching bill for meter ${meter.connection_id}:`, error);
+            return {
+              ...meter,
+              currentBill: null,
+              hasPendingBalance: false
+            };
+          }
+        })
+      );
+
+      return metersWithBillsData;
+    },
+    enabled: !!metersData && metersData.length > 0
+  });
+
   // Fetch disconnection status
   const { data: disconnectionStatus } = useQuery({
     queryKey: ["disconnection-status"],
@@ -275,15 +308,20 @@ export default function ResidentSettings() {
       newSelected.add(meterId);
     }
     setSelectedMetersForDisconnect(newSelected);
-    setSelectAllMeters(newSelected.size === metersData?.length && metersData?.length > 0);
+    // Count only meters that can be disconnected (no pending balance)
+    const metersCanDisconnect = metersWithBills?.filter(m => !m.hasPendingBalance).length || 0;
+    setSelectAllMeters(newSelected.size === metersCanDisconnect && metersCanDisconnect > 0);
   };
 
   // Handle select all meters
   const handleSelectAllMeters = (checked) => {
     setSelectAllMeters(checked);
-    if (checked && metersData) {
-      const allIds = new Set(metersData.map(meter => meter.connection_id));
-      setSelectedMetersForDisconnect(allIds);
+    if (checked && metersWithBills) {
+      // Only select meters that have no pending balance
+      const selectableMeters = metersWithBills
+        .filter(meter => !meter.hasPendingBalance)
+        .map(meter => meter.connection_id);
+      setSelectedMetersForDisconnect(new Set(selectableMeters));
     } else {
       setSelectedMetersForDisconnect(new Set());
     }
@@ -542,14 +580,47 @@ export default function ResidentSettings() {
                         </div>
                       </div>
                     ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full border-red-200 text-red-600 hover:bg-red-50"
-                        onClick={() => setDisconnectModalOpen(true)}
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Disconnect Account
-                      </Button>
+                      <>
+                        {metersWithBills && metersWithBills.some(m => !m.hasPendingBalance) ? (
+                          <Button
+                            variant="outline"
+                            className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                            onClick={() => setDisconnectModalOpen(true)}
+                          >
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Disconnect Account
+                          </Button>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-start space-x-2">
+                                <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-red-900">Cannot Request Disconnection</p>
+                                  <p className="text-xs text-red-700 mt-1">
+                                    All meters have unpaid bills. Please settle outstanding balances before requesting disconnection.
+                                  </p>
+                                  {metersWithBills.map((meter) => (
+                                    meter.hasPendingBalance && (
+                                      <p key={meter.connection_id} className="text-xs text-red-700 mt-1">
+                                        • Meter {meter.meter_no}: ₱{meter.currentBill?.balance?.toFixed(2) || '0.00'} outstanding
+                                      </p>
+                                    )
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              className="w-full border-red-200 text-red-600 hover:bg-red-50 opacity-50 cursor-not-allowed"
+                              disabled={true}
+                            >
+                              <AlertTriangle className="h-4 w-4 mr-2" />
+                              Disconnect Account
+                            </Button>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* Archive Account Button */}
@@ -849,8 +920,8 @@ export default function ResidentSettings() {
                 </p>
               </div>
 
-              {/* Select All Option */}
-              {metersData && metersData.length > 1 && (
+              {/* Select All Option - Only show if there are multiple meters and some can be disconnected */}
+              {metersWithBills && metersWithBills.filter(m => !m.hasPendingBalance).length > 1 && (
                 <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <input
                     type="checkbox"
@@ -860,36 +931,50 @@ export default function ResidentSettings() {
                     className="w-4 h-4 rounded border-gray-300 cursor-pointer"
                   />
                   <label htmlFor="select-all-meters" className="cursor-pointer flex-1">
-                    <span className="font-medium text-gray-700">Select All Meters</span>
+                    <span className="font-medium text-gray-700">Select All Paid Meters</span>
                   </label>
                 </div>
               )}
 
               {/* Meter Options */}
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {metersData && metersData.length > 0 ? (
-                  metersData.map((meter) => (
-                    <div
-                      key={meter.connection_id}
-                      className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        id={`meter-${meter.connection_id}`}
-                        checked={selectedMetersForDisconnect.has(meter.connection_id)}
-                        onChange={() => handleMeterToggle(meter.connection_id)}
-                        className="w-4 h-4 rounded border-gray-300 cursor-pointer"
-                      />
-                      <label htmlFor={`meter-${meter.connection_id}`} className="cursor-pointer flex-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          Meter {meter.meter_no}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Zone {meter.zone} • {meter.connection_status}
-                        </div>
-                      </label>
-                    </div>
-                  ))
+                {metersWithBills && metersWithBills.length > 0 ? (
+                  metersWithBills.map((meter) => {
+                    const hasPendingBalance = meter.hasPendingBalance;
+                    return (
+                      <div
+                        key={meter.connection_id}
+                        className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
+                          hasPendingBalance
+                            ? 'border-red-200 bg-red-50 cursor-not-allowed opacity-60'
+                            : 'border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          id={`meter-${meter.connection_id}`}
+                          checked={selectedMetersForDisconnect.has(meter.connection_id)}
+                          onChange={() => !hasPendingBalance && handleMeterToggle(meter.connection_id)}
+                          disabled={hasPendingBalance}
+                          className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                        />
+                        <label htmlFor={`meter-${meter.connection_id}`} className={`flex-1 ${hasPendingBalance ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <div className="text-sm font-medium text-gray-900">
+                            Meter {meter.meter_no}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Zone {meter.zone} • {meter.connection_status}
+                          </div>
+                          {hasPendingBalance && (
+                            <div className="text-xs text-red-600 mt-1 flex items-center">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Outstanding balance: ₱{meter.currentBill?.balance?.toFixed(2) || '0.00'}
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })
                 ) : (
                   <p className="text-sm text-gray-500 text-center py-4">No meters available</p>
                 )}

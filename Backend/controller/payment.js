@@ -503,6 +503,12 @@ const recordManualPayment = async (req, res) => {
       }
     });
 
+    // 📋 Calculate disconnection fee (₱50 for connections pending disconnection)
+    const DISCONNECTION_FEE = 50;
+    const disconnectionStatuses = ['for_disconnection', 'request_for_disconnection', 'scheduled_for_disconnection'];
+    const hasDisconnectionStatus = billing.connection_id && disconnectionStatuses.includes(billing.connection_id.connection_status);
+    const disconnectionFee = hasDisconnectionStatus ? DISCONNECTION_FEE : 0;
+
     if (!billing) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
@@ -510,16 +516,18 @@ const recordManualPayment = async (req, res) => {
       });
     }
 
-    // ✅ Calculate new totals
+    // ✅ Calculate new totals with disconnection fee
     const previousAmountPaid = billing.amount_paid || 0;
+    const billTotalWithFee = billing.total_amount + disconnectionFee;
     const newAmountPaid = previousAmountPaid + amount_paid;
-    const newBalance = billing.total_amount - newAmountPaid;
+    const newBalance = billTotalWithFee - newAmountPaid;
 
     // ✅ Prevent overpayment
     if (newBalance < 0) {
+      const maxPayable = billTotalWithFee - previousAmountPaid;
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: `Payment amount exceeds remaining balance. Remaining balance: ₱${(billing.total_amount - previousAmountPaid).toFixed(2)}`
+        message: `Payment amount exceeds remaining balance. Remaining balance: ₱${maxPayable.toFixed(2)}`
       });
     }
 
@@ -619,7 +627,9 @@ const recordManualPayment = async (req, res) => {
         payment_date: payment.payment_date,
         official_receipt_status: payment.official_receipt_status,
         billing_status: new_billing_status,
-        total_amount: billing.total_amount,
+        bill_amount: billing.total_amount,
+        disconnection_fee: disconnectionFee,
+        total_amount: billTotalWithFee,
         amount_paid_total: newAmountPaid,
         remaining_balance: newBalance
       }

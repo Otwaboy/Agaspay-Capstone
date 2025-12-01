@@ -171,12 +171,20 @@ export default function TreasurerGenerateBills() {
     return waterCharge + formData.fixed_charge;
   };
 
-  // Calculate due date (reading period start + 30 days)
+  // Calculate due date (30th day of the NEXT month after reading period start month)
+  // Example: If reading starts in August, due date is September 30
+  //          If reading starts in December, due date is January 30
   const calculateDueDate = (connection) => {
     if (!connection?.inclusive_date?.start) return "N/A";
     const startDate = new Date(connection.inclusive_date.start);
     const dueDate = new Date(startDate);
-    dueDate.setDate(dueDate.getDate() + 30);
+
+    // Move to next month
+    dueDate.setMonth(dueDate.getMonth() + 1);
+
+    // Set to 30th day of that month
+    dueDate.setDate(30);
+
     return dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 

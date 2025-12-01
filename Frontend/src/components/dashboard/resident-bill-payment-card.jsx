@@ -64,6 +64,13 @@ export default function ResidentBillPaymentCard({ connectionId }) {
       // So we should only use the current bill's amount, not sum all unpaid bills
       const totalAmountDue = currentBill.balance || currentBill.total_amount || 0;
 
+      // 📅 Get billing period from inclusive_date (reading period)
+      let billingPeriod = "N/A";
+      if (currentBill.inclusive_date?.start) {
+        const startDate = new Date(currentBill.inclusive_date.start);
+        billingPeriod = startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      }
+
       const transformedData = {
         amount: totalAmountDue,
         totalAmount: currentBill.total_amount || 0,
@@ -77,7 +84,7 @@ export default function ResidentBillPaymentCard({ connectionId }) {
         daysUntilDue: daysUntilDueCurrent,
         daysUntilDueEarliest,
         unpaidBillsCount: pastDueBills.length,  // ✅ Count only PAST-DUE bills
-        billingPeriod: new Date(currentBill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        billingPeriod: billingPeriod  // 📅 Now using reading period start month
       };
       console.log("✅ [BillCard] Transformed billing data:", transformedData);
       return transformedData;

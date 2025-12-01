@@ -47,7 +47,7 @@ export default function TreasurerBillHistory() {
     due_date: bill.due_date,
     created_at: bill.created_at,
     paid_date: bill.paid_date || null,
-    bill_period: new Date(bill.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    
   })) || [];
 
   //   {
@@ -316,9 +316,7 @@ export default function TreasurerBillHistory() {
                           <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                             Resident
                           </th>
-                          <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
-                            Bill Period
-                          </th>
+                          
                           <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">
                             Amount
                           </th>
@@ -354,9 +352,7 @@ export default function TreasurerBillHistory() {
                                 </p>
                               </div>
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-600">
-                              {bill.bill_period}
-                            </td>
+                            
                             <td className="py-4 px-6 text-sm font-semibold text-gray-900">
                               {formatCurrency(bill.total_amount)}
                             </td>

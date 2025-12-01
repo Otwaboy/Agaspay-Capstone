@@ -99,6 +99,13 @@ const getBilling = async (req, res) => {
         paid_date = payment?.payment_date ?? null;
       }
 
+      // 📋 Calculate disconnection fee (₱50 for connections pending disconnection)
+      const DISCONNECTION_FEE = 50;
+      const disconnectionStatuses = ['for_disconnection', 'request_for_disconnection', 'scheduled_for_disconnection'];
+      const disconnectionFee = disconnectionStatuses.includes(connection?.connection_status) ? DISCONNECTION_FEE : 0;
+      const totalWithFee = (billing?.total_amount ?? 0) + disconnectionFee;
+      const balanceWithFee = totalWithFee - (billing?.amount_paid ?? 0);
+
       return {
         bill_id: billing?._id ?? 'unknown',
         connection_id: connection?._id ?? 'unknown',
@@ -110,9 +117,11 @@ const getBilling = async (req, res) => {
         // 💰 CUMULATIVE BILLING BREAKDOWN
         previous_balance: billing?.previous_balance ?? 0,    // Unpaid balance from previous months
         current_charges: billing?.current_charges ?? 0,      // This month's consumption charges
-        total_amount: billing?.total_amount ?? 0,            // Total = previous + current
+        total_amount: billing?.total_amount ?? 0,            // Total = previous + current (without fee)
+        disconnection_fee: disconnectionFee,                 // 📋 Disconnection fee (₱50 if applicable)
+        total_with_fee: totalWithFee,                        // Total including disconnection fee
         amount_paid: billing?.amount_paid ?? 0,              // ✅ Amount paid so far
-        balance: (billing?.total_amount ?? 0) - (billing?.amount_paid ?? 0),  // ✅ Always calculate fresh balance
+        balance: balanceWithFee,                             // ✅ Balance including disconnection fee
 
         status: billing?.status ?? 'unknown',
 
@@ -120,6 +129,8 @@ const getBilling = async (req, res) => {
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
+        // 📅 Reading period dates (billing period)
+        inclusive_date: reading?.inclusive_date ?? null,
         due_date: billing?.due_date ?? null,
         generated_at: billing?.generated_at ?? null,
         created_at: reading?.created_at ?? null,
@@ -189,15 +200,24 @@ const createBilling = async (req, res) => {
     }
 
     // 📅 Auto-calculate due_date from reading period
-    // Logic: Due date = Reading Period Start Date + 30 days
-    // (Customers get 30 days from the start of reading period to pay)
+    // Logic: Due date = 30th day of the NEXT month after reading period start month
+    // Example: If reading starts in September, due date is October 30
+    //          If reading starts in December, due date is January 30
     let due_date = manualDueDate;
     if (!due_date && reading.inclusive_date?.start) {
       const readingStartDate = new Date(reading.inclusive_date.start);
       const calculatedDueDate = new Date(readingStartDate);
-      calculatedDueDate.setDate(calculatedDueDate.getDate() + 30);
+
+      // Move to next month
+      calculatedDueDate.setMonth(calculatedDueDate.getMonth() + 1);
+
+      // Set to 30th day of that month
+      calculatedDueDate.setDate(30);
+
       due_date = calculatedDueDate;
-      console.log(`📅 Auto-calculated due_date - Start: ${readingStartDate.toISOString().split('T')[0]}, Due: ${due_date.toISOString().split('T')[0]}`);
+      const startDateStr = readingStartDate.toISOString().split('T')[0];
+      const dueStr = due_date.toISOString().split('T')[0];
+      console.log(`📅 Auto-calculated due_date - Reading Start: ${startDateStr}, Due Date (Next Month 30th): ${dueStr}`);
     }
 
     if (!due_date) {

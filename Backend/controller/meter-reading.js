@@ -170,11 +170,14 @@ const submitReading = async (req, res) => {
   const today = new Date();
   const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
-  // Find all active connections in this zone
+  // Find all connections in this zone that can have readings recorded
+  // Include connections pending disconnection (can still submit readings before disconnection is finalized)
   // Filter by water connection zone (not resident's home zone)
   // Resident zone is for incident reporting; water connection zone is for meter coverage
   const zoneConnections = await WaterConnection.find({
-    connection_status: "active",
+    connection_status: {
+      $in: ["active", "for_disconnection", "request_for_disconnection", "scheduled_for_disconnection"]
+    },
     zone: assignedZone
   });
 
@@ -294,8 +297,13 @@ const getLatestReadings = async (req, res) => {
     const currentBillingMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   const readings = await WaterConnection.aggregate([
-              // 1️⃣ Filter only active connections
-              { $match: { connection_status: "active" } },
+              // 1️⃣ Filter connections that are active or pending disconnection (allow meter readers to still see them)
+              // Exclude only fully disconnected, for_reconnection, or scheduled connections
+              { $match: {
+                connection_status: {
+                  $in: ["active", "for_disconnection", "request_for_disconnection", "scheduled_for_disconnection"]
+                }
+              } },
 
               // 2️⃣ Attach resident info
               {  
@@ -538,8 +546,12 @@ const getSubmittedReadings = async (req, res) => {
     }
 
     const readings = await WaterConnection.aggregate([
-      // 1️⃣ Filter only active connections
-      { $match: { connection_status: "active" } },
+      // 1️⃣ Filter connections that can have submitted readings (active or pending disconnection)
+      { $match: {
+        connection_status: {
+          $in: ["active", "for_disconnection", "request_for_disconnection", "scheduled_for_disconnection"]
+        }
+      } },
 
       // 2️⃣ Attach resident info
       {
