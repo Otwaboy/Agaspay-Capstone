@@ -10,12 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { 
-  FileText, 
-  Download, 
+import {
+  FileText,
+  Download,
   Calendar,
   TrendingUp,
-  DollarSign,
+  PiggyBank,
   Users,
   Receipt
 } from "lucide-react";
@@ -165,7 +165,7 @@ export default function TreasurerMonthlyReports() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <DollarSign className="h-5 w-5 text-green-600" />
+                    <PiggyBank className="h-5 w-5 text-green-600" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900" data-testid="text-monthly-revenue">
                     {formatCurrency(report.summary.totalRevenue)}

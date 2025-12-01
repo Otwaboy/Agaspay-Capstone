@@ -1,5 +1,5 @@
 
-import { jsPDF } from "jspdf"; 
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable"; // <-- import autoTable properly
 import { useState } from "react";
 import {
@@ -11,82 +11,98 @@ import {
 } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
-import { Input } from "../ui/input";
 import { toast } from "sonner";
-import { FileText, Download, Calendar } from "lucide-react";
+import { FileText, Download } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 import apiClient from "../../lib/api";
 
 export default function GenerateResidentReportModal({ isOpen, onClose }) {
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const months = [
+    { value: "01", label: "January" },
+    { value: "02", label: "February" },
+    { value: "03", label: "March" },
+    { value: "04", label: "April" },
+    { value: "05", label: "May" },
+    { value: "06", label: "June" },
+    { value: "07", label: "July" },
+    { value: "08", label: "August" },
+    { value: "09", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
+  ];
 
- const handleGenerateReport = async () => {
-  if (!selectedMonth) {
-    toast.error("Month Required", {
-      description: "Please select a start month for the report"
-    });
-    return;
-  }
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
 
-  setIsGenerating(true);
 
-  try {
-    // Convert month (YYYY-MM) to a date (first day of that month)
-    const [year, month] = selectedMonth.split('-');
-    const startDate = new Date(year, parseInt(month) - 1, 1);
-    const startDateString = startDate.toISOString().split('T')[0];
-
-    // Fetch residents from backend filtered by date
-    const response = await apiClient.getResidentByDate(startDateString);
-    const residents = response.data;
-
-    console.log('Fetched residents:', residents);
-
-    if (!residents || residents.length === 0) {
-      const monthName = new Date(startDate).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
-      toast.error("No Data Found", {
-        description: `No residents were registered from ${monthName} to present`
+  const handleGenerateReport = async () => {
+    if (!selectedMonth || !selectedYear) {
+      toast.error("Selection Required", {
+        description: "Please select both month and year for the report"
       });
-      setIsGenerating(false);
       return;
     }
 
-    // Generate PDF
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+    setIsGenerating(true);
 
-    // Header
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('AGASPAY WATER SYSTEM', pageWidth / 2, 15, { align: 'center' });
+    try {
+      // Create start date from selected month and year
+      const startDate = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1, 1);
+      const startDateString = startDate.toISOString().split('T')[0];
 
-    doc.setFontSize(14);
-    doc.text('Newly Registered Residents Report', pageWidth / 2, 23, { align: 'center' });
+      // Fetch residents from backend filtered by date
+      const response = await apiClient.getResidentByDate(startDateString);
+      const residents = response.data;
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const startDateFormatted = new Date(startDate).toLocaleDateString('en-PH', {
-      year: 'numeric',
-      month: 'long'
-    });
-    const endDateFormatted = new Date().toLocaleDateString('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const generatedTime = new Date().toLocaleString('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-    doc.text(`Period: ${startDateFormatted} to ${endDateFormatted}`, pageWidth / 2, 30, { align: 'center' });
-    doc.text(`Total Residents: ${residents.length}`, pageWidth / 2, 36, { align: 'center' });
-    doc.text(`Generated report on: ${generatedTime}`, pageWidth / 2, 42, { align: 'center' });
+      console.log('Fetched residents:', residents);
+
+      if (!residents || residents.length === 0) {
+        const monthName = months.find(m => m.value === selectedMonth)?.label;
+        toast.error("No Data Found", {
+          description: `No residents were registered from ${monthName} ${selectedYear} to present`
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      // Generate PDF
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // Header
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('AGASPAY WATER SYSTEM', pageWidth / 2, 15, { align: 'center' });
+
+      doc.setFontSize(14);
+      doc.text('Newly Registered Residents Report', pageWidth / 2, 23, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const monthName = months.find(m => m.value === selectedMonth)?.label;
+      const generatedTime = new Date().toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      doc.text(`Period: ${monthName} ${selectedYear} to Present`, pageWidth / 2, 30, { align: 'center' });
+      doc.text(`Total Residents: ${residents.length}`, pageWidth / 2, 36, { align: 'center' });
+      doc.text(`Generated report on: ${generatedTime}`, pageWidth / 2, 42, { align: 'center' });
 
     // Prepare table data
     const tableData = residents.map((resident, index) => [
@@ -173,22 +189,40 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="startMonth" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Start Month
-            </Label>
-            <Input
-              id="startMonth"
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              max={new Date().toISOString().split('T')[0].substring(0, 7)}
-              className="w-full"
-            />
-            <p className="text-xs text-gray-500">
-              All residents registered from this month to today will be included in the report
-            </p>
+            <Label htmlFor="month">Month</Label>
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger id="month" className="w-full">
+                <SelectValue placeholder="Select month..." />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="year">Year</Label>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger id="year" className="w-full">
+                <SelectValue placeholder="Select year..." />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            All residents registered from this month to today will be included in the report
+          </p>
         </div>
 
         <div className="flex gap-2 justify-end">

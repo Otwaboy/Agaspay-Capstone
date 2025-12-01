@@ -1,8 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { DollarSign, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import apiClient from "../../lib/api";
+
+// Philippine Peso Icon Component
+const PhilippinePesoIcon = ({ className = "h-5 w-5" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 1v22M12 1c3.314 0 6 1.791 6 4s-2.686 4-6 4m0-8c-3.314 0-6 1.791-6 4s2.686 4 6 4" />
+  </svg>
+);
 
 export default function TreasurerStatsCards() {
   // Fetch financial statistics
@@ -46,7 +53,7 @@ export default function TreasurerStatsCards() {
       change: "+12.5%",
       trend: "up",
       subtitle: "All-time confirmed payments",
-      icon: DollarSign,
+      icon: PhilippinePesoIcon,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       chartColor: "bg-blue-500",

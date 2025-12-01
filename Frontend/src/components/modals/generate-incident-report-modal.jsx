@@ -179,7 +179,7 @@ export default function GenerateIncidentReportModal({ isOpen, onClose }) {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
       doc.text('Generated from AGASPAY Water System', pageWidth / 2, footerY, { align: 'center' });
-      doc.text('Barangay Biking, Daanbantayan, Cebu', pageWidth / 2, footerY + 5, { align: 'center' });
+      doc.text('Barangay Biking Dauis, Bohol', pageWidth / 2, footerY + 5, { align: 'center' });
 
       // Save PDF
       const fileName = `Incident_Report_${monthName}_${selectedYear}_${new Date().getTime()}.pdf`;

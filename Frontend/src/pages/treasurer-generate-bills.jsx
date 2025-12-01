@@ -26,7 +26,7 @@ import {
   Search,
   Check,
   Calendar,
-  DollarSign,
+  PhilippinePesoIcon,
   FileText,
   AlertCircle,
   CheckCircle2,
@@ -511,7 +511,7 @@ export default function TreasurerGenerateBills() {
                         ₱{formData.fixed_charge}
                       </p>
                     </div>
-                    <DollarSign className="h-8 w-8 text-emerald-600" />
+                    <PhilippinePesoIcon className="h-8 w-8 text-emerald-600" />
                   </div>
                 </CardContent>
               </Card>

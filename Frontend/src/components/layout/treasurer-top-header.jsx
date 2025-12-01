@@ -20,7 +20,7 @@ import {
   LogOut,
   MessageSquare,
   AlertCircle,
-  DollarSign
+  PiggyBank
 } from "lucide-react";
 
 import { useAuth } from "../../hooks/use-auth";

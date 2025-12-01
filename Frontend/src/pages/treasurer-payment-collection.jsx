@@ -30,7 +30,7 @@ import {
   XCircle,
   Eye,
   Calendar,
-  DollarSign,
+  PhilippinePesoIcon,
   Edit,
   FileText,
   Receipt
@@ -229,7 +229,7 @@ export default function TreasurerPaymentCollection() {
                         {formatCurrency(totalCollected)}
                       </p>
                     </div>
-                    <DollarSign className="h-8 w-8 text-green-600" />
+                    <PhilippinePesoIcon className="h-8 w-8 text-green-600" />
                   </div>
                 </CardContent>
               </Card>

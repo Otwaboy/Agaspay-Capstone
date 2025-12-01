@@ -19,7 +19,7 @@ import {
   AlertCircle,
   Receipt,
   User,
-  DollarSign,
+  PiggyBank,
   Power
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
@@ -337,7 +337,7 @@ export default function TreasurerRecordPayment() {
                             Amount Paid <span className="text-red-500">*</span>
                           </Label>
                           <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <PiggyBank className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
                               id="amount_paid"
                               type="number"

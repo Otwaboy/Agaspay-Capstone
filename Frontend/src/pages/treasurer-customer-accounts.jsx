@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { 
-  Users, 
-  Search, 
+import {
+  Users,
+  Search,
   Eye,
   Mail,
   Phone,
   MapPin,
-  DollarSign,
+  PhilippinePesoIcon,
   Calendar
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
@@ -323,7 +323,7 @@ export default function TreasurerCustomerAccounts() {
 
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                           <div className="flex items-center space-x-2">
-                            <DollarSign className="h-4 w-4 text-gray-400" />
+                            <PhilippinePesoIcon className="h-4 w-4 text-gray-400" />
                             <div>
                               <p className="text-xs text-gray-600">Balance</p>
                               <p className={`text-sm font-bold ${account.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>

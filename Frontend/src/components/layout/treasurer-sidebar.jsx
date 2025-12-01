@@ -17,7 +17,11 @@ import {
   Menu,
   CheckCircle2,
   Wallet,
-  User
+  User,
+  PhilippinePesoIcon,
+  PiggyBank,
+  Droplets
+  
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -39,7 +43,7 @@ const menuItems = [
   },
    {
     title: "Billing Management",
-    icon: Receipt,
+    icon: PhilippinePesoIcon,
     color: "text-gray-600",
     subItems: [
       { title: "Generate Bills", href: "/treasurer-dashboard/billing/generate" },
@@ -55,7 +59,7 @@ const menuItems = [
   },
   {
     title: "Revenue Management",
-    icon: DollarSign,
+    icon: PiggyBank,
     color: "text-gray-600",
     subItems: [
       { title: "Payment Collection", href: "/treasurer-dashboard/revenue/payment-collection" },
@@ -131,7 +135,7 @@ function SidebarContent() {
       <div className="flex items-center px-6 py-5.5 border-b border-b-gray-200">
         <div className="flex items-center gap-2">
           <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-lg">
-            <DollarSign className="h-6 w-6 text-white" />
+            <Droplets className="h-6 w-6 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-blue-900">AGASPAY</h1>

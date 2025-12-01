@@ -24,12 +24,35 @@ import apiClient from "../../lib/api";
 
 export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Get current year and last 12 months
+  const getCurrentAndPastMonths = () => {
+    const months = [];
+    const today = new Date();
+
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthLabel = date.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
+      months.push({ value: monthYear, label: monthLabel });
+    }
+
+    return months;
+  };
 
   const handleGenerateReport = async () => {
     if (!selectedStatus) {
       toast.error("Status Required", {
         description: "Please select a task status for the report"
+      });
+      return;
+    }
+
+    if (!selectedMonth) {
+      toast.error("Month Required", {
+        description: "Please select a month for the report"
       });
       return;
     }
@@ -51,15 +74,29 @@ export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
         return;
       }
 
-      // Filter assignments by selected status
+      // Filter assignments by selected status and month
       const filteredAssignments = allAssignments.filter(assignment => {
         const taskStatus = assignment.task?.task_status?.toLowerCase();
-        return taskStatus === selectedStatus.toLowerCase();
+        const scheduleDate = assignment.task?.schedule_date;
+
+        // Match status (or include all if "all" is selected)
+        const statusMatch = selectedStatus.toLowerCase() === 'all' || taskStatus === selectedStatus.toLowerCase();
+
+        // Match month
+        let monthMatch = true;
+        if (selectedMonth && scheduleDate) {
+          const date = new Date(scheduleDate);
+          const taskMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          monthMatch = taskMonth === selectedMonth;
+        }
+
+        return statusMatch && monthMatch;
       });
 
       if (filteredAssignments.length === 0) {
+        const monthLabel = new Date(`${selectedMonth}-01`).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
         toast.error("No Data Found", {
-          description: `No assignments found with status: ${selectedStatus}`
+          description: `No assignments found with status "${selectedStatus}" in ${monthLabel}`
         });
         setIsGenerating(false);
         return;
@@ -88,7 +125,9 @@ export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
         second: '2-digit'
       });
       doc.text(`Generated report on: ${generatedTime}`, pageWidth / 2, 30, { align: 'center' });
-      doc.text(`Status Filter: ${selectedStatus.toUpperCase()}`, pageWidth / 2, 36, { align: 'center' });
+      const monthLabel = new Date(`${selectedMonth}-01`).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
+      const statusLabel = selectedStatus.toLowerCase() === 'all' ? 'ALL STATUSES' : selectedStatus.toUpperCase();
+      doc.text(`Status Filter: ${statusLabel} | Month: ${monthLabel}`, pageWidth / 2, 36, { align: 'center' });
       doc.text(`Total Assignments: ${filteredAssignments.length}`, pageWidth / 2, 42, { align: 'center' });
 
       // Prepare table data
@@ -148,7 +187,7 @@ export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
       doc.text('Generated from AGASPAY Water System', pageWidth / 2, footerY, { align: 'center' });
-      doc.text('Barangay Biking, Daanbantayan, Cebu', pageWidth / 2, footerY + 5, { align: 'center' });
+      doc.text('Barangay Biking Dauis, Bohol', pageWidth / 2, footerY + 5, { align: 'center' });
 
       // Save PDF
       const fileName = `Assignment_Report_${selectedStatus}_${new Date().getTime()}.pdf`;
@@ -190,6 +229,7 @@ export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
                 <SelectValue placeholder="Select status..." />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="assigned">Assigned</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
@@ -198,6 +238,25 @@ export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
             </Select>
             <p className="text-xs text-gray-500">
               All assignments with the selected status will be included in the report
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="monthFilter">Month</Label>
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger id="monthFilter" className="w-full">
+                <SelectValue placeholder="Select month..." />
+              </SelectTrigger>
+              <SelectContent>
+                {getCurrentAndPastMonths().map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500">
+              Filter assignments by their scheduled date
             </p>
           </div>
         </div>

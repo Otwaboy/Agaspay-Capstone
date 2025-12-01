@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
-import { TrendingUp, TrendingDown, DollarSign, Calendar, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, PiggyBank, Calendar, Target } from "lucide-react";
 
 export default function TreasurerFinancialSummary() {
   const { data: financialSummary, isLoading } = useQuery({

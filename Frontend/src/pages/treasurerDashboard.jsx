@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { Loader2, DollarSign, TrendingUp, FileText, BarChart3 } from "lucide-react";
+import { Loader2, TrendingUp, FileText, BarChart3, PhilippinePesoIcon } from "lucide-react";
 import { useAuth } from "../hooks/use-auth"
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "..//components/layout/treasurer-top-header";
@@ -8,6 +8,8 @@ import TreasurerFooter from "../components/layout/treasurer-footer";
 import TreasurerStatsCards from "..//components/dashboard/treasurer-stats-cards";
 import TreasurerRecentTransactions from "../components/dashboard/treasurer-recent-transactions";
 import TreasurerFinancialSummary from "../components/dashboard/treasurer-financial-summary";
+
+
 
 
 export default function TreasurerDashboard() {
@@ -48,13 +50,13 @@ export default function TreasurerDashboard() {
                <TreasurerStatsCards />
                   
               </div>
-
+ 
             {/* Welcome Information Section */}
             <div className="mb-6 py-6">
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <DollarSign className="h-7 w-7 text-white" />
-                </div>
+                  <PhilippinePesoIcon className="h-7 w-7 text-white" />
+                </div> 
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900 mb-3">
                     Welcome to AGASPAY Financial Management Portal
@@ -67,7 +69,7 @@ export default function TreasurerDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <DollarSign className="h-5 w-5 text-green-600" />
+                        <PhilippinePesoIcon className="h-5 w-5 text-green-600" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900 text-base">Payment Collection</h3>

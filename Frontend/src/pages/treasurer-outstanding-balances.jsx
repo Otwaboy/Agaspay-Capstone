@@ -21,6 +21,7 @@ import {
   DollarSign,
   Users,
   FileText,
+  PhilippinePesoIcon
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
@@ -183,7 +184,7 @@ export default function TreasurerOutstandingBalances() {
                         {formatCurrency(totalOutstanding)}
                       </p>
                     </div>
-                    <DollarSign className="h-8 w-8 text-red-600" />
+                    <PhilippinePesoIcon className="h-8 w-8 text-red-600" />
                   </div>
                 </CardContent>
               </Card>
