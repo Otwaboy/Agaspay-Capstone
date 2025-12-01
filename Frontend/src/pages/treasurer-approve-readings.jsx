@@ -34,10 +34,7 @@ import {
 import { toast } from "sonner";
 import {
   CheckCircle2,
-  XCircle,
   Eye,
-  Filter,
-  Download,
   Calendar,
   Droplets,
   TrendingUp,
@@ -200,62 +197,51 @@ export default function TreasurerApproveReadings() {
             </div>
 
       {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-orange-50/30 hover:shadow-lg transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-orange-900">
-              Pending Approvals
-            </CardTitle>
-            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-orange-600" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalPending}</p>
+              </div>
+              <Calendar className="h-8 w-8 text-blue-600" />
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-700">{stats.totalPending}</div>
-            <p className="text-xs text-orange-600 mt-1">
-              Readings awaiting approval
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50/30 hover:shadow-lg transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-blue-900">Zones Covered</CardTitle>
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Users className="h-5 w-5 text-blue-600" />
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Zones Covered</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalZones}</p>
+              </div>
+              <Users className="h-8 w-8 text-green-600" />
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-700">{stats.totalZones}</div>
-            <p className="text-xs text-blue-600 mt-1">
-              Different zones with submissions
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-cyan-200 bg-gradient-to-br from-cyan-50 to-cyan-50/30 hover:shadow-lg transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-cyan-900">
-              Avg. Consumption
-            </CardTitle>
-            <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-cyan-600" />
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Avg. Consumption</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.averageConsumption}</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-cyan-600" />
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-cyan-700">{stats.averageConsumption}</div>
-            <p className="text-xs text-cyan-600 mt-1">Cubic meters average</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Search and Bulk Actions */}
-      <Card className="border-2 border-green-200 bg-gradient-to-br from-white to-green-50/20">
+      <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl text-gray-900">Submitted Readings by Zone</CardTitle>
-              <CardDescription className="text-gray-600 mt-1">
+              <CardTitle>Submitted Readings by Zone</CardTitle>
+              <CardDescription>
                 Review and approve readings organized by zone
               </CardDescription>
             </div>
@@ -265,9 +251,9 @@ export default function TreasurerApproveReadings() {
                 disabled={
                   submittedReadings.length === 0 || bulkApproveMutation.isPending
                 }
-                className="gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                className="gap-2"
               >
-                <CheckCircle2 className="h-5 w-5" />
+                <CheckCircle2 className="h-4 w-4" />
                 Approve All ({submittedReadings.length})
               </Button>
             </div>
@@ -300,33 +286,33 @@ export default function TreasurerApproveReadings() {
                 const zoneStats = getZoneStats(zoneReadings);
 
                 return (
-                  <Card key={zone} className="border-2 border-blue-200 hover:border-blue-400 transition-all hover:shadow-lg bg-gradient-to-r from-white to-blue-50/30">
+                  <Card key={zone} className="border-2">
                     <Collapsible
                       open={expandedZones[zone] !== false}
                       onOpenChange={() => toggleZone(zone)}
                     >
-                      <CardHeader className="cursor-pointer hover:bg-blue-50/50 transition-colors">
+                      <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors">
                         <CollapsibleTrigger className="w-full">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center shadow-sm">
+                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                                 <MapPin className="h-5 w-5 text-blue-600" />
                               </div>
                               <div className="text-left">
-                                <CardTitle className="flex items-center gap-2 text-blue-900">
+                                <CardTitle className="flex items-center gap-2">
                                   Zone {zone}
                                   {expandedZones[zone] !== false ? (
-                                    <ChevronDown className="h-4 w-4 text-blue-600" />
+                                    <ChevronDown className="h-4 w-4" />
                                   ) : (
-                                    <ChevronRight className="h-4 w-4 text-blue-600" />
+                                    <ChevronRight className="h-4 w-4" />
                                   )}
                                 </CardTitle>
-                                <CardDescription className="text-blue-700/70">
+                                <CardDescription>
                                   {zoneStats.totalReadings} reading(s) • Avg: {zoneStats.avgConsumption} m³
                                 </CardDescription>
                               </div>
                             </div>
-                            <Badge className="text-sm bg-blue-100 text-blue-700 hover:bg-blue-200">
+                            <Badge variant="secondary" className="text-sm">
                               {zoneStats.totalReadings} pending
                             </Badge>
                           </div>
@@ -335,38 +321,38 @@ export default function TreasurerApproveReadings() {
 
                       <CollapsibleContent>
                         <CardContent>
-                          <div className="rounded-lg border border-blue-200 overflow-hidden">
+                          <div className="rounded-md border">
                             <Table>
-                              <TableHeader className="bg-gradient-to-r from-blue-50 to-cyan-50">
-                                <TableRow className="border-blue-200 hover:bg-blue-100/30">
-                                  <TableHead className="text-blue-900 font-semibold">Resident Name</TableHead>
-                                  <TableHead className="text-blue-900 font-semibold">Purok</TableHead>
-                                  <TableHead className="text-right text-blue-900 font-semibold">Previous</TableHead>
-                                  <TableHead className="text-right text-blue-900 font-semibold">Present</TableHead>
-                                  <TableHead className="text-right text-blue-900 font-semibold">Consumption</TableHead>
-                                  <TableHead className="text-blue-900 font-semibold">Period</TableHead>
-                                  <TableHead className="text-blue-900 font-semibold">Read Status</TableHead>
-                                  <TableHead className="text-blue-900 font-semibold">Status</TableHead>
-                                  <TableHead className="text-right text-blue-900 font-semibold">Actions</TableHead>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Resident Name</TableHead>
+                                  <TableHead>Purok</TableHead>
+                                  <TableHead className="text-right">Previous</TableHead>
+                                  <TableHead className="text-right">Present</TableHead>
+                                  <TableHead className="text-right">Consumption</TableHead>
+                                  <TableHead>Period</TableHead>
+                                  <TableHead>Read Status</TableHead>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {zoneReadings.map((reading) => (
-                                  <TableRow key={reading.reading_id} className="hover:bg-blue-50/70 transition-colors">
-                                    <TableCell className="font-medium text-gray-900">
+                                  <TableRow key={reading.reading_id}>
+                                    <TableCell className="font-medium">
                                       {reading.full_name}
                                     </TableCell>
-                                    <TableCell className="text-gray-700">{reading.purok_no}</TableCell>
-                                    <TableCell className="text-right text-gray-600">
+                                    <TableCell>{reading.purok_no}</TableCell>
+                                    <TableCell className="text-right">
                                       {reading.previous_reading} m³
                                     </TableCell>
-                                    <TableCell className="text-right text-gray-600">
+                                    <TableCell className="text-right">
                                       {reading.present_reading} m³
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold text-blue-600">
+                                    <TableCell className="text-right font-semibold">
                                       {reading.calculated} m³
                                     </TableCell>
-                                    <TableCell className="text-sm text-gray-600">
+                                    <TableCell className="text-sm">
                                       {reading.inclusive_date?.start && reading.inclusive_date?.end
                                         ? `${new Date(
                                             reading.inclusive_date.start
@@ -377,17 +363,17 @@ export default function TreasurerApproveReadings() {
                                     </TableCell>
                                     <TableCell>
                                       {reading.can_read_status === 'cannot_read' ? (
-                                        <Badge className="bg-red-100 text-red-700 hover:bg-red-100 font-medium">
+                                        <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
                                           Can't Read
                                         </Badge>
                                       ) : (
-                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 font-medium">
+                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
                                           Read
                                         </Badge>
                                       )}
                                     </TableCell>
                                     <TableCell>
-                                      <Badge className="bg-cyan-100 text-cyan-700 hover:bg-cyan-100 font-medium">
+                                      <Badge variant="secondary">
                                         {reading.reading_status}
                                       </Badge>
                                     </TableCell>
@@ -397,97 +383,96 @@ export default function TreasurerApproveReadings() {
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="hover:bg-blue-100 hover:text-blue-600"
                                             onClick={() => setSelectedReading(reading)}
                                           >
                                             <Eye className="h-4 w-4" />
                                           </Button>
                                         </DialogTrigger>
-                                        <DialogContent className="max-w-2xl bg-gradient-to-br from-white to-blue-50/30">
+                                        <DialogContent className="max-w-2xl">
                                           <DialogHeader>
-                                            <DialogTitle className="text-2xl text-gray-900">Reading Details</DialogTitle>
-                                            <DialogDescription className="text-gray-600">
-                                              Review reading information for <span className="font-semibold text-gray-800">{reading.full_name}</span>
+                                            <DialogTitle>Reading Details</DialogTitle>
+                                            <DialogDescription>
+                                              Review reading information for {reading.full_name}
                                             </DialogDescription>
                                           </DialogHeader>
                                           {selectedReading && (
                                             <div className="space-y-4">
-                                              <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50/50 rounded-lg border border-blue-200">
+                                              <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                  <p className="text-sm font-semibold text-blue-900">
+                                                  <p className="text-sm text-muted-foreground">
                                                     Resident
                                                   </p>
-                                                  <p className="font-medium text-gray-800">
+                                                  <p className="font-medium">
                                                     {selectedReading.full_name}
                                                   </p>
                                                 </div>
                                                 <div>
-                                                  <p className="text-sm font-semibold text-blue-900">
+                                                  <p className="text-sm text-muted-foreground">
                                                     Connection ID
                                                   </p>
-                                                  <p className="font-mono text-sm text-gray-700 bg-white px-2 py-1 rounded border border-gray-200">
+                                                  <p className="font-mono text-sm">
                                                     {selectedReading.connection_id}
                                                   </p>
                                                 </div>
                                                 <div>
-                                                  <p className="text-sm font-semibold text-blue-900">
+                                                  <p className="text-sm text-muted-foreground">
                                                     Purok
                                                   </p>
-                                                  <p className="font-medium text-gray-800">
+                                                  <p className="font-medium">
                                                     {selectedReading.purok_no}
                                                   </p>
                                                 </div>
                                                 <div>
-                                                  <p className="text-sm font-semibold text-blue-900">
+                                                  <p className="text-sm text-muted-foreground">
                                                     Zone
                                                   </p>
-                                                  <p className="font-medium text-gray-800">
+                                                  <p className="font-medium">
                                                     Zone {selectedReading.zone}
                                                   </p>
                                                 </div>
                                               </div>
 
-                                              <div className="border-t border-blue-200 pt-4">
-                                                <h4 className="font-semibold mb-3 flex items-center gap-2 text-blue-900">
-                                                  <Droplets className="h-5 w-5 text-blue-600" />
+                                              <div className="border-t pt-4">
+                                                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                                  <Droplets className="h-4 w-4" />
                                                   Reading Information
                                                 </h4>
                                                 <div className="grid grid-cols-3 gap-4">
-                                                  <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-50/30 hover:shadow-md transition-shadow">
+                                                  <Card>
                                                     <CardContent className="pt-6">
-                                                      <p className="text-sm font-semibold text-green-900">
+                                                      <p className="text-sm text-muted-foreground">
                                                         Previous Reading
                                                       </p>
-                                                      <p className="text-3xl font-bold text-green-700 mt-2">
+                                                      <p className="text-2xl font-bold">
                                                         {selectedReading.previous_reading}
                                                       </p>
-                                                      <p className="text-xs text-green-600 mt-1">
+                                                      <p className="text-xs text-muted-foreground">
                                                         cubic meters
                                                       </p>
                                                     </CardContent>
                                                   </Card>
-                                                  <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50/30 hover:shadow-md transition-shadow">
+                                                  <Card>
                                                     <CardContent className="pt-6">
-                                                      <p className="text-sm font-semibold text-blue-900">
+                                                      <p className="text-sm text-muted-foreground">
                                                         Present Reading
                                                       </p>
-                                                      <p className="text-3xl font-bold text-blue-700 mt-2">
+                                                      <p className="text-2xl font-bold">
                                                         {selectedReading.present_reading}
                                                       </p>
-                                                      <p className="text-xs text-blue-600 mt-1">
+                                                      <p className="text-xs text-muted-foreground">
                                                         cubic meters
                                                       </p>
                                                     </CardContent>
                                                   </Card>
-                                                  <Card className="border-cyan-200 bg-gradient-to-br from-cyan-50 to-cyan-50/30 hover:shadow-md transition-shadow">
+                                                  <Card>
                                                     <CardContent className="pt-6">
-                                                      <p className="text-sm font-semibold text-cyan-900">
+                                                      <p className="text-sm text-muted-foreground">
                                                         Consumption
                                                       </p>
-                                                      <p className="text-3xl font-bold text-cyan-700 mt-2">
+                                                      <p className="text-2xl font-bold text-primary">
                                                         {selectedReading.calculated}
                                                       </p>
-                                                      <p className="text-xs text-cyan-600 mt-1">
+                                                      <p className="text-xs text-muted-foreground">
                                                         cubic meters
                                                       </p>
                                                     </CardContent>
@@ -495,12 +480,11 @@ export default function TreasurerApproveReadings() {
                                                 </div>
                                               </div>
 
-                                              <div className="border-t border-blue-200 pt-4 p-4 bg-purple-50/50 rounded-lg">
-                                                <h4 className="font-semibold mb-2 text-purple-900 flex items-center gap-2">
-                                                  <Calendar className="h-4 w-4 text-purple-600" />
+                                              <div className="border-t pt-4">
+                                                <h4 className="font-semibold mb-2">
                                                   Reading Period
                                                 </h4>
-                                                <p className="text-sm font-medium text-gray-800">
+                                                <p className="text-sm">
                                                   {selectedReading.inclusive_date?.start &&
                                                   selectedReading.inclusive_date?.end
                                                     ? `${new Date(
@@ -521,28 +505,27 @@ export default function TreasurerApproveReadings() {
                                               </div>
 
                                               {selectedReading.can_read_status === 'cannot_read' && (
-                                                <div className="border-t border-red-200 pt-4 p-4 bg-red-50/50 rounded-lg">
-                                                  <h4 className="font-semibold mb-3 text-red-900 flex items-center gap-2">
-                                                    <XCircle className="h-5 w-5 text-red-600" />
+                                                <div className="border-t pt-4">
+                                                  <h4 className="font-semibold mb-2">
                                                     Reading Status
                                                   </h4>
-                                                  <Badge className="bg-red-200 text-red-800 hover:bg-red-200 mb-3 font-semibold text-sm">
-                                                    Cannot Read
+                                                  <Badge className="bg-red-100 text-red-700 hover:bg-red-100 mb-2">
+                                                    Can't Read
                                                   </Badge>
                                                   <div>
-                                                    <p className="text-sm font-semibold text-red-900 mb-2">
+                                                    <p className="text-sm text-muted-foreground mb-1">
                                                       Remarks:
                                                     </p>
-                                                    <p className="text-sm bg-white p-3 rounded border border-red-300 text-gray-800 font-medium">
+                                                    <p className="text-sm bg-red-50 p-2 rounded border border-red-200">
                                                       {selectedReading.remarks || "No remarks provided"}
                                                     </p>
                                                   </div>
                                                 </div>
                                               )}
 
-                                              <div className="flex gap-2 pt-6 mt-6 border-t border-blue-200">
+                                              <div className="flex gap-2 pt-4">
                                                 <Button
-                                                  className="flex-1 gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                                  className="flex-1 gap-2"
                                                   onClick={() =>
                                                     individualApproveMutation.mutate(
                                                       selectedReading.reading_id
@@ -550,7 +533,7 @@ export default function TreasurerApproveReadings() {
                                                   }
                                                   disabled={individualApproveMutation.isPending}
                                                 >
-                                                  <CheckCircle2 className="h-5 w-5" />
+                                                  <CheckCircle2 className="h-4 w-4" />
                                                   Approve Reading
                                                 </Button>
                                               </div>
