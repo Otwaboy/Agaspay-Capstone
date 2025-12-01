@@ -12,6 +12,7 @@ import apiClient from "../../lib/api";
 export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) {
   const [formData, setFormData] = useState({
     meter_no: "",
+    address: "",
     zone: "",
     purok: "",
     type: ""
@@ -23,6 +24,7 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
     if (isOpen) {
       setFormData({
         meter_no: "",
+        address: "",
         zone: "",
         purok: "",
         type: ""
@@ -46,6 +48,7 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
       return await apiClient.addMeterToResident({
         resident_id: resident.resident_id,
         meter_no: data.meter_no,
+        address: data.address,
         zone: data.zone,
         purok: data.purok,
         type: data.type
@@ -109,6 +112,10 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
 
     if (!formData.meter_no.trim()) {
       newErrors.meter_no = "Meter number is required";
+    }
+
+    if (!formData.address.trim()) {
+      newErrors.address = "Address is required";
     }
 
     if (!formData.zone) {
@@ -187,6 +194,27 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
               <div className="flex items-center gap-1 text-red-600 text-sm">
                 <AlertCircle className="h-4 w-4" />
                 <span>{errors.meter_no}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Address */}
+          <div className="space-y-2">
+            <Label htmlFor="address" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Address <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="address"
+              placeholder="Enter specific address (e.g., Street, House No., etc.)"
+              value={formData.address}
+              onChange={(e) => handleChange("address")(e.target.value)}
+              className={errors.address ? "border-red-500" : ""}
+            />
+            {errors.address && (
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>{errors.address}</span>
               </div>
             )}
           </div>
