@@ -645,12 +645,12 @@ const getResidentMeters = async (req, res) => {
  */
 const addMeterToResident = async (req, res) => {
   try {
-    const { resident_id, meter_no, zone, purok, type } = req.body;
+    const { resident_id, meter_no, specific_address, zone, purok, type } = req.body;
 
     // Validate required fields
-    if (!resident_id || !meter_no || !zone || !purok || !type) {
+    if (!resident_id || !meter_no || !specific_address || !zone || !purok || !type) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        msg: 'Please provide all required fields: resident_id, meter_no, zone, purok, type'
+        msg: 'Please provide all required fields: resident_id, meter_no, specific_address, zone, purok, type'
       });
     }
 
@@ -687,6 +687,7 @@ const addMeterToResident = async (req, res) => {
     const newConnection = await WaterConnection.create({
       resident_id,
       meter_no,
+      specific_address,
       zone,
       purok,
       type,
