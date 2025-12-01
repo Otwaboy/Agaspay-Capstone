@@ -48,7 +48,7 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
       return await apiClient.addMeterToResident({
         resident_id: resident.resident_id,
         meter_no: data.meter_no,
-        address: data.address,
+        specific_address: data.address,
         zone: data.zone,
         purok: data.purok,
         type: data.type
