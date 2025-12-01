@@ -18,14 +18,14 @@ import { FileText, Download, Calendar } from "lucide-react";
 import apiClient from "../../lib/api";
 
 export default function GenerateResidentReportModal({ isOpen, onClose }) {
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
 
  const handleGenerateReport = async () => {
-  if (!selectedDate) {
-    toast.error("Date Required", {
-      description: "Please select a start date for the report"
+  if (!selectedMonth) {
+    toast.error("Month Required", {
+      description: "Please select a start month for the report"
     });
     return;
   }
@@ -33,15 +33,21 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
   setIsGenerating(true);
 
   try {
+    // Convert month (YYYY-MM) to a date (first day of that month)
+    const [year, month] = selectedMonth.split('-');
+    const startDate = new Date(year, parseInt(month) - 1, 1);
+    const startDateString = startDate.toISOString().split('T')[0];
+
     // Fetch residents from backend filtered by date
-    const response = await apiClient.getResidentByDate(selectedDate); 
+    const response = await apiClient.getResidentByDate(startDateString);
     const residents = response.data;
 
     console.log('Fetched residents:', residents);
 
     if (!residents || residents.length === 0) {
+      const monthName = new Date(startDate).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
       toast.error("No Data Found", {
-        description: `No residents were registered from ${new Date(selectedDate).toLocaleDateString()} to present`
+        description: `No residents were registered from ${monthName} to present`
       });
       setIsGenerating(false);
       return;
@@ -61,10 +67,9 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    const startDateFormatted = new Date(selectedDate).toLocaleDateString('en-PH', {
+    const startDateFormatted = new Date(startDate).toLocaleDateString('en-PH', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+      month: 'long'
     });
     const endDateFormatted = new Date().toLocaleDateString('en-PH', {
       year: 'numeric',
@@ -131,10 +136,10 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'italic');
     doc.text('Generated from AGASPAY Water System', pageWidth / 2, footerY, { align: 'center' });
-    doc.text('Barangay Biking, Daanbantayan, Cebu', pageWidth / 2, footerY + 5, { align: 'center' });
+    doc.text('Barangay Biking Dauis, Bohol', pageWidth / 2, footerY + 5, { align: 'center' });
 
     // Save PDF
-    const fileName = `Residents_Report_${selectedDate}_${new Date().getTime()}.pdf`;
+    const fileName = `Residents_Report_${selectedMonth}_${new Date().getTime()}.pdf`;
     doc.save(fileName);
 
     toast.success("Report Generated", {
@@ -149,7 +154,7 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
     });
   } finally {
     setIsGenerating(false);
-  }  
+  }
 };
 
 
@@ -162,26 +167,26 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
             Generate Residents Report
           </DialogTitle>
           <DialogDescription>
-            Select a start date to generate a PDF report of all residents registered from that date to present.
+            Select a start month to generate a PDF report of all residents registered from that month to present.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="startDate" className="flex items-center gap-2">
+            <Label htmlFor="startMonth" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Start Date
+              Start Month
             </Label>
             <Input
-              id="startDate"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
+              id="startMonth"
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              max={new Date().toISOString().split('T')[0].substring(0, 7)}
               className="w-full"
             />
             <p className="text-xs text-gray-500">
-              All residents registered from this date to today will be included in the report
+              All residents registered from this month to today will be included in the report
             </p>
           </div>
         </div>
