@@ -12,7 +12,7 @@ import apiClient from "../../lib/api";
 export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) {
   const [formData, setFormData] = useState({
     meter_no: "",
-    address: "",
+    specificAddress: "",
     zone: "",
     purok: "",
     type: ""
@@ -24,7 +24,7 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
     if (isOpen) {
       setFormData({
         meter_no: "",
-        address: "",
+        specificAddress: "",
         zone: "",
         purok: "",
         type: ""
@@ -48,7 +48,7 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
       return await apiClient.addMeterToResident({
         resident_id: resident.resident_id,
         meter_no: data.meter_no,
-        specific_address: data.address,
+        specific_address: data.specificAddress,
         zone: data.zone,
         purok: data.purok,
         type: data.type
@@ -114,8 +114,8 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
       newErrors.meter_no = "Meter number is required";
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = "Address is required";
+    if (!formData.specificAddress.trim()) {
+      newErrors.specificAddress = "Address is required";
     }
 
     if (!formData.zone) {
@@ -198,23 +198,23 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
             )}
           </div>
 
-          {/* Address */}
+          {/* Specific Address */}
           <div className="space-y-2">
-            <Label htmlFor="address" className="flex items-center gap-2">
+            <Label htmlFor="specificAddress" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              Address <span className="text-red-500">*</span>
+              Specific Address <span className="text-red-500">*</span>
             </Label>
             <Input
-              id="address"
-              placeholder="Enter specific address (e.g., Street, House No., etc.)"
-              value={formData.address}
-              onChange={(e) => handleChange("address")(e.target.value)}
-              className={errors.address ? "border-red-500" : ""}
+              id="specificAddress"
+              placeholder="Enter specific address (e.g., House number, street name)"
+              value={formData.specificAddress}
+              onChange={(e) => handleChange("specificAddress")(e.target.value)}
+              className={errors.specificAddress ? "border-red-500" : ""}
             />
-            {errors.address && (
+            {errors.specificAddress && (
               <div className="flex items-center gap-1 text-red-600 text-sm">
                 <AlertCircle className="h-4 w-4" />
-                <span>{errors.address}</span>
+                <span>{errors.specificAddress}</span>
               </div>
             )}
           </div>
