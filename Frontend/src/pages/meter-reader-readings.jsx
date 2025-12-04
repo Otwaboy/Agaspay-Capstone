@@ -146,12 +146,12 @@ export default function MeterReaderReadings() {
   // Check if approval message should show (only when approved AND not yet billed)
   const shouldShowApprovalMessage = overallReadingStatus === "Approved" && zoneConnections.some(c => c.reading_status === "approved" && !c.is_billed);
 
-  // Monthly progress - based on ALL zone connections that CAN be read (exclude cannot_read), not filtered by search
-  const readCount = zoneConnections.filter(conn => conn.read_this_month && !conn.is_billed).length;
+  // Monthly progress - based on ALL zone connections that CAN be read (exclude cannot_read and next month connections)
+  // Exclude connections where reading period starts in the future (next month)
+  const readableConnections = zoneConnections.filter(conn => conn.can_read_status !== 'cannot_read' && !isNextMonth(conn));
+  const readCount = readableConnections.filter(conn => conn.read_this_month && !conn.is_billed).length;
   console.log('read count', readCount);
 
-  // Only count connections that CAN be read (exclude those marked as cannot_read)
-  const readableConnections = zoneConnections.filter(conn => conn.can_read_status !== 'cannot_read');
   const totalCount = readableConnections.length;
   const progressPercentage = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
 
