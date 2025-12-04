@@ -43,6 +43,17 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [meterValidation, setMeterValidation] = useState({ checking: false, valid: null });
+  const [emailValidation, setEmailValidation] = useState({ checking: false, valid: null });
+
+  // Field validation states for visual feedback (real-time validation)
+  const [fieldValidation, setFieldValidation] = useState({
+    firstName: null,
+    lastName: null,
+    email: null,
+    phone: null,
+    username: null,
+    specificAddress: null
+  });
 
   // Parse MongoDB duplicate key error and other backend errors into user-friendly messages
   const parseDuplicateKeyError = (errorMessage) => {
@@ -115,6 +126,15 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         validationErrors.meterNumber = "Meter number is required";
       } else if (meterValidation.valid === false) {
         validationErrors.meterNumber = "This meter number is already in use. Please enter a different meter number.";
+      }
+
+      if (formData.email && formData.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email.trim())) {
+          validationErrors.email = "Please enter a valid email address";
+        } else if (emailValidation.valid === false) {
+          validationErrors.email = "This email is already registered. Please use a different email.";
+        }
       }
 
       // If there are validation errors, show them
@@ -303,6 +323,46 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     if (field === 'meterNumber' && value.trim()) {
       checkMeterNumberAvailability(value.trim());
     }
+    // Real-time validation for text fields
+    if (field === 'firstName' && value.trim()) {
+      const nameRegex = /^[a-zA-Z\s'-]{2,}$/; // Only letters, spaces, hyphens, apostrophes (no numbers)
+      setFieldValidation(prev => ({ ...prev, firstName: nameRegex.test(value.trim()) }));
+    } else if (field === 'firstName') {
+      setFieldValidation(prev => ({ ...prev, firstName: null }));
+    }
+
+    if (field === 'lastName' && value.trim()) {
+      const nameRegex = /^[a-zA-Z\s'-]{2,}$/; // Only letters, spaces, hyphens, apostrophes (no numbers)
+      setFieldValidation(prev => ({ ...prev, lastName: nameRegex.test(value.trim()) }));
+    } else if (field === 'lastName') {
+      setFieldValidation(prev => ({ ...prev, lastName: null }));
+    }
+
+    if (field === 'email' && value.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const formatValid = emailRegex.test(value.trim());
+      setFieldValidation(prev => ({ ...prev, email: formatValid }));
+      // Check email existence if format is valid
+      if (formatValid) {
+        checkEmailExistence(value.trim());
+      }
+    } else if (field === 'email') {
+      setFieldValidation(prev => ({ ...prev, email: null }));
+      setEmailValidation({ checking: false, valid: null });
+    }
+
+    if (field === 'phone' && value.trim()) {
+      const phoneRegex = /^[\d\s+\-()]{7,}$/;
+      setFieldValidation(prev => ({ ...prev, phone: phoneRegex.test(value.trim()) }));
+    } else if (field === 'phone') {
+      setFieldValidation(prev => ({ ...prev, phone: null }));
+    }
+
+    if (field === 'specificAddress' && value.trim()) {
+      setFieldValidation(prev => ({ ...prev, specificAddress: value.trim().length >= 3 }));
+    } else if (field === 'specificAddress') {
+      setFieldValidation(prev => ({ ...prev, specificAddress: null }));
+    }
   };
 
   const checkMeterNumberAvailability = async (meterNo) => {
@@ -315,6 +375,19 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       // If error, assume not available (safe approach)
       setMeterValidation({ checking: false, valid: false });
       console.error('Error checking meter number:', error);
+    }
+  };
+
+  const checkEmailExistence = async (email) => {
+    setEmailValidation({ checking: true, valid: null });
+    try {
+      const result = await apiClient.checkEmailExists(email);
+      // If exists is true, the email is NOT available
+      setEmailValidation({ checking: false, valid: !result.exists });
+    } catch (error) {
+      // If error, assume not available (safe approach)
+      setEmailValidation({ checking: false, valid: false });
+      console.error('Error checking email:', error);
     }
   };
 
@@ -340,28 +413,72 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => handleChange("firstName")(e.target.value)}
-                placeholder="Enter first name"
-                required
-                data-testid="input-first-name"
-                className={errors.firstName ? "border-red-500 border-2 focus:ring-red-500" : ""}
-              />
+              <div className="relative">
+                <Input
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => handleChange("firstName")(e.target.value)}
+                  placeholder="Enter first name"
+                  required
+                  data-testid="input-first-name"
+                  className={`${errors.firstName ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.firstName === true && formData.firstName ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                />
+                {fieldValidation.firstName === true && formData.firstName && (
+                  <div className="absolute right-3 top-3 text-green-500">
+                    ✓
+                  </div>
+                )}
+              </div>
+              {errors.firstName && (
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{errors.firstName}</span>
+                </div>
+              )}
+              {fieldValidation.firstName === false && formData.firstName && !errors.firstName && (
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Name cannot contain numbers</span>
+                </div>
+              )}
+              {fieldValidation.firstName === true && formData.firstName && !errors.firstName && (
+                <p className="text-xs text-green-600">First name is valid</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => handleChange("lastName")(e.target.value)}
-                placeholder="Enter last name"
-                required
-                data-testid="input-last-name"
-                className={errors.lastName ? "border-red-500 border-2 focus:ring-red-500" : ""}
-              />
+              <div className="relative">
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => handleChange("lastName")(e.target.value)}
+                  placeholder="Enter last name"
+                  required
+                  data-testid="input-last-name"
+                  className={`${errors.lastName ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.lastName === true && formData.lastName ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                />
+                {fieldValidation.lastName === true && formData.lastName && (
+                  <div className="absolute right-3 top-3 text-green-500">
+                    ✓
+                  </div>
+                )}
+              </div>
+              {errors.lastName && (
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{errors.lastName}</span>
+                </div>
+              )}
+              {fieldValidation.lastName === false && formData.lastName && !errors.lastName && (
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Name cannot contain numbers</span>
+                </div>
+              )}
+              {fieldValidation.lastName === true && formData.lastName && !errors.lastName && (
+                <p className="text-xs text-green-600">Last name is valid</p>
+              )}
             </div>
           </div>
 
@@ -431,28 +548,77 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleChange("email")(e.target.value)}
-              placeholder="Enter email address (Optional)"
-              data-testid="input-email"
-              className={errors.email ? "border-red-500 border-2 focus:ring-red-500" : ""}
-            />
+            <div className="relative">
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleChange("email")(e.target.value)}
+                placeholder="Enter email address (Optional)"
+                data-testid="input-email"
+                className={`${errors.email || (fieldValidation.email === false && formData.email) || (emailValidation.valid === false && formData.email) ? "border-red-500 border-2 focus:ring-red-500" : emailValidation.valid === true && formData.email && fieldValidation.email === true ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+              />
+              {emailValidation.checking && formData.email && fieldValidation.email === true && (
+                <div className="absolute right-3 top-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                </div>
+              )}
+              {emailValidation.valid === true && formData.email && !emailValidation.checking && fieldValidation.email === true && (
+                <div className="absolute right-3 top-3 text-green-500">
+                  ✓
+                </div>
+              )}
+            </div>
+            {errors.email && (
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>{errors.email}</span>
+              </div>
+            )}
+            {fieldValidation.email === false && formData.email && !errors.email && (
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>Invalid email format</span>
+              </div>
+            )}
+            {emailValidation.valid === false && formData.email && !errors.email && fieldValidation.email === true && (
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>This email is already registered</span>
+              </div>
+            )}
+            {emailValidation.valid === true && formData.email && !errors.email && fieldValidation.email === true && (
+              <p className="text-xs text-green-600">Email is available</p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => handleChange("phone")(e.target.value)}
-              placeholder="Enter phone number"
-              required
-              data-testid="input-phone"
-              className={errors.phone ? "border-red-500 border-2 focus:ring-red-500" : ""}
-            />
+            <div className="relative">
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => handleChange("phone")(e.target.value)}
+                placeholder="Enter phone number"
+                required
+                data-testid="input-phone"
+                className={`${errors.phone ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.phone === true && formData.phone ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+              />
+              {fieldValidation.phone === true && formData.phone && (
+                <div className="absolute right-3 top-3 text-green-500">
+                  ✓
+                </div>
+              )}
+            </div>
+            {errors.phone && (
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>{errors.phone}</span>
+              </div>
+            )}
+            {fieldValidation.phone === true && formData.phone && !errors.phone && (
+              <p className="text-xs text-green-600">Valid phone format</p>
+            )}
           </div>
            </div>
 
@@ -491,7 +657,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                     onChange={(e) => handleChange("meterNumber")(e.target.value)}
                     placeholder="Enter water meter number"
                     data-testid="input-meter-number"
-                    className={`${errors.meterNumber ? "border-red-500 border-2 focus:ring-red-500" : meterValidation.valid === true && formData.meterNumber ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                    className={`${errors.meterNumber || (meterValidation.valid === false && formData.meterNumber) ? "border-red-500 border-2 focus:ring-red-500" : meterValidation.valid === true && formData.meterNumber ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
                   />
                   {meterValidation.checking && formData.meterNumber && (
                     <div className="absolute right-3 top-3">
@@ -505,7 +671,16 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   )}
                 </div>
                 {errors.meterNumber && (
-                  <p className="text-xs text-red-500">{errors.meterNumber}</p>
+                  <div className="flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.meterNumber}</span>
+                  </div>
+                )}
+                {meterValidation.valid === false && formData.meterNumber && !errors.meterNumber && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>This meter number is already in use</span>
+                  </div>
                 )}
                 {meterValidation.valid === true && formData.meterNumber && !errors.meterNumber && (
                   <p className="text-xs text-green-600">Meter number is available</p>
@@ -560,14 +735,30 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
               <div className="space-y-2">
                 <Label htmlFor="specificAddress">Specific Address</Label>
-                <Input
-                  id="specificAddress"
-                  value={formData.specificAddress}
-                  onChange={(e) => handleChange("specificAddress")(e.target.value)}
-                  placeholder="Enter specific address (e.g., House number, street name)"
-                  data-testid="input-specific-address"
-                  className={errors.specificAddress ? "border-red-500 border-2 focus:ring-red-500" : ""}
-                />
+                <div className="relative">
+                  <Input
+                    id="specificAddress"
+                    value={formData.specificAddress}
+                    onChange={(e) => handleChange("specificAddress")(e.target.value)}
+                    placeholder="Enter specific address (e.g., House number, street name)"
+                    data-testid="input-specific-address"
+                    className={`${errors.specificAddress ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.specificAddress === true && formData.specificAddress ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                  />
+                  {fieldValidation.specificAddress === true && formData.specificAddress && (
+                    <div className="absolute right-3 top-3 text-green-500">
+                      ✓
+                    </div>
+                  )}
+                </div>
+                {errors.specificAddress && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.specificAddress}</span>
+                  </div>
+                )}
+                {fieldValidation.specificAddress === true && formData.specificAddress && !errors.specificAddress && (
+                  <p className="text-xs text-green-600">Address is valid</p>
+                )}
               </div>
             </div>
           </div>

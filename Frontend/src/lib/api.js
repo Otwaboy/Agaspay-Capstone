@@ -404,6 +404,18 @@ async getApprovalStats() {
     }
   }
 
+  async checkEmailExists(email) {
+    try {
+      return await this.request(`/api/v1/user/check-email/${encodeURIComponent(email)}`);
+    } catch (error) {
+      // If email exists, backend will return 409 conflict
+      if (error.message && error.message.includes('409')) {
+        return { exists: true };
+      }
+      throw error;
+    }
+  }
+
   async addMeterToResident(data) {
     return await this.request('/api/v1/water-connection/add-meter', {
       method: 'POST',

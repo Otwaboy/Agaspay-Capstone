@@ -49,6 +49,7 @@ export default function SecretaryResidents() {
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterZone, setFilterZone] = useState("all");
   const [selectedResident, setSelectedResident] = useState(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
@@ -77,6 +78,7 @@ export default function SecretaryResidents() {
         resident_id: conn.resident_id,  // Add resident_id for multi-meter functionality
         name: conn.full_name,
         address: conn.address,
+        zone: conn.zone,  // Add zone field for filtering
         contactNo: conn.contact_no,
         email: conn.email,
         status: conn.status,
@@ -110,6 +112,7 @@ export default function SecretaryResidents() {
         contactNo: resident.contactNo,
         email: resident.email,
         address: resident.address,
+        zone: resident.zone,  // Add zone to grouped resident
         status: resident.status,
         meters: [
           {
@@ -137,10 +140,13 @@ export default function SecretaryResidents() {
                          resident.meters.some(m => m.meter_no.includes(searchQuery));
 
     // Filter by connection status - check if any meter matches or all meters match filter
-    const matchesFilter = filterStatus === "all" ||
+    const matchesStatusFilter = filterStatus === "all" ||
                          resident.meters.some(m => m.connectionStatus === filterStatus);
 
-    return matchesSearch && matchesFilter;
+    // Filter by zone - compare zone field directly
+    const matchesZoneFilter = filterZone === "all" || String(resident.zone) === filterZone;
+
+    return matchesSearch && matchesStatusFilter && matchesZoneFilter;
   });
 
   const handleViewDetails = (resident) => {
@@ -330,6 +336,18 @@ export default function SecretaryResidents() {
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="disconnected">Disconnected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterZone} onValueChange={setFilterZone}>
+                    <SelectTrigger className="w-full md:w-48" data-testid="select-zone-filter">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Filter by zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Zones</SelectItem>
+                      <SelectItem value="1">Zone 1</SelectItem>
+                      <SelectItem value="2">Zone 2</SelectItem>
+                      <SelectItem value="3">Zone 3</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

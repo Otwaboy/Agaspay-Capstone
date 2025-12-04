@@ -1,6 +1,7 @@
 const WaterConnection = require('../../model/WaterConnection')
 const Resident = require('../../model/Resident')
 const Personnel = require('../../model/Personnel')
+const User = require('../../model/User')
 const { UnauthorizedError, BadRequestError } = require('../../errors')
 
 // Get all residents (for admin)
@@ -102,5 +103,51 @@ const getUserAccount = async (req, res) => {
     user: userData
   })
 }
- 
-module.exports = { getUserAccount, getAllResidents }
+
+const checkEmailExists = async (req, res) => {
+  try {
+    const email = decodeURIComponent(req.params.email);
+
+    if (!email || email.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Check if email exists in Resident table
+    const resident = await Resident.findOne({ email: email.trim() });
+    if (resident) {
+      return res.status(409).json({
+        success: false,
+        exists: true,
+        message: 'Email already exists'
+      });
+    }
+
+    // Check if email exists in Personnel table
+    const personnel = await Personnel.findOne({ email: email.trim() });
+    if (personnel) {
+      return res.status(409).json({
+        success: false,
+        exists: true,
+        message: 'Email already exists'
+      });
+    }
+
+    // Email does not exist
+    return res.status(200).json({
+      success: true,
+      exists: false,
+      message: 'Email is available'
+    });
+  } catch (error) {
+    console.error('Error checking email:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error checking email availability'
+    });
+  }
+};
+
+module.exports = { getUserAccount, getAllResidents, checkEmailExists }

@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { AlertCircle, Droplets, MapPin } from "lucide-react";
+import { AlertCircle, Droplets, MapPin, Check } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../../lib/api";
 
@@ -18,6 +18,10 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
     type: ""
   });
   const [errors, setErrors] = useState({});
+  const [meterValidation, setMeterValidation] = useState({ checking: false, valid: null });
+  const [fieldValidation, setFieldValidation] = useState({
+    specificAddress: null
+  });
 
   // Reset form when modal opens
   useEffect(() => {
@@ -105,6 +109,29 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
+    // Check meter number validity if field is meter_no
+    if (field === 'meter_no' && value.trim()) {
+      checkMeterNumberAvailability(value.trim());
+    }
+    // Real-time validation for specificAddress
+    if (field === 'specificAddress' && value.trim()) {
+      setFieldValidation(prev => ({ ...prev, specificAddress: value.trim().length >= 3 }));
+    } else if (field === 'specificAddress') {
+      setFieldValidation(prev => ({ ...prev, specificAddress: null }));
+    }
+  };
+
+  const checkMeterNumberAvailability = async (meterNo) => {
+    setMeterValidation({ checking: true, valid: null });
+    try {
+      const result = await apiClient.checkMeterNumberExists(meterNo);
+      // If exists is true, the meter is NOT available
+      setMeterValidation({ checking: false, valid: !result.exists });
+    } catch (error) {
+      // If error, assume not available (safe approach)
+      setMeterValidation({ checking: false, valid: false });
+      console.error('Error checking meter number:', error);
+    }
   };
 
   const validate = () => {
@@ -112,6 +139,8 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
 
     if (!formData.meter_no.trim()) {
       newErrors.meter_no = "Meter number is required";
+    } else if (meterValidation.valid === false) {
+      newErrors.meter_no = "This meter number is already in use. Please enter a different meter number.";
     }
 
     if (!formData.specificAddress.trim()) {
@@ -183,18 +212,39 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
             <Label htmlFor="meter_no">
               Meter Number <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="meter_no"
-              placeholder="Enter meter number"
-              value={formData.meter_no}
-              onChange={(e) => handleChange("meter_no")(e.target.value)}
-              className={errors.meter_no ? "border-red-500" : ""}
-            />
+            <div className="relative">
+              <Input
+                id="meter_no"
+                placeholder="Enter meter number"
+                value={formData.meter_no}
+                onChange={(e) => handleChange("meter_no")(e.target.value)}
+                className={`${errors.meter_no || (meterValidation.valid === false && formData.meter_no) ? "border-red-500 border-2 focus:ring-red-500" : meterValidation.valid === true && formData.meter_no ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+              />
+              {meterValidation.checking && formData.meter_no && (
+                <div className="absolute right-3 top-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                </div>
+              )}
+              {meterValidation.valid === true && formData.meter_no && !meterValidation.checking && (
+                <div className="absolute right-3 top-3 text-green-500">
+                  ✓
+                </div>
+              )}
+            </div>
             {errors.meter_no && (
               <div className="flex items-center gap-1 text-red-600 text-sm">
                 <AlertCircle className="h-4 w-4" />
                 <span>{errors.meter_no}</span>
               </div>
+            )}
+            {meterValidation.valid === false && formData.meter_no && !errors.meter_no && (
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>This meter number is already in use</span>
+              </div>
+            )}
+            {meterValidation.valid === true && formData.meter_no && !errors.meter_no && (
+              <p className="text-xs text-green-600">Meter number is available</p>
             )}
           </div>
 
@@ -204,18 +254,28 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
               <MapPin className="h-4 w-4" />
               Specific Address <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="specificAddress"
-              placeholder="Enter specific address (e.g., House number, street name)"
-              value={formData.specificAddress}
-              onChange={(e) => handleChange("specificAddress")(e.target.value)}
-              className={errors.specificAddress ? "border-red-500" : ""}
-            />
+            <div className="relative">
+              <Input
+                id="specificAddress"
+                placeholder="Enter specific address (e.g., House number, street name)"
+                value={formData.specificAddress}
+                onChange={(e) => handleChange("specificAddress")(e.target.value)}
+                className={`${errors.specificAddress ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.specificAddress === true && formData.specificAddress ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+              />
+              {fieldValidation.specificAddress === true && formData.specificAddress && (
+                <div className="absolute right-3 top-3 text-green-500">
+                  ✓
+                </div>
+              )}
+            </div>
             {errors.specificAddress && (
               <div className="flex items-center gap-1 text-red-600 text-sm">
                 <AlertCircle className="h-4 w-4" />
                 <span>{errors.specificAddress}</span>
               </div>
+            )}
+            {fieldValidation.specificAddress === true && formData.specificAddress && !errors.specificAddress && (
+              <p className="text-xs text-green-600">Address is valid</p>
             )}
           </div>
 
