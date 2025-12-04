@@ -368,7 +368,8 @@ export default function AdminResidents() {
                                     </Badge>
                                   </TableCell>
 
-
+                                  {/* Actions - only show for first meter */}
+                                  {meterIdx === 0 && (
                                     <TableCell className="text-right" rowSpan={resident.meters.length}>
                                       <Button
                                         variant="ghost"
@@ -380,7 +381,7 @@ export default function AdminResidents() {
                                         <Eye className="h-4 w-4 text-blue-600" />
                                       </Button>
                                     </TableCell>
-                                 
+                                  )}
                                 </TableRow>
                               ))
                             )
