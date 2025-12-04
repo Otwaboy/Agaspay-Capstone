@@ -39,12 +39,19 @@ export default function SecretaryAnnouncements() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Form states for creating an announcement
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("normal");
+
+  // Form states for editing an announcement
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editPriority, setEditPriority] = useState("normal");
 
   // Fetch announcements from backend
       const { data, isLoading } = useQuery({
@@ -74,6 +81,24 @@ console.log(announcements);
     },
   });
 
+  // Update announcement mutation
+  const updateAnnouncement = useMutation({
+    mutationFn: (data) => apiClient.updateAnnouncement(data.id, data),
+    onSuccess: () => {
+      toast.success("Announcement Updated", { description: "Your announcement has been updated successfully." });
+      queryClient.invalidateQueries(["announcements"]);
+      setEditModalOpen(false);
+      setEditTitle("");
+      setEditContent("");
+      setEditCategory("");
+      setEditPriority("normal");
+      setSelectedAnnouncement(null);
+    },
+    onError: (error) => {
+      toast.error("Error", { description: error.response?.data?.message || "Failed to update announcement" });
+    },
+  });
+
   const categories = ["Water Schedule", "Maintenance", "Alert"];
 
   const filteredAnnouncements = announcements.filter((ann) => {
@@ -87,6 +112,30 @@ console.log(announcements);
   const handleViewDetails = (announcement) => {
     setSelectedAnnouncement(announcement);
     setViewDetailsOpen(true);
+  };
+
+  const handleEditAnnouncement = (announcement) => {
+    setSelectedAnnouncement(announcement);
+    setEditTitle(announcement.title);
+    setEditContent(announcement.content);
+    setEditCategory(announcement.category);
+    setEditPriority(announcement.priority);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editTitle || !editContent || !editCategory) {
+      toast.error("Missing Fields", { description: "Please fill in all required fields." });
+      return;
+    }
+
+    updateAnnouncement.mutate({
+      id: selectedAnnouncement._id,
+      title: editTitle,
+      content: editContent,
+      category: editCategory,
+      priority: editPriority,
+    });
   };
 
   const handleCreateAnnouncement = () => {
@@ -315,6 +364,11 @@ console.log(announcements);
                                 <Button size="sm" variant="outline" onClick={() => handleViewDetails(ann)}>
                                   <Eye className="h-4 w-4 mr-1" /> View
                                 </Button>
+                                {ann.status === "pending_approval" && (
+                                  <Button size="sm" variant="outline" onClick={() => handleEditAnnouncement(ann)}>
+                                    <Edit className="h-4 w-4 mr-1" /> Edit
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </CardContent>
@@ -465,6 +519,77 @@ console.log(announcements);
             </Button>
             <Button onClick={handleCreateAnnouncement} disabled={createAnnouncement.isLoading}>
               {createAnnouncement.isLoading ? "Publishing..." : "Send to Admin"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Announcement */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Announcement</DialogTitle>
+            <DialogDescription>Update your announcement details</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editTitle">Title</Label>
+              <Input
+                id="editTitle"
+                placeholder="Enter announcement title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editContent">Content</Label>
+              <Textarea
+                id="editContent"
+                placeholder="Enter announcement content..."
+                rows={5}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="editCategory">Category</Label>
+                <Select value={editCategory} onValueChange={setEditCategory}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="editPriority">Priority</Label>
+                <Select value={editPriority} onValueChange={setEditPriority}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={updateAnnouncement.isLoading}>
+              {updateAnnouncement.isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

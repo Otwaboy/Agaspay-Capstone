@@ -470,8 +470,11 @@ const updateReadings = async (req, res, next) => {
       user_role: user?.role
     });
 
-    // ✅ Validate input
+    // ✅ Validate input - ensure reading_id is valid MongoDB ObjectId
     if (!reading_id) throw new BadRequestError('Reading ID is required.');
+    if (!require('mongoose').Types.ObjectId.isValid(reading_id)) {
+      throw new BadRequestError('Invalid Reading ID format.');
+    }
     if (present_reading === undefined && !inclusive_date && !remarks && !can_read_status) {
       throw new BadRequestError('At least one field (present_reading, inclusive_date, remarks, can_read_status) is required.');
     }
@@ -479,7 +482,16 @@ const updateReadings = async (req, res, next) => {
     // ✅ Fetch the reading
     const reading = await MeterReading.findById(reading_id).populate('connection_id');
 
-    if (!reading) throw new BadRequestError('Reading not found.');
+    if (!reading) {
+      console.error('Reading not found:', reading_id);
+      throw new BadRequestError('Reading not found.');
+    }
+
+    console.log('📖 Reading fetched:', {
+      reading_id: reading._id,
+      reading_status: reading.reading_status,
+      connection_zone: reading.connection_id?.zone
+    });
 
     // ✅ Check status
     if (reading.reading_status === 'approved') {
@@ -489,13 +501,25 @@ const updateReadings = async (req, res, next) => {
     // ✅ Check if meter reader is allowed to update this reading (zone match)
     const personnel = await Personnel.findOne({ user_id: user.userId }).select('assigned_zone');
     if (!personnel || !personnel.assigned_zone) {
+      console.error('❌ Personnel not found or no zone assigned:', user.userId);
       throw new BadRequestError('Meter reader has no assigned zone.');
     }
 
+    console.log('👤 Personnel found:', {
+      personnel_id: personnel._id,
+      assigned_zone: personnel.assigned_zone
+    });
+
     // Check water connection zone (not resident's home zone)
     // Resident zone is for incident reporting; water connection zone is for meter coverage
-    const connectionZone = reading.connection_id.zone;
+    const connectionZone = reading.connection_id?.zone;
+    if (!connectionZone) {
+      console.error('❌ Connection zone not found');
+      throw new BadRequestError('Connection zone information is missing.');
+    }
+
     if (connectionZone !== personnel.assigned_zone) {
+      console.error('❌ Zone mismatch:', { connectionZone, assignedZone: personnel.assigned_zone });
       throw new UnauthorizedError(`You can only update readings in your assigned zone (${personnel.assigned_zone}). This connection is in zone ${connectionZone}.`);
     }
 
@@ -513,8 +537,13 @@ const updateReadings = async (req, res, next) => {
 
     // ✅ Update fields
     if (present_reading !== undefined) reading.present_reading = present_reading;
-    if (inclusive_date) reading.inclusive_date = inclusive_date;
-    if (remarks) reading.remarks = remarks;
+    if (inclusive_date && inclusive_date.start && inclusive_date.end) {
+      reading.inclusive_date = {
+        start: new Date(inclusive_date.start),
+        end: new Date(inclusive_date.end)
+      };
+    }
+    if (remarks && remarks.trim()) reading.remarks = remarks;
     if (can_read_status) reading.can_read_status = can_read_status;
 
     await reading.save(); // pre-save hook recalculates "calculated"

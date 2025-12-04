@@ -661,6 +661,13 @@ async getApprovalStats() {
       });
     }
 
+    async updateAnnouncement(id, data) {
+      return await this.request(`/api/v1/announcements/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    }
+
     async archiveAnnouncement(id) {
       return await this.request(`/api/v1/announcements/${id}/archive`, {
         method: 'PATCH',

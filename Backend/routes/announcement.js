@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const {
-  createAnnouncement, 
+  createAnnouncement,
   getAnnouncements,
   getPendingAnnouncements,
   approveAnnouncement,
   rejectAnnouncement,
+  updateAnnouncement,
   archiveAnnouncement,
   incrementViews
 } = require('../controller/announcement');
@@ -26,6 +27,9 @@ router.patch('/:id/approve', authMiddleware, rolemiddleware('admin'), approveAnn
 
 // Reject announcement (Admin only)
 router.patch('/:id/reject', authMiddleware, rolemiddleware('admin'), rejectAnnouncement);
+
+// Update announcement (Secretary, Admin - only if pending approval)
+router.patch('/:id', authMiddleware, rolemiddleware('secretary', 'admin'), updateAnnouncement);
 
 // Archive announcement
 router.patch('/:id/archive', authMiddleware, rolemiddleware('secretary', 'admin'), archiveAnnouncement);

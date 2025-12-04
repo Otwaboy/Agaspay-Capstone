@@ -133,7 +133,7 @@ export default function SecretaryAssignments() {
       scheduledDate: assignment.task.schedule_date,
       timeSlot: assignment.task.schedule_time,
       priority: assignment.task.urgency_lvl?.toLowerCase() || assignment.task.priority || 'medium',
-      status: assignment.task.task_status,
+      status: assignment.task.task_status || 'Assigned',
       assignedTo: assignment.personnel.name,
       assignedToId: assignment.personnel.id,
       assignedToContact: assignment.personnel.contact_no,
@@ -570,14 +570,16 @@ export default function SecretaryAssignments() {
                                       >
                                         View
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRescheduleTask(task)}
-                                        data-testid={`button-reschedule-${task.id}`}
-                                      >
-                                        Reschedule
-                                      </Button>
+                                      {task.status !== "Completed" && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleRescheduleTask(task)}
+                                          data-testid={`button-reschedule-${task.id}`}
+                                        >
+                                          Reschedule
+                                        </Button>
+                                      )}
                                     </>
                                   )}
                                 </div>

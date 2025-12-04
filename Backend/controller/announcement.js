@@ -181,6 +181,46 @@ const rejectAnnouncement = async (req, res) => {
   }
 };
 
+// Update announcement (only if pending approval)
+const updateAnnouncement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content, category, priority, valid_until } = req.body;
+    const user = req.user;
+
+    if (!['secretary', 'admin'].includes(user.role)) {
+      return res.status(403).json({ message: 'Only Secretary or Admin can update announcements' });
+    }
+
+    const announcement = await Announcement.findById(id);
+    if (!announcement) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+
+    // Only allow editing if announcement is in pending_approval status
+    if (announcement.status !== 'pending_approval') {
+      return res.status(400).json({ message: 'Can only edit announcements that are pending approval' });
+    }
+
+    // Update fields
+    if (title) announcement.title = title;
+    if (content) announcement.content = content;
+    if (category) announcement.category = category;
+    if (priority) announcement.priority = priority;
+    if (valid_until !== undefined) announcement.valid_until = valid_until;
+
+    await announcement.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Announcement updated successfully',
+      announcement
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Archive announcement
 const archiveAnnouncement = async (req, res) => {
   try {
@@ -230,6 +270,7 @@ module.exports = {
   getPendingAnnouncements,
   approveAnnouncement,
   rejectAnnouncement,
+  updateAnnouncement,
   archiveAnnouncement,
   incrementViews
 };
