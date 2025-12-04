@@ -66,12 +66,12 @@ const menuItems = [
       { title: "Outstanding Balances", href: "/treasurer-dashboard/revenue/outstanding-balances" },
     ]
   },
-    {
-    title: "Customer Accounts",
-    icon: Users,
-    href: "/treasurer-dashboard/customer-accounts",
-    color: "text-gray-600"
-  },
+  //   {
+  //   title: "Customer Accounts",
+  //   icon: Users,
+  //   href: "/treasurer-dashboard/customer-accounts",
+  //   color: "text-gray-600"
+  // },
   {
     title: "Profile",
     icon: User,

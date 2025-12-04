@@ -104,12 +104,10 @@ export default function GeneratePaymentCollectionReportModal({ isOpen, onClose }
         .filter(p => p.payment_status === "confirmed")
         .reduce((sum, p) => sum + parseFloat(p.amount_paid || 0), 0);
 
-      const pendingAmount = filteredPayments
-        .filter(p => p.payment_status === "pending")
-        .reduce((sum, p) => sum + parseFloat(p.amount_paid || 0), 0);
+      
 
       const confirmedCount = filteredPayments.filter(p => p.payment_status === "confirmed").length;
-      const pendingCount = filteredPayments.filter(p => p.payment_status === "pending").length;
+      
 
       // Generate PDF
       const doc = new jsPDF();
@@ -134,7 +132,6 @@ export default function GeneratePaymentCollectionReportModal({ isOpen, onClose }
         minute: '2-digit',
         second: '2-digit'
       });
-      doc.text(`Period: ${monthName} ${selectedYear}`, pageWidth / 2, 30, { align: 'center' });
       doc.text(`Total Payments: ${filteredPayments.length}`, pageWidth / 2, 36, { align: 'center' });
       doc.text(`Generated report on: ${generatedTime}`, pageWidth / 2, 42, { align: 'center' });
 
@@ -142,7 +139,7 @@ export default function GeneratePaymentCollectionReportModal({ isOpen, onClose }
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.text(`Total Collected (Confirmed): ${formatCurrency(totalCollected)} (${confirmedCount} payments)`, pageWidth / 2, 50, { align: 'center' });
-      doc.text(`Pending Amount: ${formatCurrency(pendingAmount)} (${pendingCount} payments)`, pageWidth / 2, 56, { align: 'center' });
+      
 
       // Prepare table data
       const tableData = filteredPayments.map((payment, index) => {

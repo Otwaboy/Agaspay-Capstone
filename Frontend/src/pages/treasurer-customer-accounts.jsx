@@ -21,7 +21,7 @@ export default function TreasurerCustomerAccounts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const { data: accounts, isLoading } = useQuery({
+  const { data: accounts} = useQuery({
     queryKey: ['/api/v1/treasurer/customer-accounts', filterStatus],
     staleTime: 2 * 60 * 1000,
   });
