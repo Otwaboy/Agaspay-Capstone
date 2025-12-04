@@ -405,7 +405,7 @@ export default function MeterReaderReadings() {
                             <p className="text-sm font-semibold text-green-900">Your Assigned Zone</p>
                             <p className="text-xs text-green-700">Zone {meterReaderZone} - {filteredConnections.length} residents</p>
                           </div>
-                        </div>
+                        </div> 
                       </div>
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div className="flex items-center justify-between">
