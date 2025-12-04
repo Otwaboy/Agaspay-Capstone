@@ -79,6 +79,21 @@ export default function MeterReaderReadings() {
     return today >= startDate && today <= endDate;
   };
 
+  // 📅 Helper function to check if reading period starts next month (future reading)
+  const isNextMonth = (conn) => {
+    const dateSource = conn?.next_period_dates || conn?.inclusive_date;
+    if (!dateSource?.start) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(dateSource.start);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Check if start date is in the future (more than today)
+    return startDate > today;
+  };
+
   // Connections filtered by zone only (for overall statistics)
   const zoneConnections = connectionList
     .filter((conn) => {
@@ -491,6 +506,9 @@ export default function MeterReaderReadings() {
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">
+                                      {isNextMonth(connection) && (
+                                        <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 text-xs font-semibold">📅 Next Month</Badge>
+                                      )}
                                       {isScheduledToday(connection) && (
                                         <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs font-semibold">✓ Scheduled Today</Badge>
                                       )}
@@ -505,6 +523,22 @@ export default function MeterReaderReadings() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Next Month Warning for Future Reading Periods */}
+                    {selectedConnectionData && isNextMonth(selectedConnectionData) && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          <AlertCircle className="h-5 w-5 text-purple-600 mt-0.5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-purple-900">Reading Period Starts Next Month</p>
+                          <p className="text-xs text-purple-700 mt-1">
+                            This new meter's reading period starts on {new Date(selectedConnectionData.inclusive_date?.start || selectedConnectionData.next_period_dates?.start).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
+                            While you can record the initial reading now, this meter will not be included in the current billing cycle.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* ------------------ NEW READING INFO BOXES ------------------ */}
                    {selectedConnectionData &&
