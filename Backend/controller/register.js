@@ -94,9 +94,14 @@ const registerResident = async (req, res) => {
 
         for (const personnel of maintenancePersonnel) {
           // Check if this personnel has any existing assignment at this exact date and time
+          // Also check for NOT cancelled/archived status
           const existingAssignment = await ScheduleTask.findOne({
             assigned_personnel: personnel._id,
-            schedule_time: slot
+            schedule_time: slot,
+            $or: [
+              { task_status: { $in: ['Assigned', 'In Progress', 'Pending'] } },
+              { task_status: { $exists: false } }
+            ]
           }).session(session);
 
           // If assignment exists, check if it's for the same date
@@ -126,7 +131,14 @@ const registerResident = async (req, res) => {
           const personnelWithCounts = await Promise.all(
             availablePersonnel.map(async (personnel) => ({
               personnel,
-              taskCount: await ScheduleTask.countDocuments({ assigned_personnel: personnel._id }).session(session)
+              // Only count active/pending tasks (exclude completed/cancelled)
+              taskCount: await ScheduleTask.countDocuments({
+                assigned_personnel: personnel._id,
+                $or: [
+                  { task_status: { $in: ['Assigned', 'In Progress', 'Pending'] } },
+                  { task_status: { $exists: false } }
+                ]
+              }).session(session)
             }))
           );
 
@@ -156,7 +168,14 @@ const registerResident = async (req, res) => {
           const personnelWithCounts = await Promise.all(
             availablePersonnel.map(async (personnel) => ({
               personnel,
-              taskCount: await ScheduleTask.countDocuments({ assigned_personnel: personnel._id }).session(session)
+              // Only count active/pending tasks (exclude completed/cancelled)
+              taskCount: await ScheduleTask.countDocuments({
+                assigned_personnel: personnel._id,
+                $or: [
+                  { task_status: { $in: ['Assigned', 'In Progress', 'Pending'] } },
+                  { task_status: { $exists: false } }
+                ]
+              }).session(session)
             }))
           );
 
