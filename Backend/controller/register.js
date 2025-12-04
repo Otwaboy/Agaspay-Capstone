@@ -137,27 +137,30 @@ const registerResident = async (req, res) => {
         }
       }
 
-      // Find the time slot with the most availability (best spread)
-      // and select the person with the least total tasks
+      // Strategy: Prefer the FIRST available time slot (9:30) with DIFFERENT personnel
+      // This way, multiple different maintenance staff can work simultaneously at the same time
+      // Only move to next time slot if the preferred slot is fully booked
       let bestSlot = null;
       let bestPerson = null;
 
+      // Try each time slot in order (prioritize 9:30)
       for (const slot of timeSlots) {
         const availableAtSlot = slotAvailability[slot];
 
         if (availableAtSlot.length > 0) {
-          // Sort by total tasks (ascending) to get the least busy person
+          // Sort by total tasks (ascending) to get the least busy person at this slot
           availableAtSlot.sort((a, b) => a.totalTasks - b.totalTasks);
           const leastBusy = availableAtSlot[0];
 
           console.log(`[Register] Time slot ${slot}: ${availableAtSlot.length}/${maintenancePersonnel.length} personnel available, least busy: ${leastBusy.personnel.first_name} (${leastBusy.totalTasks} tasks)`);
 
-          // Prefer slots where more personnel are available (better distribution)
-          // Then prefer people with fewer total tasks
-          if (!bestSlot || availableAtSlot.length > slotAvailability[bestSlot].length ||
-              (availableAtSlot.length === slotAvailability[bestSlot].length && leastBusy.totalTasks < bestPerson.totalTasks)) {
+          // PREFERRED: Use the first available time slot (9:30) with ANY available person
+          // This allows multiple different maintenance staff to work at the same time
+          if (!bestSlot) {
             bestSlot = slot;
             bestPerson = leastBusy;
+            console.log(`[Register] ✅ Using first available slot ${slot} with ${leastBusy.personnel.first_name} ${leastBusy.personnel.last_name}`);
+            break; // Stop here - use the first available slot
           }
         }
       }
