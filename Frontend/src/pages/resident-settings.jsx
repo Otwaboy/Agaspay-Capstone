@@ -284,6 +284,21 @@ export default function ResidentSettings() {
   };
 
   const handleArchiveSubmit = () => {
+    // Check for pending balances
+    const metersWithPendingBalance = metersWithBills?.filter(m => m.hasPendingBalance) || [];
+    if (metersWithPendingBalance.length > 0) {
+      const metersList = metersWithPendingBalance
+        .map(m => `${m.account_number || 'Unknown'} (Balance: ₱${m.currentBill?.balance || 0})`)
+        .join(", ");
+      toast.error(
+        "Cannot Request Archive",
+        {
+          description: `Please settle all pending balances before requesting archive. Unpaid meters: ${metersList}`
+        }
+      );
+      return;
+    }
+
     // Validate reason
     if (!archiveReason || archiveReason.trim().length === 0) {
       toast.error("Please provide a reason for archiving your account");
@@ -672,14 +687,30 @@ export default function ResidentSettings() {
                         </div>
                       </div>
                     ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full border-orange-200 text-orange-600 hover:bg-orange-50"
-                        onClick={() => setArchiveModalOpen(true)}
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Request Account Archive
-                      </Button>
+                      <>
+                        {metersWithBills?.some(m => m.hasPendingBalance) ? (
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-start space-x-2">
+                              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-red-900">Cannot Archive Account</p>
+                                <p className="text-xs text-red-700 mt-1">
+                                  Please settle all pending balances before requesting archive.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            className="w-full border-orange-200 text-orange-600 hover:bg-orange-50"
+                            onClick={() => setArchiveModalOpen(true)}
+                          >
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Request Account Archive
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </CardContent>
