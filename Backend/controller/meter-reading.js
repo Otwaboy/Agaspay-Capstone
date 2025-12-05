@@ -399,6 +399,7 @@ const getLatestReadings = async (req, res) => {
         connection_status: item.connection_status,
         connection_id: item._id ? item._id.toString() : null,
         connection_type: item.type || "Unknown",
+        specific_address: item.specific_address || 'null',
         // 📅 Always use reading's inclusive_date if available (current reading period)
         // If no reading exists, use connection's inclusive_date (next period waiting to be read)
         inclusive_date: reading?.inclusive_date || item.inclusive_date || null,

@@ -17,10 +17,10 @@ import {
   Search,
   Check,
   AlertCircle,
-  Receipt,
   User,
   PiggyBank,
-  Power
+  Power,
+  PhilippinePesoIcon
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
@@ -220,7 +220,7 @@ export default function TreasurerRecordPayment() {
                         </div>
                       ) : filteredBills.length === 0 ? (
                         <div className="text-center py-8">
-                          <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                          <PhilippinePesoIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-gray-600">
                             {searchTerm ? "No bills found" : "No unpaid bills"}
                           </p>

@@ -593,6 +593,12 @@ export default function MeterReaderReadings() {
                               </p>
                             </div>
                           )}
+
+                            {/* specific address */}
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Specific Address</p>
+                            <p className="text-base font-semibold text-gray-900">{selectedConnectionData.specific_address}</p>
+                          </div>
                         </div>
                       </div>
                     )}
