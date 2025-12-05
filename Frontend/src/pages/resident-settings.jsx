@@ -66,8 +66,8 @@ export default function ResidentSettings() {
   });
 
   // Fetch bills for each meter to check for pending balances
-  const { data: metersWithBills } = useQuery({
-    queryKey: ["resident-meters-with-bills"],
+  const { data: metersWithBills = [] } = useQuery({
+    queryKey: ["resident-meters-with-bills", metersData],
     queryFn: async () => {
       if (!metersData || metersData.length === 0) return [];
 
@@ -97,6 +97,8 @@ export default function ResidentSettings() {
     },
     enabled: !!metersData && metersData.length > 0
   });
+
+  console.log('data meter',);
 
   // Fetch disconnection status
   const { data: disconnectionStatus } = useQuery({
@@ -588,7 +590,7 @@ export default function ResidentSettings() {
                             onClick={() => setDisconnectModalOpen(true)}
                           >
                             <AlertTriangle className="h-4 w-4 mr-2" />
-                            Disconnect Account
+                            Request for Disconnection
                           </Button>
                         ) : (
                           <div className="space-y-2">

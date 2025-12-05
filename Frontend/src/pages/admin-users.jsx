@@ -174,7 +174,7 @@ export default function AdminResidents() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Residents</p>
+                      <p className="text-sm font-medium text-gray-600">Total Connections</p>
                       <p className="text-2xl font-bold text-gray-900" data-testid="text-total-residents">
                         {isLoading ? "..." : residents.length}
                       </p>
