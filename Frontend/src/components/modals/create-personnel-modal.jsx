@@ -627,7 +627,18 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading || emailValidation.checking || (formData.email && (fieldValidation.email === false || emailValidation.valid === false))}
+                disabled={
+                  isLoading ||
+                  emailValidation.checking ||
+                  (formData.email && (fieldValidation.email === false || emailValidation.valid === false)) ||
+                  !formData.firstName.trim() ||
+                  !formData.lastName.trim() ||
+                  !formData.email.trim() ||
+                  !formData.phone.trim() ||
+                  !formData.role ||
+                  !formData.purok ||
+                  (formData.role === 'meter_reader' && !formData.assignedZone)
+                }
                 data-testid="button-send-code"
               >
                 {isLoading ? "Sending Code..." : "Send Verification Code"}
