@@ -5,7 +5,7 @@ const MeterReadingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'WaterConnection',
     required: true
-  },
+  }, 
   inclusive_date: {
     start: { type: Date, required: true },
     end: { type: Date, required: true }

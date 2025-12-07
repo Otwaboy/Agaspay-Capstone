@@ -69,11 +69,14 @@ const BillingSchema = new mongoose.Schema({
     required: true
   },
 
-  // Flag if this connection is marked for disconnection due to unpaid bills
-  marked_for_disconnection: {
-    type: Boolean,
-    default: false
-  },
+  // // Flag if this connection is marked for disconnection due to unpaid bills
+  // marked_for_disconnection: {
+  //   type: Boolean,
+  //   default: false
+  // },
+
+
+
 
   // PayMongo payment intent ID for online payment processing
   current_payment_intent: {
