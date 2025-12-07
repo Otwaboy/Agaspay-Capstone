@@ -137,6 +137,19 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         validationErrors.assignedZone = "Assigned zone is required for meter readers";
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        validationErrors.email = "Invalid email format";
+      }
+
+      // Check if email validation is still pending or email is not available
+      if (emailValidation.checking) {
+        validationErrors.email = "Please wait while we check email availability";
+      } else if (fieldValidation.email === true && emailValidation.valid === false) {
+        validationErrors.email = "This email is already registered";
+      }
+
       if (Object.keys(validationErrors).length > 0) {
         setErrors(validationErrors);
         const firstError = Object.values(validationErrors)[0];
@@ -614,7 +627,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || emailValidation.checking || (formData.email && (fieldValidation.email === false || emailValidation.valid === false))}
                 data-testid="button-send-code"
               >
                 {isLoading ? "Sending Code..." : "Send Verification Code"}
