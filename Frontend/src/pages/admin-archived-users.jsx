@@ -15,10 +15,10 @@ import {
   Briefcase,
   Calendar,
   RotateCcw,
-  AlertTriangle
+  AlertTriangle 
 } from "lucide-react";
 import apiClient from "../lib/api";
-import { toast } from "sonner";
+import { toast } from "sonner"; 
 
 export default function AdminArchivedUsers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,17 +79,17 @@ export default function AdminArchivedUsers() {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric' 
     });
   };
 
   // Unarchive mutation
   const unarchiveMutation = useMutation({
-    mutationFn: async ({ id, type }) => {
+    mutationFn: async ({ connection_id, type }) => {
       if (type === "residents") {
-        return await apiClient.unarchiveResident(id);
+        return await apiClient.unarchiveResident(connection_id);
       } else {
-        return await apiClient.unarchivePersonnel(id);
+        return await apiClient.unarchivePersonnel(connection_id);
       }
     },
     onSuccess: () => {
@@ -124,7 +124,7 @@ export default function AdminArchivedUsers() {
         return;
       }
 
-      unarchiveMutation.mutate({ id: userId, type: activeTab });
+      unarchiveMutation.mutate({ connection_id: userId, type: activeTab });
     }
   };
 

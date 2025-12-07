@@ -8,7 +8,7 @@ const { StatusCodes } = require('http-status-codes');
  */
 const requestArchive = async (req, res) => {
   try {
-    const user = req.user;
+    const user = req.user; 
     const { reason } = req.body;
 
     // Validate reason
@@ -282,7 +282,7 @@ const rejectArchiveRequest = async (req, res) => {
         success: false,
         message: 'Resident record not found'
       });
-    }
+    } 
 
     // Must be pending to reject
     if (connection.archive_status !== 'pending_archive') {

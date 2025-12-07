@@ -802,8 +802,8 @@ async getApprovalStats() {
       });
     }
 
-    async rejectArchive(connectionId, reason) {
-      return await this.request(`/api/v1/archive-request/reject/${connectionId}`, {
+    async rejectArchive(connection_id, reason) {
+      return await this.request(`/api/v1/archive-request/reject/${connection_id}`, {
         method: 'PATCH',
         body: JSON.stringify({ reason }),
       });

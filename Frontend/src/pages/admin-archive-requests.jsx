@@ -112,11 +112,11 @@ export default function AdminArchiveRequests() {
 
   // Reject archive mutation
   const rejectArchiveMutation = useMutation({
-    mutationFn: async ({ id, type, reason }) => {
+    mutationFn: async ({ connectionId, type, reason }) => {
       if (type === "residents") {
-        return await apiClient.rejectArchive(id, reason);
+        return await apiClient.rejectArchive(connectionId, reason);
       } else {
-        return await apiClient.rejectPersonnelArchive(id, reason);
+        return await apiClient.rejectPersonnelArchive(connectionId, reason);
       }
     },
     onSuccess: () => {
@@ -146,7 +146,7 @@ export default function AdminArchiveRequests() {
     setSelectedRequest(request);
     setViewReasonModal(true);
   };
-
+ 
   const confirmApproval = () => {
     if (selectedRequest) {
       console.log('Selected request for approval:', selectedRequest);
@@ -177,7 +177,7 @@ export default function AdminArchiveRequests() {
     if (selectedRequest) {
       let requestId;
       if (activeTab === "residents") {
-        requestId = selectedRequest._id || selectedRequest.water_connection_id;
+        requestId = selectedRequest.connection_id || selectedRequest.water_connection_id || selectedRequest._id;
       } else {
         requestId = selectedRequest._id;
       }
@@ -189,7 +189,7 @@ export default function AdminArchiveRequests() {
       }
 
       rejectArchiveMutation.mutate({
-        id: requestId,
+        connectionId: requestId,
         type: activeTab,
         reason: rejectionReason.trim()
       });
@@ -328,7 +328,17 @@ export default function AdminArchiveRequests() {
                       <User className="h-4 w-4 mr-2" />
                       Residents ({residentArchiveRequests.length})
                     </Button>
-                   
+                    <Button
+                      variant={activeTab === "personnel" ? "default" : "outline"}
+                      onClick={() => {
+                        setActiveTab("personnel");
+                        setSearchTerm("");
+                      }}
+                      className={activeTab === "personnel" ? "bg-purple-600 hover:bg-purple-700" : ""}
+                    >
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      Personnel ({personnelArchiveRequests.length})
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
