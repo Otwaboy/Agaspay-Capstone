@@ -753,9 +753,10 @@ async getApprovalStats() {
       return await this.request('/api/v1/disconnection/status');
     }
 
-    async cancelDisconnectionRequest() {
+    async cancelDisconnectionRequest(connectionId) {
       return await this.request('/api/v1/disconnection/cancel', {
         method: 'POST',
+        body: JSON.stringify({ connectionId }),
       });
     }
 

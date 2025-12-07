@@ -118,18 +118,36 @@ const getDisconnectionStatus = async (req, res) => {
     }
 
     // Return status for all connections
-    const connectionsStatus = connections.map(conn => ({
-      connectionId: conn._id,
-      meterNo: conn.meter_no,
-      status: conn.connection_status,
-      disconnection_type: conn.disconnection_type,
-      disconnection_requested_date: conn.disconnection_requested_date,
-      disconnection_approved_date: conn.disconnection_approved_date,
-      disconnection_rejection_reason: conn.disconnection_rejection_reason
-    }));
+    const connectionsStatus = connections.map(conn => {
+      // Calculate next allowed request date if rejected
+      let next_allowed_request_date = null;
+      if (conn.disconnection_rejection_reason) {
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 1);
+        next_allowed_request_date = nextDate;
+      }
+
+      return {
+        connectionId: conn._id,
+        meterNo: conn.meter_no,
+        status: conn.connection_status,
+        disconnection_type: conn.disconnection_type,
+        disconnection_requested_date: conn.disconnection_requested_date,
+        disconnection_approved_date: conn.disconnection_approved_date,
+        disconnection_rejection_reason: conn.disconnection_rejection_reason,
+        next_allowed_request_date: next_allowed_request_date
+      };
+    });
 
     // For backward compatibility, also return first connection status at top level
     const firstConn = connections[0];
+    let next_allowed_request_date = null;
+    if (firstConn.disconnection_rejection_reason) {
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + 1);
+      next_allowed_request_date = nextDate;
+    }
+
     res.status(StatusCodes.OK).json({
       success: true,
       status: firstConn.connection_status,
@@ -137,6 +155,7 @@ const getDisconnectionStatus = async (req, res) => {
       disconnection_requested_date: firstConn.disconnection_requested_date,
       disconnection_approved_date: firstConn.disconnection_approved_date,
       disconnection_rejection_reason: firstConn.disconnection_rejection_reason,
+      next_allowed_request_date: next_allowed_request_date,
       connections: connectionsStatus
     });
 
@@ -156,6 +175,7 @@ const getDisconnectionStatus = async (req, res) => {
 const cancelDisconnectionRequest = async (req, res) => {
   try {
     const user = req.user;
+    const { connectionId } = req.body;
 
     const resident = await Resident.findOne({ user_id: user.userId });
     if (!resident) {
@@ -165,7 +185,17 @@ const cancelDisconnectionRequest = async (req, res) => {
       });
     }
 
-    const connection = await WaterConnection.findOne({ resident_id: resident._id });
+    // If connectionId provided, use it; otherwise get first connection
+    let connection;
+    if (connectionId) {
+      connection = await WaterConnection.findOne({
+        _id: connectionId,
+        resident_id: resident._id
+      });
+    } else {
+      connection = await WaterConnection.findOne({ resident_id: resident._id });
+    }
+
     if (!connection) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,

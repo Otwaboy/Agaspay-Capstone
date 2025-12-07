@@ -67,6 +67,7 @@ export default function AdminResidents() {
         contactNo: conn.contact_no,
         email: conn.email,
         status: conn.status,
+        archive_status: conn.archive_status,
         connectionStatus: conn.connection_status,
         meter_no: conn.meter_no,
         type: conn.type,
@@ -98,6 +99,7 @@ export default function AdminResidents() {
         email: resident.email,
         address: resident.address,
         status: resident.status,
+        archive_status: resident.archive_status,
         meters: [
           {
             id: resident.id,
@@ -321,7 +323,14 @@ export default function AdminResidents() {
                                   {meterIdx === 0 && (
                                     <>
                                       <TableCell className="font-medium" rowSpan={resident.meters.length}>
-                                        {resident.name}
+                                        <div>
+                                          <p>{resident.name}</p>
+                                          {resident.archive_status === "archived" && (
+                                            <Badge className="mt-2 bg-red-100 text-red-700 border-red-200">
+                                              Archived
+                                            </Badge>
+                                          )}
+                                        </div>
                                       </TableCell>
                                       <TableCell rowSpan={resident.meters.length}>
                                         <div className="text-sm">
@@ -439,14 +448,24 @@ export default function AdminResidents() {
                   <label className="text-sm font-medium text-gray-700">Status</label>
                   <div className="mt-1">
                     <Badge
-                      variant={selectedResident.status === "active" ? "success" : "secondary"}
+                      variant={
+                        selectedResident.archive_status === "archived"
+                          ? "destructive"
+                          : selectedResident.status === "active"
+                          ? "success"
+                          : "secondary"
+                      }
                       className={
-                        selectedResident.status === "active"
+                        selectedResident.archive_status === "archived"
+                          ? "bg-red-100 text-red-700"
+                          : selectedResident.status === "active"
                           ? "bg-green-100 text-green-700"
                           : "bg-gray-100 text-gray-700"
                       }
                     >
-                      {selectedResident.status}
+                      {selectedResident.archive_status === "archived"
+                        ? "Archived"
+                        : selectedResident.status}
                     </Badge>
                   </div>
                 </div>

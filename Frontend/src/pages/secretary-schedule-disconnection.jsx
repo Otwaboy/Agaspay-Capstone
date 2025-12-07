@@ -73,6 +73,7 @@ export default function SecretaryScheduleDisconnection() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/v1/schedule-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['/api/v1/water-connection/for-disconnection'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/assignments'] });
       setScheduleDialogOpen(false);
       setSelectedConnection(null);
     },

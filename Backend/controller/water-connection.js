@@ -112,6 +112,7 @@ const getAllWaterConnections = async (req, res) => {
           archive_status: conn.archive_status,
           archive_reason: conn.archive_reason,
           archive_requested_date: conn.archive_requested_date,
+          archive_approved_date: conn.archive_approved_date,
           // payload for the user information
           first_name: r?.first_name,
           last_name: r?.last_name,

@@ -105,13 +105,23 @@ const getArchiveStatus = async (req, res) => {
       });
     }
 
+    // Calculate next allowed request date if rejected
+    let next_allowed_request_date = null;
+    if (connection.archive_rejection_reason) {
+      // If rejected, resident can request again tomorrow
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + 1);
+      next_allowed_request_date = nextDate;
+    }
+
     res.status(StatusCodes.OK).json({
       success: true,
       archive_status: connection.archive_status,
       archive_reason: connection.archive_reason,
       archive_requested_date: connection.archive_requested_date,
       archive_approved_date: connection.archive_approved_date,
-      archive_rejection_reason: connection.archive_rejection_reason
+      archive_rejection_reason: connection.archive_rejection_reason,
+      next_allowed_request_date: next_allowed_request_date
     });
 
   } catch (error) {
@@ -220,15 +230,24 @@ const approveArchiveRequest = async (req, res) => {
     resident.status = 'inactive';
     await resident.save();
 
-    // Approve archive
+    // Approve archive - update this connection
     connection.archive_status = 'archived';
     connection.archive_approved_date = new Date();
     connection.archive_rejection_reason = null; // clear previous rejection reason if any
+    connection.connection_status = 'for_disconnection'; // Set to for_disconnection
     await connection.save();
+
+    // Update ALL connections for this resident to for_disconnection status
+    await WaterConnection.updateMany(
+      { resident_id: resident._id },
+      {
+        connection_status: 'for_disconnection'
+      }
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: 'Archive request approved successfully', 
+      message: 'Archive request approved successfully',
       connection
     });
  
@@ -356,13 +375,22 @@ const unarchiveUser = async (req, res) => {
       });
     }
 
-    // Restore the account
+    // Restore the account - update this connection
     connection.archive_status = null;
     connection.archive_reason = null;
     connection.archive_requested_date = null;
     connection.archive_approved_date = null;
     connection.archive_rejection_reason = null;
+    connection.connection_status = 'for_reconnection'; // Set to for_reconnection
     await connection.save();
+
+    // Restore ALL connections for this resident to for_reconnection status
+    await WaterConnection.updateMany(
+      { resident_id: resident._id },
+      {
+        connection_status: 'for_reconnection'
+      }
+    );
 
     resident.status = 'active';
     await resident.save();

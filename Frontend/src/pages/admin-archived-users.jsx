@@ -58,6 +58,7 @@ export default function AdminArchivedUsers() {
       const residentName = `${item.resident_id?.first_name || ''} ${item.resident_id?.last_name || ''}`.toLowerCase();
       const meterNo = item.meter_no?.toLowerCase() || '';
       const accountNo = item.resident_id?.account_number?.toLowerCase() || '';
+     
 
       return residentName.includes(searchTerm.toLowerCase()) ||
              meterNo.includes(searchTerm.toLowerCase()) ||
@@ -113,7 +114,7 @@ export default function AdminArchivedUsers() {
     if (selectedUser) {
       let userId;
       if (activeTab === "residents") {
-        userId = selectedUser._id || selectedUser.water_connection_id;
+        userId = selectedUser.connection_id || selectedUser._id;
       } else {
         userId = selectedUser._id;
       }

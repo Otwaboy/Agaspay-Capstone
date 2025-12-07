@@ -50,6 +50,7 @@ export default function ResidentSettings() {
   const [selectedMetersForDisconnect, setSelectedMetersForDisconnect] = useState(new Set());
   const [selectAllMeters, setSelectAllMeters] = useState(false);
   const [cancelDisconnectConfirmOpen, setCancelDisconnectConfirmOpen] = useState(false);
+  const [selectedConnectionToCancelDisconnect, setSelectedConnectionToCancelDisconnect] = useState(null);
 
   // Archive Account Modal States
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
@@ -134,12 +135,16 @@ export default function ResidentSettings() {
 
   // Cancel Disconnection Mutation
   const cancelDisconnectionMutation = useMutation({
-    mutationFn: () => apiClient.cancelDisconnectionRequest(),
+    mutationFn: () => apiClient.cancelDisconnectionRequest(selectedConnectionToCancelDisconnect),
     onSuccess: () => {
       toast.success("Disconnection request cancelled successfully!");
       setCancelDisconnectConfirmOpen(false);
-      // Invalidate and refetch disconnection status
+      setDisconnectModalOpen(false);
+      setSelectedConnectionToCancelDisconnect(null);
+      // Invalidate and refetch disconnection status and meters
       queryClient.invalidateQueries({ queryKey: ["disconnection-status"] });
+      queryClient.invalidateQueries({ queryKey: ["resident-meters"] });
+      queryClient.invalidateQueries({ queryKey: ["resident-meters-with-bills"] });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to cancel disconnection request");
@@ -585,16 +590,39 @@ export default function ResidentSettings() {
                         </div>
                       </div>
                     ) : disconnectionStatus?.disconnection_rejection_reason ? (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900">Disconnection Request Not Approved</p>
-                            <p className="text-xs text-blue-700 mt-1">
-                              {disconnectionStatus.disconnection_rejection_reason}
-                            </p>
+                      <div className="space-y-2">
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start space-x-2">
+                            <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-900">Disconnection Request Not Approved</p>
+                              <p className="text-xs text-blue-700 mt-2">
+                                <strong>Reason:</strong> {disconnectionStatus.disconnection_rejection_reason}
+                              </p>
+                              {disconnectionStatus.next_allowed_request_date && (
+                                <>
+                                  <p className="text-xs text-blue-700 mt-2">
+                                    <strong>Next Request Available:</strong> {new Date(disconnectionStatus.next_allowed_request_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                  </p>
+                                  <p className="text-xs text-blue-700 mt-1">
+                                    You can submit a new disconnection request starting tomorrow. Note: You can request disconnection up to <strong>twice per week</strong>.
+                                  </p>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <Button
+                          variant="outline"
+                          className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
+                          onClick={() => setDisconnectModalOpen(true)}
+                          disabled={
+                            disconnectionStatus.next_allowed_request_date &&
+                            new Date() < new Date(disconnectionStatus.next_allowed_request_date)
+                          }
+                        >
+                          Request Disconnection Again
+                        </Button>
                       </div>
                     ) : (
                       <>
@@ -675,16 +703,39 @@ export default function ResidentSettings() {
                         </div>
                       </div>
                     ) : archiveStatus?.archive_rejection_reason ? (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900">Archive Request Not Approved</p>
-                            <p className="text-xs text-blue-700 mt-1">
-                              {archiveStatus.archive_rejection_reason}
-                            </p>
+                      <div className="space-y-2">
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start space-x-2">
+                            <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-900">Archive Request Not Approved</p>
+                              <p className="text-xs text-blue-700 mt-2">
+                                <strong>Reason:</strong> {archiveStatus.archive_rejection_reason}
+                              </p>
+                              {archiveStatus.next_allowed_request_date && (
+                                <>
+                                  <p className="text-xs text-blue-700 mt-2">
+                                    <strong>Next Request Available:</strong> {new Date(archiveStatus.next_allowed_request_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                  </p>
+                                  <p className="text-xs text-blue-700 mt-1">
+                                    You can submit a new archive request starting tomorrow. Note: You can request archive up to <strong>twice per week</strong>.
+                                  </p>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <Button
+                          variant="outline"
+                          className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
+                          onClick={() => setArchiveModalOpen(true)}
+                          disabled={
+                            archiveStatus.next_allowed_request_date &&
+                            new Date() < new Date(archiveStatus.next_allowed_request_date)
+                          }
+                        >
+                          Request Archive Again
+                        </Button>
                       </div>
                     ) : (
                       <>
@@ -970,41 +1021,99 @@ export default function ResidentSettings() {
               )}
 
               {/* Meter Options */}
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-3 max-h-96 overflow-y-auto">
                 {metersWithBills && metersWithBills.length > 0 ? (
                   metersWithBills.map((meter) => {
                     const hasPendingBalance = meter.hasPendingBalance;
+                    const hasRequestedDisconnection = meter.connection_status === 'request_for_disconnection';
+
+                    // Find rejection info from disconnectionStatus
+                    const connectionStatus = disconnectionStatus?.connections?.find(
+                      conn => conn.connectionId === meter.connection_id
+                    );
+                    const hasRejection = connectionStatus?.disconnection_rejection_reason;
+                    const nextAllowedDate = connectionStatus?.next_allowed_request_date;
+
                     return (
-                      <div
-                        key={meter.connection_id}
-                        className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
-                          hasPendingBalance
-                            ? 'border-red-200 bg-red-50 cursor-not-allowed opacity-60'
-                            : 'border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          id={`meter-${meter.connection_id}`}
-                          checked={selectedMetersForDisconnect.has(meter.connection_id)}
-                          onChange={() => !hasPendingBalance && handleMeterToggle(meter.connection_id)}
-                          disabled={hasPendingBalance}
-                          className="w-4 h-4 rounded border-gray-300 cursor-pointer"
-                        />
-                        <label htmlFor={`meter-${meter.connection_id}`} className={`flex-1 ${hasPendingBalance ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                          <div className="text-sm font-medium text-gray-900">
-                            Meter {meter.meter_no}
+                      <div key={meter.connection_id}>
+                        <div
+                          className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                            hasPendingBalance
+                              ? 'border-red-200 bg-red-50 cursor-not-allowed opacity-60'
+                              : hasRequestedDisconnection
+                              ? 'border-yellow-200 bg-yellow-50'
+                              : hasRejection
+                              ? 'border-blue-200 bg-blue-50'
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3 flex-1">
+                            {!hasRequestedDisconnection && !hasRejection && (
+                              <input
+                                type="checkbox"
+                                id={`meter-${meter.connection_id}`}
+                                checked={selectedMetersForDisconnect.has(meter.connection_id)}
+                                onChange={() => !hasPendingBalance && handleMeterToggle(meter.connection_id)}
+                                disabled={hasPendingBalance}
+                                className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                              />
+                            )}
+                            <label htmlFor={`meter-${meter.connection_id}`} className={`flex-1 ${hasPendingBalance ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                              <div className="text-sm font-medium text-gray-900">
+                                Meter {meter.meter_no}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Zone {meter.zone} • {meter.connection_status}
+                              </div>
+                              {hasPendingBalance && (
+                                <div className="text-xs text-red-600 mt-1 flex items-center">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Outstanding balance: ₱{meter.currentBill?.balance?.toFixed(2) || '0.00'}
+                                </div>
+                              )}
+                            </label>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            Zone {meter.zone} • {meter.connection_status}
-                          </div>
-                          {hasPendingBalance && (
-                            <div className="text-xs text-red-600 mt-1 flex items-center">
-                              <AlertTriangle className="h-3 w-3 mr-1" />
-                              Outstanding balance: ₱{meter.currentBill?.balance?.toFixed(2) || '0.00'}
-                            </div>
+
+                          {hasRequestedDisconnection && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 ml-2"
+                              onClick={() => {
+                                setSelectedConnectionToCancelDisconnect(meter.connection_id);
+                                setCancelDisconnectConfirmOpen(true);
+                              }}
+                              disabled={cancelDisconnectionMutation.isPending}
+                            >
+                              Cancel Request
+                            </Button>
                           )}
-                        </label>
+                        </div>
+
+                        {/* Rejection Message for Individual Meter */}
+                        {hasRejection && (
+                          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-start space-x-2">
+                              <AlertTriangle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-xs font-medium text-blue-900">Request Not Approved</p>
+                                <p className="text-xs text-blue-700 mt-1">
+                                  <strong>Reason:</strong> {connectionStatus.disconnection_rejection_reason}
+                                </p>
+                                {nextAllowedDate && (
+                                  <>
+                                    <p className="text-xs text-blue-700 mt-2">
+                                      <strong>Next Request Available:</strong> {new Date(nextAllowedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </p>
+                                    <p className="text-xs text-blue-700 mt-1">
+                                      You can submit a new disconnection request starting tomorrow. Note: You can request disconnection up to <strong>twice per week</strong>.
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })
