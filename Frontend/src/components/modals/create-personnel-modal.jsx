@@ -631,13 +631,16 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
                   isLoading ||
                   emailValidation.checking ||
                   (formData.email && (fieldValidation.email === false || emailValidation.valid === false)) ||
-                  !formData.firstName.trim() ||
-                  !formData.lastName.trim() ||
-                  !formData.email.trim() ||
-                  !formData.phone.trim() ||
+                  !formData.firstName?.trim() ||
+                  !formData.lastName?.trim() ||
+                  !formData.email?.trim() ||
+                  !formData.phone?.trim() ||
                   !formData.role ||
                   !formData.purok ||
-                  (formData.role === 'meter_reader' && !formData.assignedZone)
+                  (formData.role === 'meter_reader' && !formData.assignedZone) ||
+                  fieldValidation.firstName === false ||
+                  fieldValidation.lastName === false ||
+                  fieldValidation.phone === false
                 }
                 data-testid="button-send-code"
               >
