@@ -13,7 +13,8 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
 import { authManager } from "../../lib/auth";
-import { Eye, EyeOff } from "lucide-react";
+import { apiClient } from "../../lib/api";
+import { AlertCircle } from "lucide-react";
 
 export default function CreatePersonnelModal({ isOpen, onClose }) {
 
@@ -24,15 +25,25 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
     phone: "",
     role: "",
     purok: "",
-    assignedZone: "",
-    username: "",
-    password: "",
-    confirmPassword: ""
+    assignedZone: ""
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [emailValidation, setEmailValidation] = useState({ checking: false, valid: null });
+
+  // Email verification states
+  const [verificationStep, setVerificationStep] = useState(false); // false = form, true = verification
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [storedFormData, setStoredFormData] = useState(null);
+
+  // Field validation states for visual feedback (real-time validation)
+  const [fieldValidation, setFieldValidation] = useState({
+    firstName: null,
+    lastName: null,
+    email: null,
+    phone: null
+  });
 
 
   // Parse MongoDB duplicate key error
@@ -56,14 +67,46 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
     return newErrors;
   };
 
-  // functions when submmiting the button
-  const handleSubmit = async (e) => {
+  // Validate email format and check if it's already registered
+  const validateEmail = async (email) => {
+    if (!email || !email.trim()) {
+      setFieldValidation(prev => ({ ...prev, email: null }));
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setFieldValidation(prev => ({ ...prev, email: false }));
+      return;
+    }
+
+    setFieldValidation(prev => ({ ...prev, email: true }));
+
+    // Check if email is already registered
+    try {
+      setEmailValidation(prev => ({ ...prev, checking: true }));
+      const result = await apiClient.checkEmailExists(email.trim());
+      // If exists is true, the email is NOT available
+      setEmailValidation(prev => ({
+        ...prev,
+        valid: !result.exists,
+        checking: false
+      }));
+    } catch (error) {
+      // If error, assume not available (safe approach)
+      setEmailValidation(prev => ({ ...prev, checking: false, valid: false }));
+      console.error('Error checking email:', error);
+    }
+  };
+
+  // Send email verification code
+  const handleSendVerificationCode = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrors({}); // Clear previous errors
+    setErrors({});
 
     try {
-      // Client-side validation
+      // Validate required fields
       const validationErrors = {};
 
       if (!formData.firstName.trim()) {
@@ -94,27 +137,8 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         validationErrors.assignedZone = "Assigned zone is required for meter readers";
       }
 
-      // Username and password are always required (for login purposes)
-      if (!formData.username.trim()) {
-        validationErrors.username = "Username is required";
-      }
-
-      if (!formData.password) {
-        validationErrors.password = "Password is required";
-      } else if (formData.password.length < 6) {
-        validationErrors.password = "Password must be at least 6 characters long";
-      }
-
-      if (!formData.confirmPassword) {
-        validationErrors.confirmPassword = "Confirm password is required";
-      } else if (formData.password !== formData.confirmPassword) {
-        validationErrors.confirmPassword = "Passwords do not match";
-      }
-
-      // If there are validation errors, show them
       if (Object.keys(validationErrors).length > 0) {
         setErrors(validationErrors);
-        // Show first validation error in toast
         const firstError = Object.values(validationErrors)[0];
         toast.error("Validation Error", {
           description: firstError
@@ -123,27 +147,77 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         return;
       }
 
-      // Create account with username and password (always required)
-      const accountData = {
-        username: formData.username,
-        password: formData.password,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        purok: formData.purok,
-        contact_no: formData.phone,
-        role: formData.role,
-        ...(formData.role === 'meter_reader' && { assigned_zone: formData.assignedZone })
-      };
-      await authManager.createAccount(accountData);
+      // Send verification code to email
+      console.log('📧 Sending verification code to:', formData.email);
+      const response = await apiClient.request('/api/v1/auth/send-email-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email: formData.email.trim() })
+      });
 
-      const successMessage = `${formData.firstName} ${formData.lastName} has been added as ${formData.role} with login account created`;
+      if (response.success || response.message) {
+        toast.success("Verification Code Sent", {
+          description: `A verification code has been sent to ${formData.email}`
+        });
+
+        // Store form data and move to verification step
+        setStoredFormData(formData);
+        setVerificationStep(true);
+        setVerificationCode("");
+        setErrors({});
+      }
+    } catch (error) {
+      console.error('❌ Error sending verification code:', error);
+      let errorMessage = "Failed to send verification code";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      toast.error("Error", {
+        description: errorMessage
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Verify code and create account
+  const handleVerifyAndCreateAccount = async (e) => {
+    e.preventDefault();
+    setVerificationLoading(true);
+    setErrors({});
+
+    try {
+      if (!verificationCode || verificationCode.trim() === "") {
+        toast.error("Code Required", {
+          description: "Please enter the verification code"
+        });
+        setVerificationLoading(false);
+        return;
+      }
+
+      // Create account with verification code (no username or password needed - auto-generated)
+      const accountData = {
+        first_name: storedFormData.firstName,
+        last_name: storedFormData.lastName,
+        email: storedFormData.email.trim() || null,
+        purok: storedFormData.purok,
+        contact_no: storedFormData.phone,
+        role: storedFormData.role,
+        verification_code: verificationCode.trim(),
+        ...(storedFormData.role === 'meter_reader' && { assigned_zone: storedFormData.assignedZone })
+      };
+
+      console.log('📤 Creating personnel account with verification:', accountData);
+      const response = await authManager.createAccount(accountData);
+
+      const successMessage = `${storedFormData.firstName} ${storedFormData.lastName} has been added as ${storedFormData.role} with login account created`;
 
       toast.success("Personnel Created Successfully", {
         description: successMessage
       });
 
-      // Reset form
+      // Reset everything and close modal
       setFormData({
         firstName: "",
         lastName: "",
@@ -151,13 +225,13 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         phone: "",
         role: "",
         purok: "",
-        assignedZone: "",
-        username: "",
-        password: "",
-        confirmPassword: ""
+        assignedZone: ""
       });
+      setStoredFormData(null);
+      setVerificationStep(false);
+      setVerificationCode("");
       setErrors({});
-
+      setVerificationLoading(false);
       onClose();
 
     } catch (error) {
@@ -271,6 +345,44 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         return newErrors;
       });
     }
+
+    // Real-time validation for firstName
+    if (field === 'firstName' && value.trim()) {
+      const nameRegex = /^[a-zA-Z\s'-]{2,}$/; // Only letters, spaces, hyphens, apostrophes (no numbers)
+      setFieldValidation(prev => ({ ...prev, firstName: nameRegex.test(value.trim()) }));
+    } else if (field === 'firstName') {
+      setFieldValidation(prev => ({ ...prev, firstName: null }));
+    }
+
+    // Real-time validation for lastName
+    if (field === 'lastName' && value.trim()) {
+      const nameRegex = /^[a-zA-Z\s'-]{2,}$/; // Only letters, spaces, hyphens, apostrophes (no numbers)
+      setFieldValidation(prev => ({ ...prev, lastName: nameRegex.test(value.trim()) }));
+    } else if (field === 'lastName') {
+      setFieldValidation(prev => ({ ...prev, lastName: null }));
+    }
+
+    // Real-time validation for email field
+    if (field === 'email' && value.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const formatValid = emailRegex.test(value.trim());
+      setFieldValidation(prev => ({ ...prev, email: formatValid }));
+      // Check email existence if format is valid
+      if (formatValid) {
+        validateEmail(value.trim());
+      }
+    } else if (field === 'email') {
+      setFieldValidation(prev => ({ ...prev, email: null }));
+      setEmailValidation({ checking: false, valid: null });
+    }
+
+    // Real-time validation for phone
+    if (field === 'phone' && value.trim()) {
+      const phoneRegex = /^[\d\s+\-()]{7,}$/;
+      setFieldValidation(prev => ({ ...prev, phone: phoneRegex.test(value.trim()) }));
+    } else if (field === 'phone') {
+      setFieldValidation(prev => ({ ...prev, phone: null }));
+    }
   };
 
 
@@ -280,225 +392,302 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Personnel</DialogTitle>
+          <DialogTitle>
+            {verificationStep ? "Verify Email Address" : "Create New Personnel"}
+          </DialogTitle>
           <DialogDescription>
-            Add a new staff member to the AGASPAY system.
+            {verificationStep
+              ? "Enter the 6-digit verification code sent to your email"
+              : "Add a new staff member to the AGASPAY system."}
           </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => handleChange("firstName")(e.target.value)}
-                placeholder="Enter first name"
-                required
-                data-testid="input-first-name"
-                className={errors.firstName ? "border-red-500 border-2 focus:ring-red-500" : ""}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => handleChange("lastName")(e.target.value)}
-                placeholder="Enter last name"
-                required
-                data-testid="input-last-name"
-                className={errors.lastName ? "border-red-500 border-2 focus:ring-red-500" : ""}
-              />
-            </div>
-          </div>
 
-        {/* selecting purok para sa personnel*/}
-          <div className="space-y-2">
-            <Label htmlFor="purok">Purok</Label>
-            <Select onValueChange={handleChange("purok")} required>
-              <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
-                <SelectValue placeholder="Select Purok" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Purok 1</SelectItem>
-                <SelectItem value="2">Purok 2</SelectItem>
-                <SelectItem value="3">Purok 3</SelectItem>
-                <SelectItem value="4">Purok 4</SelectItem>
-                <SelectItem value="5">Purok 5</SelectItem>
-                <SelectItem value="6">Purok 6</SelectItem>
-                <SelectItem value="7">Purok 7</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleChange("email")(e.target.value)}
-              placeholder="Enter email address"
-              required
-              data-testid="input-email"
-              className={errors.email ? "border-red-500 border-2 focus:ring-red-500" : ""}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => handleChange("phone")(e.target.value)}
-              placeholder="Enter phone number"
-              required
-              data-testid="input-phone"
-              className={errors.phone ? "border-red-500 border-2 focus:ring-red-500" : ""}
-            />
-          </div>
-
-{/* Selecting role para sa mga barangay personnel */}
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select onValueChange={handleChange("role")} required>
-              <SelectTrigger data-testid="select-role" className={errors.role ? "border-red-500 border-2 focus:ring-red-500" : ""}>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="meter_reader">Meter Reader</SelectItem>
-                <SelectItem value="maintenance">Maintenance Staff</SelectItem>
-                <SelectItem value="treasurer">Treasurer</SelectItem>
-                <SelectItem value="secretary">Barangay Secretary</SelectItem>
-                <SelectItem value="admin">Administrator</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-
-{/* assigning  zone if the role is meter reader */}
-      {formData.role === 'meter_reader' && (
-          <div className="space-y-2">
-            <Label htmlFor="assignedZone">Assigned Zone</Label>
-            <Select onValueChange={handleChange("assignedZone")} required>
-              <SelectTrigger data-testid="select-zone" className={errors.assignedZone ? "border-red-500 border-2 focus:ring-red-500" : ""}>
-                <SelectValue placeholder="Select zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Biking 1</SelectItem>
-                <SelectItem value="2">Biking 2</SelectItem>
-                <SelectItem value="3">Biking 3</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-      )}
-
-
-  {/* Account Creation Section - Username and Password are always required */}
-          <div className="border-t pt-4 mt-4">
-            <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+        {!verificationStep ? (
+          // FORM STEP
+          <form onSubmit={handleSendVerificationCode} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username <span className="text-red-500">*</span></Label>
+                <Label htmlFor="firstName">First Name</Label>
                 <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => handleChange("username")(e.target.value)}
-                  placeholder="Enter username for login"
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => handleChange("firstName")(e.target.value)}
+                  placeholder="Enter first name"
                   required
-                  data-testid="input-username"
-                  className={errors.username ? "border-red-500 border-2 focus:ring-red-500" : ""}
+                  data-testid="input-first-name"
+                  className={`${errors.firstName ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.firstName === true && formData.firstName ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
                 />
+                {fieldValidation.firstName === false && formData.firstName && !errors.firstName && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Only letters, spaces, hyphens, and apostrophes allowed</span>
+                  </div>
+                )}
+                {fieldValidation.firstName === true && formData.firstName && !errors.firstName && (
+                  <p className="text-xs text-green-600">First name is valid</p>
+                )}
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="password">Password <span className="text-red-500">*</span></Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => handleChange("password")(e.target.value)}
-                    placeholder="Enter password (min 6 characters)"
-                    required
-                    data-testid="input-password"
-                    className={errors.password ? "border-red-500 border-2 focus:ring-red-500" : ""}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    data-testid="button-toggle-password"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Personnel login credentials. Password must be at least 6 characters.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password <span className="text-red-500">*</span></Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleChange("confirmPassword")(e.target.value)}
-                    placeholder="Re-enter password to confirm"
-                    required
-                    data-testid="input-confirm-password"
-                    className={errors.confirmPassword ? "border-red-500 border-2 focus:ring-red-500" : ""}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    data-testid="button-toggle-confirm-password"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="text-xs text-red-500">{errors.confirmPassword}</p>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => handleChange("lastName")(e.target.value)}
+                  placeholder="Enter last name"
+                  required
+                  data-testid="input-last-name"
+                  className={`${errors.lastName ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.lastName === true && formData.lastName ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                />
+                {fieldValidation.lastName === false && formData.lastName && !errors.lastName && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Only letters, spaces, hyphens, and apostrophes allowed</span>
+                  </div>
+                )}
+                {fieldValidation.lastName === true && formData.lastName && !errors.lastName && (
+                  <p className="text-xs text-green-600">Last name is valid</p>
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isLoading}
-              data-testid="button-cancel"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isLoading}
-              data-testid="button-create"
-            >
-              {isLoading ? "Creating..." : "Create Personnel"}
-            </Button>
-          </div>
-        </form>
+            {/* selecting purok para sa personnel*/}
+            <div className="space-y-2">
+              <Label htmlFor="purok">Purok</Label>
+              <Select onValueChange={handleChange("purok")} required>
+                <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
+                  <SelectValue placeholder="Select Purok" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Purok 1</SelectItem>
+                  <SelectItem value="2">Purok 2</SelectItem>
+                  <SelectItem value="3">Purok 3</SelectItem>
+                  <SelectItem value="4">Purok 4</SelectItem>
+                  <SelectItem value="5">Purok 5</SelectItem>
+                  <SelectItem value="6">Purok 6</SelectItem>
+                  <SelectItem value="7">Purok 7</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => handleChange("phone")(e.target.value)}
+                placeholder="Enter phone number"
+                required
+                data-testid="input-phone"
+                className={`${errors.phone ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.phone === true && formData.phone ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+              />
+              {fieldValidation.phone === false && formData.phone && !errors.phone && (
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Phone number must be at least 7 digits</span>
+                </div>
+              )}
+              {fieldValidation.phone === true && formData.phone && !errors.phone && (
+                <p className="text-xs text-green-600">Phone number is valid</p>
+              )}
+            </div>
+
+            {/* Selecting role para sa mga barangay personnel */}
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select onValueChange={handleChange("role")} required>
+                <SelectTrigger data-testid="select-role" className={errors.role ? "border-red-500 border-2 focus:ring-red-500" : ""}>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="meter_reader">Meter Reader</SelectItem>
+                  <SelectItem value="maintenance">Maintenance Staff</SelectItem>
+                  <SelectItem value="treasurer">Treasurer</SelectItem>
+                  <SelectItem value="secretary">Barangay Secretary</SelectItem>
+                  <SelectItem value="admin">Administrator</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* assigning zone if the role is meter reader */}
+            {formData.role === 'meter_reader' && (
+              <div className="space-y-2">
+                <Label htmlFor="assignedZone">Assigned Zone</Label>
+                <Select onValueChange={handleChange("assignedZone")} required>
+                  <SelectTrigger data-testid="select-zone" className={errors.assignedZone ? "border-red-500 border-2 focus:ring-red-500" : ""}>
+                    <SelectValue placeholder="Select zone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Biking 1</SelectItem>
+                    <SelectItem value="2">Biking 2</SelectItem>
+                    <SelectItem value="3">Biking 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Email Section - Separated */}
+            <div className="border-t pt-4 mt-4 mb-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <Label htmlFor="email" className="text-sm font-medium">
+                  Contact Information
+                </Label>
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleChange("email")(e.target.value)}
+                      placeholder="Enter email address"
+                      required
+                      data-testid="input-email"
+                      className={`${errors.email || (fieldValidation.email === false && formData.email) || (emailValidation.valid === false && formData.email) ? "border-red-500 border-2 focus:ring-red-500" : emailValidation.valid === true && formData.email && fieldValidation.email === true ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                    />
+                    {emailValidation.checking && formData.email && fieldValidation.email === true && (
+                      <div className="absolute right-3 top-3">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                      </div>
+                    )}
+                    {emailValidation.valid === true && formData.email && !emailValidation.checking && fieldValidation.email === true && (
+                      <div className="absolute right-3 top-3 text-green-500">
+                        ✓
+                      </div>
+                    )}
+                  </div>
+                  {errors.email && (
+                    <div className="flex items-center gap-1 text-red-600 text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{errors.email}</span>
+                    </div>
+                  )}
+                  {fieldValidation.email === false && formData.email && !errors.email && (
+                    <div className="flex items-center gap-1 text-red-600 text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>Invalid email format</span>
+                    </div>
+                  )}
+                  {emailValidation.valid === false && formData.email && !errors.email && fieldValidation.email === true && (
+                    <div className="flex items-center gap-1 text-red-600 text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>This email is already registered</span>
+                    </div>
+                  )}
+                  {emailValidation.valid === true && formData.email && !errors.email && fieldValidation.email === true && (
+                    <p className="text-xs text-green-600">Email is available</p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-600">
+                  Login credentials will be sent to this email address
+                </p>
+              </div>
+            </div>
+
+            {/* Account Creation Section - Auto-generated credentials */}
+            <div className="border-t pt-4 mt-4">
+              <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-900">
+                      Login credentials will be auto-generated
+                    </p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Username and password will be automatically created and sent to the personnel's email. No input required from you.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isLoading}
+                data-testid="button-cancel"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                data-testid="button-send-code"
+              >
+                {isLoading ? "Sending Code..." : "Send Verification Code"}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          // VERIFICATION STEP
+          <form onSubmit={handleVerifyAndCreateAccount} className="space-y-4">
+            {/* Email display */}
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600">Verification code sent to:</p>
+              <p className="text-base font-semibold text-gray-900">{storedFormData?.email}</p>
+            </div>
+
+            {/* Verification code input */}
+            <div className="space-y-2">
+              <Label htmlFor="verificationCode">Verification Code</Label>
+              <Input
+                id="verificationCode"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="Enter 6-digit code"
+                maxLength="6"
+                inputMode="numeric"
+                required
+                data-testid="input-verification-code"
+                className={errors.verificationCode ? "border-red-500 border-2 focus:ring-red-500 text-center text-lg tracking-widest" : "text-center text-lg tracking-widest"}
+              />
+              {errors.verificationCode && (
+                <p className="text-xs text-red-500">{errors.verificationCode}</p>
+              )}
+            </div>
+
+            {/* Info box about auto-generated credentials */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">
+                    Account details will be sent via email
+                  </p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Once verified, the personnel's username and temporary password will be sent to their email address.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setVerificationStep(false);
+                  setVerificationCode("");
+                  setErrors({});
+                }}
+                disabled={verificationLoading}
+                data-testid="button-back"
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                disabled={verificationLoading}
+                data-testid="button-create"
+              >
+                {verificationLoading ? "Creating..." : "Create Personnel"}
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
