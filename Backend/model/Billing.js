@@ -10,10 +10,12 @@ const BillingSchema = new mongoose.Schema({
   },
 
   // Link to the meter reading used to calculate this bill's charges
+  // Note: Can be null for special charges like meter installation fees
   reading_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'MeterReading',
-    required: true
+    required: false,
+    default: null
   },
 
   // Link to the rate table used to calculate charges from meter reading

@@ -25,8 +25,16 @@ export default function ResidentModernStats({ connectionId }) {
     queryFn: async () => {
       if (!connectionId) return null;
       const res = await apiClient.getCurrentBill();
-      const allBills = res.data;
+      let allBills = res.data;
       if (!allBills || allBills.length === 0) return null;
+
+      // Filter out connection fee bills (50 pesos with no reading_id)
+      // Connection fees are paid manually through treasurer only
+      allBills = allBills.filter(bill =>
+        !(bill.current_charges === 50 && !bill.reading_id)
+      );
+
+      if (allBills.length === 0) return null;
 
       // Filter bills for this specific meter
       const bills = allBills.filter(bill =>

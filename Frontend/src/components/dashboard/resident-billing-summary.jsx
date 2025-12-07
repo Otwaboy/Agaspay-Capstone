@@ -13,12 +13,23 @@ export default function ResidentBillingSummary() {
   const { data: billingData, isLoading } = useQuery({
     queryKey: ['accountOverview'],
       queryFn: async () => {
-      const res = await apiClient.getCurrentBill();  
-      const data = res.data;
+      const res = await apiClient.getCurrentBill();
+      let data = res.data;
 
-      if(!data || data.length === 0){ 
+      if(!data || data.length === 0){
         return null
       }
+
+      // Filter out connection fee bills (50 pesos with no reading_id)
+      // Connection fees are paid manually through treasurer only
+      data = data.filter(bill =>
+        !(bill.current_charges === 50 && !bill.reading_id)
+      );
+
+      if (data.length === 0) {
+        return null;
+      }
+
       const currentBill = data[data.length - 1]
       const previousBill = data[data.length - 2]
 

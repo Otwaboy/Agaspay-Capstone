@@ -20,7 +20,8 @@ import {
   User,
   PiggyBank,
   Power,
-  PhilippinePesoIcon
+  PhilippinePesoIcon,
+  Wrench
 } from "lucide-react";
 import TreasurerSidebar from "../components/layout/treasurer-sidebar";
 import TreasurerTopHeader from "../components/layout/treasurer-top-header";
@@ -35,6 +36,7 @@ export default function TreasurerRecordPayment() {
   const [selectedBill, setSelectedBill] = useState(null);
   const [amountPaid, setAmountPaid] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [billType, setBillType] = useState("regular"); // "regular" or "connection-fee"
 
   // Fetch all unpaid and partial bills
   const { data: billHistory, isLoading } = useQuery({
@@ -44,31 +46,48 @@ export default function TreasurerRecordPayment() {
   });
 
   // Filter bills - show unpaid/partial/overdue/consolidated bills
-  const unpaidBills = (() => {
+  const allUnpaidBills = (() => {
     const filteredByStatus = billHistory?.data?.filter(bill =>
       ['unpaid', 'partial', 'overdue', 'consolidated'].includes(bill.status)
     ) || [];
 
-    // Group by meter_no and keep only the latest bill (by generated_at - actual creation time)
-    const groupedByMeter = {};
-    filteredByStatus.forEach(bill => {
-      if (!groupedByMeter[bill.meter_no]) {
-        groupedByMeter[bill.meter_no] = bill;
-      } else {
-        // Compare by generated_at (when bill was created) to get the latest bill
-        const existingDate = new Date(groupedByMeter[bill.meter_no].generated_at);
-        const currentDate = new Date(bill.generated_at);
-        if (currentDate > existingDate) {
-          groupedByMeter[bill.meter_no] = bill;
-        }
-      }
-    });
-
-    return Object.values(groupedByMeter);
+    return filteredByStatus;
   })();
+
+  // Separate connection fee bills from regular bills
+  // Connection fee bills have current_charges === 50 and no reading_id
+  const connectionFeeBills = allUnpaidBills.filter(bill => bill.current_charges === 50 && !bill.reading_id);
+  const regularBills = allUnpaidBills.filter(bill => !(bill.current_charges === 50 && !bill.reading_id));
+
+  // Group regular bills by meter_no and keep only the latest bill (by generated_at)
+  const groupedByMeter = {};
+  regularBills.forEach(bill => {
+    if (!groupedByMeter[bill.meter_no]) {
+      groupedByMeter[bill.meter_no] = bill;
+    } else {
+      const existingDate = new Date(groupedByMeter[bill.meter_no].generated_at);
+      const currentDate = new Date(bill.generated_at);
+      if (currentDate > existingDate) {
+        groupedByMeter[bill.meter_no] = bill;
+      }
+    }
+  });
+
+  const unpaidBills = Object.values(groupedByMeter);
 
   // Filter bills based on search
   const filteredBills = unpaidBills.filter(bill => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      bill.full_name.toLowerCase().includes(searchLower) ||
+      bill.meter_no.toLowerCase().includes(searchLower) ||
+      bill.bill_id.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Filter connection fee bills based on search
+  const filteredConnectionFeeBills = connectionFeeBills.filter(bill => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -192,13 +211,43 @@ export default function TreasurerRecordPayment() {
               </div>
             </div>
 
+            {/* Tabs for Bill Type Selection */}
+            <div className="mb-6 flex gap-2">
+              <Button
+                onClick={() => {
+                  setBillType("regular");
+                  setSelectedBill(null);
+                  setAmountPaid("");
+                }}
+                variant={billType === "regular" ? "default" : "outline"}
+                className="flex items-center gap-2"
+              >
+                <PhilippinePesoIcon className="h-4 w-4" />
+                Regular Bills ({filteredBills.length})
+              </Button>
+              <Button
+                onClick={() => {
+                  setBillType("connection-fee");
+                  setSelectedBill(null);
+                  setAmountPaid("");
+                }}
+                variant={billType === "connection-fee" ? "default" : "outline"}
+                className="flex items-center gap-2"
+              >
+                <Wrench className="h-4 w-4" />
+                Connection Fees ({filteredConnectionFeeBills.length})
+              </Button>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column - Bill Selection */}
               <div className="space-y-6">
                 {/* Search Card */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Select Bill to Pay</CardTitle>
+                    <CardTitle className="text-lg">
+                      {billType === "regular" ? "Select Bill to Pay" : "Select Connection Fee to Pay"}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="relative mb-4">
@@ -218,14 +267,21 @@ export default function TreasurerRecordPayment() {
                         <div className="flex justify-center py-8">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         </div>
-                      ) : filteredBills.length === 0 ? (
+                      ) : billType === "regular" && filteredBills.length === 0 ? (
                         <div className="text-center py-8">
                           <PhilippinePesoIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-gray-600">
                             {searchTerm ? "No bills found" : "No unpaid bills"}
                           </p>
                         </div>
-                      ) : (
+                      ) : billType === "connection-fee" && filteredConnectionFeeBills.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Wrench className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                          <p className="text-gray-600">
+                            {searchTerm ? "No connection fees found" : "No unpaid connection fees"}
+                          </p>
+                        </div>
+                      ) : billType === "regular" ? (
                         filteredBills.map((bill) => (
                           <div
                             key={bill.bill_id}
@@ -267,6 +323,48 @@ export default function TreasurerRecordPayment() {
                             </div>
                           </div>
                         ))
+                      ) : (
+                        filteredConnectionFeeBills.map((bill) => (
+                          <div
+                            key={bill.bill_id}
+                            onClick={() => handleBillSelect(bill)}
+                            className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                              selectedBill?.bill_id === bill.bill_id
+                                ? "border-orange-500 bg-orange-50"
+                                : "border-gray-200 hover:border-orange-300"
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="font-semibold text-gray-900">{bill.full_name}</p>
+                                <p className="text-sm text-gray-600">{bill.meter_no}</p>
+                              </div>
+                              <Badge className="bg-orange-100 text-orange-800">Connection Fee</Badge>
+                            </div>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Fee Amount:</span>
+                                <span className="font-semibold text-orange-600">{formatCurrency(bill.total_amount)}</span>
+                              </div>
+                              {bill.amount_paid > 0 && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Paid:</span>
+                                  <span className="text-green-600">{formatCurrency(bill.amount_paid)}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Balance:</span>
+                                <span className="font-bold text-orange-600">
+                                  {formatCurrency(getRemainingBalance(bill))}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Due Date:</span>
+                                <span>{formatDate(bill.due_date)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))
                       )}
                     </div>
                   </CardContent>
@@ -277,7 +375,9 @@ export default function TreasurerRecordPayment() {
               <div>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Payment Details</CardTitle>
+                    <CardTitle className="text-lg">
+                      {billType === "regular" ? "Payment Details" : "Connection Fee Payment"}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {!selectedBill ? (

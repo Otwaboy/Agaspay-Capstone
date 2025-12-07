@@ -134,6 +134,20 @@ class ApiClient {
       console.error("YAWA RA Billing creation failed:", error);
       throw error;
     }
+  }
+
+  // ✅ Create meter installation fee billing (50 pesos) for new resident
+  async createMeterInstallationFeeBilling(connectionId) {
+    try {
+      return await this.request('/api/v1/billing/meter-installation-fee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connection_id: connectionId }),
+      });
+    } catch (error) {
+      console.error("Creating meter installation fee billing failed:", error);
+      throw error;
+    }
   } 
 
   async getCurrentBill(connectionId = null) {

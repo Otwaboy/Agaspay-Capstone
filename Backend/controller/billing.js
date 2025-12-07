@@ -86,8 +86,8 @@ const getBilling = async (req, res) => {
       const connection = billing.connection_id;
       const resident = connection?.resident_id;
 
-      // ✅ Find latest reading for this connection
-      const reading = await MeterReading.findById(billing.reading_id);
+      // ✅ Find latest reading for this connection (null for meter installation fee)
+      const reading = billing.reading_id ? await MeterReading.findById(billing.reading_id) : null;
 
       // ✅ Find payment date if bill is paid
       let paid_date = null;
@@ -690,9 +690,81 @@ const sendReminderSMS = async (req, res) => {
   }
 };
 
+// ✅ Create meter installation fee billing (50 pesos) for new residents
+const createMeterInstallationFeeBilling = async (req, res) => {
+  try {
+    const { connection_id } = req.body;
+    const user = req.user;
 
- 
+    // Validate connection_id
+    if (!connection_id) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        msg: 'connection_id is required'
+      });
+    }
+
+    // Check if connection exists
+    const connection = await WaterConnection.findById(connection_id);
+    if (!connection) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        msg: 'Water connection not found'
+      });
+    }
+
+    // Check if meter installation fee billing already exists for this connection
+    const existingBilling = await Billing.findOne({
+      connection_id: connection_id,
+      current_charges: 50,
+      reading_id: null
+    });
+
+    if (existingBilling) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        msg: 'Meter installation fee billing already exists for this connection'
+      });
+    }
+
+    // Create billing record with 50 pesos for meter installation fee
+    // Note: reading_id is set to null as there's no reading for this fee
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 7); // Due date is 7 days from now
+
+    const billing = new Billing({
+      connection_id: connection_id,
+      reading_id: null, // No reading for installation fee
+      rate_id: null, // No rate for installation fee
+      previous_balance: 0,
+      current_charges: 50, // 50 pesos meter installation fee
+      total_amount: 50,
+      status: 'unpaid',
+      due_date: dueDate,
+      generated_by: user.userId
+    });
+
+    await billing.save();
+
+    console.log(`✅ Meter installation fee billing created for connection ${connection_id}`);
+
+    return res.status(StatusCodes.CREATED).json({
+      msg: 'Meter installation fee billing created successfully',
+      data: {
+        billing_id: billing._id,
+        connection_id: billing.connection_id,
+        amount: 50,
+        status: billing.status
+      }
+    });
+  } catch (error) {
+    console.error('🔥 createMeterInstallationFeeBilling error:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      msg: 'Failed to create meter installation fee billing',
+      error: error.message
+    });
+  }
+};
 
 
 
-module.exports = {createBilling, getBilling, getOverdueBilling, sendReminderSMS, UpdateWaterConnectionStatus} 
+
+
+module.exports = {createBilling, getBilling, getOverdueBilling, sendReminderSMS, UpdateWaterConnectionStatus, createMeterInstallationFeeBilling} 

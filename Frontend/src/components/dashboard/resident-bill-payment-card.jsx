@@ -29,9 +29,21 @@ export default function ResidentBillPaymentCard({ connectionId }) {
     queryFn: async () => {
       console.log("📡 [BillCard] Fetching bill data for connectionId:", connectionId);
       const res = await apiClient.getCurrentBill(connectionId); // this calls your getBilling controller
-      const bills = res.data;
+      let bills = res.data;
       console.log("📡 [BillCard] Raw response from API:", bills);
       if (!bills || bills.length === 0) return null;
+
+      // Filter out connection fee bills (50 pesos with no reading_id)
+      // Connection fees are paid manually through treasurer only
+      bills = bills.filter(bill =>
+        !(bill.current_charges === 50 && !bill.reading_id)
+      );
+
+      if (bills.length === 0) {
+        console.warn("⚠️ [BillCard] No regular bills available (only connection fees)");
+        return null;
+      }
+
       const currentBill = bills[bills.length - 1];
       console.log("📡 [BillCard] Current bill from API:", currentBill);
 

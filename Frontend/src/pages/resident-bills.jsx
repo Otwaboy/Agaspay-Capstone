@@ -29,7 +29,12 @@ export default function ResidentBills() {
     queryFn: async () => {
       const res = await apiClient.getCurrentBill();
       console.log('Bill data:', res);
-      return res.billingDetails?.[0] || null;
+      // Filter out connection fee bills (50 pesos with no reading_id)
+      // Connection fees are paid manually through treasurer only
+      const regularBills = res.billingDetails?.filter(bill =>
+        !(bill.current_charges === 50 && !bill.reading_id)
+      ) || [];
+      return regularBills?.[0] || null;
     },
     retry: 1
   });

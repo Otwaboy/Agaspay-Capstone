@@ -64,16 +64,27 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
                 return null
               }
 
+              // Filter out connection fee bills (50 pesos with no reading_id)
+              // Connection fees are paid manually through treasurer only
+              const regularBills = data.filter(bill =>
+                !(bill.current_charges === 50 && !bill.reading_id)
+              );
+
+              if (regularBills.length === 0) {
+                console.warn("⚠️ No regular bills available (only connection fees)");
+                return null;
+              }
+
               // Find the bill matching the selectedMeter
               let billToPay;
               if (selectedMeter) {
-                billToPay = data.find(bill => bill.meter_no === selectedMeter.meter_no);
+                billToPay = regularBills.find(bill => bill.meter_no === selectedMeter.meter_no);
                 console.log("🔍 Found bill for selected meter:", billToPay);
               }
 
               // Fallback to last bill if no meter selected
               if (!billToPay) {
-                billToPay = data[data.length - 1];
+                billToPay = regularBills[regularBills.length - 1];
                 console.log("🔍 Using fallback - last bill:", billToPay);
               }
 

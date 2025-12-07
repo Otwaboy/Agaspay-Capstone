@@ -58,11 +58,27 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
         type: data.type
       });
     },
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       // Show the full message from backend (includes scheduling info)
       const message = response.data?.msg || "New meter added successfully!";
       const warning = response.data?.warning;
       const scheduling = response.data?.scheduling;
+
+      // Get the connection_id from the response
+      const connectionId = response.data?.connection_id;
+
+      // Create meter installation fee billing (50 pesos) automatically
+      if (connectionId) {
+        try {
+          console.log('💰 Creating meter installation fee billing for connection:', connectionId);
+          await apiClient.createMeterInstallationFeeBilling(connectionId);
+          console.log('✅ Meter installation fee bill created successfully');
+        } catch (billingError) {
+          console.error('⚠️ Warning: Could not create billing automatically:', billingError);
+          // Don't fail the whole process if billing creation fails
+          // User can manually record the payment later
+        }
+      }
 
       if (warning) {
         toast.warning("Meter Added with Warning", {
@@ -80,7 +96,7 @@ export default function AddMeterModal({ isOpen, onClose, resident, onSuccess }) 
           const scheduleTime = scheduling.schedule_time;
           const personnelName = scheduling.assigned_personnel.name;
 
-          description = `New meter added successfully!\n\n📅 Scheduled: ${scheduleDate} at ${scheduleTime}\n👷 Assigned to: ${personnelName}`;
+          description = `New meter added successfully!\n\n📅 Scheduled: ${scheduleDate} at ${scheduleTime}\n👷 Assigned to: ${personnelName}\n\n💰 A 50 pesos meter installation fee has been automatically billed.`;
         }
 
         toast.success("Meter Installation Scheduled", {

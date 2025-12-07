@@ -204,7 +204,23 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       console.log('📤 Creating resident account with verification:', accountData);
       const response = await authManager.createResidentAccount(accountData);
 
-      const successMessage = response.message || `${storedFormData.firstName} ${storedFormData.lastName} has been registered successfully.`;
+      // Get the connection_id from the response
+      const connectionId = response.connection_id || response.data?.connection_id;
+
+      // Create meter installation fee billing (50 pesos) automatically
+      if (connectionId) {
+        try {
+          console.log('💰 Creating meter installation fee billing for connection:', connectionId);
+          await apiClient.createMeterInstallationFeeBilling(connectionId);
+          console.log('✅ Meter installation fee bill created successfully');
+        } catch (billingError) {
+          console.error('⚠️ Warning: Could not create billing automatically:', billingError);
+          // Don't fail the whole process if billing creation fails
+          // User can manually record the payment later
+        }
+      }
+
+      const successMessage = response.message || `${storedFormData.firstName} ${storedFormData.lastName} has been registered successfully. A 50 pesos meter installation fee has been automatically billed.`;
 
       toast.success("Resident Created Successfully", {
         description: successMessage,
