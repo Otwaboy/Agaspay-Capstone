@@ -267,6 +267,19 @@ async updateReadings(reading_id, data) {
   }
 }
 
+async updateInclusiveDate(connection_id, start_date, end_date) {
+  try {
+    return await this.request('/api/v1/meter-reader/admin/update-inclusive-date', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connection_id, start_date, end_date }),
+    });
+  } catch (error) {
+    console.error("Updating inclusive date failed:", error);
+    throw error;
+  }
+}
+
 // ✅ Approve multiple readings
 async approveAllReadings(readingIds = []) {
   try {

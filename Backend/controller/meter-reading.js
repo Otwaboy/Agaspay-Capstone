@@ -801,9 +801,9 @@ const updateInclusiveDate = async (req, res) => {
     const { connection_id, start_date, end_date } = req.body;
     const user = req.user;
 
-    // Validate admin role
-    if (user.role !== 'admin') {
-      throw new UnauthorizedError('Only admins can update inclusive dates');
+    // Allow admin and meter_reader (for testing purposes)
+    if (!['admin', 'meter_reader'].includes(user.role)) {
+      throw new UnauthorizedError('Only admins and meter readers can update inclusive dates');
     }
 
     // Validate input
@@ -833,7 +833,7 @@ const updateInclusiveDate = async (req, res) => {
 
     await connection.save();
 
-    console.log(`📅 Admin updated inclusive_date for connection ${connection_id}`);
+    console.log(`📅 ${user.role === 'admin' ? 'Admin' : 'Meter Reader'} updated inclusive_date for connection ${connection_id}`);
     console.log(`   Old dates: ${connection.inclusive_date ? `${connection.inclusive_date.start.toISOString().split('T')[0]} to ${connection.inclusive_date.end.toISOString().split('T')[0]}` : 'None'}`);
     console.log(`   New dates: ${newStartDate.toISOString().split('T')[0]} to ${newEndDate.toISOString().split('T')[0]}`);
 

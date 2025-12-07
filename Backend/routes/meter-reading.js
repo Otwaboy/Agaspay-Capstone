@@ -32,9 +32,9 @@ router.route('/approval-stats')
 router.route('/reading-history')
   .get(authMiddleware, roleMiddleware('admin', 'treasurer'), getReadingHistory);
 
-// Admin endpoint to manually update inclusive_date for a water connection
+// Admin/Meter Reader endpoint to manually update inclusive_date for a water connection (testing purposes)
 router.route('/admin/update-inclusive-date')
-  .patch(authMiddleware, roleMiddleware('admin'), updateInclusiveDate);
+  .patch(authMiddleware, roleMiddleware('admin', 'meter_reader'), updateInclusiveDate);
 
 // Admin endpoint to sync WaterConnection inclusive_date from latest readings
 router.route('/admin/sync-inclusive-dates')

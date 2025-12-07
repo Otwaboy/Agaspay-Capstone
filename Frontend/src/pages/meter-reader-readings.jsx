@@ -289,7 +289,22 @@ export default function MeterReaderReadings() {
     onError: (error) => {
       toast.error("Error", { description: error.message || "Failed to update reading" });
     }
-  }); 
+  });
+
+  // Update inclusive date mutation (for saving test dates)
+  const updateInclusiveDateMutation = useMutation({
+    mutationFn: async ({ connection_id, start_date, end_date }) => {
+      return apiClient.updateInclusiveDate(connection_id, start_date, end_date);
+    },
+    onSuccess: () => {
+      toast.success("Success", { description: "Reading period updated successfully" });
+      setIsEditingDates(false);
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+    },
+    onError: (error) => {
+      toast.error("Error", { description: error.message || "Failed to update reading period" });
+    }
+  });
   // ------------------ HANDLERS ------------------
   const handleInputChange = (field, value) => {
     if (field.includes(".")) {
@@ -903,34 +918,22 @@ export default function MeterReaderReadings() {
                                     type="button"
                                     size="sm"
                                     className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    disabled={updateInclusiveDateMutation.isPending}
                                     onClick={() => {
                                       if (editedDates.start && editedDates.end) {
                                         const connectionId = selectedConnectionData.connection_id;
-                                        // Store test dates per connection so they persist across page refreshes/switches
-                                        setTestDatesByConnection(prev => ({
-                                          ...prev,
-                                          [connectionId]: {
-                                            start: editedDates.start,
-                                            end: editedDates.end
-                                          }
-                                        }));
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          inclusive_date: {
-                                            start: editedDates.start,
-                                            end: editedDates.end
-                                          }
-                                        }));
-                                        setIsEditingDates(false);
-                                        toast.success("Test dates updated", {
-                                          description: `Start: ${new Date(editedDates.start).toLocaleDateString()}, End: ${new Date(editedDates.end).toLocaleDateString()}`
+                                        // Call API to update the inclusive_date in the database
+                                        updateInclusiveDateMutation.mutate({
+                                          connection_id: connectionId,
+                                          start_date: editedDates.start,
+                                          end_date: editedDates.end
                                         });
                                       } else {
                                         toast.error("Please select both dates");
                                       }
                                     }}
                                   >
-                                    Save Dates
+                                    {updateInclusiveDateMutation.isPending ? "Saving..." : "Save Dates"}
                                   </Button>
                                 </div>
                               )}
