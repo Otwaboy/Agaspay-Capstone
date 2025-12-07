@@ -981,7 +981,11 @@ export default function MeterReaderReadings() {
                           className="bg-blue-600 hover:bg-blue-700 text-white h-12"
                           disabled={
                             recordReadingMutation.isPending ||
-                            ["submitted", "approved"].includes(selectedConnectionData?.reading_status)
+                            // Check if current period's reading is already submitted/approved
+                            (selectedConnectionData?.reading_status === "submitted" ||
+                             selectedConnectionData?.reading_status === "approved") &&
+                            // But only if the current reading is for the CURRENT billing period
+                            selectedConnectionData?.billing_month === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
                           }
                         >
                           {recordReadingMutation.isPending ? "Recording..." : "Record Reading"}
