@@ -125,12 +125,11 @@ export default function MeterReaderReadings() {
 
   console.log('filtter', filteredConnections);
 
-  const overallReadingStatus = (() => {
-  if (zoneConnections.length === 0) return "No Data";
-
   // Only consider unbilled readings for status (exclude cannot_read meters as they don't need billing)
   const unbilledConnections = zoneConnections.filter(c => !c.is_billed && c.can_read_status !== 'cannot_read');
 
+  const overallReadingStatus = (() => {
+  if (zoneConnections.length === 0) return "No Data";
   if (unbilledConnections.length === 0) return "Ready to read"; // All readable meters billed, ready for new readings
 
   const allApproved = unbilledConnections.every(c => c.reading_status === "approved");
@@ -173,7 +172,8 @@ export default function MeterReaderReadings() {
   const presentReading = parseFloat(formData.present_reading) || 0;
   const consumption = presentReading > previousReading ? presentReading - previousReading : 0;
 
-  const isEditing = selectedConnectionData?.reading_status === "inprogress";
+  // Allow editing if reading is in progress OR submitted (but not approved)
+  const isEditing = ["inprogress", "submitted"].includes(selectedConnectionData?.reading_status);
 
   // 📅 Auto-populate inclusive_date when connection is selected
   useEffect(() => {
@@ -364,8 +364,8 @@ export default function MeterReaderReadings() {
     can_read_status: isCannotRead ? "cannot_read" : "can_read"
   };
 
-  if (selectedConnectionData?.reading_status === "inprogress") {
-    // ✅ Update existing reading
+  if (["inprogress", "submitted"].includes(selectedConnectionData?.reading_status)) {
+    // ✅ Update existing reading (if in progress or submitted)
     updateReadingMutation.mutate({
       reading_id: selectedConnectionData.reading_id,
       data: payload
@@ -967,8 +967,7 @@ export default function MeterReaderReadings() {
                           className="bg-blue-600 hover:bg-blue-700 text-white h-12"
                           disabled={
                             recordReadingMutation.isPending ||
-                            selectedConnectionData?.reading_status === "inprogress" ||
-                            selectedConnectionData?.reading_status === "submitted"
+                            ["submitted", "approved"].includes(selectedConnectionData?.reading_status)
                           }
                         >
                           {recordReadingMutation.isPending ? "Recording..." : "Record Reading"}
@@ -977,7 +976,8 @@ export default function MeterReaderReadings() {
                           type="button"
                           disabled={
                             submitAllReadingsMutation.isPending ||
-                            filteredConnections.every(conn =>
+                            unbilledConnections.length === 0 ||
+                            unbilledConnections.every(conn =>
                                conn.reading_status === "submitted"
                             || conn.reading_status === "approved")
                           }

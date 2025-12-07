@@ -168,6 +168,7 @@ const submitReading = async (req, res) => {
 
   // Get the current billing month
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   // Find all connections in this zone that can have readings recorded
@@ -181,18 +182,35 @@ const submitReading = async (req, res) => {
     zone: assignedZone
   });
 
+  // Filter to only include connections scheduled for THIS MONTH or earlier
+  // Exclude connections scheduled for future months (next_period_dates in the future)
+
+  const connectionsScheduledThisMonth = zoneConnections.filter(conn => {
+    // Get the reading period (inclusive_date or next_period_dates)
+    const readingPeriod = conn.inclusive_date;
+    if (!readingPeriod || !readingPeriod.start) {
+      return true; // Include if no schedule is set (default to this month)
+    }
+
+    const periodStartDate = new Date(readingPeriod.start);
+    periodStartDate.setHours(0, 0, 0, 0);
+
+    // Include connection only if reading period starts this month or earlier (not in future)
+    return periodStartDate <= today;
+  });
+
   // Find readings that are in progress for the current billing month
   const readingsInZone = await MeterReading.find({
-    connection_id: { $in: zoneConnections.map((c) => c._id) },
+    connection_id: { $in: connectionsScheduledThisMonth.map((c) => c._id) },
     reading_status: "inprogress",
     billing_month: currentMonth, // ✅ only for current month
   });
 
-  // Ensure all active connections in this zone have readings this month
-  if (readingsInZone.length !== zoneConnections.length) {
+  // Ensure all connections scheduled for this month have readings
+  if (readingsInZone.length !== connectionsScheduledThisMonth.length) {
     return res.status(400).json({
       message: `Cannot submit readings. Some residents in zone ${assignedZone} do not have readings recorded for ${currentMonth}.`,
-      missing: zoneConnections.length - readingsInZone.length,
+      missing: connectionsScheduledThisMonth.length - readingsInZone.length,
     });
   }
 
