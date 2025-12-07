@@ -10,8 +10,7 @@ const UserSchema = new mongoose.Schema
         type: String,
         required: [true, 'Username cannot be empty'],
         unique: true,
-        minlength: [3 , 'Username cannot be a less than 3 letter'],
-        maxlength: [16 , 'Username cannot be a greater than 16 letter']
+        minlength: [3 , 'Username cannot be less than 3 characters']
      },
      password: 
      {

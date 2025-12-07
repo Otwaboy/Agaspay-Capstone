@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { toast } from "sonner";
 import { authManager } from "../../lib/auth";
 import { apiClient } from "../../lib/api";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 export default function CreateResidentModal({ isOpen, onClose }) {
   
@@ -30,20 +30,21 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     email: "",
     phone: "",
     type: "",
-    meterNumber: "",
-    username: "",
-    password: "",
-    confirmPassword: ""
+    meterNumber: ""
   });
 
   // Validation errors state
   const [errors, setErrors] = useState({});
 
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [meterValidation, setMeterValidation] = useState({ checking: false, valid: null });
   const [emailValidation, setEmailValidation] = useState({ checking: false, valid: null });
+
+  // Email verification states
+  const [verificationStep, setVerificationStep] = useState(false); // false = form, true = verification
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [storedFormData, setStoredFormData] = useState(null);
 
   // Field validation states for visual feedback (real-time validation)
   const [fieldValidation, setFieldValidation] = useState({
@@ -51,7 +52,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     lastName: null,
     email: null,
     phone: null,
-    username: null,
     specificAddress: null
   });
 
@@ -62,10 +62,7 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
     // Check for MongoDB duplicate key error (E11000)
     if (errorMessage.includes('E11000 duplicate key error') || errorMessage.includes('duplicate key error')) {
-      if (errorMessage.includes('username') || errorMessage.includes('username_1')) {
-        newErrors.username = "This username is already taken. Please choose a different username.";
-        userFriendlyMessage = "This username is already taken. Please choose a different one.";
-      } else if (errorMessage.includes('email') || errorMessage.includes('email_1')) {
+      if (errorMessage.includes('email') || errorMessage.includes('email_1')) {
         newErrors.email = "This email is already registered. Please use a different email.";
         userFriendlyMessage = "This email is already registered. Please use a different email.";
       } else if (errorMessage.includes('meter_no') || errorMessage.includes('meter_no_1') || errorMessage.includes('meter')) {
@@ -80,106 +77,141 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     return { errors: newErrors, message: userFriendlyMessage };
   };
 
-  // functions when submmiting the button
-  const handleSubmit = async (e) => {
+  // Send email verification code
+  const handleSendVerificationCode = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrors({}); // Clear previous errors
+    setErrors({});
 
     try {
-      // Client-side validation - single object for all errors
-      const validationErrors = {};
-
-      if (!formData.firstName || formData.firstName.trim() === "") {
-        validationErrors.firstName = "First name is required";
-      }
-
-      if (!formData.lastName || formData.lastName.trim() === "") {
-        validationErrors.lastName = "Last name is required";
-      }
-
-      if (!formData.connectionZone || formData.connectionZone.trim() === "") {
-        validationErrors.connectionZone = "Water connection zone is required";
-      }
-
-      if (!formData.connectionPurok || formData.connectionPurok.trim() === "") {
-        validationErrors.connectionPurok = "Water connection purok is required";
-      }
-
-      if (!formData.username || formData.username.trim() === "") {
-        validationErrors.username = "Username is required";
-      }
-
-      if (!formData.password || formData.password.trim() === "") {
-        validationErrors.password = "Password is required";
-      } else if (formData.password.length < 6) {
-        validationErrors.password = "Password must be at least 6 characters long";
-      }
-
-      if (!formData.confirmPassword || formData.confirmPassword.trim() === "") {
-        validationErrors.confirmPassword = "Confirm password is required";
-      } else if (formData.password !== formData.confirmPassword) {
-        validationErrors.confirmPassword = "Passwords do not match";
-      }
-
-      if (!formData.meterNumber || formData.meterNumber.trim() === "") {
-        validationErrors.meterNumber = "Meter number is required";
-      } else if (meterValidation.valid === false) {
-        validationErrors.meterNumber = "This meter number is already in use. Please enter a different meter number.";
-      }
-
-      if (formData.email && formData.email.trim()) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email.trim())) {
-          validationErrors.email = "Please enter a valid email address";
-        } else if (emailValidation.valid === false) {
-          validationErrors.email = "This email is already registered. Please use a different email.";
-        }
-      }
-
-      // If there are validation errors, show them
-      if (Object.keys(validationErrors).length > 0) {
-        setErrors(validationErrors);
-        // Show first validation error in toast
-        const firstError = Object.values(validationErrors)[0];
-        toast.error("Validation Error", {
-          description: firstError
+      // Validate email first
+      if (!formData.email || !formData.email.trim()) {
+        toast.error("Email Required", {
+          description: "Please enter your email address"
         });
         setIsLoading(false);
         return;
       }
 
-      // Create resident account - scheduling is now automatic on backend
-      const accountData = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        zone: formData.zone,
-        purok: formData.purok,
-        email: formData.email.trim() || null,
-        contact_no: formData.phone,
-        type: formData.type,
-        meter_no: formData.meterNumber,
-        // Water connection zone and purok (can be different from resident's location)
-        connection_zone: formData.connectionZone,
-        connection_purok: formData.connectionPurok,
-        specific_address: formData.specificAddress,
-        username: formData.username,
-        password: formData.password,
-      };
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        toast.error("Invalid Email", {
+          description: "Please enter a valid email address"
+        });
+        setIsLoading(false);
+        return;
+      }
 
-      console.log('📤 Creating resident account:', accountData);
-      const response = await authManager.createResidentAccount(accountData);
-
-      // Format success message with scheduling details
-      const successMessage = response.message || `${formData.firstName} ${formData.lastName} has been registered successfully.`;
-
-      // Show success toast with scheduling details
-      toast.success("Resident Created Successfully", {
-        description: successMessage,
-        duration: 6000, // Show for 6 seconds since there's more info
+      console.log('📧 Sending verification code to:', formData.email);
+      const response = await apiClient.request('/api/v1/auth/send-email-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email: formData.email.trim() })
       });
 
-      // Reset form and close modal
+      if (response.success || response.message) {
+        toast.success("Verification Code Sent", {
+          description: `A verification code has been sent to ${formData.email}`
+        });
+
+        // Store form data and move to verification step
+        setStoredFormData(formData);
+        setVerificationStep(true);
+        setVerificationCode("");
+        setErrors({});
+      }
+    } catch (error) {
+      console.error('❌ Error sending verification code:', error);
+      let errorMessage = "Failed to send verification code";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      toast.error("Error", {
+        description: errorMessage
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Verify code and create account
+  const handleVerifyAndCreateAccount = async (e) => {
+    e.preventDefault();
+    setVerificationLoading(true);
+    setErrors({});
+
+    try {
+      if (!verificationCode || verificationCode.trim() === "") {
+        toast.error("Code Required", {
+          description: "Please enter the verification code"
+        });
+        setVerificationLoading(false);
+        return;
+      }
+
+      // Validate all form fields before creating account
+      const validationErrors = {};
+
+      if (!storedFormData.firstName || storedFormData.firstName.trim() === "") {
+        validationErrors.firstName = "First name is required";
+      }
+
+      if (!storedFormData.lastName || storedFormData.lastName.trim() === "") {
+        validationErrors.lastName = "Last name is required";
+      }
+
+      if (!storedFormData.connectionZone || storedFormData.connectionZone.trim() === "") {
+        validationErrors.connectionZone = "Water connection zone is required";
+      }
+
+      if (!storedFormData.connectionPurok || storedFormData.connectionPurok.trim() === "") {
+        validationErrors.connectionPurok = "Water connection purok is required";
+      }
+
+      if (!storedFormData.meterNumber || storedFormData.meterNumber.trim() === "") {
+        validationErrors.meterNumber = "Meter number is required";
+      } else if (meterValidation.valid === false) {
+        validationErrors.meterNumber = "This meter number is already in use. Please enter a different meter number.";
+      }
+
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        const firstError = Object.values(validationErrors)[0];
+        toast.error("Validation Error", {
+          description: firstError
+        });
+        setVerificationLoading(false);
+        return;
+      }
+
+      // Create resident account with verification code
+      const accountData = {
+        first_name: storedFormData.firstName,
+        last_name: storedFormData.lastName,
+        zone: storedFormData.zone,
+        purok: storedFormData.purok,
+        email: storedFormData.email.trim() || null,
+        contact_no: storedFormData.phone,
+        type: storedFormData.type,
+        meter_no: storedFormData.meterNumber,
+        connection_zone: storedFormData.connectionZone,
+        connection_purok: storedFormData.connectionPurok,
+        specific_address: storedFormData.specificAddress,
+        verification_code: verificationCode.trim()
+      };
+
+      console.log('📤 Creating resident account with verification:', accountData);
+      const response = await authManager.createResidentAccount(accountData);
+
+      const successMessage = response.message || `${storedFormData.firstName} ${storedFormData.lastName} has been registered successfully.`;
+
+      toast.success("Resident Created Successfully", {
+        description: successMessage,
+        duration: 6000,
+      });
+
+      // Reset everything and close modal
       setFormData({
         firstName: "",
         lastName: "",
@@ -191,13 +223,13 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         email: "",
         phone: "",
         type: "",
-        meterNumber: "",
-        username: "",
-        password: "",
-        confirmPassword: ""
+        meterNumber: ""
       });
+      setStoredFormData(null);
+      setVerificationStep(false);
+      setVerificationCode("");
       setErrors({});
-      setIsLoading(false);
+      setVerificationLoading(false);
       onClose();
 
     } catch (error) {
@@ -212,9 +244,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         if (error.response.data.errors) {
           const backendErrors = error.response.data.errors;
 
-          if (backendErrors.username) {
-            parsedErrors.username = backendErrors.username;
-          }
           if (backendErrors.email) {
             parsedErrors.email = backendErrors.email;
           }
@@ -395,13 +424,73 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Resident</DialogTitle>
+          <DialogTitle>
+            {verificationStep ? "Verify Email Address" : "Create New Resident"}
+          </DialogTitle>
           <DialogDescription>
-            Add a new resident water connection to the AGASPAY system.
+            {verificationStep
+              ? "Enter the verification code sent to your email"
+              : "Add a new resident water connection to the AGASPAY system."}
           </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        {verificationStep ? (
+          // Verification Step
+          <form onSubmit={handleVerifyAndCreateAccount} className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-900 mb-2">
+                A verification code has been sent to <strong>{storedFormData?.email}</strong>
+              </p>
+              <p className="text-xs text-blue-700">
+                Please enter the 6-digit code below. The code will expire in 10 minutes.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="verificationCode">Verification Code <span className="text-red-500">*</span></Label>
+              <Input
+                id="verificationCode"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                placeholder="Enter 6-digit code"
+                maxLength="6"
+                inputMode="numeric"
+                required
+                className={errors.verificationCode ? "border-red-500 border-2 focus:ring-red-500" : ""}
+              />
+              {errors.verificationCode && (
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{errors.verificationCode}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setVerificationStep(false);
+                  setVerificationCode("");
+                  setStoredFormData(null);
+                  setErrors({});
+                }}
+                disabled={verificationLoading}
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                disabled={verificationLoading}
+              >
+                {verificationLoading ? "Creating Account..." : "Create Account"}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          // Form Step
+          <form onSubmit={handleSendVerificationCode} className="space-y-4">
 
           <div className="border-t pt-4 mt-2 mb-4">
               <div className="flex items-center space-x-2 mb-4">
@@ -543,52 +632,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   </SelectContent>
                 </Select>
               </>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange("email")(e.target.value)}
-                placeholder="Enter email address (Optional)"
-                data-testid="input-email"
-                className={`${errors.email || (fieldValidation.email === false && formData.email) || (emailValidation.valid === false && formData.email) ? "border-red-500 border-2 focus:ring-red-500" : emailValidation.valid === true && formData.email && fieldValidation.email === true ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
-              />
-              {emailValidation.checking && formData.email && fieldValidation.email === true && (
-                <div className="absolute right-3 top-3">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-                </div>
-              )}
-              {emailValidation.valid === true && formData.email && !emailValidation.checking && fieldValidation.email === true && (
-                <div className="absolute right-3 top-3 text-green-500">
-                  ✓
-                </div>
-              )}
-            </div>
-            {errors.email && (
-              <div className="flex items-center gap-1 text-red-600 text-sm">
-                <AlertCircle className="h-4 w-4" />
-                <span>{errors.email}</span>
-              </div>
-            )}
-            {fieldValidation.email === false && formData.email && !errors.email && (
-              <div className="flex items-center gap-1 text-red-600 text-sm">
-                <AlertCircle className="h-4 w-4" />
-                <span>Invalid email format</span>
-              </div>
-            )}
-            {emailValidation.valid === false && formData.email && !errors.email && fieldValidation.email === true && (
-              <div className="flex items-center gap-1 text-red-600 text-sm">
-                <AlertCircle className="h-4 w-4" />
-                <span>This email is already registered</span>
-              </div>
-            )}
-            {emailValidation.valid === true && formData.email && !errors.email && fieldValidation.email === true && (
-              <p className="text-xs text-green-600">Email is available</p>
             )}
           </div>
 
@@ -763,94 +806,81 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Account Creation Section */}
-          <div className="border-t pt-4 mt-4">
+          {/* Email Section */}
+          <div className="border-t pt-4 mt-4 mb-4">
             <div className="flex items-center space-x-2 mb-4">
-              <Label htmlFor="createAccount" className="text-sm font-medium">
-                Login Account Details
+              <Label htmlFor="email" className="text-sm font-medium">
+                Contact Information
               </Label>
             </div>
-
-            <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => handleChange("username")(e.target.value)}
-                  placeholder="Enter username for login"
-                  required
-                  data-testid="input-username"
-                  className={errors.username ? "border-red-500 border-2 focus:ring-red-500" : ""}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => handleChange("password")(e.target.value)}
-                    placeholder="Enter password (min 6 characters)"
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleChange("email")(e.target.value)}
+                    placeholder="Enter email address"
                     required
-                    data-testid="input-password"
-                    className={errors.password ? "border-red-500 border-2 focus:ring-red-500" : ""}
+                    data-testid="input-email"
+                    className={`${errors.email || (fieldValidation.email === false && formData.email) || (emailValidation.valid === false && formData.email) ? "border-red-500 border-2 focus:ring-red-500" : emailValidation.valid === true && formData.email && fieldValidation.email === true ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    data-testid="button-toggle-password"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </Button>
+                  {emailValidation.checking && formData.email && fieldValidation.email === true && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                    </div>
+                  )}
+                  {emailValidation.valid === true && formData.email && !emailValidation.checking && fieldValidation.email === true && (
+                    <div className="absolute right-3 top-3 text-green-500">
+                      ✓
+                    </div>
+                  )}
                 </div>
-                {!errors.password && (
-                  <p className="text-xs text-gray-500">
-                    This account will allow the resident to log into the system
+                {errors.email && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.email}</span>
+                  </div>
+                )}
+                {fieldValidation.email === false && formData.email && !errors.email && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Invalid email format</span>
+                  </div>
+                )}
+                {emailValidation.valid === false && formData.email && !errors.email && fieldValidation.email === true && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>This email is already registered</span>
+                  </div>
+                )}
+                {emailValidation.valid === true && formData.email && !errors.email && fieldValidation.email === true && (
+                  <p className="text-xs text-green-600">Email is available</p>
+                )}
+              </div>
+              <p className="text-xs text-gray-600">
+                Login credentials will be sent to this email address
+              </p>
+            </div>
+          </div>
+
+          {/* Login Account Auto-Generation Info */}
+          <div className="border-t pt-4 mt-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Automatic Login Credentials</p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Login credentials will be automatically generated and sent to the resident's email address:
                   </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password <span className="text-red-500">*</span></Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleChange("confirmPassword")(e.target.value)}
-                    placeholder="Re-enter password to confirm"
-                    required
-                    data-testid="input-confirm-password"
-                    className={errors.confirmPassword ? "border-red-500 border-2 focus:ring-red-500" : ""}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    data-testid="button-toggle-confirm-password"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </Button>
+                  <p className="text-xs text-blue-700 mt-2">
+                    <strong>Username:</strong> Resident's email address<br/>
+                    <strong>Temporary Password:</strong> Auto-generated and sent via email
+                  </p>
                 </div>
-                {errors.confirmPassword && (
-                  <p className="text-xs text-red-500">{errors.confirmPassword}</p>
-                )}
               </div>
             </div>
           </div>
@@ -881,15 +911,16 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               data-testid="button-create"
             >
-              {isLoading ? "Creating..." : "Create Resident"}
+              {isLoading ? "Sending Verification Code..." : "Send Verification Code"}
             </Button>
           </div>
-        </form>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -8,10 +8,153 @@ const WaterConnection = require('../model/WaterConnection')
 const ScheduleTask = require('../model/Schedule-task')
 const Assignment = require('../model/Assignment')
 const bcrypt = require('bcrypt')
+const crypto = require('crypto')
+const nodemailer = require('nodemailer')
 
 const mongoose = require("mongoose");
 
-const registerResident = async (req, res) => {
+// Store email verification codes temporarily (in production, use Redis or database)
+const emailVerificationCodes = new Map();
+
+/**
+ * Send email verification code
+ */
+const sendEmailVerificationCode = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Please provide a valid email address'
+      });
+    }
+
+    // Generate 6-digit verification code
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+    // Store verification code with expiry (10 minutes)
+    const codeData = {
+      code: verificationCode,
+      email: email.toLowerCase().trim(),
+      expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+    };
+    emailVerificationCodes.set(email.toLowerCase().trim(), codeData);
+
+    // Send verification email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: `"AGASPAY" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Email Verification - AGASPAY Resident Registration',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">AGASPAY - Email Verification</h2>
+          <p>Hello,</p>
+          <p>You are registering a new resident account in the AGASPAY system. Please use the verification code below to confirm your email address:</p>
+          <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #1f2937; font-size: 36px; letter-spacing: 8px; margin: 0;">
+              ${verificationCode}
+            </h1>
+          </div>
+          <p style="color: #6b7280;">This code will expire in 10 minutes.</p>
+          <p style="color: #6b7280;">If you did not request this verification, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+          <p style="color: #9ca3af; font-size: 12px;">
+            This is an automated email from AGASPAY Water Billing System. Please do not reply to this email.
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: `Verification code sent to ${email}`,
+      email: email
+    });
+
+  } catch (error) {
+    console.error('❌ Email verification error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to send verification code',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Send login credentials email to resident
+ */
+const sendLoginCredentialsEmail = async (email, firstName, username, temporaryPassword) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: `"AGASPAY" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Welcome to AGASPAY - Your Login Credentials',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Welcome to AGASPAY Water Billing System</h2>
+          <p>Hello ${firstName},</p>
+          <p>Your account has been successfully created in the AGASPAY system. Below are your login credentials:</p>
+
+          <div style="background-color: #f3f4f6; padding: 20px; border-left: 4px solid #2563eb; margin: 20px 0;">
+            <p style="margin: 10px 0;">
+              <strong>Username:</strong> ${username}
+            </p>
+            <p style="margin: 10px 0;">
+              <strong>Temporary Password:</strong> ${temporaryPassword}
+            </p>
+          </div>
+
+          <p style="color: #6b7280;"><strong>Important:</strong> This is a temporary password. Please change it on your first login for security purposes.</p>
+
+          <p style="color: #6b7280;">You can now log in at the AGASPAY portal using the credentials above.</p>
+
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+          <p style="color: #9ca3af; font-size: 12px;">
+            This is an automated email from AGASPAY Water Billing System. Please do not reply to this email.
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Login credentials email sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Failed to send login credentials email to ${email}:`, error);
+    return false;
+  }
+};
+
+const verifyEmailAndRegisterResident = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -26,13 +169,41 @@ const registerResident = async (req, res) => {
     }
 
     const {
-      username, password, first_name, last_name, zone, email, purok, contact_no,
-      type, meter_no, connection_zone, connection_purok, specific_address
+      first_name, last_name, zone, email, purok, contact_no,
+      type, meter_no, connection_zone, connection_purok, specific_address, verification_code
     } = req.body;
 
-    if (!username || !password || !first_name || !last_name || !zone || !purok || !contact_no || !type || !meter_no || !connection_zone || !connection_purok) {
-      throw new BadRequestError('Please provide all required fields including meter number and water connection zone/purok');
+    if (!email || !first_name || !last_name || !zone || !purok || !contact_no || !type || !meter_no || !connection_zone || !connection_purok || !verification_code) {
+      throw new BadRequestError('Please provide all required fields including verification code');
     }
+
+    // ✅ Verify email verification code
+    const normalizedEmail = email.toLowerCase().trim();
+    const storedData = emailVerificationCodes.get(normalizedEmail);
+
+    if (!storedData) {
+      throw new BadRequestError('No verification code found. Please request a new verification code.');
+    }
+
+    // Check if code expired
+    if (Date.now() > storedData.expiresAt) {
+      emailVerificationCodes.delete(normalizedEmail);
+      throw new BadRequestError('Verification code has expired. Please request a new code.');
+    }
+
+    // Verify code matches
+    if (storedData.code !== verification_code) {
+      throw new BadRequestError('Invalid verification code. Please try again.');
+    }
+
+    // ✅ Code is valid, delete it
+    emailVerificationCodes.delete(normalizedEmail);
+
+    // ✅ Email will be used as username
+    const username = email.toLowerCase().trim();
+
+    // ✅ Generate temporary password (10 characters with mix of letters and numbers)
+    const temporaryPassword = crypto.randomBytes(6).toString('hex').substring(0, 10);
 
     const waterConnectionZone = connection_zone;
     const waterConnectionPurok = connection_purok;
@@ -46,7 +217,7 @@ const registerResident = async (req, res) => {
         }
 
     // ✅ All DB write operations must be attached to the session:
-    const user = await User.create([{ username, password, role: 'resident' }], { session });
+    const user = await User.create([{ username, password: temporaryPassword, role: 'resident' }], { session });
     const resident = await Resident.create([{ user_id: user[0]._id, first_name, last_name, email, zone, purok, contact_no }], { session });
     const waterConnection = await WaterConnection.create([{ resident_id: resident[0]._id, meter_no, type, zone: waterConnectionZone, purok: waterConnectionPurok, specific_address }], { session });
 
@@ -208,6 +379,9 @@ const registerResident = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
+    // ✅ Send login credentials email to resident
+    await sendLoginCredentialsEmail(email, first_name, username, temporaryPassword);
+
     const token = user[0].createJWT();
 
     res.status(201).json({
@@ -215,6 +389,7 @@ const registerResident = async (req, res) => {
       user_id: user[0]._id,
       resident_id: resident[0]._id,
       username: user[0].username,
+      email: email,
       connection_id: waterConnection[0]._id,
       connection_status: waterConnection[0].connection_status,
       token,
@@ -468,4 +643,10 @@ const getResidentsByDate = async (req, res) => {
 }
 };
 
-module.exports = { registerResident, login, registerPersonnel, getResidentsByDate }; 
+module.exports = {
+  sendEmailVerificationCode,
+  verifyEmailAndRegisterResident,
+  login,
+  registerPersonnel,
+  getResidentsByDate
+}; 
