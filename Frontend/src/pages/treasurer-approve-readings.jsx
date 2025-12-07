@@ -106,12 +106,13 @@ export default function TreasurerApproveReadings() {
       const response = await apiClient.approveAllReadings();
       return response;
     },
-    onSuccess: (data) => {
-      toast.success("Success!", { description: "" });
-      queryClient.invalidateQueries(["readings"]);
+    onSuccess: () => {
+      toast.success("Success!", { description: "All readings approved successfully" });
+      queryClient.invalidateQueries({ queryKey: ["readings"] });
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
     },
     onError: (error) => {
-      toast.error("Error", { description: error.response?.data?.msg || "Failed to approve readings" });
+      toast.error("Error", { description: error.message || "Failed to approve readings" });
     },
   });
 
@@ -123,11 +124,12 @@ export default function TreasurerApproveReadings() {
     },
     onSuccess: () => {
       toast.success("Success!", { description: "Reading approved successfully" });
-      queryClient.invalidateQueries(["readings"]);
+      queryClient.invalidateQueries({ queryKey: ["readings"] });
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
       setSelectedReading(null);
     },
     onError: (error) => {
-      toast.error("Error", { description: error.response?.data?.msg || "Failed to approve reading" });
+      toast.error("Error", { description: error.message || "Failed to approve reading" });
     },
   });
 

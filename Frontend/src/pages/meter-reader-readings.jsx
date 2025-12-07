@@ -35,7 +35,12 @@ export default function MeterReaderReadings() {
   // Fetch connections with refetching every 5 seconds to detect billing updates
   const { data: connectionsResponse, isLoading: connectionsLoading } = useQuery({
     queryKey: ["connections"],
-    queryFn: async () => apiClient.getLatestReadings(),
+    queryFn: async () => {
+      console.log('Fetching latest readings...');
+      const result = await apiClient.getLatestReadings();
+      console.log('Latest readings fetched:', result);
+      return result;
+    },
     refetchInterval: 5000 // Auto-refetch every 5 seconds
   });
 
@@ -54,6 +59,7 @@ export default function MeterReaderReadings() {
   const meterReaderZone = authUser?.assigned_zone;
 
   console.log('all connection get in the latest reading', connectionList);
+  console.log('connection statuses:', connectionList.map(c => ({ connection_id: c.connection_id, reading_status: c.reading_status, is_billed: c.is_billed, full_name: c.full_name })));
 
   // 📅 Helper function to get the effective start date (next_period_dates if available, otherwise inclusive_date)
   const getReadingStartDate = (conn) => {
@@ -128,18 +134,25 @@ export default function MeterReaderReadings() {
   // Only consider unbilled readings for status (exclude cannot_read meters as they don't need billing)
   const unbilledConnections = zoneConnections.filter(c => !c.is_billed && c.can_read_status !== 'cannot_read');
 
+  console.log('unbilled connections:', unbilledConnections.map(c => ({ connection_id: c.connection_id, reading_status: c.reading_status, full_name: c.full_name })));
+
   const overallReadingStatus = (() => {
   if (zoneConnections.length === 0) return "No Data";
   if (unbilledConnections.length === 0) return "Ready to read"; // All readable meters billed, ready for new readings
 
   const allApproved = unbilledConnections.every(c => c.reading_status === "approved");
+  const anyApproved = unbilledConnections.some(c => c.reading_status === "approved");
   const anySubmitted = unbilledConnections.some(c => c.reading_status === "submitted");
   const allInProgress = unbilledConnections.every(c => c.reading_status === "inprogress");
 
+  console.log('status check:', { allApproved, anyApproved, anySubmitted, allInProgress, unbilledCount: unbilledConnections.length });
+
+  // Priority: all approved > any submitted > all in progress > mixed > in progress
   if (allApproved) return "Approved";
   if (anySubmitted) return "Submitted";
+  if (anyApproved && !anySubmitted) return "Approved"; // Some approved, none submitted = approved
   if (allInProgress) return "In Progress";
-  return "In Progress"; // fallback
+  return "In Progress"; // fallback for mixed states
 })();
 
   // Check if approval message should show (only when approved AND not yet billed)
@@ -162,6 +175,7 @@ export default function MeterReaderReadings() {
     connection_id: selectedConnectionData?.connection_id,
     meter_number: selectedConnectionData?.meter_number,
     full_name: selectedConnectionData?.full_name,
+    reading_status: selectedConnectionData?.reading_status,
     inclusive_date_start: selectedConnectionData?.inclusive_date?.start,
     inclusive_date_end: selectedConnectionData?.inclusive_date?.end,
     inclusive_date_start_formatted: selectedConnectionData?.inclusive_date?.start ? new Date(selectedConnectionData.inclusive_date.start).toISOString().split('T')[0] : null,

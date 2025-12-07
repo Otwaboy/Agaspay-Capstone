@@ -294,6 +294,19 @@ async approveAllReadings(readingIds = []) {
   }
 }
 
+// ✅ Approve single reading
+async approveSingleReading(readingId) {
+  try {
+    return await this.request(`/api/v1/meter-reader/${readingId}/approve`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error("Approving single reading failed:", error);
+    throw error;
+  }
+}
+
 async getSubmittedReadings() {
   try {
     return await this.request('/api/v1/meter-reader/submitted-readings', {
