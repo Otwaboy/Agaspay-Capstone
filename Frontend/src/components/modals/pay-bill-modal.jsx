@@ -75,10 +75,12 @@ export default function PayBillModal({ isOpen, onClose, selectedMeter }) {
                 return null;
               }
 
-              // Find the bill matching the selectedMeter
+              // Find the LATEST bill matching the selectedMeter
+              // For cumulative billing, we need the most recent bill, not the first one
               let billToPay;
               if (selectedMeter) {
-                billToPay = regularBills.find(bill => bill.meter_no === selectedMeter.meter_no);
+                const billsForMeter = regularBills.filter(bill => bill.meter_no === selectedMeter.meter_no);
+                billToPay = billsForMeter[billsForMeter.length - 1]; // Get the LAST (most recent) bill
                 console.log("🔍 Found bill for selected meter:", billToPay);
               }
 
