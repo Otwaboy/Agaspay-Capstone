@@ -631,6 +631,7 @@ export default function ResidentSettings() {
                             variant="outline"
                             className="w-full border-red-200 text-red-600 hover:bg-red-50"
                             onClick={() => setDisconnectModalOpen(true)}
+                            disabled={disconnectionStatus?.status === 'pending' || disconnectionStatus?.status === 'pending_disconnection'}
                           >
                             <AlertTriangle className="h-4 w-4 mr-2" />
                             Request for Disconnection
@@ -756,6 +757,7 @@ export default function ResidentSettings() {
                             variant="outline"
                             className="w-full border-orange-200 text-orange-600 hover:bg-orange-50"
                             onClick={() => setArchiveModalOpen(true)}
+                            disabled={archiveStatus?.archive_status === 'pending' || archiveStatus?.archive_status === 'pending_archive'}
                           >
                             <AlertTriangle className="h-4 w-4 mr-2" />
                             Request Account Archive
