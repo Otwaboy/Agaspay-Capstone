@@ -419,25 +419,61 @@ const verifyEmailAndRegisterResident = async (req, res) => {
 const registerPersonnel = async (req, res) => {
   try {
     const {
-      username,
-      password,
       role,
       first_name,
       last_name,
       contact_no,
       purok,
       email,
-      assigned_zone
+      assigned_zone,
+      verification_code
     } = req.body;
 
-    // Validation: check required fields
-    if (!username || !password || !role || !first_name || !last_name || !contact_no || !purok || !email) {
+    // Validation: check required fields (no username or password needed - auto-generated)
+    if (!role || !first_name || !last_name || !contact_no || !purok || !email || !verification_code) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields',
-        msg: 'Please provide all required fields'
+        message: 'Please provide all required fields including verification code',
+        msg: 'Please provide all required fields including verification code'
       });
     }
+
+    // ✅ Verify email verification code
+    const normalizedEmail = email.toLowerCase().trim();
+    const storedData = emailVerificationCodes.get(normalizedEmail);
+
+    if (!storedData) {
+      return res.status(400).json({
+        success: false,
+        message: 'No verification code found. Please request a new verification code.'
+      });
+    }
+
+    // Check if code expired
+    if (Date.now() > storedData.expiresAt) {
+      emailVerificationCodes.delete(normalizedEmail);
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code has expired. Please request a new code.'
+      });
+    }
+
+    // Verify code matches
+    if (storedData.code !== verification_code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid verification code. Please try again.'
+      });
+    }
+
+    // ✅ Code is valid, delete it
+    emailVerificationCodes.delete(normalizedEmail);
+
+    // ✅ Email will be used as username
+    const username = normalizedEmail;
+
+    // ✅ Generate temporary password (10 characters with mix of letters and numbers)
+    const temporaryPassword = crypto.randomBytes(6).toString('hex').substring(0, 10);
 
     // Trim whitespace from names for consistency
     const trimmedFirstName = first_name.trim();
@@ -446,15 +482,15 @@ const registerPersonnel = async (req, res) => {
     // Create user account with error handling
     let user;
     try {
-      user = await createUser(username, password, role);
+      user = await createUser(username, temporaryPassword, role);
     } catch (userError) {
       // Handle duplicate username or other user creation errors
       console.error('User creation error:', userError.message);
       if (userError.message.includes('username')) {
         return res.status(400).json({
           success: false,
-          message: 'This username is already taken',
-          msg: 'This username is already taken'
+          message: 'This email is already taken',
+          msg: 'This email is already taken'
         });
       }
       throw userError;
@@ -489,6 +525,9 @@ const registerPersonnel = async (req, res) => {
       });
     }
 
+    // ✅ Send login credentials email to personnel
+    await sendLoginCredentialsEmail(email, trimmedFirstName, username, temporaryPassword);
+
     const token = user.createJWT();
 
     res.status(StatusCodes.CREATED).json({
@@ -496,10 +535,10 @@ const registerPersonnel = async (req, res) => {
         message: 'Barangay Personnel successfully registered their account',
         user_id: user._id,
         username: user.username,
+        email: email,
         personnel_id: personnel._id,
         role: personnel.role,
         contact_no: personnel.contact_no,
-        email: personnel.email,
         purok: personnel.purok,
         assigned_zone: personnel.assigned_zone,
         token

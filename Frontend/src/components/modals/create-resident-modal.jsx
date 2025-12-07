@@ -913,7 +913,27 @@ export default function CreateResidentModal({ isOpen, onClose }) {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={
+                isLoading ||
+                emailValidation.checking ||
+                (formData.email && (fieldValidation.email === false || emailValidation.valid === false)) ||
+                !formData.firstName?.trim() ||
+                !formData.lastName?.trim() ||
+                !formData.email?.trim() ||
+                !formData.phone?.trim() ||
+                !formData.zone ||
+                !formData.purok ||
+                !formData.connectionZone ||
+                !formData.connectionPurok ||
+                !formData.meterNumber?.trim() ||
+                !formData.specificAddress?.trim() ||
+                !formData.type ||
+                fieldValidation.firstName === false ||
+                fieldValidation.lastName === false ||
+                fieldValidation.phone === false ||
+                fieldValidation.specificAddress === false ||
+                meterValidation.valid === false
+              }
               data-testid="button-create"
             >
               {isLoading ? "Sending Verification Code..." : "Send Verification Code"}
