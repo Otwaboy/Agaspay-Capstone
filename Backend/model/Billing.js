@@ -38,7 +38,7 @@ const BillingSchema = new mongoose.Schema({
     comment: 'Current month water consumption charges'
   },
 
-  // Total bill amount (previous_balance + current_charges)
+  // Total bill amount (previous_balance + current_charges) for cumulative billing
   total_amount: {
     type: Number,
     required: true,
@@ -76,8 +76,6 @@ const BillingSchema = new mongoose.Schema({
   //   type: Boolean,
   //   default: false
   // },
-
-
 
 
   // PayMongo payment intent ID for online payment processing
