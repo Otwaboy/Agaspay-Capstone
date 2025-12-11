@@ -27,7 +27,7 @@ const MeterReadingSchema = new mongoose.Schema({
     }
   },
   calculated: {
-    type: Number,
+    type: Number, 
     default: 0
   },
   remarks: {
