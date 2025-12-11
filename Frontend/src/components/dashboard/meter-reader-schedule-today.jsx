@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Calendar, AlertCircle, MapPin, Zap, Clock } from "lucide-react";
+import { Calendar, AlertCircle, MapPin, Zap, Clock, ArrowRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { apiClient } from "../../lib/api";
 import { format } from "date-fns";
@@ -43,8 +44,8 @@ const getStatusBadge = (connection) => {
     );
   }
 
-  // Check if reading status is "submitted" or "approved" (meaning it's been recorded)
-  if (connection.reading_status === "submitted" || connection.reading_status === "approved") {
+  // Check if reading status exists (inprogress, submitted, or approved = it's been recorded)
+  if (connection.reading_status) {
     return (
       <Badge className="bg-green-100 text-green-700 hover:bg-green-100 cursor-default">
         Read
@@ -52,6 +53,7 @@ const getStatusBadge = (connection) => {
     );
   }
 
+  // If no reading_status (null/undefined) = not read yet
   return (
     <Badge variant="outline" className="text-gray-600 border-gray-300 cursor-default">
       Not Read
@@ -60,6 +62,7 @@ const getStatusBadge = (connection) => {
 };
 
 export default function MeterReaderScheduleToday() {
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
@@ -75,9 +78,9 @@ export default function MeterReaderScheduleToday() {
   const todayConnections = connections
     .filter((conn) => isScheduledToday(conn))
     .sort((a, b) => {
-      // Priority 1: Not read yet (reading_status: "inprogress")
-      const aIsNotRead = a.reading_status === "inprogress";
-      const bIsNotRead = b.reading_status === "inprogress";
+      // Priority 1: Not read yet (reading_status is null/undefined)
+      const aIsNotRead = !a.reading_status;
+      const bIsNotRead = !b.reading_status;
 
       if (aIsNotRead && !bIsNotRead) return -1;
       if (!aIsNotRead && bIsNotRead) return 1;
@@ -163,17 +166,28 @@ export default function MeterReaderScheduleToday() {
   // Desktop table view
   return (
     <Card className="border-none shadow-md hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-blue-600" />
-          Schedule Today
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 cursor-default">
-            {todayConnections.length}
-          </Badge>
-        </CardTitle>
-        <p className="text-sm text-gray-500 mt-2">
-          Connections with reading period including today
-        </p>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-blue-600" />
+            Schedule Today
+            <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 cursor-default">
+              {todayConnections.length}
+            </Badge>
+          </CardTitle>
+          <p className="text-sm text-gray-500 mt-2">
+            Connections with reading period including today
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-2"
+          onClick={() => setLocation("/meter-reader-dashboard/readings")}
+        >
+          View All
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent>
         {/* Desktop Table */}

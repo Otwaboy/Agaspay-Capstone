@@ -85,6 +85,7 @@ export default function RecordMeterReadingModal({ open, onClose }) {
       queryClient.invalidateQueries(['/api/v1/meter-reader/daily-stats']);
       queryClient.invalidateQueries(['/api/v1/meter-reader/recent-readings']);
       queryClient.invalidateQueries(['/api/v1/meter-reader/route-schedule']);
+      queryClient.invalidateQueries(['meter-reader-latest-readings']);
       handleClose();
     },
     onError: (error) => {
