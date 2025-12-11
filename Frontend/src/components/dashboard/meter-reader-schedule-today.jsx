@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
 import { Calendar, AlertCircle, MapPin, Zap, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { apiClient } from "@/lib/api";
+import { Button } from "../ui/button";
+import { apiClient } from "../../lib/api";
 import { format } from "date-fns";
 
 // Helper function to check if connection is scheduled for today
@@ -43,7 +43,8 @@ const getStatusBadge = (connection) => {
     );
   }
 
-  if (connection.read_this_month) {
+  // Check if reading status is "submitted" or "approved" (meaning it's been recorded)
+  if (connection.reading_status === "submitted" || connection.reading_status === "approved") {
     return (
       <Badge className="bg-green-100 text-green-700 hover:bg-green-100 cursor-default">
         Read
@@ -74,9 +75,12 @@ export default function MeterReaderScheduleToday() {
   const todayConnections = connections
     .filter((conn) => isScheduledToday(conn))
     .sort((a, b) => {
-      // Priority 1: Not read yet (read_this_month: false)
-      if (!a.read_this_month && b.read_this_month) return -1;
-      if (a.read_this_month && !b.read_this_month) return 1;
+      // Priority 1: Not read yet (reading_status: "inprogress")
+      const aIsNotRead = a.reading_status === "inprogress";
+      const bIsNotRead = b.reading_status === "inprogress";
+
+      if (aIsNotRead && !bIsNotRead) return -1;
+      if (!aIsNotRead && bIsNotRead) return 1;
 
       // Priority 2: Alphabetical by name
       return (a.full_name || "").localeCompare(b.full_name || "");
