@@ -10,6 +10,7 @@ import MeterReaderQuickActions from "../components/dashboard/meter-reader-quick-
 import MeterReaderRouteSchedule from "../components/dashboard/meter-reader-route-schedule";
 import MeterReaderRecentReadings from "../components/dashboard/meter-reader-recent-readings";
 import MeterReaderDailyProgress from "../components/dashboard/meter-reader-daily-progress";
+import MeterReaderScheduleToday from "../components/dashboard/meter-reader-schedule-today";
 
 export default function MeterReaderDashboard() {
   const [, setLocation] = useLocation();
@@ -47,6 +48,11 @@ export default function MeterReaderDashboard() {
           <div className="max-w-7xl mx-auto">
             {/* Top Stats Cards */}
             <MeterReaderStatsCards />
+
+            {/* Schedule Today Component */}
+            <div className="mb-6">
+              <MeterReaderScheduleToday />
+            </div>
 
             {/* Welcome Information Section */}
             <div className="mb-6 py-6">
