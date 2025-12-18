@@ -202,10 +202,12 @@ const getAssignments = async (req, res) => {
       .populate({
         path: 'task_id',
         populate: [
-          { path: 'report_id' },
+          { path: 'report_id',
+            populate: {path: 'reported_by', select: 'first_name last_name'}
+           },
           {
             path: 'connection_id',
-            populate: { path: 'resident_id', select: 'zone purok' }
+            populate: { path: 'resident_id', select: 'zone purok first_name last_name' }
           }
         ],
       })
@@ -220,6 +222,38 @@ const getAssignments = async (req, res) => {
       const task = assignment.task_id;
       const personnel = assignment.assigned_to;
       const report = task?.report_id;
+
+      const resident = task?.connection_id?.resident_id
+
+
+  // Default
+let residentName = 'N/A';
+let reporterName = 'N/A';
+let full_name = 'N/A';
+
+// Get resident name
+if (resident && resident.first_name && resident.last_name) {
+  residentName = `${resident.first_name} ${resident.last_name}`;
+}
+
+// Get reporter name
+if (report && report.reported_by) {
+  const reporter = report.reported_by;
+
+  if (reporter.first_name && reporter.last_name) {
+    reporterName = `${reporter.first_name} ${reporter.last_name}`;
+  } else if (reporter.full_name) {
+    reporterName = reporter.full_name;
+  }
+}
+
+// FINAL PRIORITY LOGIC
+if (reporterName !== 'N/A') {
+  full_name = reporterName;
+} else if (residentName !== 'N/A') {
+  full_name = residentName;
+}
+   
 
       // ✅ If task has no location and is a Meter Installation, get from populated resident
       let taskLocation = task?.location || report?.location;
@@ -246,9 +280,9 @@ const getAssignments = async (req, res) => {
           schedule_date: task?.schedule_date,
           schedule_time: task?.schedule_time,
           task_status: task?.task_status,
-          connection_id: task?.connection_id,
           scheduled_by: task?.scheduled_by,
-          report_id: report?._id,
+          reported_by: full_name || 'wala sa dalawa'  ,
+          report_id: report?._id || 'NA',
           location: taskLocation || 'N/A',
         },
         personnel: {

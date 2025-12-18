@@ -60,6 +60,7 @@ export default function MaintenanceTasks() {
   // Transform backend data to match UI format
 const tasksData = assignmentsResponse?.assignments?.map(assignment => {
   const task = assignment.task;
+  
 
   // Determine task type display name
   let taskType = 'N/A';
@@ -69,6 +70,7 @@ const tasksData = assignmentsResponse?.assignments?.map(assignment => {
     taskType = 'Water Reconnection';
   } else if (task?.task_type === 'meter_installation') {
     taskType = 'Meter Installation';
+    
   } else if (task?.task_type === 'maintenance') {
     taskType = 'Maintenance';
   } else if (task?.type) {
@@ -81,7 +83,7 @@ const tasksData = assignmentsResponse?.assignments?.map(assignment => {
     type: taskType,
     location: task?.location || 'Biking',
     resident: assignment.personnel?.name || 'N/A',
-    connectionId: task?.connection_id?._id || task?.connection_id || 'N/A',
+    connectionId: task?.reported_by || 'NAsss' ,
     status: task?.task_status || 'Assigned',
     priority: task?.urgency_lvl || task?.priority || 'Medium',
     scheduledDate: task?.schedule_date
@@ -300,7 +302,7 @@ updateTaskMutation.mutate({
                             </div>
 
                             <p className="text-sm text-gray-600 mt-2">{task.description}</p>
-                            <p className="text-xs text-gray-500 mt-1">Connection ID: {task.connectionId}</p>
+                            <p className="text-xs text-gray-500 mt-1">Reporter Name: {task.connectionId}</p>
                           </div>
 
                           {task.status !== 'Completed' && task.status !== 'Cancelled' && (
