@@ -136,12 +136,12 @@ export default function ResidentUsage() {
 
   // ✅ Create a simple historical dataset for chart display
   const historicalData = sortedData.map((item) => {
-    const date = new Date(item.due_date);
+    const date = new Date(item.inclusive_date.start);
     const monthName = date.toLocaleString("default", { month: "short" });
     return {
       month: `${monthName} ${date.getFullYear()}`,
       consumption: item.calculated || 0,
-      amount: item.total_amount || 0,
+      amount: item.current_charges || 0,
     };
   });
 

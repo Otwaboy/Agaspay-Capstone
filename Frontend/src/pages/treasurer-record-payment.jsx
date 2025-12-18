@@ -510,7 +510,7 @@ export default function TreasurerRecordPayment() {
                         <div className="flex space-x-3 pt-4">
                           <Button
                             type="submit"
-                            disabled={recordPaymentMutation.isPending}
+                            disabled={recordPaymentMutation.isPending || amountPaid <= 0 || amountPaid > selectedBill.total_amount } 
                             className="flex-1"
                           >
                             {recordPaymentMutation.isPending ? (
