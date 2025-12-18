@@ -138,10 +138,7 @@ export default function SecretaryIncidentReports() {
     setCreateTaskOpen(true);
   };
 
-  const handleUpdateStatus = () => {
-    setNewStatus(selectedReport?.reported_issue_status || "Pending");
-    setUpdateStatusOpen(true);
-  };
+
 
   const submitCreateTask = () => {
     if (!selectedReport) {
@@ -582,13 +579,7 @@ export default function SecretaryIncidentReports() {
                 >
                   Close
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleUpdateStatus}
-                  data-testid="button-update-status"
-                >
-                  Update Status
-                </Button>
+           
                 <Button
                   onClick={handleCreateTask}
                   data-testid="button-create-task"

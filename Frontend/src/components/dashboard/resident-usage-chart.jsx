@@ -12,11 +12,14 @@ export default function ResidentUsageChart({ connectionId }) {
     queryFn: async () => {
       const res = await apiClient.getCurrentBill(connectionId);
       const bills = res.data || [];
+
+      console.log('bill data', bills);
       
-      const last6Months = bills.slice(-6).map((bill, index) => {
-        const date = new Date(bill.due_date);
+      
+      const last6Months = bills.slice(-6).map((bill) => {
+        const date = new Date(bill.inclusive_date.start);
         return {
-          month: date.toLocaleDateString('en-US', { month: 'short' }), 
+          month: date.toLocaleDateString('en-US', { month: 'short' }),  
           consumption: bill.calculated || 0,
           amount: bill.total_amount || 0,
           reading: bill.present_reading || 0

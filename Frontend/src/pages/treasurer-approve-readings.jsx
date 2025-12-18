@@ -116,22 +116,6 @@ export default function TreasurerApproveReadings() {
     },
   });
 
-  // Individual approve (you'll need to add this endpoint to backend)
-  const individualApproveMutation = useMutation({
-    mutationFn: async (readingId) => {
-      const response = await apiClient.approveSingleReading(readingId);
-      return response;
-    },
-    onSuccess: () => {
-      toast.success("Success!", { description: "Reading approved successfully" });
-      queryClient.invalidateQueries({ queryKey: ["readings"] });
-      queryClient.invalidateQueries({ queryKey: ["connections"] });
-      setSelectedReading(null);
-    },
-    onError: (error) => {
-      toast.error("Error", { description: error.message || "Failed to approve reading" });
-    },
-  });
 
   // Toggle zone expansion
   const toggleZone = (zone) => {
@@ -525,20 +509,7 @@ export default function TreasurerApproveReadings() {
                                                 </div>
                                               )}
 
-                                              <div className="flex gap-2 pt-4">
-                                                <Button
-                                                  className="flex-1 gap-2"
-                                                  onClick={() =>
-                                                    individualApproveMutation.mutate(
-                                                      selectedReading.reading_id
-                                                    )
-                                                  }
-                                                  disabled={individualApproveMutation.isPending}
-                                                >
-                                                  <CheckCircle2 className="h-4 w-4" />
-                                                  Approve Reading
-                                                </Button>
-                                              </div>
+                                             
                                             </div>
                                           )}
                                         </DialogContent>

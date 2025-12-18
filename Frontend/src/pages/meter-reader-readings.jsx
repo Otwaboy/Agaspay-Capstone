@@ -808,27 +808,28 @@ export default function MeterReaderReadings() {
                     )}
 
                     {/* FORM INPUTS */}
-                    {(overallReadingStatus !== "Approved" || (overallReadingStatus === "Approved" && zoneConnections.some(c => c.is_billed))) && !isCannotRead && (
-                      <div className="space-y-2">
-                        <Label htmlFor="present_reading" className="flex items-center space-x-2 text-base">
-                          <Gauge className="h-4 w-4" />
-                          <span>Present Reading (m³)</span>
-                        </Label>
-                        <Input
-                          id="present_reading"
-                          type="number"
-                          step="0.1"
-                          placeholder="Enter current meter reading"
-                          value={formData.present_reading}
-                          onChange={(e) => handleInputChange("present_reading", e.target.value)}
-                          className="h-12 text-base text-lg font-semibold"
-                          disabled={!selectedConnectionData}
-                        />
-                      </div>
-                    )}
+                    {overallReadingStatus !== "Approved" && !isCannotRead && (
+                                <div className="space-y-2">
+                                  <Label htmlFor="present_reading" className="flex items-center space-x-2 text-base">
+                                    <Gauge className="h-4 w-4" />
+                                    <span>Present Reading (m³)</span>
+                                  </Label>
+                                  <Input
+                                    id="present_reading"
+                                    type="number"
+                                    step="0.1"
+                                    placeholder="Enter current meter reading"
+                                    value={formData.present_reading}
+                                    onChange={(e) => handleInputChange("present_reading", e.target.value)}
+                                    className="h-12 text-base text-lg font-semibold"
+                                    disabled={!selectedConnectionData}
+                                  />
+                                </div>
+                              )}
+
 
                     {/* Date and Remarks Inputs */}
-                    {(overallReadingStatus !== "Approved" || (overallReadingStatus === "Approved" && zoneConnections.some(c => c.is_billed))) && !isEditing && (
+                    {overallReadingStatus !== "Approved"  && !isEditing && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <Label className="flex items-center space-x-2 text-base">
@@ -974,7 +975,9 @@ export default function MeterReaderReadings() {
                       </div>
                     )}
 
-                    {(overallReadingStatus !== "Approved" || (overallReadingStatus === "Approved" && zoneConnections.some(c => c.is_billed))) && (
+
+
+                    {overallReadingStatus !== "Approved" && (
                       <div className="flex justify-end space-x-3">
                         <Button
                           type="submit"
