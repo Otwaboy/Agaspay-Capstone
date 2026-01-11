@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,10 @@ import { toast } from "sonner";
 import { authManager } from "../../lib/auth";
 import { apiClient } from "../../lib/api";
 import { AlertCircle } from "lucide-react";
+
+
+
+
 
 export default function CreateResidentModal({ isOpen, onClose }) {
   
@@ -39,12 +43,18 @@ export default function CreateResidentModal({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [meterValidation, setMeterValidation] = useState({ checking: false, valid: null });
   const [emailValidation, setEmailValidation] = useState({ checking: false, valid: null });
+  const [phoneValidation, setPhoneValidation] = useState({ checking: false, valid: null });
 
   // Email verification states
   const [verificationStep, setVerificationStep] = useState(false); // false = form, true = verification
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationLoading, setVerificationLoading] = useState(false);
   const [storedFormData, setStoredFormData] = useState(null);
+
+  const [fullNameValidation, setFullNameValidation] = useState({
+  checking: false,
+  exists: null, // true = already registered
+});
 
   // Field validation states for visual feedback (real-time validation)
   const [fieldValidation, setFieldValidation] = useState({
@@ -54,6 +64,48 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     phone: null,
     specificAddress: null
   });
+
+ useEffect(() => {
+  const first = formData.firstName.trim();
+  const last = formData.lastName.trim();
+
+  if (first && last) {
+    setFullNameValidation({ checking: true, exists: null });
+
+    const timer = setTimeout(() => {
+      checkFullNameExistence(first, last);
+    }, 500); // debounce 500ms
+
+    return () => clearTimeout(timer);
+  } else {
+    setFullNameValidation({ checking: false, exists: null });
+    setErrors(prev => {
+      const next = { ...prev };
+      delete next.firstName;
+      delete next.lastName;
+      return next;
+    });
+  }
+}, [formData.firstName, formData.lastName]);
+
+useEffect(() => {
+  const phone = formData.phone.trim();
+  const phoneRegex = /^[\d\s+\-()]{7,}$/;
+  const digitsOnly = phone.replace(/\D/g, '');
+  const isValidFormat = phoneRegex.test(phone);
+  const isValidLength = digitsOnly.length <= 11;
+
+  if (phone && isValidFormat && isValidLength) {
+    const timer = setTimeout(() => {
+      checkPhoneNumberExistence(phone);
+    }, 500); // debounce 500ms
+
+    return () => clearTimeout(timer);
+  } else {
+    setPhoneValidation({ checking: false, valid: null });
+  }
+}, [formData.phone]);
+
 
   // Parse MongoDB duplicate key error and other backend errors into user-friendly messages
   const parseDuplicateKeyError = (errorMessage) => {
@@ -65,9 +117,11 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       if (errorMessage.includes('email') || errorMessage.includes('email_1')) {
         newErrors.email = "This email is already registered. Please use a different email.";
         userFriendlyMessage = "This email is already registered. Please use a different email.";
+
       } else if (errorMessage.includes('meter_no') || errorMessage.includes('meter_no_1') || errorMessage.includes('meter')) {
         newErrors.meterNumber = "This meter number is already registered. Please enter a different meter number.";
         userFriendlyMessage = "This meter number is already registered. Please enter a different one.";
+        
       } else if (errorMessage.includes('contact_no') || errorMessage.includes('contact_no_1') || errorMessage.includes('phone')) {
         newErrors.phone = "This phone number is already registered. Please use a different phone number.";
         userFriendlyMessage = "This phone number is already registered. Please use a different one.";
@@ -311,12 +365,12 @@ export default function CreateResidentModal({ isOpen, onClose }) {
         parsedErrors = result.errors;
         errorMessage = result.message;
       }
-
+ 
       // Show error notification
-      if (Object.keys(parsedErrors).length > 0) {
+      if (Object.keys(parsedErrors).length > 0) { 
         setErrors(parsedErrors);
         // Get user-friendly message from parsedErrors
-        let userFriendlyMsg = errorMessage;
+        let userFriendlyMsg = errorMessage; 
         if (parsedErrors.email) {
           userFriendlyMsg = parsedErrors.email;
         } else if (parsedErrors.username) {
@@ -354,6 +408,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     }
   };
 
+
+
   const handleChange = (field) => (value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -368,26 +424,32 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     if (field === 'meterNumber' && value.trim()) {
       checkMeterNumberAvailability(value.trim());
     }
-    // Real-time validation for text fields
-    if (field === 'firstName' && value.trim()) {
-      const nameRegex = /^[a-zA-Z\s'-]{2,}$/; // Only letters, spaces, hyphens, apostrophes (no numbers)
-      setFieldValidation(prev => ({ ...prev, firstName: nameRegex.test(value.trim()) }));
-    } else if (field === 'firstName') {
-      setFieldValidation(prev => ({ ...prev, firstName: null }));
-    }
 
-    if (field === 'lastName' && value.trim()) {
-      const nameRegex = /^[a-zA-Z\s'-]{2,}$/; // Only letters, spaces, hyphens, apostrophes (no numbers)
-      setFieldValidation(prev => ({ ...prev, lastName: nameRegex.test(value.trim()) }));
-    } else if (field === 'lastName') {
-      setFieldValidation(prev => ({ ...prev, lastName: null }));
-    }
+    // Real-time validation for text fields
+ if (field === 'firstName') {
+  const isValidFormat = /^[A-Za-z\s]+$/.test(value.trim());
+  setFieldValidation(prev => ({
+    ...prev,
+    firstName: isValidFormat && !fullNameValidation.exists
+  }));
+}
+
+if (field === 'lastName') {
+  const isValidFormat = /^[A-Za-z\s]+$/.test(value.trim());
+  setFieldValidation(prev => ({
+    ...prev,
+    lastName: isValidFormat && !fullNameValidation.exists
+  }));
+}
+
+
+
 
     if (field === 'email' && value.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const formatValid = emailRegex.test(value.trim());
       setFieldValidation(prev => ({ ...prev, email: formatValid }));
-      // Check email existence if format is valid
+      // Check email existence if format is valid 
       if (formatValid) {
         checkEmailExistence(value.trim());
       }
@@ -398,9 +460,16 @@ export default function CreateResidentModal({ isOpen, onClose }) {
 
     if (field === 'phone' && value.trim()) {
       const phoneRegex = /^[\d\s+\-()]{7,}$/;
-      setFieldValidation(prev => ({ ...prev, phone: phoneRegex.test(value.trim()) }));
+      const isValidFormat = phoneRegex.test(value.trim());
+      // Extract only digits to check length
+      const digitsOnly = value.replace(/\D/g, '');
+      const isValidLength = digitsOnly.length <= 11;
+
+      setFieldValidation(prev => ({ ...prev, phone: isValidFormat && isValidLength }));
+      // Phone existence checking is handled by useEffect with debounce
     } else if (field === 'phone') {
       setFieldValidation(prev => ({ ...prev, phone: null }));
+      setPhoneValidation({ checking: false, valid: null });
     }
 
     if (field === 'specificAddress' && value.trim()) {
@@ -409,6 +478,8 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       setFieldValidation(prev => ({ ...prev, specificAddress: null }));
     }
   };
+
+ 
 
   const checkMeterNumberAvailability = async (meterNo) => {
     setMeterValidation({ checking: true, valid: null });
@@ -435,6 +506,53 @@ export default function CreateResidentModal({ isOpen, onClose }) {
       console.error('Error checking email:', error);
     }
   };
+
+  const checkPhoneNumberExistence = async (phone) => {
+    setPhoneValidation({ checking: true, valid: null });
+    try {
+      const result = await apiClient.checkPhoneNumberExists(phone);
+      // If exists is true, the phone is NOT available
+      setPhoneValidation({ checking: false, valid: !result.exists });
+    } catch (error) {
+      // If error, assume not available (safe approach)
+      setPhoneValidation({ checking: false, valid: false });
+      console.error('Error checking phone number:', error);
+    }
+  };
+
+const checkFullNameExistence = async (firstName, lastName) => {
+  setFullNameValidation({ checking: true, exists: null });
+
+  try {
+    const result = await apiClient.checkResidentFullNameExists(firstName, lastName);
+
+    setFullNameValidation({
+      checking: false,
+      exists: result.exists,
+    });
+
+    // Set errors if full name already exists
+    if (result.exists) {
+      setErrors(prev => ({
+        ...prev,
+        firstName: "This resident is already registered",
+        lastName: "This resident is already registered",
+      }));
+    } else {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next.firstName;
+        delete next.lastName;
+        return next;
+      });
+    }
+
+  } catch (err) {
+    console.error("Full name check failed:", err);
+    setFullNameValidation({ checking: false, exists: null });
+  }
+};
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -528,11 +646,17 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   data-testid="input-first-name"
                   className={`${errors.firstName ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.firstName === true && formData.firstName ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
                 />
-                {fieldValidation.firstName === true && formData.firstName && (
-                  <div className="absolute right-3 top-3 text-green-500">
-                    ✓
-                  </div>
-                )}
+               {fieldValidation.firstName && !fullNameValidation.exists && formData.firstName && (
+                        <div className="absolute right-3 top-3 text-green-500">✓</div>
+                      )}
+
+              {fullNameValidation.exists && (
+                <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>This resident is already registered</span>
+                </div>
+              )}
+
               </div>
               {errors.firstName && (
                 <div className="flex items-center gap-1 text-red-600 text-sm">
@@ -543,12 +667,14 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               {fieldValidation.firstName === false && formData.firstName && !errors.firstName && (
                 <div className="flex items-center gap-1 text-red-600 text-sm">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Name cannot contain numbers</span>
+                 <span>
+                  {errors.firstName || "Name must contain only letters"}
+                </span>
                 </div>
               )}
-              {fieldValidation.firstName === true && formData.firstName && !errors.firstName && (
-                <p className="text-xs text-green-600">First name is valid</p>
-              )}
+             {fieldValidation.firstName === true && formData.firstName && !fullNameValidation.exists && !errors.firstName && (
+  <p className="text-xs text-green-600">First name is valid</p>
+)}
             </div>
 
             <div className="space-y-2">
@@ -575,15 +701,23 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                   <span>{errors.lastName}</span>
                 </div>
               )}
+
+                  {/* Full Name Exists Validation */}
+                  {fullNameValidation.exists && (
+                    <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>This resident is already registered</span>
+                    </div>
+                  )}
               {fieldValidation.lastName === false && formData.lastName && !errors.lastName && (
                 <div className="flex items-center gap-1 text-red-600 text-sm">
                   <AlertCircle className="h-4 w-4" />
                   <span>Name cannot contain numbers</span>
                 </div>
               )}
-              {fieldValidation.lastName === true && formData.lastName && !errors.lastName && (
-                <p className="text-xs text-green-600">Last name is valid</p>
-              )}
+              {fieldValidation.lastName === true && formData.lastName && !fullNameValidation.exists && !errors.lastName && (
+  <p className="text-xs text-green-600">Last name is valid</p>
+)}
             </div>
           </div>
 
@@ -661,9 +795,14 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 placeholder="Enter phone number"
                 required
                 data-testid="input-phone"
-                className={`${errors.phone ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.phone === true && formData.phone ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                className={`${errors.phone || (phoneValidation.valid === false && formData.phone) || (fieldValidation.phone === false && formData.phone) ? "border-red-500 border-2 focus:ring-red-500" : phoneValidation.valid === true && formData.phone && fieldValidation.phone === true ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
               />
-              {fieldValidation.phone === true && formData.phone && (
+              {phoneValidation.checking && formData.phone && fieldValidation.phone === true && (
+                <div className="absolute right-3 top-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                </div>
+              )}
+              {phoneValidation.valid === true && formData.phone && !phoneValidation.checking && fieldValidation.phone === true && (
                 <div className="absolute right-3 top-3 text-green-500">
                   ✓
                 </div>
@@ -675,8 +814,20 @@ export default function CreateResidentModal({ isOpen, onClose }) {
                 <span>{errors.phone}</span>
               </div>
             )}
-            {fieldValidation.phone === true && formData.phone && !errors.phone && (
-              <p className="text-xs text-green-600">Valid phone format</p>
+            {fieldValidation.phone === false && formData.phone && !errors.phone && (
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>Phone number must be valid (7-11 digits)</span>
+              </div>
+            )}
+            {phoneValidation.valid === false && formData.phone && !errors.phone && fieldValidation.phone === true && (
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>This phone number is already registered</span>
+              </div>
+            )}
+            {phoneValidation.valid === true && formData.phone && !errors.phone && fieldValidation.phone === true && (
+              <p className="text-xs text-green-600">Phone number is available</p>
             )}
           </div>
            </div>
@@ -932,7 +1083,9 @@ export default function CreateResidentModal({ isOpen, onClose }) {
               disabled={
                 isLoading ||
                 emailValidation.checking ||
+                phoneValidation.checking ||
                 (formData.email && (fieldValidation.email === false || emailValidation.valid === false)) ||
+                (formData.phone && (fieldValidation.phone === false || phoneValidation.valid === false)) ||
                 !formData.firstName?.trim() ||
                 !formData.lastName?.trim() ||
                 !formData.email?.trim() ||

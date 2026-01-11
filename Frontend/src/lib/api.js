@@ -456,6 +456,40 @@ async getApprovalStats() {
     }
   }
 
+  async checkResidentFullNameExists(firstName, lastName) {
+  try {
+    const params = new URLSearchParams({
+      firstName: firstName.trim(),
+      lastName: lastName.trim()
+    });
+
+    return await this.request(
+      `/api/v1/user/check-fullname?${params.toString()}`
+    );
+  } catch (error) {
+    // Backend returns 409 if name already exists
+    if (error.message && error.message.includes('409')) {
+      return { exists: true };
+    }
+    throw error;
+  }
+}
+
+async checkPhoneNumberExists(phoneNumber) {
+  try {
+    return await this.request(`/api/v1/user/check-phone/${encodeURIComponent(phoneNumber)}`);
+  } catch (error) {
+    // If phone exists, backend will return 409 conflict
+    if (error.message && error.message.includes('409')) {
+      return { exists: true };
+    }
+    throw error;
+  }
+}
+
+
+
+
   async addMeterToResident(data) {
     return await this.request('/api/v1/water-connection/add-meter', {
       method: 'POST',

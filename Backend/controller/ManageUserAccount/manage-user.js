@@ -150,4 +150,92 @@ const checkEmailExists = async (req, res) => {
   }
 };
 
-module.exports = { getUserAccount, getAllResidents, checkEmailExists }
+const checkFullNameExists = async (req, res) => {
+  try {
+    const firstName = decodeURIComponent(req.query.firstName || '').trim();
+    const lastName = decodeURIComponent(req.query.lastName || '').trim();
+
+    if (!firstName || !lastName) {
+      return res.status(400).json({
+        success: false,
+        message: 'First name and last name are required'
+      });
+    }
+
+    // Case-insensitive search
+    const resident = await Resident.findOne({
+      first_name: { $regex: `^${firstName}$`, $options: 'i' },
+      last_name: { $regex: `^${lastName}$`, $options: 'i' }
+    });
+
+    if (resident) {
+      return res.status(409).json({
+        success: false,
+        exists: true,
+        message: 'Resident already exists'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      exists: false,
+      message: 'Resident name is available'
+    });
+
+  } catch (error) {
+    console.error('Error checking full name:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error checking resident name'
+    });
+  }
+};
+
+const checkPhoneNumberExists = async (req, res) => {
+  try {
+    const phoneNumber = decodeURIComponent(req.params.phone || '').trim();
+
+    if (!phoneNumber || phoneNumber === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required'
+      });
+    }
+
+    // Check if phone number exists in Resident table
+    const resident = await Resident.findOne({ contact_no: phoneNumber });
+    if (resident) {
+      return res.status(409).json({
+        success: false,
+        exists: true,
+        message: 'Phone number already exists'
+      });
+    }
+
+    // Check if phone number exists in Personnel table
+    const personnel = await Personnel.findOne({ contact_no: phoneNumber });
+    if (personnel) {
+      return res.status(409).json({
+        success: false,
+        exists: true,
+        message: 'Phone number already exists'
+      });
+    }
+
+    // Phone number does not exist
+    return res.status(200).json({
+      success: true,
+      exists: false,
+      message: 'Phone number is available'
+    });
+  } catch (error) {
+    console.error('Error checking phone number:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error checking phone number availability'
+    });
+  }
+};
+
+
+module.exports = { getUserAccount, getAllResidents, checkEmailExists, checkFullNameExists, checkPhoneNumberExists }

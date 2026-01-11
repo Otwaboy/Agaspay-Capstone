@@ -69,7 +69,7 @@ const createPesonnel = async (user_id, role, first_name, last_name, email, conta
   if (existingEmail) {
     validationErrors.push('This email is already in use');
   }
-
+ 
   if (existingContact) {
     validationErrors.push('This phone number is already registered');
   }
