@@ -603,7 +603,7 @@ const checkFullNameExistence = async (firstName, lastName) => {
             <div className="flex justify-between space-x-2 pt-4">
               <Button
                 type="button"
-                variant="outline"
+                variant="outline" 
                 onClick={() => {
                   setVerificationStep(false);
                   setVerificationCode("");
