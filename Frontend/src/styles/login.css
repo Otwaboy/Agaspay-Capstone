@@ -1,0 +1,21 @@
+/* Hide browser's native password reveal button to avoid duplication with custom eye icon */
+input[type="password"]::-webkit-outer-spin-button,
+input[type="password"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Chrome, Safari and newer Edge browsers */
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}
+
+/* Firefox - hide the password reveal button */
+input[type="password"]::-moz-reveal {
+  display: none !important;
+}
+
+/* General approach - ensure password input doesn't show browser's default reveal button */
+input[type="password"] {
+  -webkit-autofill: none;
+}
