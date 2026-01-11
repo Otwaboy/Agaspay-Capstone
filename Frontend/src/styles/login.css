@@ -1,21 +1,59 @@
 /* Hide browser's native password reveal button to avoid duplication with custom eye icon */
-input[type="password"]::-webkit-outer-spin-button,
-input[type="password"]::-webkit-inner-spin-button {
+
+/* Generic password input styling */
+input[type="password"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none !important;
+  background-attachment: scroll !important;
+  background-color: transparent !important;
+}
+
+.login-password-input {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+.login-password-input::-webkit-outer-spin-button,
+.login-password-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
-}
-
-/* Chrome, Safari and newer Edge browsers */
-input[type="password"]::-webkit-credentials-auto-fill-button {
   display: none !important;
 }
 
-/* Firefox - hide the password reveal button */
-input[type="password"]::-moz-reveal {
+/* Chrome, Safari - hide password manager/reveal icons */
+.login-password-input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  visibility: hidden !important;
+}
+
+.login-password-input::-webkit-reveal-indicator {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.login-password-input::-webkit-search-results-button,
+.login-password-input::-webkit-search-cancel-button {
   display: none !important;
 }
 
-/* General approach - ensure password input doesn't show browser's default reveal button */
-input[type="password"] {
-  -webkit-autofill: none;
+/* Firefox - hide password visibility toggle */
+.login-password-input::-moz-reveal {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Edge/IE - remove password reveal button */
+.login-password-input::-ms-reveal {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.login-password-input::-ms-clear {
+  display: none !important;
+  visibility: hidden !important;
 }

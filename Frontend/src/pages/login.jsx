@@ -367,14 +367,16 @@ export default function Login() {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Enter your password"
-                    className="h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-12"
+                    className="h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-12 login-password-input"
                     data-testid="input-password"
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors z-10"
                     aria-label={showPassword ? "Hide password" : "Show password"}
+                    tabIndex={-1}
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
