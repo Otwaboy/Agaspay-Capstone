@@ -404,7 +404,7 @@ useEffect(() => {
         });
       }
     } finally {
-      setIsLoading(false);
+      setVerificationLoading(false);
     }
   };
 
