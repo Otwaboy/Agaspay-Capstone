@@ -8,7 +8,7 @@ import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import SecretarySidebar from "../components/layout/secretary-sidebar";
 import SecretaryTopHeader from "../components/layout/secretary-top-header";
-import { User, Mail, Phone, Edit, Save, X, Briefcase } from "lucide-react";
+import { User, Mail, Phone, Edit, Save, X, Briefcase, AlertCircle } from "lucide-react";
 import { useAuth } from "../hooks/use-auth";
 import { toast } from "sonner";
 import apiClient from "../lib/api";
@@ -17,6 +17,8 @@ export default function SecretaryProfile() {
   const { user } = useAuth();
  
   const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [phoneValidation, setPhoneValidation] = useState({ checking: false, valid: null });
+  const [phoneFieldValidation, setPhoneFieldValidation] = useState(null);
 
 
   const { data: personnelData } = useQuery({
@@ -41,22 +43,108 @@ export default function SecretaryProfile() {
         phone: personnelData?.contact_no || "",
         verification_code: ""
       });
+      setPhoneValidation({ checking: false, valid: null });
+      setPhoneFieldValidation(null);
     }
   }, [personnelData, user]);
 
- 
+  // Check phone number existence
+  const checkPhoneNumberExistence = async (phone) => {
+    setPhoneValidation({ checking: true, valid: null });
+    try {
+      const result = await apiClient.checkPhoneNumberExists(phone);
+      // If exists is true, the phone is NOT available
+      setPhoneValidation({ checking: false, valid: !result.exists });
+    } catch (error) {
+      // If error, assume not available (safe approach)
+      setPhoneValidation({ checking: false, valid: false });
+      console.error('Error checking phone number:', error);
+    }
+  };
 
- 
+  // useEffect for phone validation with debounce
+  useEffect(() => {
+    if (!isEditingPhone) return;
+
+    const phone = formData.phone.trim();
+    const originalPhone = personnelData?.contact_no || "";
+
+    // If phone hasn't changed, reset validation
+    if (phone === originalPhone) {
+      setPhoneValidation({ checking: false, valid: null });
+      setPhoneFieldValidation(null);
+      return;
+    }
+
+    const phoneRegex = /^[\d\s+\-()]{7,}$/;
+    const digitsOnly = phone.replace(/\D/g, '');
+    const isValidFormat = phoneRegex.test(phone);
+    const isValidLength = digitsOnly.length <= 11;
+
+    setPhoneFieldValidation(isValidFormat && isValidLength);
+
+    if (phone && isValidFormat && isValidLength) {
+      const timer = setTimeout(() => {
+        checkPhoneNumberExistence(phone);
+      }, 500); // debounce 500ms
+
+      return () => clearTimeout(timer);
+    } else {
+      setPhoneValidation({ checking: false, valid: null });
+    }
+  }, [formData.phone, isEditingPhone, personnelData]);
+
+
 
   const handleSavePhone = async () => {
+    const phone = formData.phone.trim();
+    const originalPhone = personnelData?.contact_no || "";
+
+    // Validate phone is not empty
+    if (!phone) {
+      toast.error("Validation Error", { description: "Phone number is required" });
+      return;
+    }
+
+    // Validate format and length
+    const phoneRegex = /^[\d\s+\-()]{7,}$/;
+    const digitsOnly = phone.replace(/\D/g, '');
+    const isValidFormat = phoneRegex.test(phone);
+    const isValidLength = digitsOnly.length <= 11;
+
+    if (!isValidFormat || !isValidLength) {
+      toast.error("Validation Error", { description: "Phone number must be valid (7-11 digits)" });
+      return;
+    }
+
+    // If phone hasn't changed, just close edit mode
+    if (phone === originalPhone) {
+      setIsEditingPhone(false);
+      return;
+    }
+
+    // Check if phone is still being validated
+    if (phoneValidation.checking) {
+      toast.error("Validation Error", { description: "Please wait while we check phone availability" });
+      return;
+    }
+
+    // Check if phone already exists
+    if (phoneValidation.valid === false) {
+      toast.error("Validation Error", { description: "This phone number is already registered" });
+      return;
+    }
+
     try {
       await apiClient.updatePersonnelContact({
-        contact_no: formData.phone
+        contact_no: phone
       });
 
       toast.success("Phone Updated", { description: "Your phone number has been updated successfully" });
 
       setIsEditingPhone(false);
+      setPhoneValidation({ checking: false, valid: null });
+      setPhoneFieldValidation(null);
 
     } catch (error) {
       const errorMessage = error?.response?.data?.message || error?.message || "Something went wrong";
@@ -72,6 +160,8 @@ export default function SecretaryProfile() {
       phone: personnelData?.contact_no || ""
     });
     setIsEditingPhone(false);
+    setPhoneValidation({ checking: false, valid: null });
+    setPhoneFieldValidation(null);
   };
 
   return (
@@ -174,9 +264,48 @@ export default function SecretaryProfile() {
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             disabled={!isEditingPhone}
-                            className="pl-10"
+                            className={`pl-10 ${
+                              isEditingPhone && formData.phone !== (personnelData?.contact_no || "")
+                                ? phoneValidation.valid === false || (phoneFieldValidation === false && formData.phone)
+                                  ? "border-red-500 border-2 focus:ring-red-500"
+                                  : phoneValidation.valid === true && phoneFieldValidation === true
+                                  ? "border-green-500 border-2 focus:ring-green-500"
+                                  : ""
+                                : ""
+                            }`}
                           />
+                          {isEditingPhone && phoneValidation.checking && phoneFieldValidation && formData.phone !== (personnelData?.contact_no || "") && (
+                            <div className="absolute right-3 top-3">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                            </div>
+                          )}
+                          {isEditingPhone && phoneValidation.valid === true && phoneFieldValidation === true && formData.phone !== (personnelData?.contact_no || "") && !phoneValidation.checking && (
+                            <div className="absolute right-3 top-3 text-green-500">
+                              ✓
+                            </div>
+                          )}
                         </div>
+
+                        {/* Validation Messages */}
+                        {isEditingPhone && formData.phone !== (personnelData?.contact_no || "") && (
+                          <>
+                            {phoneFieldValidation === false && (
+                              <div className="flex items-center gap-1 text-red-600 text-sm">
+                                <AlertCircle className="h-4 w-4" />
+                                <span>Phone number must be valid (7-11 digits)</span>
+                              </div>
+                            )}
+                            {phoneValidation.valid === false && phoneFieldValidation !== false && (
+                              <div className="flex items-center gap-1 text-red-600 text-sm">
+                                <AlertCircle className="h-4 w-4" />
+                                <span>This phone number is already registered</span>
+                              </div>
+                            )}
+                            {phoneValidation.valid === true && phoneFieldValidation === true && (
+                              <p className="text-xs text-green-600">Phone number is available</p>
+                            )}
+                          </>
+                        )}
 
                         {/* Phone Edit/Save/Cancel Buttons */}
                         {!isEditingPhone ? (
@@ -194,6 +323,12 @@ export default function SecretaryProfile() {
                               onClick={handleSavePhone}
                               size="sm"
                               className="bg-blue-600 hover:bg-blue-700"
+                              disabled={
+                                phoneValidation.checking ||
+                                (formData.phone !== (personnelData?.contact_no || "") &&
+                                  (phoneFieldValidation === false || phoneValidation.valid === false)) ||
+                                formData.phone === (personnelData?.contact_no || "")
+                              }
                             >
                               <Save className="h-4 w-4 mr-2" />
                               Save
