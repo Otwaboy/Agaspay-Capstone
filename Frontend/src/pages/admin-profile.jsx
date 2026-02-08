@@ -1,16 +1,23 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import Sidebar from "../components/layout/sidebar";
 import TopHeader from "../components/layout/top-header";
-import { User, Mail, Phone, Briefcase, Shield } from "lucide-react";
+import { User, Mail, Phone, Edit, Save, X, Briefcase } from "lucide-react";
 import { useAuth } from "../hooks/use-auth";
+import { toast } from "sonner";
 import apiClient from "../lib/api";
 
-export default function AdminProfile() {
+export default function MeterReaderProfile() {
   const { user } = useAuth();
+
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+
 
   const { data: personnelData } = useQuery({
     queryKey: ["/api/v1/personnel/me"],
@@ -21,19 +28,64 @@ export default function AdminProfile() {
     retry: 1
   });
 
+  const [formData, setFormData] = useState({
+    email: "",
+    phone: "",
+    verification_code: ""
+  });
+
+  useEffect(() => {
+    if (personnelData || user) {
+      setFormData({
+        email: personnelData?.email || "",
+        phone: personnelData?.contact_no || "",
+        verification_code: ""
+      });
+    }
+  }, [personnelData, user]);
+
+
+
+
+
+  const handleSavePhone = async () => {
+    try {
+      await apiClient.updatePersonnelContact({
+        contact_no: formData.phone
+      });
+
+      toast.success("Phone Updated", { description: "Your phone number has been updated successfully" });
+
+      setIsEditingPhone(false);
+
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || error?.message || "Something went wrong";
+      toast.error("Update Failed", { description: errorMessage });
+    }
+  };
+
+
+
+  const handleCancelPhone = () => {
+    setFormData({
+      ...formData,
+      phone: personnelData?.contact_no || ""
+    });
+    setIsEditingPhone(false);
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      <Sidebar />
+        <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
         <div className="absolute bottom-20 left-20 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
-
-        <TopHeader />
+  <TopHeader />
 
         <main className="flex-1 overflow-auto p-6 relative z-10">
           <div className="max-w-5xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-            <p className="text-gray-600 mt-2 mb-8">View your personal information and account details</p>
+            <p className="text-gray-600 mt-2 mb-8">Manage your personal information and account details</p>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -69,10 +121,10 @@ export default function AdminProfile() {
                         <div>
                           <Label className="text-sm text-gray-500">Position</Label>
                           <div className="mt-1 px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold">
-                            {personnelData?.position || "Administrator"}
+                            {personnelData?.position || "Meter Reader"}
                           </div>
                         </div>
-                    
+                        
                         <div>
                           <Label className="text-sm text-gray-500">Purok</Label>
                           <div className="mt-1 px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold">
@@ -87,69 +139,104 @@ export default function AdminProfile() {
                 </Card>
 
                 {/* Contact Info Card */}
-                <Card>
+                <Card className="relative">
                   <CardHeader>
                     <div>
                       <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
                         <Phone className="h-5 w-5 text-blue-600" />
                         Contact Information
                       </CardTitle>
-                      <CardDescription>Your contact details</CardDescription>
+                      <CardDescription>Update your contact details</CardDescription>
                     </div>
                   </CardHeader>
 
-                  <CardContent>
+                   <CardContent>
                     <div className="space-y-4">
                       {/* Email */}
-                      <div className="space-y-2">
-                        <Label className="text-sm text-gray-500">Email Address</Label>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-400" />
-                          <div className="px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold flex-1">
-                            {personnelData?.email || user?.email || "N/A"}
+                     <div className="space-y-2 p-4 relative">
+                        <Label>Email Address</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-black-400" />
+                           <div className="mt-1 ml-7 px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold">
+                            {formData.email}
                           </div>
-                        </div>
+                        </div>   
                       </div>
 
                       {/* Phone */}
-                      <div className="space-y-2">
-                        <Label className="text-sm text-gray-500">Phone Number</Label>
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-gray-400" />
-                          <div className="px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold flex-1">
-                            {personnelData?.contact_no || user?.phone || "N/A"}
-                          </div>
+                      <div className="space-y-2 p-4 relative">
+                        <Label>Phone Number</Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            disabled={!isEditingPhone}
+                            className="pl-10"
+                          />
                         </div>
+
+                        {/* Phone Edit/Save/Cancel Buttons */}
+                        {!isEditingPhone ? (
+                          <Button
+                            onClick={() => setIsEditingPhone(true)}
+                            size="sm"
+                            className="absolute  -top-1 right-2"
+                          >
+                            <Edit className="h-3 w-3 mr-2" />
+                            Edit
+                          </Button>
+                        ) : (
+                          <div className="flex gap-2 absolute  -top-1 right-2">
+                            <Button
+                              onClick={handleSavePhone}
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Save
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={handleCancelPhone}
+                              size="sm"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* System Access */}
+                {/* Employment Info */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-                      <Shield className="h-5 w-5 text-blue-600" />
-                      System Access
+                      <Briefcase className="h-5 w-5 text-blue-600" />
+                      Employment Details
                     </CardTitle>
                     <CardDescription className="text-sm text-gray-500">
-                      Your system permissions and access level
+                      Your employment information
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-sm text-gray-500">Access Level</Label>
+                          <Label className="text-sm text-gray-500">Department</Label>
                           <div className="mt-1 px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold">
-                            Full Access
+                            Administrator
                           </div>
                         </div>
                         <div>
-                          <Label className="text-sm text-gray-500">Permissions</Label>
+                          <Label className="text-sm text-gray-500">Status</Label>
                           <div className="mt-1">
-                            <Badge className="bg-blue-100 text-blue-800">
-                              All Permissions
+                            <Badge className="bg-green-100 text-green-800 mt-1">
+                              {personnelData?.status || "Active"}
                             </Badge>
                           </div>
                         </div>
@@ -166,9 +253,7 @@ export default function AdminProfile() {
                   <CardContent className="space-y-4">
                     <div>
                       <Label>Account Status</Label>
-                      <p className="font-semibold text-green-600 mt-1">
-                        {personnelData?.status || "Active"}
-                      </p>
+                      <p className="font-semibold text-green-600 mt-1">Active</p>
                     </div>
                     <Separator />
                     <div>
@@ -184,15 +269,16 @@ export default function AdminProfile() {
                       <Label>Username</Label>
                       <p className="font-medium mt-1">{user?.username || "N/A"}</p>
                     </div>
-                    <Separator />
-                    <div>
-                      <Label>Department</Label>
-                      <p className="font-medium mt-1">Administration</p>
-                    </div>
                   </CardContent>
                 </Card>
 
-                
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-blue-800">
+                      <strong>Note:</strong> To update your name or employment details, please contact the administrator.
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
 
             </div>
