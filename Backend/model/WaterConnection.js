@@ -70,6 +70,10 @@ const WaterConnectionSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  disconnection_rejection_date: {
+    type: Date,
+    default: null
+  },
   archive_status: {
     type: String,
     enum: ['pending_archive', 'archived', null],
@@ -89,6 +93,10 @@ const WaterConnectionSchema = new mongoose.Schema({
   },
   archive_rejection_reason: {
     type: String,
+    default: null
+  },
+  archive_rejection_date: {
+    type: Date,
     default: null
   },
   created_at:

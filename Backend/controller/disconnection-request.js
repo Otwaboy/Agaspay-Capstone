@@ -121,8 +121,8 @@ const getDisconnectionStatus = async (req, res) => {
     const connectionsStatus = connections.map(conn => {
       // Calculate next allowed request date if rejected
       let next_allowed_request_date = null;
-      if (conn.disconnection_rejection_reason) {
-        const nextDate = new Date();
+      if (conn.disconnection_rejection_reason && conn.disconnection_rejection_date) {
+        const nextDate = new Date(conn.disconnection_rejection_date);
         nextDate.setDate(nextDate.getDate() + 1);
         next_allowed_request_date = nextDate;
       }
@@ -142,8 +142,8 @@ const getDisconnectionStatus = async (req, res) => {
     // For backward compatibility, also return first connection status at top level
     const firstConn = connections[0];
     let next_allowed_request_date = null;
-    if (firstConn.disconnection_rejection_reason) {
-      const nextDate = new Date();
+    if (firstConn.disconnection_rejection_reason && firstConn.disconnection_rejection_date) {
+      const nextDate = new Date(firstConn.disconnection_rejection_date);
       nextDate.setDate(nextDate.getDate() + 1);
       next_allowed_request_date = nextDate;
     }
@@ -215,6 +215,7 @@ const cancelDisconnectionRequest = async (req, res) => {
     connection.disconnection_type = null;
     connection.disconnection_requested_date = null;
     connection.disconnection_rejection_reason = null;
+    connection.disconnection_rejection_date = null;
     await connection.save();
 
     res.status(StatusCodes.OK).json({
@@ -275,6 +276,7 @@ const approveDisconnectionRequest = async (req, res) => {
     connection.connection_status = 'for_disconnection';
     connection.disconnection_approved_date = new Date();
     connection.disconnection_rejection_reason = null; // clear previous rejection if any
+    connection.disconnection_rejection_date = null; // clear previous rejection date if any
     await connection.save();
 
     res.status(StatusCodes.OK).json({
@@ -347,6 +349,7 @@ const rejectDisconnectionRequest = async (req, res) => {
     connection.disconnection_type = null;
     connection.disconnection_requested_date = null;
     connection.disconnection_rejection_reason = reason.trim();
+    connection.disconnection_rejection_date = new Date();
     await connection.save();
 
     res.status(StatusCodes.OK).json({

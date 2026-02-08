@@ -31,12 +31,14 @@ async function sendSMS(recipient, message) {
 
     console.log(`📱 Sending SMS to: ${formattedNumber}`);
 
-    // PhilSMS API endpoint - using standard SMS gateway format
+    // PhilSMS API endpoint - using correct dashboard endpoint with OAuth 2.0
+    const senderID = process.env.PHILSMS_SENDER_ID || 'AGASPAY';
+
     const response = await axios.post(
-      'https://app.philsms.com/api/v3/sms/send',
+      'https://dashboard.philsms.com/api/v3/sms/send',
       {
         recipient: formattedNumber,
-        sender_id: 'PhilSMS',
+        sender_id: senderID,
         type: 'plain',
         message: message
       },
@@ -93,14 +95,15 @@ async function sendOverdueReminder({ residentName, contactNo, totalDue, monthsOv
     year: 'numeric'
   });
 
-  const message = `[AGASPAY] Dear ${residentName},
+  const message = `
+[AGASPAY] Dear ${residentName},
 
 AGASPAY Water Bill Reminder:
 You have an overdue balance of ${formattedAmount} (${monthsOverdue} month${monthsOverdue > 1 ? 's' : ''} overdue).
 
 Due Date: ${formattedDate}
 
-Please settle your balance within 7 days or else we will disconnect your account.
+Please settle your balance within 7 days or service may be suspended.
 
 Thank you.
 - Barangay Biking Water Works (AGASPAY)`;

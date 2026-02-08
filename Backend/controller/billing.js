@@ -628,10 +628,19 @@ const sendReminderSMS = async (req, res) => {
     }
 
     // ✅ Find ALL unpaid/overdue bills for this connection (same logic as getOverdueBilling)
+    console.log('🔍 Looking for overdue bills for connection:', {
+      connectionType: typeof connection,
+      hasId: !!connection?._id,
+      connectionId: connection?._id,
+      billConnectionId: billing.connection_id
+    });
+
     const allOverdueBills = await Billing.find({
-      connection_id: billing.connection_id,
+      connection_id: connection._id,
       status: { $in: ['unpaid', 'partial', 'overdue', 'consolidated'] }
     }).sort({ due_date: 1 }); // Ascending - earliest first
+
+    console.log('📊 Found overdue bills:', allOverdueBills.length);
 
     if (allOverdueBills.length === 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -664,21 +673,32 @@ const sendReminderSMS = async (req, res) => {
     console.log('📊 Months overdue (count of unpaid bills):', monthsOverdue);
     console.log('💰 Total unpaid amount:', totalDueAmount);
     console.log('📤 Sending overdue reminder SMS:', reminderData);
-    
-    const smsResult = await sendOverdueReminder(reminderData);
-    if (smsResult.success) {
-      return res.status(StatusCodes.OK).json({
-        msg: 'SMS reminder sent successfully',
-        data: {
-          recipient: smsResult.recipient,
-          residentName: reminderData.residentName,
-          sentAt: new Date()
-        }
-      });
-    } else {
+
+    try {
+      const smsResult = await sendOverdueReminder(reminderData);
+      console.log('📤 SMS Result:', smsResult);
+
+      if (smsResult.success) {
+        return res.status(StatusCodes.OK).json({
+          msg: 'SMS reminder sent successfully',
+          data: {
+            recipient: smsResult.recipient,
+            residentName: reminderData.residentName,
+            sentAt: new Date()
+          }
+        });
+      } else {
+        console.error('❌ SMS sending failed:', smsResult.error);
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+          msg: 'Failed to send SMS reminder',
+          error: smsResult.error
+        });
+      }
+    } catch (smsError) {
+      console.error('❌ SMS sending error:', smsError);
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         msg: 'Failed to send SMS reminder',
-        error: smsResult.error
+        error: smsError.message
       });
     }
   } catch (error) {

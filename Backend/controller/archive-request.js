@@ -107,9 +107,9 @@ const getArchiveStatus = async (req, res) => {
 
     // Calculate next allowed request date if rejected
     let next_allowed_request_date = null;
-    if (connection.archive_rejection_reason) {
-      // If rejected, resident can request again tomorrow
-      const nextDate = new Date();
+    if (connection.archive_rejection_reason && connection.archive_rejection_date) {
+      // If rejected, resident can request again the day after rejection
+      const nextDate = new Date(connection.archive_rejection_date);
       nextDate.setDate(nextDate.getDate() + 1);
       next_allowed_request_date = nextDate;
     }
@@ -316,6 +316,7 @@ const rejectArchiveRequest = async (req, res) => {
     connection.archive_reason = null;
     connection.archive_requested_date = null;
     connection.archive_rejection_reason = reason.trim();
+    connection.archive_rejection_date = new Date();
     await connection.save();
 
     res.status(StatusCodes.OK).json({
