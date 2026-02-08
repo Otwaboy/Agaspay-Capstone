@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [emailValidation, setEmailValidation] = useState({ checking: false, valid: null });
+  const [phoneValidation, setPhoneValidation] = useState({ checking: false, valid: null });
 
   // Email verification states
   const [verificationStep, setVerificationStep] = useState(false); // false = form, true = verification
@@ -98,6 +99,39 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
       console.error('Error checking email:', error);
     }
   };
+
+  // Check phone number existence
+  const checkPhoneNumberExistence = async (phone) => {
+    setPhoneValidation({ checking: true, valid: null });
+    try {
+      const result = await apiClient.checkPhoneNumberExists(phone);
+      // If exists is true, the phone is NOT available
+      setPhoneValidation({ checking: false, valid: !result.exists });
+    } catch (error) {
+      // If error, assume not available (safe approach)
+      setPhoneValidation({ checking: false, valid: false });
+      console.error('Error checking phone number:', error);
+    }
+  };
+
+  // useEffect for phone validation with debounce
+  useEffect(() => {
+    const phone = formData.phone.trim();
+    const phoneRegex = /^[\d\s+\-()]{7,}$/;
+    const digitsOnly = phone.replace(/\D/g, '');
+    const isValidFormat = phoneRegex.test(phone);
+    const isValidLength = digitsOnly.length <= 11;
+
+    if (phone && isValidFormat && isValidLength) {
+      const timer = setTimeout(() => {
+        checkPhoneNumberExistence(phone);
+      }, 500); // debounce 500ms
+
+      return () => clearTimeout(timer);
+    } else {
+      setPhoneValidation({ checking: false, valid: null });
+    }
+  }, [formData.phone]);
 
   // Send email verification code
   const handleSendVerificationCode = async (e) => {
@@ -336,7 +370,7 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
         });
       }
     } finally {
-      setIsLoading(false);
+      setVerificationLoading(false);
     }
   };
 
@@ -392,9 +426,16 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
     // Real-time validation for phone
     if (field === 'phone' && value.trim()) {
       const phoneRegex = /^[\d\s+\-()]{7,}$/;
-      setFieldValidation(prev => ({ ...prev, phone: phoneRegex.test(value.trim()) }));
+      const isValidFormat = phoneRegex.test(value.trim());
+      // Extract only digits to check length
+      const digitsOnly = value.replace(/\D/g, '');
+      const isValidLength = digitsOnly.length <= 11;
+
+      setFieldValidation(prev => ({ ...prev, phone: isValidFormat && isValidLength }));
+      // Phone existence checking is handled by useEffect with debounce
     } else if (field === 'phone') {
       setFieldValidation(prev => ({ ...prev, phone: null }));
+      setPhoneValidation({ checking: false, valid: null });
     }
   };
 
@@ -484,23 +525,47 @@ export default function CreatePersonnelModal({ isOpen, onClose }) {
 
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleChange("phone")(e.target.value)}
-                placeholder="Enter phone number"
-                required
-                data-testid="input-phone"
-                className={`${errors.phone ? "border-red-500 border-2 focus:ring-red-500" : fieldValidation.phone === true && formData.phone ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
-              />
+              <div className="relative">
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleChange("phone")(e.target.value)}
+                  placeholder="Enter phone number"
+                  required
+                  data-testid="input-phone"
+                  className={`${errors.phone || (phoneValidation.valid === false && formData.phone) || (fieldValidation.phone === false && formData.phone) ? "border-red-500 border-2 focus:ring-red-500" : phoneValidation.valid === true && formData.phone && fieldValidation.phone === true ? "border-green-500 border-2 focus:ring-green-500" : ""}`}
+                />
+                {phoneValidation.checking && formData.phone && fieldValidation.phone === true && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                  </div>
+                )}
+                {phoneValidation.valid === true && formData.phone && !phoneValidation.checking && fieldValidation.phone === true && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                    ✓
+                  </div>
+                )}
+              </div>
+              {errors.phone && (
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{errors.phone}</span>
+                </div>
+              )}
               {fieldValidation.phone === false && formData.phone && !errors.phone && (
                 <div className="flex items-center gap-1 text-red-600 text-sm">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Phone number must be at least 7 digits</span>
+                  <span>Phone number must be valid (7-11 digits)</span>
                 </div>
               )}
-              {fieldValidation.phone === true && formData.phone && !errors.phone && (
-                <p className="text-xs text-green-600">Phone number is valid</p>
+              {phoneValidation.valid === false && formData.phone && !errors.phone && fieldValidation.phone === true && (
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>This phone number is already registered</span>
+                </div>
+              )}
+              {phoneValidation.valid === true && formData.phone && !errors.phone && fieldValidation.phone === true && (
+                <p className="text-xs text-green-600">Phone number is available</p>
               )}
             </div>
 
