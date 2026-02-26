@@ -32,7 +32,7 @@ export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
     const months = [];
     const today = new Date();
 
-    for (let i = 11; i >= 0; i--) {
+    for (let i = 0; i <= 11; i++) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthLabel = date.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
@@ -247,7 +247,7 @@ export default function GenerateAssignmentReportModal({ isOpen, onClose }) {
               <SelectTrigger id="monthFilter" className="w-full">
                 <SelectValue placeholder="Select month..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-64 overflow-y-auto">
                 {getCurrentAndPastMonths().map((month) => (
                   <SelectItem key={month.value} value={month.value}>
                     {month.label}

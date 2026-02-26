@@ -72,7 +72,7 @@ export default function AdminIncidents() {
 
   const getPriorityBadge = (priority) => {
     const config = {
-      high: { label: "High", className: "bg-red-100 text-red-800" },
+      critical: { label: "Critical", className: "bg-red-100 text-red-800" },
       medium: { label: "Medium", className: "bg-yellow-100 text-yellow-800" },
       low: { label: "Low", className: "bg-blue-100 text-blue-800" }
     };

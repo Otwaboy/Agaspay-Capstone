@@ -43,6 +43,8 @@ export default function ResidentPaymentHistory() {
   const [methodFilter, setMethodFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [selectedMeter, setSelectedMeter] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   // Fetch all meters for the resident
   const { data: metersData, isLoading: metersLoading } = useQuery({
@@ -162,6 +164,17 @@ export default function ResidentPaymentHistory() {
 
     return matchesSearch && matchesStatus && matchesMethod && matchesDate;
   }) || [];
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredPayments.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedPayments = filteredPayments.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const totalPaid = filteredPayments
     .filter(p => p.payment_status?.toLowerCase() === 'confirmed' || p.payment_status?.toLowerCase() === 'paid')
@@ -480,7 +493,7 @@ export default function ResidentPaymentHistory() {
                     {paymentsLoading ? (
                       [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
                     ) : filteredPayments.length > 0 ? (
-                      filteredPayments.map((payment) => {
+                      paginatedPayments.map((payment) => {
                         const statusConfig = getStatusConfig(payment.payment_status);
                         const StatusIcon = statusConfig.icon;
                         const PaymentIcon = getPaymentMethodIcon(payment.payment_method);
@@ -573,6 +586,46 @@ export default function ResidentPaymentHistory() {
                             ? 'Try adjusting your filters'
                             : 'Your payment history will appear here'}
                         </p>
+                      </div>
+                    )}
+
+                    {/* Pagination Controls */}
+                    {filteredPayments.length > 0 && (
+                      <div className="mt-6 flex items-center justify-between border-t pt-4">
+                        <p className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredPayments.length)} of {filteredPayments.length} payments
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <div className="flex gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            ))}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>

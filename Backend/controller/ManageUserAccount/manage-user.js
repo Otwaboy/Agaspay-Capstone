@@ -76,7 +76,6 @@ const getUserAccount = async (req, res) => {
       status: connection?.connection_status || null,
       purok: resident?.purok || null,
       zone: resident?.zone || null,
-      type: connection?.type || null,
     }
 
   } else if (user.role === 'treasurer' || user.role === 'admin' || user.role === 'meter_reader' || user.role === 'secretary' || user.role === 'maintenance') {

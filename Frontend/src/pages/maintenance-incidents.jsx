@@ -40,6 +40,8 @@ export default function MaintenanceIncidents() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   // Fetch real incident data from backend
   const { data: apiResponse, isLoading } = useQuery({
@@ -97,10 +99,8 @@ export default function MaintenanceIncidents() {
 
   const getPriorityBadge = (priority) => {
     switch (priority?.toLowerCase()) {
-      case 'urgent':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Urgent</Badge>;
-      case 'high':
-        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">High</Badge>;
+      case 'critical':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Critical</Badge>;
       case 'medium':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Medium</Badge>;
       case 'low':
@@ -124,6 +124,17 @@ export default function MaintenanceIncidents() {
 
     return matchesSearch && matchesStatus && matchesType;
   }) || [];
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredIncidents.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedIncidents = filteredIncidents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
@@ -216,7 +227,7 @@ export default function MaintenanceIncidents() {
                   </div>
                 ) : filteredIncidents.length > 0 ? (
                   <div className="space-y-3">
-                    {filteredIncidents.map((incident) => (
+                    {paginatedIncidents.map((incident) => (
                       <div
                         key={incident.id}
                         className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -278,6 +289,43 @@ export default function MaintenanceIncidents() {
                         ? 'Try adjusting your filters'
                         : 'No incident reports assigned yet'}
                     </p>
+                  </div>
+                )}
+
+                {/* Pagination Controls */}
+                {filteredIncidents.length > 0 && (
+                  <div className="mt-6 flex items-center justify-between">
+                    <p className="text-sm text-gray-600">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredIncidents.length)} of {filteredIncidents.length} incidents
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                          >
+                            {pageNum}
+                          </Button>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>

@@ -23,6 +23,7 @@ import {
 import { Textarea } from "../components/ui/textarea";
 import MaintenanceSidebar from "../components/layout/maintenance-sidebar";
 import MaintenanceTopHeader from "../components/layout/maintenance-top-header";
+import GenerateAssignmentReportModal from "../components/modals/generate-assignment-report-modal";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api";
 import {
@@ -33,7 +34,8 @@ import {
   Search,
   Filter,
   Calendar,
-  User
+  User,
+  FileText
 } from "lucide-react";
 
 export default function MaintenanceTasks() {
@@ -44,6 +46,9 @@ export default function MaintenanceTasks() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
   // Fetch assignments from backend (filtered by maintenance role automatically)
   const { data: assignmentsResponse, isLoading, refetch } = useQuery({
     queryKey: ['/api/v1/assignments'],
@@ -163,6 +168,17 @@ const tasksData = assignmentsResponse?.assignments?.map(assignment => {
     return matchesSearch && matchesStatus && matchesType;
   }) || [];
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTasks.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
+
   const handleUpdateTask = () => {
     if (!newStatus) {
       toast.error("Error", { description: "Please select a status" });
@@ -251,13 +267,25 @@ updateTaskMutation.mutate({
             {/* Tasks List */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Wrench className="h-5 w-5 mr-2 text-orange-600" />
-                  Assigned Tasks
-                </CardTitle>
-                <CardDescription>
-                  {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'} found
-                </CardDescription>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center">
+                      <Wrench className="h-5 w-5 mr-2 text-orange-600" />
+                      Assigned Tasks
+                    </CardTitle>
+                    <CardDescription>
+                      {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'} found
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setIsReportModalOpen(true)}
+                    variant="outline"
+                    className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate Report
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -268,7 +296,7 @@ updateTaskMutation.mutate({
                   </div>
                 ) : filteredTasks.length > 0 ? (
                   <div className="space-y-3">
-                    {filteredTasks.map((task) => (
+                    {paginatedTasks.map((task) => (
                       <div
                         key={task.id}
                         className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -332,6 +360,48 @@ updateTaskMutation.mutate({
                     </p>
                   </div>
                 )}
+
+                {/* Pagination Controls */}
+                {filteredTasks.length > 0 && (
+                  <div className="flex items-center justify-between px-0 py-4 border-t mt-4">
+                    <div className="text-sm text-gray-600">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredTasks.length)} of {filteredTasks.length} tasks
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-10 h-10 p-0"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -379,6 +449,12 @@ updateTaskMutation.mutate({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Generate Assignment Report Modal */}
+      <GenerateAssignmentReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 }

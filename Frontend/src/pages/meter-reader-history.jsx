@@ -3,6 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import {
   ClipboardList,
   Search,
@@ -19,6 +28,8 @@ import { format } from "date-fns";
 export default function MeterReaderHistory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   const { data: readingsData, isLoading } = useQuery({
     queryKey: ["meter-readings-history"],
@@ -44,6 +55,17 @@ export default function MeterReaderHistory() {
 
     return matchesSearch && matchesDate;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredReadings.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedReadings = filteredReadings.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const totalReadings = filteredReadings.length;
   const totalConsumption = filteredReadings.reduce(
@@ -151,75 +173,120 @@ export default function MeterReaderHistory() {
                 </CardContent>
               </Card>
 
-              {/* --- Data List --- */}
-              {isLoading ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <p className="text-gray-500">Loading readings...</p>
-                  </CardContent>
-                </Card>
-              ) : filteredReadings.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <ClipboardList className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500">No readings found</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {filteredReadings.map((reading) => (
-                    <Card
-                      key={reading.reading_id}
-                      className="hover:shadow-md transition-shadow"
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <User className="h-4 w-4 text-gray-500" />
-                              <span className="font-semibold text-lg">
-                                {reading.full_name}
-                              </span>
-                              <Badge variant="outline">
-                                Purok {reading.purok_no}
-                              </Badge>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                              <div>
-                                <p className="text-gray-500">Previous</p>
-                                <p className="font-semibold">
-                                  {reading.previous_reading} m³
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Present</p>
-                                <p className="font-semibold text-blue-600">
+              {/* --- Data Table --- */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Readings ({filteredReadings.length})</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {isLoading ? (
+                    <div className="p-8 text-center text-gray-500">
+                      Loading readings...
+                    </div>
+                  ) : filteredReadings.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <ClipboardList className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                      <p>No readings found</p>
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex flex-col">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-gray-50">
+                              <TableHead>Resident Name</TableHead>
+                              <TableHead>Meter Number</TableHead>
+                              <TableHead>Purok</TableHead>
+                              <TableHead>Previous Reading</TableHead>
+                              <TableHead>Present Reading</TableHead>
+                              <TableHead>Consumption</TableHead>
+                              <TableHead>Reading Date</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedReadings.map((reading) => (
+                              <TableRow
+                                key={reading.reading_id}
+                                data-testid={`row-reading-${reading.reading_id}`}
+                              >
+                                <TableCell className="font-medium">
+                                  <div>
+                                    <p>{reading.full_name}</p>
+                                    <p className="text-sm text-gray-500">{reading.meter_number || 'N/A'}</p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="font-mono text-sm">{reading.meter_number || 'N/A'}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    Purok {reading.purok_no}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{reading.previous_reading} m³</TableCell>
+                                <TableCell className="font-semibold text-blue-600">
                                   {reading.present_reading} m³
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Consumption</p>
-                                <p className="font-semibold text-green-600">
+                                </TableCell>
+                                <TableCell className="font-semibold text-green-600">
                                   {reading.calculated} m³
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Date</p>
-                                <p className="font-semibold">
+                                </TableCell>
+                                <TableCell>
                                   {format(
                                     new Date(reading.last_read_date),
                                     "MMM dd, yyyy"
                                   )}
-                                </p>
-                              </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Pagination Controls */}
+                      {filteredReadings.length > 0 && (
+                        <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                          <div className="text-sm text-gray-600">
+                            Showing {startIndex + 1} to {Math.min(endIndex, filteredReadings.length)} of {filteredReadings.length} readings
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                              disabled={currentPage === 1}
+                            >
+                              Previous
+                            </Button>
+
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <Button
+                                  key={page}
+                                  variant={currentPage === page ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setCurrentPage(page)}
+                                  className="w-10 h-10 p-0"
+                                >
+                                  {page}
+                                </Button>
+                              ))}
                             </div>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                              disabled={currentPage === totalPages}
+                            >
+                              Next
+                            </Button>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </main>

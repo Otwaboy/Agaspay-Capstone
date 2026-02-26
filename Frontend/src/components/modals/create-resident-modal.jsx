@@ -33,7 +33,6 @@ export default function CreateResidentModal({ isOpen, onClose }) {
     specificAddress: "",
     email: "",
     phone: "",
-    type: "",
     meterNumber: ""
   });
 
@@ -215,6 +214,22 @@ useEffect(() => {
         validationErrors.lastName = "Last name is required";
       }
 
+      if (!storedFormData.zone || storedFormData.zone.trim() === "") {
+        validationErrors.zone = "Resident zone is required";
+      }
+
+      if (!storedFormData.purok || storedFormData.purok.trim() === "") {
+        validationErrors.purok = "Resident purok is required";
+      }
+
+      if (!storedFormData.email || storedFormData.email.trim() === "") {
+        validationErrors.email = "Email is required";
+      }
+
+      if (!storedFormData.phone || storedFormData.phone.trim() === "") {
+        validationErrors.phone = "Phone number is required";
+      }
+
       if (!storedFormData.connectionZone || storedFormData.connectionZone.trim() === "") {
         validationErrors.connectionZone = "Water connection zone is required";
       }
@@ -247,7 +262,6 @@ useEffect(() => {
         purok: storedFormData.purok,
         email: storedFormData.email.trim() || null,
         contact_no: storedFormData.phone,
-        type: storedFormData.type,
         meter_no: storedFormData.meterNumber,
         connection_zone: storedFormData.connectionZone,
         connection_purok: storedFormData.connectionPurok,
@@ -292,7 +306,6 @@ useEffect(() => {
         specificAddress: "",
         email: "",
         phone: "",
-        type: "",
         meterNumber: ""
       });
       setStoredFormData(null);
@@ -603,11 +616,14 @@ const checkFullNameExistence = async (firstName, lastName) => {
             <div className="flex justify-between space-x-2 pt-4">
               <Button
                 type="button"
-                variant="outline" 
+                variant="outline"
                 onClick={() => {
+                  // Restore form data when going back
+                  if (storedFormData) {
+                    setFormData(storedFormData);
+                  }
                   setVerificationStep(false);
                   setVerificationCode("");
-                  setStoredFormData(null);
                   setErrors({});
                 }}
                 disabled={verificationLoading}
@@ -724,7 +740,7 @@ const checkFullNameExistence = async (firstName, lastName) => {
           {/* assigning zone */}
           <div className="space-y-2">
             <Label htmlFor="zone">Zone</Label>
-            <Select onValueChange={handleChange("zone")} required>
+            <Select onValueChange={handleChange("zone")} value={formData.zone} required>
               <SelectTrigger data-testid="select-zone" className={errors.zone ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                 <SelectValue placeholder="Select Zone" />
               </SelectTrigger>
@@ -741,7 +757,7 @@ const checkFullNameExistence = async (firstName, lastName) => {
             {formData.zone === "1" && (
               <>
                 <Label htmlFor="purok">Purok</Label>
-                <Select onValueChange={handleChange("purok")} required>
+                <Select onValueChange={handleChange("purok")} value={formData.purok} required>
                   <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
@@ -757,7 +773,7 @@ const checkFullNameExistence = async (firstName, lastName) => {
             {formData.zone === "2" && (
               <>
                 <Label htmlFor="purok">Purok</Label>
-                <Select onValueChange={handleChange("purok")} required>
+                <Select onValueChange={handleChange("purok")} value={formData.purok} required>
                   <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
@@ -773,7 +789,7 @@ const checkFullNameExistence = async (firstName, lastName) => {
             {formData.zone === "3" && (
               <>
                 <Label htmlFor="purok">Purok</Label>
-                <Select onValueChange={handleChange("purok")} required>
+                <Select onValueChange={handleChange("purok")} value={formData.purok} required>
                   <SelectTrigger data-testid="select-purok" className={errors.purok ? "border-red-500 border-2 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select Purok" />
                   </SelectTrigger>
@@ -840,24 +856,8 @@ const checkFullNameExistence = async (firstName, lastName) => {
                 Water Connection Details
               </Label>
             </div>
-            {/* Connection Type, Meter Number, and Zone */}
+            {/* Meter Number and Zone */}
             <div className="space-y-4 bg-blue-50 p-4 rounded-lg">
-              <div className="space-y-2">
-                
-                <Label htmlFor="type">Connection Type <span className="text-red-500">*</span></Label>
-                <Select onValueChange={handleChange("type")} required>
-                  <SelectTrigger data-testid="select-type" className={errors.type ? "border-red-500 border-2 focus:ring-red-500" : ""}>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="household">Household</SelectItem>
-                    <SelectItem value="restaurant">Restaurant</SelectItem>
-                    <SelectItem value="establishment">Establishment</SelectItem>
-                    <SelectItem value="others">Others</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="meterNumber">Meter Number <span className="text-red-500">*</span></Label>
                 <div className="relative">
@@ -1096,7 +1096,6 @@ const checkFullNameExistence = async (firstName, lastName) => {
                 !formData.connectionPurok ||
                 !formData.meterNumber?.trim() ||
                 !formData.specificAddress?.trim() ||
-                !formData.type ||
                 fieldValidation.firstName === false ||
                 fieldValidation.lastName === false ||
                 fieldValidation.phone === false ||

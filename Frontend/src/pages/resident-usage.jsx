@@ -6,6 +6,7 @@ import { Activity, Droplets, TrendingUp, TrendingDown, Minus, Download, MapPin }
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
 import apiClient from "../lib/api";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 
 export default function ResidentUsage() {
   const [selectedMeter, setSelectedMeter] = useState(null);
@@ -299,13 +300,13 @@ export default function ResidentUsage() {
               </Card>
             </div>
 
-            {/* Simple chart */}
+            {/* Bar Chart */}
             <Card className="mb-8">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Consumption History</CardTitle>
+                  <CardTitle>Water Consumption Overview</CardTitle>
                   <CardDescription>
-                    Your water usage for recent months
+                    Monthly consumption comparison
                   </CardDescription>
                 </div>
                 <Button variant="outline" size="sm">
@@ -314,28 +315,91 @@ export default function ResidentUsage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {historicalData.map((item, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium text-gray-700">
-                          {item.month}
-                        </span>
-                        <span className="text-gray-600">
-                          {item.consumption} m³ • ₱{item.amount}
-                        </span>
-                      </div>
-                      <div className="h-8 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-600 rounded-full transition-all"
-                          style={{
-                            width: `${(item.consumption / 30) * 100}%`,
-                          }}
+                {historicalData.length > 0 ? (
+                  <div className="space-y-6">
+                    <ResponsiveContainer width="100%" height={450}>
+                      <BarChart data={historicalData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                        <XAxis
+                          dataKey="month"
+                          stroke="#6b7280"
+                          style={{ fontSize: '13px' }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={100}
                         />
+                        <YAxis
+                          stroke="#6b7280"
+                          style={{ fontSize: '13px' }}
+                          label={{ value: 'Consumption (m³)', angle: -90, position: 'insideLeft' }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#fff',
+                            border: '2px solid #0ea5e9',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                          }}
+                          formatter={(value) => [`${value} m³`, 'Water Used']}
+                          labelStyle={{ color: '#1f2937', fontWeight: 'bold' }}
+                          cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+                        />
+                        <Bar
+                          dataKey="consumption"
+                          radius={[6, 6, 0, 0]}
+                          name="Water Consumption"
+                          maxBarSize={40}
+                        >
+                          {historicalData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.consumption > averageConsumption ? '#f97316' : '#3b82f6'}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="grid grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">Current Month</p>
+                        <p className="text-2xl font-bold text-blue-600">{currentConsumption} m³</p>
+                      </div>
+                      <div className="text-center border-l border-r border-gray-300">
+                        <p className="text-sm text-gray-600">Average</p>
+                        <p className="text-2xl font-bold text-purple-600">{averageConsumption} m³</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">Change</p>
+                        <div className="flex items-center justify-center gap-1">
+                          {consumptionChange > 0 ? (
+                            <TrendingUp className="h-5 w-5 text-red-500" />
+                          ) : (
+                            <TrendingDown className="h-5 w-5 text-green-500" />
+                          )}
+                          <p className={`text-2xl font-bold ${consumptionChange > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {Math.abs(changePercentage)}%
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="flex gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-orange-500"></div>
+                        <span className="text-gray-600">Above Average</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-blue-500"></div>
+                        <span className="text-gray-600">Below Average</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+                    <Droplets className="h-12 w-12 mb-3 opacity-50" />
+                    <p>No consumption data available</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

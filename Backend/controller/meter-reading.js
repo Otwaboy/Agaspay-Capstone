@@ -416,7 +416,6 @@ const getLatestReadings = async (req, res) => {
         reading_id: reading?._id ? reading._id.toString() : null,
         connection_status: item.connection_status,
         connection_id: item._id ? item._id.toString() : null,
-        connection_type: item.type || "Unknown",
         specific_address: item.specific_address || 'null',
         // 📅 Always use reading's inclusive_date if available (current reading period)
         // If no reading exists, use connection's inclusive_date (next period waiting to be read)
@@ -640,7 +639,6 @@ const getSubmittedReadings = async (req, res) => {
         reading_id: reading?._id ? reading._id.toString() : null,
         connection_id: item._id ? item._id.toString() : null,
         connection_status: item.connection_status,
-        connection_type: item.type || "Unknown",
         inclusive_date: reading?.inclusive_date || null,
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
         purok_no: resident?.purok || "N/A",

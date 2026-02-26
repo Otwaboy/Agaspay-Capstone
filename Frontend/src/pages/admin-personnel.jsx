@@ -55,6 +55,8 @@ export default function AdminPersonnel() {
   const [personnelToArchive, setPersonnelToArchive] = useState(null);
   const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
   const [viewingPersonnel, setViewingPersonnel] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -89,6 +91,17 @@ export default function AdminPersonnel() {
 
     return matchesSearch;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredPersonnel.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedPersonnel = filteredPersonnel.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const getRoleBadge = (role) => {
     const config = {
@@ -375,7 +388,7 @@ export default function AdminPersonnel() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredPersonnel.map((person) => {
+                      {paginatedPersonnel.map((person) => {
                         const roleConfig = getRoleBadge(person.role);
                         const statusConfig = getStatusBadge(person);
                         const fullName = `${person.first_name} ${person.last_name}`;
@@ -452,6 +465,48 @@ export default function AdminPersonnel() {
                       )}
                     </tbody>
                   </table>
+
+                  {/* Pagination Controls */}
+                  {filteredPersonnel.length > 0 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                      <div className="text-sm text-gray-600">
+                        Showing {startIndex + 1} to {Math.min(endIndex, filteredPersonnel.length)} of {filteredPersonnel.length} staff members
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className="w-10 h-10 p-0"
+                            >
+                              {page}
+                            </Button>
+                          ))}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

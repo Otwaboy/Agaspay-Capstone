@@ -110,14 +110,13 @@ export default function GenerateResidentReportModal({ isOpen, onClose }) {
       `${resident.first_name} ${resident.last_name}`,
       `Zone ${resident.zone}, Purok ${resident.purok}`,
       resident.meter_no || 'N/A',
-      resident.type || 'N/A',
       resident.contact_no || 'N/A',
       new Date(resident.created_at).toLocaleDateString('en-PH')
     ]);
 
     // Generate table using jspdf-autotable v5
     autoTable(doc, {
-      head: [['#', 'Name', 'Address', 'Meter No.', 'Type', 'Contact', 'Registered']],
+      head: [['#', 'Name', 'Address', 'Meter No.', 'Contact', 'Registered']],
       body: tableData,
       startY: 48,
       theme: 'striped',

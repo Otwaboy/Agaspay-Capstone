@@ -31,7 +31,6 @@ const getLatestConnections = async (req, res) => {
           purok_no: conn.resident_id?.purok || "N/A", // from Resident
           meter_no: conn.meter_no,
           connection_status: conn.connection_status,
-          type: conn.type,
           previous_reading: lastReading ? lastReading.present_reading : 0,
         };
       })
@@ -258,7 +257,6 @@ const editResidentAccount = async (req, res) => {
     // Prepare water connection update data
     const connectionUpdateData = {};
     if (updateData.meter_no) connectionUpdateData.meter_no = updateData.meter_no;
-    if (updateData.type) connectionUpdateData.type = updateData.type;
     if (updateData.connection_status) connectionUpdateData.connection_status = updateData.connection_status;
 
     // Update resident information
@@ -286,7 +284,6 @@ const editResidentAccount = async (req, res) => {
       address: `Biking ${updatedResident.zone}, Purok ${updatedResident.purok}`,
       meter_no: updatedConnection.meter_no,
       connection_status: updatedConnection.connection_status,
-      type: updatedConnection.type,
       contact_no: updatedResident.contact_no,
       email: updatedResident.email,
       status: updatedResident.status,

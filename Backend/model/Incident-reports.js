@@ -13,7 +13,7 @@ const IncidentReportSchema = new mongoose.Schema(
     },
     urgency_level:{
         type: String,
-        enum: ['low', 'medium', 'high', 'critical'],
+        enum: ['low', 'medium', 'critical'],
         default: 'medium'
     },
     description: {

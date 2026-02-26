@@ -47,12 +47,6 @@ const WaterConnectionSchema = new mongoose.Schema({
     enum: ['pending', 'active', 'request_for_disconnection', 'for_disconnection', 'for_reconnection', 'scheduled_for_disconnection', 'scheduled_for_reconnection', 'disconnected', ],
     default: 'pending'
   },
-  type:
-  {
-    type: String,
-    enum: ['household', 'restaurant', 'establishment', 'others'],
-    required: [true, 'Connection type is required']
-  },
   disconnection_type: {
     type: String,
     enum: ['Voluntary', 'Non-Payment', null],

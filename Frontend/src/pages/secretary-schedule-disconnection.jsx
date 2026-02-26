@@ -31,6 +31,8 @@ export default function SecretaryScheduleDisconnection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedConnection, setSelectedConnection] = useState(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   // Fetch connections marked for disconnection
   const { data: connectionsData, isLoading, error } = useQuery({
@@ -63,6 +65,17 @@ export default function SecretaryScheduleDisconnection() {
 
     return matchesSearch;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredConnections.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedConnections = filteredConnections.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   // Create schedule task mutation with automatic scheduling
   const createTaskMutation = useMutation({
@@ -221,7 +234,7 @@ export default function SecretaryScheduleDisconnection() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredConnections.map((connection) => {
+                        {paginatedConnections.map((connection) => {
                           const isScheduled = scheduledConnectionIds.has(connection.connection_id);
 
                           return (
@@ -256,6 +269,46 @@ export default function SecretaryScheduleDisconnection() {
                         })}
                       </TableBody>
                     </Table>
+
+                    {/* Pagination Controls */}
+                    {filteredConnections.length > 0 && (
+                      <div className="mt-6 flex items-center justify-between border-t pt-4">
+                        <p className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredConnections.length)} of {filteredConnections.length} connections
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <div className="flex gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            ))}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

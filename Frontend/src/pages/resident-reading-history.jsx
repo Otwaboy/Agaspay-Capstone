@@ -20,6 +20,8 @@ import apiClient from "../lib/api";
 export default function ResidentReadingHistory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMeter, setSelectedMeter] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   // Fetch all meters for the resident
   const { data: metersData, isLoading: metersLoading } = useQuery({
@@ -86,6 +88,17 @@ export default function ResidentReadingHistory() {
       reading.present_reading?.toString().includes(searchLower)
     );
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredReadings.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedReadings = filteredReadings.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -283,50 +296,92 @@ export default function ResidentReadingHistory() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Reading Date</TableHead>
-                          <TableHead>Previous Reading</TableHead>
-                          <TableHead>Present Reading</TableHead>
-                          <TableHead>Consumption</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Remarks</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredReadings.map((reading, index) => {
-                          const consumption = calculateConsumption(reading.present_reading, reading.previous_reading);
+                  <>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Reading Date</TableHead>
+                            <TableHead>Previous Reading</TableHead>
+                            <TableHead>Present Reading</TableHead>
+                            <TableHead>Consumption</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Remarks</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedReadings.map((reading, index) => {
+                            const consumption = calculateConsumption(reading.present_reading, reading.previous_reading);
 
-                          return (
-                            <TableRow key={reading._id || index}>
-                              <TableCell className="font-medium">
-                                {formatDate(reading.reading_date || reading.createdAt)}
-                              </TableCell>
-                              <TableCell>{reading.previous_reading || 0} m³</TableCell>
-                              <TableCell className="font-semibold text-blue-600">
-                                {reading.present_reading || 0} m³
-                              </TableCell>
-                              <TableCell>
-                                <span className={`font-semibold ${
-                                  consumption > 20 ? 'text-red-600' :
-                                  consumption > 10 ? 'text-orange-600' :
-                                  'text-green-600'
-                                }`}>
-                                  {consumption} m³
-                                </span>
-                              </TableCell>
-                              <TableCell>{getStatusBadge(reading.status)}</TableCell>
-                              <TableCell className="text-sm text-gray-600">
-                                {reading.remarks || "Normal Reading"}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                            return (
+                              <TableRow key={reading._id || index}>
+                                <TableCell className="font-medium">
+                                  {formatDate(reading.reading_date || reading.createdAt)}
+                                </TableCell>
+                                <TableCell>{reading.previous_reading || 0} m³</TableCell>
+                                <TableCell className="font-semibold text-blue-600">
+                                  {reading.present_reading || 0} m³
+                                </TableCell>
+                                <TableCell>
+                                  <span className={`font-semibold ${
+                                    consumption > 20 ? 'text-red-600' :
+                                    consumption > 10 ? 'text-orange-600' :
+                                    'text-green-600'
+                                  }`}>
+                                    {consumption} m³
+                                  </span>
+                                </TableCell>
+                                <TableCell>{getStatusBadge(reading.status)}</TableCell>
+                                <TableCell className="text-sm text-gray-600">
+                                  {reading.remarks || "Normal Reading"}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {filteredReadings.length > 0 && (
+                      <div className="mt-6 flex items-center justify-between border-t pt-4">
+                        <p className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredReadings.length)} of {filteredReadings.length} readings
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <div className="flex gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            ))}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

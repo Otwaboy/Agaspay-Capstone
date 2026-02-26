@@ -43,10 +43,13 @@ export default function SecretaryIncidentReports() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterUrgency, setFilterUrgency] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedReport, setSelectedReport] = useState(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [updateStatusOpen, setUpdateStatusOpen] = useState(false);
+
+  const ROWS_PER_PAGE = 10;
 
   // Status update state
   const [newStatus, setNewStatus] = useState("");
@@ -87,18 +90,29 @@ export default function SecretaryIncidentReports() {
 
   // Filter reports based on search and filters
   const filteredReports = reports.filter(report => {
-    const matchesSearch = 
+    const matchesSearch =
       report.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.reported_by?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = filterStatus === "all" || report.reported_issue_status === filterStatus;
     const matchesType = filterType === "all" || report.type === filterType;
     const matchesUrgency = filterUrgency === "all" || report.urgency_level === filterUrgency;
-    
+
     return matchesSearch && matchesStatus && matchesType && matchesUrgency;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredReports.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedReports = filteredReports.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   // Create schedule task mutation with automatic scheduling
   const createTaskMutation = useMutation({
@@ -183,7 +197,6 @@ export default function SecretaryIncidentReports() {
   const urgencyConfig = {
     low: { color: "bg-gray-100 text-gray-700", label: "Low", icon: Clock },
     medium: { color: "bg-blue-100 text-blue-700", label: "Medium", icon: AlertCircle },
-    high: { color: "bg-orange-100 text-orange-700", label: "High", icon: AlertTriangle },
     critical: { color: "bg-red-100 text-red-700", label: "Critical", icon: AlertTriangle },
   };
 
@@ -326,7 +339,6 @@ export default function SecretaryIncidentReports() {
                       <SelectItem value="all">All Urgency</SelectItem>
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
                       <SelectItem value="critical">Critical</SelectItem>
                     </SelectContent>
                   </Select>
@@ -375,8 +387,8 @@ export default function SecretaryIncidentReports() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredReports.length > 0 ? (
-                          filteredReports.map((report) => (
+                        {paginatedReports.length > 0 ? (
+                          paginatedReports.map((report) => (
                             <TableRow key={report._id} data-testid={`row-report-${report._id}`}>
                               <TableCell className="font-mono text-sm">
                                 {report._id?.substring(0, 8)}...
@@ -421,12 +433,54 @@ export default function SecretaryIncidentReports() {
                         ) : (
                           <TableRow>
                             <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                              No incident reports found matching your criteria
+                              {filteredReports.length === 0 ? "No incident reports found matching your criteria" : "No reports on this page"}
                             </TableCell>
                           </TableRow>
                         )}
                       </TableBody>
                     </Table>
+
+                    {/* Pagination Controls */}
+                    {filteredReports.length > 0 && (
+                      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                        <div className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredReports.length)} of {filteredReports.length} reports
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="w-10 h-10 p-0"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

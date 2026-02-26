@@ -28,7 +28,9 @@ import { apiClient } from "../lib/api";
 
 export default function ResidentServiceRequests() {
   const [viewRequest, setViewRequest] = useState(null);
- 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
+
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ["service-requests"],
@@ -45,6 +47,17 @@ export default function ResidentServiceRequests() {
   });
 
   const mockRequests = Array.isArray(requests) ? requests : [];
+
+  // Pagination logic
+  const totalPages = Math.ceil(mockRequests.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedRequests = mockRequests.slice(startIndex, endIndex);
+
+  // Reset to page 1 when data changes
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const getStatusConfig = (status) => {
     switch (status) {
@@ -65,8 +78,6 @@ export default function ResidentServiceRequests() {
     switch (priority) {
       case "critical":
         return <Badge className="bg-red-100 text-red-800">High Priority</Badge>;
-      case "high":
-        return <Badge className="bg-orange-100 text-orange-800">High</Badge>;
       case "medium":
         return <Badge className="bg-blue-100 text-blue-800">Medium</Badge>;
       case "low":
@@ -143,7 +154,7 @@ export default function ResidentServiceRequests() {
                   </div>
                 ) : (
                   <div className="space-y-4 md:space-y-0 md:space-x-0">
-                    {mockRequests.map(request => {
+                    {paginatedRequests.map(request => {
                       const statusConfig = getStatusConfig(request.reported_issue_status);
                       const StatusIcon = statusConfig.icon;
 
@@ -183,6 +194,46 @@ export default function ResidentServiceRequests() {
                         </div>
                       );
                     })}
+
+                    {/* Pagination Controls */}
+                    {mockRequests.length > 0 && (
+                      <div className="mt-6 flex items-center justify-between border-t pt-4">
+                        <p className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, mockRequests.length)} of {mockRequests.length} requests
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <div className="flex gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            ))}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

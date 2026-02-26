@@ -5,7 +5,6 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Badge } from "../components/ui/badge";
 import { Checkbox } from "../components/ui/checkbox";
 import { Skeleton } from "../components/ui/skeleton";
@@ -44,10 +43,10 @@ import { apiClient } from "../lib/api";
 export default function TreasurerGenerateBills() {
   const queryClient = useQueryClient();
 
-  const [selectedTab, setSelectedTab] = useState("single");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedConnections, setSelectedConnections] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const ROWS_PER_PAGE = 10;
 
   // Rate update modal states
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
@@ -146,20 +145,11 @@ export default function TreasurerGenerateBills() {
   ).length;
 
 
-  //SEARCH PURPOSES
-  // Filter connections based on search term
-  const filteredConnections = availableConnections.filter(connection => 
-    connection.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    connection.purok_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    connection.connection_id.includes(searchTerm)
-  );
+  // Use available connections directly (no search filter needed for bulk generation)
+  const filteredConnections = availableConnections;
 
   console.log('filteredConnections:');
   console.log(filteredConnections)
-
-  // Get selected connection details
-  const selectedConnectionData = availableConnections.find(conn => conn.connection_id === formData.connection_id);
-
 
   // Calculate bill amount
   const calculateBillAmount = (connection) => {
@@ -192,46 +182,6 @@ export default function TreasurerGenerateBills() {
  
     // A query = get data (e.g., fetch users).
     //A mutation = change data (e.g., add a user, update profile, delete post).
-
- // State for mutations
-  const [isGeneratingBill, setIsGeneratingBill] = useState(false);
-
-  // Generate single bill
-  const generateBill = async (billData) => {
-
-    try {
-      setIsGeneratingBill(true);
-      await apiClient.createBilling(billData);
-
-      toast.success("Success", { description: "Bill generated successfully" });
-
-      // Invalidate meter reader connections query to reflect is_billed flag
-      queryClient.invalidateQueries({ queryKey: ["connections"] });
-
-      // Clear form
-      setFormData({
-        connection_id: "",
-        reading_id: "",
-        rate_per_cubic: "",
-        fixed_charge: "",
-        notes: ""
-      });
-      setSearchTerm("");
-      setShowSearchResults(false);
-
-      // Refresh data
-      fetchConnections();
-      fetchExistingBills();
-
-    } catch (error) {
-      toast.error("Error", { description: error.message || "Failed to generate bill" });
-    } finally {
-      setIsGeneratingBill(false);
-    }
-  };
-
-  
-
 
 
   // para sa tanan nga generation of bills
@@ -323,40 +273,6 @@ export default function TreasurerGenerateBills() {
     }
   };
 
-  const handleSearchChange = (value) => {
-    setSearchTerm(value);
-    setShowSearchResults(value.length > 0);
-  };
-
-  const handleConnectionSelect = (connection) => {
-    handleInputChange('connection_id', connection.connection_id);
-    handleInputChange('reading_id', connection.reading_id || connection.connection_id);
-    setSearchTerm(`${connection.full_name} - ${connection.purok_no}`);
-    setShowSearchResults(false);
-  };
-
-  
-  // generate 1 resident bill only
-  const handleSingleBillSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.connection_id) {
-      toast.error("Validation Error", { description: "Please select a water connection" });
-      return;
-    }
-
-    // Format data according to your MongoDB backend schema
-    // Note: due_date is now auto-calculated by backend from reading period start date + 30 days
-    const billData = {
-      reading_id: formData.reading_id,
-      rate_id: formData.rate_id
-    };
-
-
-    generateBill(billData);
-  };
-
-
   // can generate all and select bill
   const handleBulkBillSubmit = async () => {
     if (selectedConnections.length === 0) {
@@ -430,6 +346,17 @@ export default function TreasurerGenerateBills() {
     }
   };
 
+  // Pagination logic for bulk tab
+  const totalPages = Math.ceil(filteredConnections.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedConnections = filteredConnections.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       <TreasurerSidebar />
@@ -480,7 +407,7 @@ export default function TreasurerGenerateBills() {
                     <div>
                       <p className="text-sm font-medium text-gray-600">Selected for Billing</p>
                       <p className="text-2xl font-bold text-gray-900" data-testid="text-selected-count">
-                        {selectedTab === "single" ? (formData.connection_id ? 1 : 0) : selectedConnections.length}
+                        {selectedConnections.length}
                       </p>
                     </div>
                     <CheckCircle2 className="h-8 w-8 text-green-600" />
@@ -552,13 +479,7 @@ export default function TreasurerGenerateBills() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                  <TabsList className="mb-6">
-                    <TabsTrigger value="single" data-testid="tab-single">Single Bill</TabsTrigger>
-                    <TabsTrigger value="bulk" data-testid="tab-bulk">Bulk Generation</TabsTrigger>
-                  </TabsList>
-
-                  {/* Common Settings */}
+                {/* Common Settings */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -658,123 +579,7 @@ export default function TreasurerGenerateBills() {
                     </div>
                   </div>
 
-                  <TabsContent value="single">
-                    <form onSubmit={handleSingleBillSubmit} className="space-y-6">
-                      {/* Connection Search */}
-                      <div className="space-y-2">
-                        <Label htmlFor="connection_search">Search Water Connection</Label>
-                        <div className="relative">
-                          <Input
-                            id="connection_search"
-                            type="text"
-                            placeholder="Search by name, location, or connection ID..."
-                            value={searchTerm}
-                            onChange={(e) => handleSearchChange(e.target.value)}
-                            onFocus={() => searchTerm && setShowSearchResults(true)}
-                            onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                            data-testid="input-connection-search"
-                            className="pr-10"
-                          />
-                          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          
-                          {/* Search Results */}
-                          {showSearchResults && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                              {readingsLoading ? (
-                                <div className="px-3 py-2 text-sm text-gray-500">Loading connections...</div>
-                              ) : filteredConnections.length === 0 ? (
-                                <div className="px-3 py-2 text-sm text-gray-500">
-                                  {searchTerm ? 'No unbilled connections found' : 'No connections available'}
-                                </div>
-                              ) : (
-                                filteredConnections.map((connection) => (
-                                  <div
-                                    key={connection.connection_id}
-                                    className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                                    onClick={() => handleConnectionSelect(connection)}
-                                    data-testid={`option-connection-${connection.connection_id}`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex-1">
-                                        <div className="font-medium text-gray-900">{connection.full_name}</div>
-                                        <div className="text-sm text-gray-500">
-                                          {connection.purok_no} • ID: {connection.connection_id}
-                                        </div>
-                                        <div className="text-sm text-blue-600">
-                                          Reading: {connection.previous_reading} → {connection.present_reading} m³
-                                        </div>
-                                      </div>
-                                      {formData.connection_id === connection.connection_id && (
-                                        <Check className="h-4 w-4 text-green-600" />
-                                      )}
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Bill Preview */}
-                      {selectedConnectionData && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-blue-900 mb-3">Bill Preview</h3>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-blue-700">Customer:</span>
-                              <p className="font-medium">{selectedConnectionData.full_name}</p>
-                            </div>
-                            <div>
-                              <span className="text-blue-700">Purok:</span>
-                              <p className="font-medium">{selectedConnectionData.purok_no}</p>
-                            </div>
-                            <div>
-                              <span className="text-blue-700">Consumption:</span>
-                              <p className="font-medium">
-                                {selectedConnectionData.present_reading - selectedConnectionData.previous_reading} m³
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-blue-700">Total Amount:</span>
-                              <p className="font-bold text-lg text-blue-900">
-                                ₱{calculateBillAmount(selectedConnectionData).toFixed(2)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex justify-end space-x-3">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setFormData({
-                              connection_id: "",
-                              reading_id: "",
-                              rate_per_cubic: 25,
-                              fixed_charge: 50,
-                              notes: ""
-                            });
-                            setSearchTerm("");
-                          }}
-                          data-testid="button-clear-form"
-                        >
-                          Clear
-                        </Button>
-                        <Button
-                          type="submit"
-                          disabled={isGeneratingBill || !formData.connection_id}
-                          data-testid="button-generate-single-bill"
-                        >
-                          {isGeneratingBill ? "Generating..." : "Generate Bill"}
-                        </Button>
-                      </div>
-                    </form>
-                  </TabsContent>
-
-                  <TabsContent value="bulk">
+                  {/* Bulk Generation Section */}
                     <div className="space-y-6">
                       {/* Bulk Actions */}
                       <div className="flex items-center justify-between">
@@ -849,7 +654,7 @@ export default function TreasurerGenerateBills() {
 
                                 //if successfullly na fetch or naay data
                               ) : (
-                                filteredConnections.map((connection) => (
+                                paginatedConnections.map((connection) => (
                                   <tr key={connection.connection_id} data-testid={`row-connection-${connection.connection_id}`}>
                                     <td className="py-4 px-4">
                                       <Checkbox
@@ -880,6 +685,48 @@ export default function TreasurerGenerateBills() {
                               )}
                             </tbody>
                           </table>
+
+                          {/* Pagination Controls */}
+                          {filteredConnections.length > 0 && (
+                            <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                              <div className="text-sm text-gray-600">
+                                Showing {startIndex + 1} to {Math.min(endIndex, filteredConnections.length)} of {filteredConnections.length} connections
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                  disabled={currentPage === 1}
+                                >
+                                  Previous
+                                </Button>
+
+                                <div className="flex items-center gap-1">
+                                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <Button
+                                      key={page}
+                                      variant={currentPage === page ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => setCurrentPage(page)}
+                                      className="w-10 h-10 p-0"
+                                    >
+                                      {page}
+                                    </Button>
+                                  ))}
+                                </div>
+
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                  disabled={currentPage === totalPages}
+                                >
+                                  Next
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -933,8 +780,6 @@ export default function TreasurerGenerateBills() {
                         </Button>
                       </div>
                     </div>
-                  </TabsContent>
-                </Tabs>
               </CardContent>
             </Card>
           </div>

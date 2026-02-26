@@ -156,10 +156,6 @@ export default function MeterReaderZones() {
                           <p className="text-gray-500">Current Reading</p>
                           <p className="font-semibold text-blue-600">{connection.present_reading} m³</p>
                         </div>
-                        <div>
-                          <p className="text-gray-500">Connection Type</p>
-                          <p className="font-semibold capitalize">{connection.connection_type || "Standard"}</p>
-                        </div>
                       </div>
 
                       {connection.contact_no && (

@@ -368,12 +368,6 @@ export default function ResidentProfile() {
                           </div>
                         </div>
                         <div>
-                          <Label className="text-sm text-gray-500">Connection Type</Label>
-                          <div className="mt-1 px-3 py-2 rounded-md bg-blue-50/40 text-gray-800 font-semibold">
-                            {connectionData?.type || "N/A"}
-                          </div>
-                        </div>
-                        <div>
                           <Label className="text-sm text-gray-500">Status</Label>
                           <div className="mt-1">
                             <Badge className="bg-green-100 text-green-800 mt-1">

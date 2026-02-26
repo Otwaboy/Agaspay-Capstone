@@ -108,9 +108,6 @@ export default function ResidentMultiMeterCards({ selectedMeter, onMeterChange }
                   <MapPin className="h-3.5 w-3.5" />
                   <span>Zone {meter.zone}, Purok {meter.purok}</span>
                 </div>
-                <div className="text-xs opacity-90">
-                 Connection Type: {meter.type.charAt(0).toUpperCase() + meter.type.slice(1)} 
-                </div>
               </Button>
             ))}
           </div>

@@ -27,7 +27,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
   const [selectedMeterIndex, setSelectedMeterIndex] = useState(0);
   const [meterFormData, setMeterFormData] = useState({
     meterNo: "",
-    type: "",
     connectionStatus: ""
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +57,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
         const firstMeter = resident.meters[0];
         setMeterFormData({
           meterNo: firstMeter.meter_no || "",
-          type: firstMeter.type || "",
           connectionStatus: firstMeter.connectionStatus || ""
         });
         setSelectedMeterIndex(0);
@@ -72,7 +70,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
       const meter = resident.meters[selectedMeterIndex];
       setMeterFormData({
         meterNo: meter.meter_no || "",
-        type: meter.type || "",
         connectionStatus: meter.connectionStatus || ""
       });
     }
@@ -99,13 +96,11 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
 
           // Get meter-specific data - either from current selected meter or original data
           let meterNo = meter.meter_no;
-          let meterType = meter.type;
           let meterConnectionStatus = meter.connectionStatus;
 
           // If this is the currently selected meter, use the form data
           if (idx === selectedMeterIndex) {
             meterNo = meterFormData.meterNo || meter.meter_no;
-            meterType = meterFormData.type || meter.type;
             meterConnectionStatus = meterFormData.connectionStatus || meter.connectionStatus;
           }
 
@@ -113,7 +108,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
           const meterUpdateData = {
             ...residentUpdateData,
             meter_no: meterNo,
-            type: meterType,
             connection_status: meterConnectionStatus
           };
 
@@ -283,21 +277,6 @@ export default function EditResidentModal({ isOpen, onClose, resident }) {
                       data-testid="input-edit-meter-no"
                       required
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Type</Label>
-                    <Select value={meterFormData.type} onValueChange={handleMeterChange("type")}>
-                      <SelectTrigger data-testid="select-edit-type">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="household">Household</SelectItem>
-                        <SelectItem value="restaurant">Restaurant</SelectItem>
-                        <SelectItem value="establishment">Establishment</SelectItem>
-                        <SelectItem value="others">Others</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div className="space-y-2 col-span-2">

@@ -170,10 +170,10 @@ const verifyEmailAndRegisterResident = async (req, res) => {
 
     const {
       first_name, last_name, zone, email, purok, contact_no,
-      type, meter_no, connection_zone, connection_purok, specific_address, verification_code
+      meter_no, connection_zone, connection_purok, specific_address, verification_code
     } = req.body;
 
-    if (!email || !first_name || !last_name || !zone || !purok || !contact_no || !type || !meter_no || !connection_zone || !connection_purok || !verification_code) {
+    if (!email || !first_name || !last_name || !zone || !purok || !contact_no || !meter_no || !connection_zone || !connection_purok || !verification_code) {
       throw new BadRequestError('Please provide all required fields including verification code');
     }
 
@@ -219,7 +219,7 @@ const verifyEmailAndRegisterResident = async (req, res) => {
     // ✅ All DB write operations must be attached to the session:
     const user = await User.create([{ username, password: temporaryPassword, role: 'resident' }], { session });
     const resident = await Resident.create([{ user_id: user[0]._id, first_name, last_name, email, zone, purok, contact_no }], { session });
-    const waterConnection = await WaterConnection.create([{ resident_id: resident[0]._id, meter_no, type, zone: waterConnectionZone, purok: waterConnectionPurok, specific_address }], { session });
+    const waterConnection = await WaterConnection.create([{ resident_id: resident[0]._id, meter_no, zone: waterConnectionZone, purok: waterConnectionPurok, specific_address }], { session });
 
     // ✅ AUTOMATIC SCHEDULING: Find available maintenance personnel
     let installationTask = null;
@@ -666,7 +666,6 @@ const getResidentsByDate = async (req, res) => {
           email: resident.email,
           contact_no: resident.contact_no,
           meter_no: waterConnection?.meter_no || 'N/A',
-          type: waterConnection?.type || 'N/A',
           created_at: resident.created_at
         };
       })

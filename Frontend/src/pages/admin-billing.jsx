@@ -43,6 +43,9 @@ export default function AdminBilling() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
+  const [currentBillingPage, setCurrentBillingPage] = useState(1);
+  const [currentReadingPage, setCurrentReadingPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   const { data: billingData, isLoading: billingLoading } = useQuery({
     queryKey: ['billing'],
@@ -126,6 +129,28 @@ export default function AdminBilling() {
       reading.meter_number?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesZone && matchesSearch;
   });
+
+  // Billing pagination logic
+  const billingTotalPages = Math.ceil(filteredBills.length / ROWS_PER_PAGE);
+  const billingStartIndex = (currentBillingPage - 1) * ROWS_PER_PAGE;
+  const billingEndIndex = billingStartIndex + ROWS_PER_PAGE;
+  const paginatedBills = filteredBills.slice(billingStartIndex, billingEndIndex);
+
+  // Reset to page 1 when filters change
+  if (currentBillingPage > billingTotalPages && billingTotalPages > 0) {
+    setCurrentBillingPage(1);
+  }
+
+  // Reading pagination logic
+  const readingTotalPages = Math.ceil(filteredReadings.length / ROWS_PER_PAGE);
+  const readingStartIndex = (currentReadingPage - 1) * ROWS_PER_PAGE;
+  const readingEndIndex = readingStartIndex + ROWS_PER_PAGE;
+  const paginatedReadings = filteredReadings.slice(readingStartIndex, readingEndIndex);
+
+  // Reset to page 1 when filters change
+  if (currentReadingPage > readingTotalPages && readingTotalPages > 0) {
+    setCurrentReadingPage(1);
+  }
 
   // Calculate zone statistics for reading history
   const zoneStats = {};
@@ -438,7 +463,7 @@ export default function AdminBilling() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredBills.map((bill) => {
+                      {paginatedBills.map((bill) => {
                         const statusConfig = getStatusBadge(bill.status);
                         const residentName = bill.full_name
                         const billingPeriod = bill.due_date ? new Date(bill.due_date).toLocaleDateString() : 'N/A';
@@ -502,6 +527,48 @@ export default function AdminBilling() {
                       )}
                     </tbody>
                   </table>
+
+                  {/* Pagination Controls */}
+                  {filteredBills.length > 0 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                      <div className="text-sm text-gray-600">
+                        Showing {billingStartIndex + 1} to {Math.min(billingEndIndex, filteredBills.length)} of {filteredBills.length} bills
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentBillingPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentBillingPage === 1}
+                        >
+                          Previous
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: billingTotalPages }, (_, i) => i + 1).map(page => (
+                            <Button
+                              key={page}
+                              variant={currentBillingPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentBillingPage(page)}
+                              className="w-10 h-10 p-0"
+                            >
+                              {page}
+                            </Button>
+                          ))}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentBillingPage(prev => Math.min(billingTotalPages, prev + 1))}
+                          disabled={currentBillingPage === billingTotalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -548,7 +615,7 @@ export default function AdminBilling() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredReadings.map((reading) => {
+                        {paginatedReadings.map((reading) => {
                           const zoneBadge = getZoneBadge(reading.zone);
                           const readStatusBadge = getReadStatusBadge(reading.can_read_status);
                           const readingDate = reading.inclusive_date?.end
@@ -625,6 +692,48 @@ export default function AdminBilling() {
                         )}
                       </tbody>
                     </table>
+
+                    {/* Pagination Controls */}
+                    {filteredReadings.length > 0 && (
+                      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                        <div className="text-sm text-gray-600">
+                          Showing {readingStartIndex + 1} to {Math.min(readingEndIndex, filteredReadings.length)} of {filteredReadings.length} readings
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentReadingPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentReadingPage === 1}
+                          >
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: readingTotalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                variant={currentReadingPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentReadingPage(page)}
+                                className="w-10 h-10 p-0"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentReadingPage(prev => Math.min(readingTotalPages, prev + 1))}
+                            disabled={currentReadingPage === readingTotalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

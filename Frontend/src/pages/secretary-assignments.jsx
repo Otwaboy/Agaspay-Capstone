@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
 import SecretarySidebar from "../components/layout/secretary-sidebar";
 import SecretaryTopHeader from "../components/layout/secretary-top-header";
-import GenerateAssignmentReportModal from "../components/modals/generate-assignment-report-modal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -42,8 +41,7 @@ import {
   User,
   MapPin,
   Calendar,
-  Wrench,
-  FileText
+  Wrench
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api";
@@ -54,11 +52,13 @@ export default function SecretaryAssignments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState("Priority");
   const [filterStatus, setFilterStatus] = useState("Status");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedTask, setSelectedTask] = useState(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  const ROWS_PER_PAGE = 10;
 
   // Data states
   const [unassignedTasks, setUnassignedTasks] = useState([]);
@@ -144,23 +144,34 @@ export default function SecretaryAssignments() {
 
   // Filter tasks
   const filteredTasks = allTasks.filter(task => {
-    const matchesSearch = 
+    const matchesSearch =
       task.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.assignedTo?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesPriority = filterPriority === "Priority" || task.priority === filterPriority;
-    
-    const matchesStatus = 
+
+    const matchesStatus =
       filterStatus === "Status" ||
       (filterStatus === "Unassigned" && task.status === "Unassigned") ||
       (filterStatus === "Assigned" && task.status === "Assigned") ||
       (filterStatus === "Pending" && task.status === "Pending") ||
       (filterStatus === "Completed" && task.status === "Completed") ||
       (filterStatus === "Cancelled" && task.status === "Cancelled");
-    
+
     return matchesSearch && matchesPriority && matchesStatus;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTasks.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const handleAssignTask = async (task) => {
     setSelectedTask(task);
@@ -310,7 +321,6 @@ export default function SecretaryAssignments() {
   const priorityConfig = {
     low: { color: "bg-blue-100 text-blue-700", label: "Low", icon: Clock },
     medium: { color: "bg-yellow-100 text-yellow-700", label: "Medium", icon: AlertTriangle },
-    high: { color: "bg-orange-100 text-orange-700", label: "High", icon: AlertTriangle },
     critical: { color: "bg-red-100 text-red-700", label: "Critical", icon: AlertTriangle },
   };
 
@@ -324,7 +334,7 @@ export default function SecretaryAssignments() {
 
   const unassignedCount = allTasks.filter(t => t.status === "Unassigned").length;
   const assignedCount = allTasks.filter(t => t.status !== "Unassigned").length;
-  const urgentCount = allTasks.filter(t => t.priority === "high" || t.priority === "critical").length;
+  const urgentCount = allTasks.filter(t => t.priority === "critical").length;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
@@ -425,17 +435,6 @@ export default function SecretaryAssignments() {
                       Manage task assignments to maintenance personnel
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setIsReportModalOpen(true)}
-                      variant="outline"
-                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                      data-testid="button-generate-report"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Generate Report
-                    </Button>
-                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -459,7 +458,6 @@ export default function SecretaryAssignments() {
                       <SelectItem value="Priority">All Priorities</SelectItem>
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
                       <SelectItem value="critical">Critical</SelectItem>
                     </SelectContent>
                   </Select>
@@ -497,8 +495,8 @@ export default function SecretaryAssignments() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredTasks.length > 0 ? (
-                          filteredTasks.map((task) => (
+                        {paginatedTasks.length > 0 ? (
+                          paginatedTasks.map((task) => (
                             <TableRow key={task.id} data-testid={`row-task-${task.id}`}>
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
@@ -589,12 +587,54 @@ export default function SecretaryAssignments() {
                         ) : (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                              No tasks found matching your criteria
+                              {filteredTasks.length === 0 ? "No tasks found matching your criteria" : "No tasks on this page"}
                             </TableCell>
                           </TableRow>
                         )}
                       </TableBody>
                     </Table>
+
+                    {/* Pagination Controls */}
+                    {filteredTasks.length > 0 && (
+                      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                        <div className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredTasks.length)} of {filteredTasks.length} tasks
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="w-10 h-10 p-0"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -733,7 +773,7 @@ export default function SecretaryAssignments() {
 
       {/* View Details Modal */}
       <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Task Assignment Details</DialogTitle>
             <DialogDescription>
@@ -950,11 +990,6 @@ export default function SecretaryAssignments() {
         </DialogContent>
       </Dialog>
 
-      {/* Generate Assignment Report Modal */}
-      <GenerateAssignmentReportModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-      />
     </div>
   );
 }

@@ -29,6 +29,8 @@ import apiClient from "../lib/api";
 export default function SecretaryDeliquencyList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
 
   const { data: balances } = useQuery({
@@ -50,6 +52,17 @@ export default function SecretaryDeliquencyList() {
     const matchesFilter = filterStatus === "all" || balance.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const totalOutstanding = filteredData.reduce((sum, b) => sum + b.totalDue, 0);
   const criticalCount = filteredData.filter(b => b.status === "critical").length;
@@ -253,7 +266,7 @@ export default function SecretaryDeliquencyList() {
                     </thead>
 
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredData.map((balance) => {
+                      {paginatedData.map((balance) => {
                         const statusConfig = getStatusConfig(balance.status);
                        
 
@@ -299,10 +312,50 @@ export default function SecretaryDeliquencyList() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {filteredData.length > 0 && (
+                  <div className="mt-6 flex items-center justify-between border-t pt-4">
+                    <p className="text-sm text-gray-600">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} accounts
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                          >
+                            {pageNum}
+                          </Button>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-          
+
 
           </div>
         </main>

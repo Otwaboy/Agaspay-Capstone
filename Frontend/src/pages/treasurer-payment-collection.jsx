@@ -49,6 +49,9 @@ export default function TreasurerPaymentCollection() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [editingReceipt, setEditingReceipt] = useState(null);
   const [isUpdatingReceipt, setIsUpdatingReceipt] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const ROWS_PER_PAGE = 10;
   
   const { data: collections,  refetch } = useQuery({
     queryKey: ['/api/v1/treasurer/collections', filterStatus],
@@ -190,6 +193,17 @@ export default function TreasurerPaymentCollection() {
       setIsUpdatingReceipt(false);
     }
   };
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
@@ -352,7 +366,7 @@ export default function TreasurerPaymentCollection() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredData.map((payment) => {
+                      {paginatedData.map((payment) => {
                         const statusConfig = getStatusConfig(payment.status);
                         const StatusIcon = statusConfig.icon;
                         return (
@@ -430,6 +444,48 @@ export default function TreasurerPaymentCollection() {
                       })}
                     </tbody>
                   </table>
+
+                  {/* Pagination Controls */}
+                  {filteredData.length > 0 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                      <div className="text-sm text-gray-600">
+                        Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} payments
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className="w-10 h-10 p-0"
+                            >
+                              {page}
+                            </Button>
+                          ))}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

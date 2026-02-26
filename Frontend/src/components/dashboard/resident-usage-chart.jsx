@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Droplets, ArrowRight } from "lucide-react";
 import { apiClient } from "../../lib/api";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 export default function ResidentUsageChart({ connectionId }) {
   const { data, isLoading } = useQuery({
@@ -62,7 +63,6 @@ export default function ResidentUsageChart({ connectionId }) {
   }
 
   const months = data?.months || [];
-  const maxValue = data?.maxConsumption || 100;
 
   return (
     <Card>
@@ -91,36 +91,49 @@ export default function ResidentUsageChart({ connectionId }) {
           </div>
 
           {/* Bar Chart */}
-          <div className="space-y-3">
-            {months.map((month, index) => {
-              const percentage = (month.consumption / maxValue) * 100;
-              const isCurrentMonth = index === months.length - 1;
-              
-              return (
-                <div key={index} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className={`font-medium ${isCurrentMonth ? 'text-cyan-700' : 'text-gray-600'}`}>
-                      {month.month}
-                    </span>
-                    <span className={`font-bold ${isCurrentMonth ? 'text-cyan-700' : 'text-gray-700'}`}>
-                      {month.consumption} m³
-                    </span>
-                  </div>
-                  <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                    <div
-                      className={`h-full ${isCurrentMonth ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-cyan-200'} rounded-lg transition-all duration-500 flex items-center justify-end pr-3`}
-                      style={{ width: `${percentage}%` }}
-                    >
-                      {percentage > 30 && (
-                        <span className="text-xs font-semibold text-white">
-                          ₱{month.amount.toFixed(0)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="w-full h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={months} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  stroke="#6b7280"
+                  style={{ fontSize: '12px' }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={70}
+                />
+                <YAxis
+                  stroke="#6b7280"
+                  style={{ fontSize: '12px' }}
+                  width={40}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '2px solid #06b6d4',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                  }}
+                  formatter={(value) => [`${value} m³`, 'Usage']}
+                  labelStyle={{ color: '#1f2937', fontWeight: 'bold' }}
+                  cursor={{ fill: 'rgba(6, 182, 212, 0.1)' }}
+                />
+                <Bar
+                  dataKey="consumption"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={35}
+                >
+                  {months.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.consumption > data?.avgConsumption ? '#f97316' : '#06b6d4'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
           {/* Tips Section */}

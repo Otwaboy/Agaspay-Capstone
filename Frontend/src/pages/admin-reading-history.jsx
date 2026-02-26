@@ -21,6 +21,8 @@ import { format } from "date-fns";
 export default function ReadingHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [zoneFilter, setZoneFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   const { data: readingsData, isLoading, error } = useQuery({
     queryKey: ["reading-history", zoneFilter, searchTerm],
@@ -35,6 +37,17 @@ export default function ReadingHistory() {
 
   // Data is already filtered by backend based on zone and search
   const filteredReadings = readingsData?.meter_readings || [];
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredReadings.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedReadings = filteredReadings.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const stats = {
     totalReadings: filteredReadings.length,
@@ -265,7 +278,7 @@ export default function ReadingHistory() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {filteredReadings.map((reading) => {
+                        {paginatedReadings.map((reading) => {
                           const statusConfig = getStatusBadge(reading.reading_status);
                           const consumptionBadge = getConsumptionBadge(
                             reading.calculated || 0
@@ -322,6 +335,48 @@ export default function ReadingHistory() {
                         })}
                       </tbody>
                     </table>
+
+                    {/* Pagination Controls */}
+                    {filteredReadings.length > 0 && (
+                      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                        <div className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredReadings.length)} of {filteredReadings.length} readings
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="w-10 h-10 p-0"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

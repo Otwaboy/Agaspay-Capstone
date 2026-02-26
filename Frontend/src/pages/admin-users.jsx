@@ -43,6 +43,8 @@ export default function AdminResidents() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedResident, setSelectedResident] = useState(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
 
   // Fetch water connections from backend
@@ -70,7 +72,6 @@ export default function AdminResidents() {
         archive_status: conn.archive_status,
         connectionStatus: conn.connection_status,
         meter_no: conn.meter_no,
-        type: conn.type,
         previousReading: conn.previous_reading || 0,
         presentReading: conn.present_reading || 0
       }));
@@ -85,7 +86,6 @@ export default function AdminResidents() {
       existingResident.meters.push({
         id: resident.id,
         meter_no: resident.meter_no,
-        type: resident.type,
         connectionStatus: resident.connectionStatus,
         previousReading: resident.previousReading,
         presentReading: resident.presentReading
@@ -104,7 +104,6 @@ export default function AdminResidents() {
           {
             id: resident.id,
             meter_no: resident.meter_no,
-            type: resident.type,
             connectionStatus: resident.connectionStatus,
             previousReading: resident.previousReading,
             presentReading: resident.presentReading
@@ -132,12 +131,23 @@ export default function AdminResidents() {
     return matchesSearch && matchesFilter;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredResidents.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedResidents = filteredResidents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
+
   const handleViewDetails = (resident) => {
     setSelectedResident(resident);
     setViewDetailsOpen(true);
   };
 
-  
+
 
 
 
@@ -316,7 +326,7 @@ export default function AdminResidents() {
                         </TableHeader>
                         <TableBody>
                           {filteredResidents.length > 0 ? (
-                            filteredResidents.flatMap((resident) =>
+                            paginatedResidents.flatMap((resident) =>
                               resident.meters.map((meter, meterIdx) => (
                                 <TableRow key={`${resident.resident_id}-${meter.id}`} data-testid={`row-resident-${resident.resident_id}-meter-${meter.id}`}>
                                   {/* Name, Contact, Address - only show for first meter */}
@@ -348,12 +358,8 @@ export default function AdminResidents() {
                                   <TableCell>
                                     <span className="font-mono text-sm">{meter.meter_no}</span>
                                   </TableCell>
-
-                                  {/* Type */}
                                   <TableCell>
-                                    <Badge variant="outline" className="capitalize">
-                                      {meter.type}
-                                    </Badge>
+                                    <span className="font-mono text-sm">Resident</span>
                                   </TableCell>
 
                                   {/* Status */}
@@ -404,8 +410,50 @@ export default function AdminResidents() {
                         </TableBody>
                       </Table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    {filteredResidents.length > 0 && (
+                      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                        <div className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredResidents.length)} of {filteredResidents.length} residents
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="w-10 h-10 p-0"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
+
                 )}
               </CardContent>
             </Card>
@@ -493,10 +541,6 @@ export default function AdminResidents() {
                           <p className="text-gray-900 mt-1 font-mono">{meter.meter_no}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-700">Connection Type</label>
-                          <p className="text-gray-900 mt-1 capitalize">{meter.type}</p>
-                        </div>
-                        <div>
                           <label className="text-sm font-medium text-gray-700">Connection Status</label>
                           <div className="mt-1">
                             <Badge
@@ -535,7 +579,7 @@ export default function AdminResidents() {
                 <Button variant="outline" onClick={() => setViewDetailsOpen(false)} data-testid="button-close-dialog">
                   Close
                 </Button>
-                <Button data-testid="button-edit-information">Edit Information</Button>
+               
               </div>
             </div>
           )}

@@ -118,7 +118,6 @@ export default function ResidentReportIssue() {
                           <SelectContent>
                             <SelectItem value="low">Low - Minor inconvenience</SelectItem>
                             <SelectItem value="medium">Medium - Moderate impact</SelectItem>
-                            <SelectItem value="high">High - Urgent attention needed</SelectItem>
                             <SelectItem value="critical">Critical - Emergency</SelectItem>
                           </SelectContent>
                         </Select>
@@ -197,27 +196,21 @@ export default function ResidentReportIssue() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Reporting Guidelines</CardTitle>
+                    <CardTitle className="text-sm">Urgency Levels</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm text-gray-600">
-                      <li className="flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        <span>Be specific about the issue location</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        <span>Include date and time of occurrence</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        <span>Attach photos if possible</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        <span>For emergencies, call hotline directly</span>
-                      </li>
-                    </ul>
+                  <CardContent className="space-y-3">
+                    <div className="p-3 bg-blue-50 border-l-4 border-blue-600 rounded">
+                      <p className="text-sm font-semibold text-blue-900">Low</p>
+                      <p className="text-xs text-blue-700 mt-1">Routine issues with minor inconvenience. Can be scheduled for regular maintenance visits.</p>
+                    </div>
+                    <div className="p-3 bg-yellow-50 border-l-4 border-yellow-600 rounded">
+                      <p className="text-sm font-semibold text-yellow-900">Medium</p>
+                      <p className="text-xs text-yellow-700 mt-1">Moderate impact issues requiring prompt attention. Should be addressed within 1-2 business days.</p>
+                    </div>
+                    <div className="p-3 bg-red-50 border-l-4 border-red-600 rounded">
+                      <p className="text-sm font-semibold text-red-900">Critical</p>
+                      <p className="text-xs text-red-700 mt-1">Emergency situations demanding immediate action. Our team will respond as soon as possible.</p>
+                    </div>
                   </CardContent>
                 </Card>
 
