@@ -254,8 +254,12 @@ class ApiClient {
     return await this.request('/api/v1/meter-reader/latest-readings');
   }
 
-  async getReadingHistory() {
-    return await this.request('/api/v1/meter-reader/reading-history');
+  async getReadingHistory(params = {}) {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+    const queryString = new URLSearchParams(filteredParams).toString();
+    return await this.request(`/api/v1/meter-reader/reading-history${queryString ? `?${queryString}` : ''}`);
   }
 
   async getCurrentReading() {

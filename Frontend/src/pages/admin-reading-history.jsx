@@ -25,30 +25,16 @@ export default function ReadingHistory() {
   const { data: readingsData, isLoading, error } = useQuery({
     queryKey: ["reading-history", zoneFilter, searchTerm],
     queryFn: async () => {
-      const response = await apiClient.getReadingHistory();
+      const response = await apiClient.getReadingHistory({
+        zone: zoneFilter === "all" ? undefined : zoneFilter,
+        search: searchTerm || undefined
+      });
       return response;
     },
   });
 
-  const readings = readingsData?.meter_readings || [];
-
-  const filteredReadings = readings.filter((reading) => {
-    const zone = reading.connection_id?.zone?.toString();
-    const resident = reading.connection_id?.resident_id;
-    const residentName = resident
-      ? `${resident.first_name || ""} ${resident.last_name || ""}`
-      : "Unknown";
-    const meterNo = reading.connection_id?.meter_no || "";
-
-    const matchesZone = zoneFilter === "all" || zone === zoneFilter;
-
-    const matchesSearch =
-      searchTerm === "" ||
-      residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      meterNo.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesZone && matchesSearch;
-  });
+  // Data is already filtered by backend based on zone and search
+  const filteredReadings = readingsData?.meter_readings || [];
 
   const stats = {
     totalReadings: filteredReadings.length,
@@ -280,15 +266,6 @@ export default function ReadingHistory() {
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {filteredReadings.map((reading) => {
-                          const resident = reading.connection_id?.resident_id;
-                          const residentName = resident
-                            ? `${resident.first_name || ""} ${resident.last_name || ""}`
-                            : "Unknown";
-                          const zone = reading.connection_id?.zone || "N/A";
-                          const meterNo = reading.connection_id?.meter_no || "N/A";
-                          const meterReader = reading.recorded_by?.first_name
-                            ? `${reading.recorded_by.first_name} ${reading.recorded_by.last_name || ""}`
-                            : "Unknown";
                           const statusConfig = getStatusBadge(reading.reading_status);
                           const consumptionBadge = getConsumptionBadge(
                             reading.calculated || 0
@@ -296,23 +273,23 @@ export default function ReadingHistory() {
 
                           return (
                             <tr
-                              key={reading._id}
+                              key={reading.reading_id}
                               className="hover:bg-blue-50 transition-colors"
                             >
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                   <User className="h-4 w-4 text-gray-400" />
                                   <span className="text-sm text-gray-900 font-medium">
-                                    {residentName}
+                                    {reading.full_name}
                                   </span>
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {meterNo}
+                                {reading.meter_number}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <Badge className="bg-indigo-100 text-indigo-800">
-                                  Zone {zone}
+                                  Zone {reading.zone}
                                 </Badge>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -338,7 +315,7 @@ export default function ReadingHistory() {
                                 </Badge>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {meterReader}
+                                {reading.recorded_by_name}
                               </td>
                             </tr>
                           );

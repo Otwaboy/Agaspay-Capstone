@@ -734,58 +734,95 @@ const getApprovalStats = async (req, res) => {
 
 /**
  * ✅ Get Reading History (for admin dashboard)
- * GET /api/v1/meter-reader/reading-history
+ * GET /api/v1/meter-reader/reading-history?zone=1&search=name
  * Returns all meter readings (not just latest) organized by zone
+ * Supports filtering by zone and search by resident name or meter number
  */
 const getReadingHistory = async (req, res) => {
   try {
-    const readings = await WaterConnection.aggregate([
-      // 1️⃣ Filter only active connections
-      { $match: { connection_status: "active" } },
+    const { zone, search } = req.query;
 
-      // 2️⃣ Attach resident info
-      {
-        $lookup: {
-          from: "residents",
-          localField: "resident_id",
-          foreignField: "_id",
-          as: "resident"
+    // Build query
+    let query = WaterConnection.find({ connection_status: "active" });
+
+    // Filter by zone if provided
+    if (zone) {
+      query = query.where('zone').in([parseInt(zone), zone.toString()]);
+    }
+
+    // Get connections with all their data
+    const connections = await query
+      .populate('resident_id')
+      .exec();
+
+    // For each connection, get all readings with populated meter reader
+    let allReadings = [];
+    for (const connection of connections) {
+      const meterReadings = await MeterReading.find({
+        connection_id: connection._id
+      })
+        .sort({ created_at: -1 })
+        .exec();
+
+      // Attach connection data to each reading and lookup meter reader
+      for (const reading of meterReadings) {
+        // recorded_by contains a user_id, so we need to find the Personnel by user_id
+        let meterReaderData = null;
+        if (reading.recorded_by) {
+          meterReaderData = await Personnel.findOne({
+            user_id: reading.recorded_by
+          }).select('first_name last_name');
         }
-      },
-      { $unwind: { path: "$resident", preserveNullAndEmptyArrays: true } },
 
-      // 3️⃣ Get ALL readings (not just latest)
-      {
-        $lookup: {
-          from: "meterreadings",
-          let: { connId: "$_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$connection_id", "$$connId"] } } },
-            { $sort: { created_at: -1 } } // Sort by newest first
-          ],
-          as: "readings"
-        }
-      },
+        // Attach meter reader data to reading
+        reading.recorded_by = meterReaderData;
 
-      // 4️⃣ Unwind the readings array to get one row per reading
-      { $unwind: { path: "$readings", preserveNullAndEmptyArrays: true } },
+        allReadings.push({
+          connection,
+          reading
+        });
+      }
+    }
 
-      // 5️⃣ Skip connections without readings
-      { $match: { "readings._id": { $exists: true } } }
-    ]);
+    // Filter by search term if provided
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      allReadings = allReadings.filter(item => {
+        const resident = item.connection.resident_id;
+        const meterNo = item.connection.meter_no;
+        const residentName = resident
+          ? `${resident.first_name} ${resident.last_name}`
+          : '';
+
+        return searchRegex.test(residentName) || searchRegex.test(meterNo);
+      });
+    }
+
+    // Debug: Log first reading to check data structure
+    if (allReadings.length > 0) {
+      console.log('📖 Sample reading:', {
+        recorded_by: allReadings[0].reading?.recorded_by,
+        resident: allReadings[0].connection?.resident_id,
+        meter_no: allReadings[0].connection?.meter_no
+      });
+    }
+
+    const readings = allReadings;
 
     // Format the response
     const readingHistory = readings.map(item => {
-      const reading = item.readings;
-      const resident = item.resident;
+      const reading = item.reading;
+      const connection = item.connection;
+      const resident = connection.resident_id;
+      const meterReader = reading.recorded_by;
 
       return {
         reading_id: reading?._id ? reading._id.toString() : null,
-        connection_id: item._id ? item._id.toString() : null,
-        meter_number: item.meter_no,
+        connection_id: connection._id ? connection._id.toString() : null,
+        meter_number: connection.meter_no || "N/A",
         full_name: resident ? `${resident.first_name} ${resident.last_name}` : "Unknown",
-        zone: item.zone || null,
-        purok_no: item.purok || "N/A",
+        zone: connection.zone?.toString() || "N/A",
+        purok_no: connection.purok || "N/A",
         previous_reading: reading?.previous_reading ?? 0,
         present_reading: reading?.present_reading ?? 0,
         calculated: reading?.calculated ?? 0,
@@ -793,14 +830,14 @@ const getReadingHistory = async (req, res) => {
         reading_status: reading?.reading_status,
         can_read_status: reading?.can_read_status || 'can_read',
         remarks: reading?.remarks || "Normal Reading",
-        recorded_by: reading?.recorded_by || null,
+        recorded_by_name: meterReader ? `${meterReader.first_name} ${meterReader.last_name}` : "Unknown",
         created_at: reading?.created_at || null
       };
     });
 
     return res.status(StatusCodes.OK).json({
       message: "Reading history fetched successfully",
-      data: readingHistory,
+      meter_readings: readingHistory,
       total: readingHistory.length
     });
 
