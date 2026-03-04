@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -15,6 +15,8 @@ import apiClient from "../../lib/api";
 import { Link } from "wouter";
 
 export default function TreasurerRecentTransactions() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 5;
 
 
   const { data: transaction } = useQuery({
@@ -25,9 +27,23 @@ export default function TreasurerRecentTransactions() {
 
 const recentPayment = transaction?.data;
   console.log('sheiitis', recentPayment);
-  
+
 const displayTransactions = recentPayment && Array.isArray(recentPayment) && recentPayment.length > 0 ? recentPayment : [];
 console.log('display transaction', displayTransactions);
+
+  // Pagination logic
+  const totalPages = Math.ceil(displayTransactions.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedTransactions = displayTransactions.slice(startIndex, endIndex);
+
+  // Reset to page 1 when data changes
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   const getStatusConfig = (status) => {
     switch (status) {
@@ -150,7 +166,7 @@ console.log('display transaction', displayTransactions);
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {(displayTransactions || []).map((transaction) => (
+              {(paginatedTransactions || []).map((transaction) => (
                 <tr key={transaction.id} data-testid={`transaction-row-${transaction.id}`}>
                   <td className="py-4 px-6">
                     <div className="flex items-center">
@@ -221,9 +237,43 @@ console.log('display transaction', displayTransactions);
         
         <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
           <p className="text-sm text-gray-500">
-            Showing {displayTransactions?.length || 0} of {displayTransactions?.length || 0} transactions
+            Showing {startIndex + 1} to {Math.min(endIndex, displayTransactions?.length || 0)} of {displayTransactions?.length || 0} transactions
           </p>
-        
+
+          {/* Pagination Controls */}
+          {totalPages > 0 && (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={currentPage === pageNum ? "bg-green-600 hover:bg-green-700" : ""}
+                  >
+                    {pageNum}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

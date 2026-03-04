@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import ResidentSidebar from "../components/layout/resident-sidebar";
 import ResidentTopHeader from "../components/layout/resident-top-header";
@@ -45,9 +46,12 @@ export default function ResidentAnnouncements() {
   const paginatedAnnouncements = announcementList.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1);
-  }
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   // Map backend categories to UI configuration
   const getCategoryConfig = (category) => {
@@ -177,91 +181,93 @@ export default function ResidentAnnouncements() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
-                {paginatedAnnouncements.map((announcement) => {
-                const config = getCategoryConfig(announcement.category);
-                const Icon = config.icon;
+              <>
+                <div className="space-y-4">
+                  {paginatedAnnouncements.map((announcement) => {
+                  const config = getCategoryConfig(announcement.category);
+                  const Icon = config.icon;
 
-                return (
-                  <Card key={announcement._id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-4 flex-1">
-                          <div className={`p-3 rounded-lg ${config.bgColor}`}>
-                            <Icon className={`h-6 w-6 ${config.color}`} />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center flex-wrap">
-                              <CardTitle className="text-lg">
-                                {announcement.title}
-                              </CardTitle>
-                              {getPriorityBadge(announcement.priority)}
+                  return (
+                    <Card key={announcement._id} className="hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-4 flex-1">
+                            <div className={`p-3 rounded-lg ${config.bgColor}`}>
+                              <Icon className={`h-6 w-6 ${config.color}`} />
                             </div>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                              <span className="flex items-center">
-                                <Calendar className="h-4 w-4 mr-1" />
-                                {new Date(announcement.createdAt).toLocaleDateString('en-PH', {
-                                  month: 'long',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })}
-                              </span>
-                              <span>•</span>
-                              <span>{announcement.created_by?.first_name || 'Admin'} {announcement.created_by?.last_name || ''}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center flex-wrap">
+                                <CardTitle className="text-lg">
+                                  {announcement.title}
+                                </CardTitle>
+                                {getPriorityBadge(announcement.priority)}
+                              </div>
+                              <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                                <span className="flex items-center">
+                                  <Calendar className="h-4 w-4 mr-1" />
+                                  {new Date(announcement.createdAt).toLocaleDateString('en-PH', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                                <span>•</span>
+                                <span>{announcement.created_by?.first_name || 'Admin'} {announcement.created_by?.last_name || ''}</span>
+                              </div>
                             </div>
                           </div>
+                          <Badge className={config.badgeClass}>
+                            {announcement.category}
+                          </Badge>
                         </div>
-                        <Badge className={config.badgeClass}>
-                          {announcement.category}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                        {announcement.content}
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-              </div>
-
-              {/* Pagination Controls */}
-              {announcementList.length > 0 && (
-                <div className="mt-6 flex items-center justify-between">
-                  <p className="text-sm text-gray-600">
-                    Showing {startIndex + 1} to {Math.min(endIndex, announcementList.length)} of {announcementList.length} announcements
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <div className="flex gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                        <Button
-                          key={pageNum}
-                          variant={currentPage === pageNum ? "default" : "outline"}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
-                        >
-                          {pageNum}
-                        </Button>
-                      ))}
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                          {announcement.content}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
                 </div>
-              )}
+
+                {/* Pagination Controls */}
+                {announcementList.length > 0 && (
+                  <div className="mt-6 flex items-center justify-between">
+                    <p className="text-sm text-gray-600">
+                      Showing {startIndex + 1} to {Math.min(endIndex, announcementList.length)} of {announcementList.length} announcements
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                          >
+                            {pageNum}
+                          </Button>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </main>

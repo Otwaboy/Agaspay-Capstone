@@ -1,8 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import { MapPin, Search, Users, Droplets, TrendingUp, Phone, Mail } from "lucide-react";
 import MeterReaderSidebar from "../components/layout/meter-reader-sidebar";
 import MeterReaderTopHeader from "../components/layout/meter-reader-top-header";
@@ -10,6 +19,8 @@ import { apiClient } from "../lib/api";
 
 export default function MeterReaderZones() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   const { data: authUser } = useQuery({
     queryKey: ["auth-user"],
@@ -43,6 +54,21 @@ export default function MeterReaderZones() {
       : true
   );
 
+  // Pagination logic
+  const totalConnections = filteredConnections.length;
+  const totalPages = Math.ceil(totalConnections / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedConnections = filteredConnections.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
+
   const activeConnections = zoneConnections.filter((c) => c.status === "active").length;
   const totalConsumption = zoneConnections.reduce((sum, c) => sum + (c.present_reading || 0), 0);
 
@@ -64,7 +90,7 @@ export default function MeterReaderZones() {
             </div>
 
             <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -120,55 +146,105 @@ export default function MeterReaderZones() {
               </CardContent>
             </Card>
 
-            {isLoading ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">Loading residents...</p>
-                </CardContent>
-              </Card>
-            ) : filteredConnections.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500">No residents found</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredConnections.map((connection) => (
-                  <Card key={connection.connection_id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-bold text-lg">{connection.full_name}</h3>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline">Purok {connection.purok_no}</Badge>
-                            <Badge variant="secondary">Zone {connection.zone}</Badge>
-                            <Badge className={connection.status === "active" ? "bg-green-500" : "bg-gray-400"}>
-                              {connection.status}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                        <div>
-                          <p className="text-gray-500">Current Reading</p>
-                          <p className="font-semibold text-blue-600">{connection.present_reading} m³</p>
-                        </div>
-                      </div>
+            <Card className="overflow-visible h-full flex flex-col">
+              <CardHeader>
+                <CardTitle>Zone Residents</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <p className="text-gray-500">Loading residents...</p>
+                  </div>
+                ) : filteredConnections.length === 0 ? (
+                  <div className="flex items-center justify-center py-12">
+                    <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500">No residents found</p>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col mx-6 mb-6 border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto flex-1" style={{ overflowY: 'auto' }}>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50 sticky top-0 z-10">
+                            <TableHead>Name</TableHead>
+                            <TableHead>Address</TableHead>
+                            <TableHead>Meter No.</TableHead>
+                            <TableHead>Purok</TableHead>
+                            <TableHead>Zone</TableHead>
+                            <TableHead>Current Reading</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedConnections.length > 0 ? (
+                            paginatedConnections.map((connection) => (
+                              <TableRow key={connection.connection_id}>
+                                <TableCell className="font-medium">{connection.full_name}</TableCell>
+                                <TableCell className="text-sm text-gray-600 max-w-xs truncate">
+                                  {connection.address || connection.location || connection.specific_address || "—"}
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">
+                                  {connection.meter_no || connection.meter_number || "—"}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">Purok {connection.purok_no}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">Zone {connection.zone}</Badge>
+                                </TableCell>
+                                <TableCell className="font-mono text-blue-600">
+                                  {connection.present_reading || 0} m³
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                                No residents on this page
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
 
-                      {connection.contact_no && (
-                        <div className="flex items-center text-sm text-gray-600 mt-2">
-                          <Phone className="h-4 w-4 mr-2" />
-                          <span>{connection.contact_no}</span>
+                    {/* Pagination Controls */}
+                    {totalPages > 0 && (
+                      <div className="flex items-center justify-end gap-2 px-6 py-4 border-t bg-gray-50">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                            >
+                              {pageNum}
+                            </Button>
+                          ))}
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
           </div>
         </main>

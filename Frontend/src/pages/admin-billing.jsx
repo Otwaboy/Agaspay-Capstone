@@ -280,7 +280,7 @@ export default function AdminBilling() {
                 <FileText className="h-4 w-4" />
                 Billing Records
               </button>
-              <button
+              {/* <button
                 onClick={() => {
                   setActiveTab("readings");
                   setSearchTerm("");
@@ -294,7 +294,7 @@ export default function AdminBilling() {
               >
                 <History className="h-4 w-4" />
                 Reading History
-              </button>
+              </button> */}
             </div>
 
             {/* Billing Tab Content */}

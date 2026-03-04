@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -54,6 +54,8 @@ export default function TreasurerApproveReadings() {
   const [selectedReading, setSelectedReading] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedZones, setExpandedZones] = useState({});
+  const [zonePagination, setZonePagination] = useState({});
+  const ROWS_PER_PAGE = 8;
 
   // Fetch all readings (we'll filter for 'submitted' status)
   const { data: readingsData, isLoading } = useQuery({
@@ -153,6 +155,48 @@ export default function TreasurerApproveReadings() {
     const totalConsumption = zoneReadings.reduce((sum, r) => sum + r.calculated, 0);
     const avgConsumption = totalReadings > 0 ? (totalConsumption / totalReadings).toFixed(2) : 0;
     return { totalReadings, totalConsumption, avgConsumption };
+  };
+
+  // Get pagination state for a zone
+  const getZonePaginationState = (zone) => {
+    return zonePagination[zone] || 1;
+  };
+
+  // Set pagination state for a zone
+  const setZoneCurrentPage = (zone, page) => {
+    setZonePagination((prev) => ({
+      ...prev,
+      [zone]: page,
+    }));
+  };
+
+  // Auto-reset zone pagination when filtered readings change
+  useEffect(() => {
+    Object.entries(filteredReadingsByZone).forEach(([zone, readings]) => {
+      const currentPage = getZonePaginationState(zone);
+      const totalPages = Math.ceil(readings.length / ROWS_PER_PAGE);
+      if (currentPage > totalPages && totalPages > 0) {
+        setZoneCurrentPage(zone, 1);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredReadingsByZone]);
+
+  // Get paginated readings for a zone
+  const getPaginatedZoneReadings = (zoneReadings, zone) => {
+    const currentPage = getZonePaginationState(zone);
+    const totalPages = Math.ceil(zoneReadings.length / ROWS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+    const endIndex = startIndex + ROWS_PER_PAGE;
+    const paginatedReadings = zoneReadings.slice(startIndex, endIndex);
+
+    return {
+      paginatedReadings,
+      totalPages,
+      currentPage,
+      startIndex,
+      endIndex,
+    };
   };
 
   return (
@@ -307,23 +351,27 @@ export default function TreasurerApproveReadings() {
 
                       <CollapsibleContent>
                         <CardContent>
-                          <div className="rounded-md border">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Resident Name</TableHead>
-                                  <TableHead>Purok</TableHead>
-                                  <TableHead className="text-right">Previous</TableHead>
-                                  <TableHead className="text-right">Present</TableHead>
-                                  <TableHead className="text-right">Consumption</TableHead>
-                                  <TableHead>Period</TableHead>
-                                  <TableHead>Read Status</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {zoneReadings.map((reading) => (
+                          {(() => {
+                            const { paginatedReadings, totalPages, currentPage, startIndex, endIndex } = getPaginatedZoneReadings(zoneReadings, zone);
+                            return (
+                              <div>
+                                <div className="rounded-md border">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Resident Name</TableHead>
+                                        <TableHead>Purok</TableHead>
+                                        <TableHead className="text-right">Previous</TableHead>
+                                        <TableHead className="text-right">Present</TableHead>
+                                        <TableHead className="text-right">Consumption</TableHead>
+                                        <TableHead>Period</TableHead>
+                                        <TableHead>Read Status</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {paginatedReadings.map((reading) => (
                                   <TableRow key={reading.reading_id}>
                                     <TableCell className="font-medium">
                                       {reading.full_name}
@@ -515,11 +563,54 @@ export default function TreasurerApproveReadings() {
                                         </DialogContent>
                                       </Dialog>
                                     </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
+                                      </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+
+                                {/* Pagination Controls */}
+                                {totalPages > 0 && (
+                                  <div className="mt-4 flex items-center justify-between px-4 py-3 border-t bg-gray-50">
+                                    <p className="text-sm text-gray-600">
+                                      Showing {startIndex + 1} to {Math.min(endIndex, zoneReadings.length)} of {zoneReadings.length} readings
+                                    </p>
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setZoneCurrentPage(zone, Math.max(currentPage - 1, 1))}
+                                        disabled={currentPage === 1}
+                                      >
+                                        Previous
+                                      </Button>
+                                      <div className="flex gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                                          <Button
+                                            key={pageNum}
+                                            variant={currentPage === pageNum ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setZoneCurrentPage(zone, pageNum)}
+                                            className={currentPage === pageNum ? "bg-green-600 hover:bg-green-700" : ""}
+                                          >
+                                            {pageNum}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setZoneCurrentPage(zone, Math.min(currentPage + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                      >
+                                        Next
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </CardContent>
                       </CollapsibleContent>
                     </Collapsible>

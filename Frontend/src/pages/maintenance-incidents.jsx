@@ -99,8 +99,8 @@ export default function MaintenanceIncidents() {
 
   const getPriorityBadge = (priority) => {
     switch (priority?.toLowerCase()) {
-      case 'critical':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Critical</Badge>;
+      case 'high':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">High</Badge>;
       case 'medium':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Medium</Badge>;
       case 'low':

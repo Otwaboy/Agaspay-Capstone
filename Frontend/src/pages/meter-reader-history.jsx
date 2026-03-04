@@ -231,10 +231,17 @@ export default function MeterReaderHistory() {
                                   {reading.calculated} m³
                                 </TableCell>
                                 <TableCell>
-                                  {format(
-                                    new Date(reading.last_read_date),
-                                    "MMM dd, yyyy"
-                                  )}
+                                  {(() => {
+                                    const date = new Date(reading.last_read_date);
+                                    const timestamp = date.getTime();
+                                    const epochTime = new Date(0).getTime();
+
+                                    // Check if date is epoch (1970) or invalid
+                                    if (timestamp <= epochTime + 86400000 || date.getFullYear() === 1970) {
+                                      return "No readings yet";
+                                    }
+                                    return format(date, "MMM dd, yyyy");
+                                  })()}
                                 </TableCell>
                               </TableRow>
                             ))}

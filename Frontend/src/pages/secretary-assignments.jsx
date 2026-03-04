@@ -321,7 +321,7 @@ export default function SecretaryAssignments() {
   const priorityConfig = {
     low: { color: "bg-blue-100 text-blue-700", label: "Low", icon: Clock },
     medium: { color: "bg-yellow-100 text-yellow-700", label: "Medium", icon: AlertTriangle },
-    critical: { color: "bg-red-100 text-red-700", label: "Critical", icon: AlertTriangle },
+    high: { color: "bg-red-100 text-red-700", label: "High", icon: AlertTriangle },
   };
 
   const statusConfig = {
@@ -334,7 +334,7 @@ export default function SecretaryAssignments() {
 
   const unassignedCount = allTasks.filter(t => t.status === "Unassigned").length;
   const assignedCount = allTasks.filter(t => t.status !== "Unassigned").length;
-  const urgentCount = allTasks.filter(t => t.priority === "critical").length;
+  const urgentCount = allTasks.filter(t => t.priority === "high").length;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
@@ -458,7 +458,7 @@ export default function SecretaryAssignments() {
                       <SelectItem value="Priority">All Priorities</SelectItem>
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>

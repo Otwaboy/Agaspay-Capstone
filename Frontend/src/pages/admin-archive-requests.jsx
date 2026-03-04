@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -34,6 +34,8 @@ export default function AdminArchiveRequests() {
   const [viewReasonModal, setViewReasonModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [activeTab, setActiveTab] = useState("residents"); // residents or personnel
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
   const queryClient = useQueryClient();
 
   // Fetch all water connections with archive requests
@@ -67,7 +69,7 @@ export default function AdminArchiveRequests() {
   // Determine which list to use based on active tab
   const currentRequests = activeTab === "residents" ? residentArchiveRequests : personnelArchiveRequests;
 
-  // Filter based on search
+  // Filter based on search and tab
   const filteredRequests = currentRequests.filter(req => {
     if (activeTab === "residents") {
       const residentName = `${req.resident_id?.first_name || ''} ${req.resident_id?.last_name || ''}`.toLowerCase();
@@ -88,6 +90,19 @@ export default function AdminArchiveRequests() {
              role.includes(searchTerm.toLowerCase());
     }
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredRequests.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedRequests = filteredRequests.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters or tab change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
 
   // Approve archive mutation
   const approveArchiveMutation = useMutation({
@@ -322,23 +337,25 @@ export default function AdminArchiveRequests() {
                       onClick={() => {
                         setActiveTab("residents");
                         setSearchTerm("");
+                        setCurrentPage(1);
                       }}
                       className={activeTab === "residents" ? "bg-blue-600 hover:bg-blue-700" : ""}
                     >
                       <User className="h-4 w-4 mr-2" />
                       Residents ({residentArchiveRequests.length})
                     </Button>
-                    <Button
+                    {/* <Button
                       variant={activeTab === "personnel" ? "default" : "outline"}
                       onClick={() => {
                         setActiveTab("personnel");
                         setSearchTerm("");
+                        setCurrentPage(1);
                       }}
                       className={activeTab === "personnel" ? "bg-purple-600 hover:bg-purple-700" : ""}
                     >
                       <Briefcase className="h-4 w-4 mr-2" />
                       Personnel ({personnelArchiveRequests.length})
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </CardHeader>
@@ -374,7 +391,7 @@ export default function AdminArchiveRequests() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredRequests.map((request) => (
+                        {paginatedRequests.map((request) => (
                           <tr key={request._id} className="border-b border-gray-100 hover:bg-gray-50">
                             {activeTab === "residents" ? (
                               <>
@@ -482,6 +499,48 @@ export default function AdminArchiveRequests() {
                         ))}
                       </tbody>
                     </table>
+
+                    {/* Pagination Controls */}
+                    {filteredRequests.length > 0 && (
+                      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                        <div className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredRequests.length)} of {filteredRequests.length} requests
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                              <Button
+                                key={pageNum}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

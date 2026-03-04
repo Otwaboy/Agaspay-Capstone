@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import SecretarySidebar from "../components/layout/secretary-sidebar";
 import SecretaryTopHeader from "../components/layout/secretary-top-header";
@@ -73,9 +73,12 @@ export default function SecretaryScheduleDisconnection() {
   const paginatedConnections = filteredConnections.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1);
-  }
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   // Create schedule task mutation with automatic scheduling
   const createTaskMutation = useMutation({

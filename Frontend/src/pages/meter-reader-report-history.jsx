@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -28,7 +28,8 @@ import { apiClient } from "../lib/api";
 
 export default function MeterReaderReportHistory() {
   const [viewRequest, setViewRequest] = useState(null);
- 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ["service-requests"],
@@ -45,6 +46,21 @@ export default function MeterReaderReportHistory() {
   });
 
   const mockRequests = Array.isArray(requests) ? requests : [];
+
+  // Pagination logic
+  const totalRequests = mockRequests.length;
+  const totalPages = Math.ceil(totalRequests / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedRequests = mockRequests.slice(startIndex, endIndex);
+
+  // Reset to page 1 when requests change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   const getStatusConfig = (status) => {
     switch (status) {
@@ -142,8 +158,9 @@ export default function MeterReaderReportHistory() {
                     <p className="text-gray-600 mb-4">You haven't submitted any report yet.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4 md:space-y-0 md:space-x-0">
-                    {mockRequests.map(request => {
+                  <div>
+                    <div className="space-y-4 md:space-y-0 md:space-x-0">
+                    {paginatedRequests.map(request => {
                       const statusConfig = getStatusConfig(request.reported_issue_status);
                       const StatusIcon = statusConfig.icon;
 
@@ -166,7 +183,17 @@ export default function MeterReaderReportHistory() {
                               <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 flex-wrap">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
-                                  {request.reported_at ? new Date(request.reported_at).toLocaleDateString() : "N/A"}
+                                  {request.reported_at ? (() => {
+                                    const date = new Date(request.reported_at);
+                                    const timestamp = date.getTime();
+                                    const epochTime = new Date(0).getTime();
+
+                                    // Check if date is epoch (1970) or very old
+                                    if (timestamp <= epochTime + 86400000 || date.getFullYear() === 1970) {
+                                      return "No readings yet";
+                                    }
+                                    return date.toLocaleDateString();
+                                  })() : "No readings yet"}
                                 </span>
                                 <span>ID: {request._id || request.id}</span>
                               </div>
@@ -183,6 +210,42 @@ export default function MeterReaderReportHistory() {
                         </div>
                       );
                     })}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 0 && (
+                      <div className="mt-4 flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                            >
+                              {pageNum}
+                            </Button>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

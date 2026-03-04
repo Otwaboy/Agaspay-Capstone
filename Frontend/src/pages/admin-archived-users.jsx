@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Sidebar from "../components/layout/sidebar";
 import TopHeader from "../components/layout/top-header";
@@ -25,6 +25,8 @@ export default function AdminArchivedUsers() {
   const [activeTab, setActiveTab] = useState("residents"); // residents or personnel
   const [selectedUser, setSelectedUser] = useState(null);
   const [unarchiveModalOpen, setUnarchiveModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
   const queryClient = useQueryClient();
 
   // Fetch all water connections
@@ -52,13 +54,13 @@ export default function AdminArchivedUsers() {
   // Determine which list to use based on active tab
   const currentArchived = activeTab === "residents" ? archivedResidents : archivedPersonnel;
 
-  // Filter based on search
+  // Filter based on search and tab
   const filteredArchived = currentArchived.filter(item => {
     if (activeTab === "residents") {
       const residentName = `${item.resident_id?.first_name || ''} ${item.resident_id?.last_name || ''}`.toLowerCase();
       const meterNo = item.meter_no?.toLowerCase() || '';
       const accountNo = item.resident_id?.account_number?.toLowerCase() || '';
-     
+
 
       return residentName.includes(searchTerm.toLowerCase()) ||
              meterNo.includes(searchTerm.toLowerCase()) ||
@@ -74,6 +76,19 @@ export default function AdminArchivedUsers() {
              role.includes(searchTerm.toLowerCase());
     }
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredArchived.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedArchived = filteredArchived.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters or tab change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -243,6 +258,7 @@ export default function AdminArchivedUsers() {
                       onClick={() => {
                         setActiveTab("residents");
                         setSearchTerm("");
+                        setCurrentPage(1);
                       }}
                       className={activeTab === "residents" ? "bg-blue-600 hover:bg-blue-700" : ""}
                     >
@@ -254,6 +270,7 @@ export default function AdminArchivedUsers() {
                       onClick={() => {
                         setActiveTab("personnel");
                         setSearchTerm("");
+                        setCurrentPage(1);
                       }}
                       className={activeTab === "personnel" ? "bg-purple-600 hover:bg-purple-700" : ""}
                     >
@@ -296,7 +313,7 @@ export default function AdminArchivedUsers() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredArchived.map((item) => (
+                        {paginatedArchived.map((item) => (
                           <tr key={item._id} className="border-b border-gray-100 hover:bg-gray-50">
                             {activeTab === "residents" ? (
                               <>
@@ -379,6 +396,48 @@ export default function AdminArchivedUsers() {
                         ))}
                       </tbody>
                     </table>
+
+                    {/* Pagination Controls */}
+                    {filteredArchived.length > 0 && (
+                      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                        <div className="text-sm text-gray-600">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredArchived.length)} of {filteredArchived.length} users
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                              <Button
+                                key={pageNum}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

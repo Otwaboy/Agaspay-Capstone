@@ -197,7 +197,7 @@ export default function SecretaryIncidentReports() {
   const urgencyConfig = {
     low: { color: "bg-gray-100 text-gray-700", label: "Low", icon: Clock },
     medium: { color: "bg-blue-100 text-blue-700", label: "Medium", icon: AlertCircle },
-    critical: { color: "bg-red-100 text-red-700", label: "Critical", icon: AlertTriangle },
+    high: { color: "bg-red-100 text-red-700", label: "High", icon: AlertTriangle },
   };
 
   // Task status configuration
@@ -339,7 +339,7 @@ export default function SecretaryIncidentReports() {
                       <SelectItem value="all">All Urgency</SelectItem>
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -636,6 +636,7 @@ export default function SecretaryIncidentReports() {
            
                 <Button
                   onClick={handleCreateTask}
+                  disabled={selectedReport?.reported_issue_status !== "Pending"}
                   data-testid="button-create-task"
                 >
                   <Calendar className="h-4 w-4 mr-2" />

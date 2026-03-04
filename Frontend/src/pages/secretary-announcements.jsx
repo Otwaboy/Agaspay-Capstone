@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../hooks/use-auth";
 import SecretarySidebar from "../components/layout/secretary-sidebar";
@@ -118,9 +118,12 @@ console.log(announcements);
   const paginatedAnnouncements = filteredAnnouncements.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1);
-  }
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   const handleViewDetails = (announcement) => {
     setSelectedAnnouncement(announcement);

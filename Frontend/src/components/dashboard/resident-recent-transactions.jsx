@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -8,6 +9,8 @@ import apiClient from "../../lib/api";
 import { Link } from "wouter";
 
 export default function ResidentRecentTransactions({ connectionId }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 4;
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['/api/resident/transactions', connectionId],
     queryFn: async () => {
@@ -15,7 +18,7 @@ export default function ResidentRecentTransactions({ connectionId }) {
       const paymentHistory = res.data;
 
       return paymentHistory.map((ph) => ({
-        id: ph.payment_id, 
+        id: ph.payment_id,
         date: ph.payment_date,
         amount: ph.amount_paid,
         type: ph.payment_type,
@@ -26,6 +29,18 @@ export default function ResidentRecentTransactions({ connectionId }) {
       }));
     },
   });
+
+  // Calculate totals and pagination BEFORE early return
+  const totalTransactions = transactions?.length || 0;
+  const totalPages = Math.ceil(totalTransactions / ROWS_PER_PAGE);
+
+  // Reset to page 1 when data changes - MUST be before early return
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -77,7 +92,11 @@ export default function ResidentRecentTransactions({ connectionId }) {
   }
 
   const totalPaid = transactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
-  const totalTransactions = transactions?.length || 0;
+
+  // Pagination logic
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedTransactions = transactions?.slice(startIndex, endIndex) || [];
 
   return (
     <Card>
@@ -104,7 +123,7 @@ export default function ResidentRecentTransactions({ connectionId }) {
         {/* Horizontal scroll wrapper */}
         <div className="overflow-x-auto">
           <div className="min-w-[720px] space-y-4">
-            {transactions?.map((transaction) => (
+            {paginatedTransactions?.map((transaction) => (
               <div
                 key={transaction.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors min-w-[700px]"
@@ -154,6 +173,41 @@ export default function ResidentRecentTransactions({ connectionId }) {
             ))}
           </div>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 0 && (
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <div className="flex gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                <Button
+                  key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                >
+                  {pageNum}
+                </Button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
 
         {/* Summary */}
         <div className="mt-6 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">

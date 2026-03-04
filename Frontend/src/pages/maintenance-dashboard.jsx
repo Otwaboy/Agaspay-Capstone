@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -24,6 +25,10 @@ import {
 import { Link } from "wouter";
 
 export default function MaintenanceDashboard() {
+  const [incidentsPage, setIncidentsPage] = useState(1);
+  const [assignmentsPage, setAssignmentsPage] = useState(1);
+  const ROWS_PER_PAGE = 4;
+
   // Fetch real incident data from backend
   const { data: incidentsData, isLoading } = useQuery({
     queryKey: ['/api/v1/incident-reports/all'],
@@ -47,21 +52,39 @@ export default function MaintenanceDashboard() {
 
 
   // Process incidents data from API
+  const allIncidents = incidentsData?.incidents
+    ? incidentsData.incidents.map(incident => ({
+        id: incident._id,
+        type: incident.type,
+        location: incident.location,
+        reporter: incident.reported_by || 'Unknown',
+        status: incident.reported_issue_status?.toLowerCase().replace(' ', '_') || 'pending',
+        reportedDate: new Date(incident.createdAt).toLocaleDateString('en-US'),
+        priority: incident.urgency_level?.toLowerCase() || 'medium'
+      }))
+    : [];
+
+  // Pagination logic for incidents
+  const incidentsTotalPages = Math.ceil(allIncidents.length / ROWS_PER_PAGE);
+  const incidentsStartIndex = (incidentsPage - 1) * ROWS_PER_PAGE;
+  const incidentsEndIndex = incidentsStartIndex + ROWS_PER_PAGE;
+  const paginatedIncidents = allIncidents.slice(incidentsStartIndex, incidentsEndIndex);
+
+  // Reset to page 1 when data changes
+  useEffect(() => {
+    if (incidentsPage > incidentsTotalPages && incidentsTotalPages > 0) {
+      setIncidentsPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incidentsTotalPages]);
+
   const processedIncidentsData = incidentsData?.incidents
     ? {
         total: incidentsData.incidents.length,
         pending: incidentsData.incidents.filter(i => i.reported_issue_status === 'Pending').length,
         inProgress: incidentsData.incidents.filter(i => i.reported_issue_status === 'In Progress').length,
         resolved: incidentsData.incidents.filter(i => i.reported_issue_status === 'Resolved').length,
-        recentIncidents: incidentsData.incidents.slice(0, 2).map(incident => ({
-          id: incident._id,
-          type: incident.type,
-          location: incident.location,
-          reporter: incident.reported_by || 'Unknown',
-          status: incident.reported_issue_status?.toLowerCase().replace(' ', '_') || 'pending',
-          reportedDate: new Date(incident.createdAt).toLocaleDateString('en-US'),
-          priority: incident.urgency_level?.toLowerCase() || 'medium'
-        }))
+        recentIncidents: paginatedIncidents
       }
     : {
         total: 0,
@@ -72,13 +95,12 @@ export default function MaintenanceDashboard() {
       };
 
   // Process assignments data from API - show both assigned and pending tasks
-  const processedAssignmentsData = assignmentsData?.assignments
+  const allAssignments = assignmentsData?.assignments
     ? assignmentsData.assignments
         .filter(assignment => {
           const status = assignment.task?.task_status?.toLowerCase();
           return status === 'assigned' || status === 'pending';
         })
-        .slice(0, 2)
         .map(assignment => ({
           id: assignment.id,
           type: assignment.task?.type || assignment.task?.task_type || 'Unknown Task',
@@ -92,6 +114,22 @@ export default function MaintenanceDashboard() {
           description: assignment.task?.description || ''
         }))
     : [];
+
+  // Pagination logic for assignments
+  const assignmentsTotalPages = Math.ceil(allAssignments.length / ROWS_PER_PAGE);
+  const assignmentsStartIndex = (assignmentsPage - 1) * ROWS_PER_PAGE;
+  const assignmentsEndIndex = assignmentsStartIndex + ROWS_PER_PAGE;
+  const paginatedAssignments = allAssignments.slice(assignmentsStartIndex, assignmentsEndIndex);
+
+  // Reset to page 1 when data changes
+  useEffect(() => {
+    if (assignmentsPage > assignmentsTotalPages && assignmentsTotalPages > 0) {
+      setAssignmentsPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignmentsTotalPages]);
+
+  const processedAssignmentsData = paginatedAssignments;
 
       
   const getStatusBadge = (status) => {
@@ -319,38 +357,75 @@ export default function MaintenanceDashboard() {
                         ))}
                       </div>
                     ) : processedIncidentsData.recentIncidents?.length > 0 ? (
-                      <div className="space-y-3">
-                        {processedIncidentsData.recentIncidents.map((task) => (
-                          <div
-                            key={task.id}
-                            className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                            data-testid={`task-card-${task.id}`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <h4 className="font-semibold text-gray-900">{task.type}</h4>
-                                
-                                  {getPriorityBadge(task.priority)}
+                      <div>
+                        <div className="space-y-3">
+                          {processedIncidentsData.recentIncidents.map((task) => (
+                            <div
+                              key={task.id}
+                              className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                              data-testid={`task-card-${task.id}`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <h4 className="font-semibold text-gray-900">{task.type}</h4>
+
+                                    {getPriorityBadge(task.priority)}
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-sm text-gray-600">
+                                      <MapPin className="h-3 w-3 inline mr-1" />
+                                      {task.location}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      Reporter: {task.reporter}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      <Clock className="h-3 w-3 inline mr-1" />
+                                      {task.reportedDate}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="space-y-1">
-                                  <p className="text-sm text-gray-600">
-                                    <MapPin className="h-3 w-3 inline mr-1" />
-                                    {task.location}
-                                  </p>
-                                  <p className="text-sm text-gray-600">
-                                    Reporter: {task.reporter}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    <Clock className="h-3 w-3 inline mr-1" />
-                                    {task.reportedDate}
-                                  </p>
-                                </div>
+
                               </div>
-                             
                             </div>
+                          ))}
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {incidentsTotalPages > 0 && (
+                          <div className="mt-4 flex items-center justify-end gap-2 pt-3 border-t">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIncidentsPage(prev => Math.max(prev - 1, 1))}
+                              disabled={incidentsPage === 1}
+                            >
+                              Previous
+                            </Button>
+                            <div className="flex gap-1">
+                              {Array.from({ length: incidentsTotalPages }, (_, i) => i + 1).map(pageNum => (
+                                <Button
+                                  key={pageNum}
+                                  variant={incidentsPage === pageNum ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setIncidentsPage(pageNum)}
+                                  className={incidentsPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                                >
+                                  {pageNum}
+                                </Button>
+                              ))}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIncidentsPage(prev => Math.min(prev + 1, incidentsTotalPages))}
+                              disabled={incidentsPage === incidentsTotalPages}
+                            >
+                              Next
+                            </Button>
                           </div>
-                        ))}
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-8">
@@ -386,28 +461,65 @@ export default function MaintenanceDashboard() {
                         ))}
                       </div>
                     ) : processedAssignmentsData?.length > 0 ? (
-                      <div className="space-y-3">
-                        {processedAssignmentsData.map((assignment) => (
-                          <div
-                            key={assignment.id}
-                            className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                            data-testid={`assignment-card-${assignment.id}`}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <h5 className="font-medium text-sm text-gray-900">{assignment.type}</h5>
-                              {getStatusBadge(assignment.status)}
+                      <div>
+                        <div className="space-y-3">
+                          {processedAssignmentsData.map((assignment) => (
+                            <div
+                              key={assignment.id}
+                              className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                              data-testid={`assignment-card-${assignment.id}`}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <h5 className="font-medium text-sm text-gray-900">{assignment.type}</h5>
+                                {getStatusBadge(assignment.status)}
+                              </div>
+                              <p className="text-xs text-gray-600 mb-1">
+                                <MapPin className="h-3 w-3 inline mr-1" />
+                                {assignment.location}
+                              </p>
+                              <p className="text-xs text-gray-500 mb-1">
+                                <Clock className="h-3 w-3 inline mr-1" />
+                                {assignment.scheduledDate} at {assignment.scheduledTime}
+                              </p>
+                              {getPriorityBadge(assignment.priority)}
                             </div>
-                            <p className="text-xs text-gray-600 mb-1">
-                              <MapPin className="h-3 w-3 inline mr-1" />
-                              {assignment.location}
-                            </p>
-                            <p className="text-xs text-gray-500 mb-1">
-                              <Clock className="h-3 w-3 inline mr-1" />
-                              {assignment.scheduledDate} at {assignment.scheduledTime}
-                            </p>
-                            {getPriorityBadge(assignment.priority)}
+                          ))}
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {assignmentsTotalPages > 0 && (
+                          <div className="mt-4 flex items-center justify-end gap-2 pt-3 border-t">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setAssignmentsPage(prev => Math.max(prev - 1, 1))}
+                              disabled={assignmentsPage === 1}
+                            >
+                              Previous
+                            </Button>
+                            <div className="flex gap-1">
+                              {Array.from({ length: assignmentsTotalPages }, (_, i) => i + 1).map(pageNum => (
+                                <Button
+                                  key={pageNum}
+                                  variant={assignmentsPage === pageNum ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setAssignmentsPage(pageNum)}
+                                  className={assignmentsPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                                >
+                                  {pageNum}
+                                </Button>
+                              ))}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setAssignmentsPage(prev => Math.min(prev + 1, assignmentsTotalPages))}
+                              disabled={assignmentsPage === assignmentsTotalPages}
+                            >
+                              Next
+                            </Button>
                           </div>
-                        ))}
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-6">

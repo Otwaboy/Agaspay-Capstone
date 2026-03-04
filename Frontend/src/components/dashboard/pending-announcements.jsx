@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -22,6 +22,8 @@ export default function PendingAnnouncements() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 3;
 
   const { data, isLoading } = useQuery({
     queryKey: ['pending-announcements'],
@@ -77,6 +79,20 @@ export default function PendingAnnouncements() {
 
   const announcements = data?.announcements || [];
 
+  // Pagination logic
+  const totalPages = Math.ceil(announcements.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedAnnouncements = announcements.slice(startIndex, endIndex);
+
+  // Reset to page 1 when announcements change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
+
   const getCategoryColor = (category) => {
     const colors = {
       'Maintenance': 'bg-orange-100 text-orange-700',
@@ -126,8 +142,9 @@ export default function PendingAnnouncements() {
             <p className="text-xs text-gray-500 mt-1">All announcements have been reviewed</p>
           </div>
         ) : (
-          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-            {announcements.map((announcement) => (
+          <div>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+              {paginatedAnnouncements.map((announcement) => (
               <div
                 key={announcement._id}
                 className="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
@@ -193,6 +210,42 @@ export default function PendingAnnouncements() {
                 </div>
               </div>
             ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 0 && (
+              <div className="mt-4 flex items-center justify-center gap-2 pt-3 border-t border-gray-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      {pageNum}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

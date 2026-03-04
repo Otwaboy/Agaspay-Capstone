@@ -113,13 +113,11 @@ export default function MeterReaderReportIssue() {
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select urgency level" />
-                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="low">Low - Minor inconvenience</SelectItem>
                             <SelectItem value="medium">Medium - Moderate impact</SelectItem>
                             <SelectItem value="high">High - Urgent attention needed</SelectItem>
-                            <SelectItem value="critical">Critical - Emergency</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

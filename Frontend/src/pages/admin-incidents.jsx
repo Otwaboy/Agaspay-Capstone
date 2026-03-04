@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -41,6 +41,8 @@ export default function AdminIncidents() {
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
   const { data, isLoading } = useQuery({
     queryKey: ['incidents', statusFilter],
     queryFn: () => apiClient.getIncidentReports({ status: statusFilter !== 'all' ? statusFilter : undefined })
@@ -55,9 +57,23 @@ export default function AdminIncidents() {
     const matchesSearch = incident.reported_issue?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       incident.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       incident.reporter_id?.first_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     return matchesSearch;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredIncidents.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedIncidents = filteredIncidents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   const getStatusBadge = (status) => {
     const config = {
@@ -72,7 +88,7 @@ export default function AdminIncidents() {
 
   const getPriorityBadge = (priority) => {
     const config = {
-      critical: { label: "Critical", className: "bg-red-100 text-red-800" },
+      high: { label: "High", className: "bg-red-100 text-red-800" },
       medium: { label: "Medium", className: "bg-yellow-100 text-yellow-800" },
       low: { label: "Low", className: "bg-blue-100 text-blue-800" }
     };
@@ -237,7 +253,7 @@ export default function AdminIncidents() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredIncidents.map((incident) => {
+                  {paginatedIncidents.map((incident) => {
                     const statusConfig = getStatusBadge(incident.reported_issue_status);
                     const priorityConfig = getPriorityBadge(incident.priority || 'medium');
                     const reporterName = incident.reported_by || 'NA'
@@ -308,6 +324,41 @@ export default function AdminIncidents() {
                     </div>
                   )}
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 0 && (
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                        >
+                          {pageNum}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -37,6 +37,9 @@ export default function TreasurerRecordPayment() {
   const [amountPaid, setAmountPaid] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [billType, setBillType] = useState("regular"); // "regular" or "connection-fee"
+  const [regularBillsPage, setRegularBillsPage] = useState(1);
+  const [connectionFeeBillsPage, setConnectionFeeBillsPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   // Fetch all unpaid and partial bills
   const { data: billHistory, isLoading } = useQuery({
@@ -184,6 +187,31 @@ export default function TreasurerRecordPayment() {
     }
   };
 
+  // Pagination logic for regular bills
+  const regularBillsTotalPages = Math.ceil(filteredBills.length / ROWS_PER_PAGE);
+  const regularBillsStartIndex = (regularBillsPage - 1) * ROWS_PER_PAGE;
+  const regularBillsEndIndex = regularBillsStartIndex + ROWS_PER_PAGE;
+  const paginatedRegularBills = filteredBills.slice(regularBillsStartIndex, regularBillsEndIndex);
+
+  // Pagination logic for connection fee bills
+  const connectionFeeBillsTotalPages = Math.ceil(filteredConnectionFeeBills.length / ROWS_PER_PAGE);
+  const connectionFeeBillsStartIndex = (connectionFeeBillsPage - 1) * ROWS_PER_PAGE;
+  const connectionFeeBillsEndIndex = connectionFeeBillsStartIndex + ROWS_PER_PAGE;
+  const paginatedConnectionFeeBills = filteredConnectionFeeBills.slice(connectionFeeBillsStartIndex, connectionFeeBillsEndIndex);
+
+  // Auto-reset pagination when filters change
+  useEffect(() => {
+    if (regularBillsPage > regularBillsTotalPages && regularBillsTotalPages > 0) {
+      setRegularBillsPage(1);
+    }
+  }, [regularBillsTotalPages, regularBillsPage]);
+
+  useEffect(() => {
+    if (connectionFeeBillsPage > connectionFeeBillsTotalPages && connectionFeeBillsTotalPages > 0) {
+      setConnectionFeeBillsPage(1);
+    }
+  }, [connectionFeeBillsTotalPages, connectionFeeBillsPage]);
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       <TreasurerSidebar />
@@ -262,109 +290,181 @@ export default function TreasurerRecordPayment() {
                     </div>
 
                     {/* Bills List */}
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {isLoading ? (
-                        <div className="flex justify-center py-8">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        </div>
-                      ) : billType === "regular" && filteredBills.length === 0 ? (
-                        <div className="text-center py-8">
-                          <PhilippinePesoIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-600">
-                            {searchTerm ? "No bills found" : "No unpaid bills"}
-                          </p>
-                        </div>
-                      ) : billType === "connection-fee" && filteredConnectionFeeBills.length === 0 ? (
-                        <div className="text-center py-8">
-                          <Wrench className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-600">
-                            {searchTerm ? "No connection fees found" : "No unpaid connection fees"}
-                          </p>
-                        </div>
-                      ) : billType === "regular" ? (
-                        filteredBills.map((bill) => (
-                          <div
-                            key={bill.bill_id}
-                            onClick={() => handleBillSelect(bill)}
-                            className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                              selectedBill?.bill_id === bill.bill_id
-                                ? "border-blue-500 bg-blue-50"
-                                : "border-gray-200 hover:border-blue-300"
-                            }`}
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <p className="font-semibold text-gray-900">{bill.full_name}</p>
-                                <p className="text-sm text-gray-600">{bill.meter_no}</p>
-                              </div>
-                              {getStatusBadge(bill.status)}
-                            </div>
-                            <div className="space-y-1 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Total Amount:</span>
-                                <span className="font-semibold">{formatCurrency(bill.total_amount)}</span>
-                              </div>
-                              {bill.amount_paid > 0 && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Paid:</span>
-                                  <span className="text-green-600">{formatCurrency(bill.amount_paid)}</span>
-                                </div>
-                              )}
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Balance:</span>
-                                <span className="font-bold text-orange-600">
-                                  {formatCurrency(getRemainingBalance(bill))}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Due Date:</span>
-                                <span>{formatDate(bill.due_date)}</span>
-                              </div>
-                            </div>
+                    <div>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {isLoading ? (
+                          <div className="flex justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                           </div>
-                        ))
-                      ) : (
-                        filteredConnectionFeeBills.map((bill) => (
-                          <div
-                            key={bill.bill_id}
-                            onClick={() => handleBillSelect(bill)}
-                            className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                              selectedBill?.bill_id === bill.bill_id
-                                ? "border-orange-500 bg-orange-50"
-                                : "border-gray-200 hover:border-orange-300"
-                            }`}
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <p className="font-semibold text-gray-900">{bill.full_name}</p>
-                                <p className="text-sm text-gray-600">{bill.meter_no}</p>
-                              </div>
-                              <Badge className="bg-orange-100 text-orange-800">Connection Fee</Badge>
-                            </div>
-                            <div className="space-y-1 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Fee Amount:</span>
-                                <span className="font-semibold text-orange-600">{formatCurrency(bill.total_amount)}</span>
-                              </div>
-                              {bill.amount_paid > 0 && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Paid:</span>
-                                  <span className="text-green-600">{formatCurrency(bill.amount_paid)}</span>
-                                </div>
-                              )}
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Balance:</span>
-                                <span className="font-bold text-orange-600">
-                                  {formatCurrency(getRemainingBalance(bill))}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Due Date:</span>
-                                <span>{formatDate(bill.due_date)}</span>
-                              </div>
-                            </div>
+                        ) : billType === "regular" && filteredBills.length === 0 ? (
+                          <div className="text-center py-8">
+                            <PhilippinePesoIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-600">
+                              {searchTerm ? "No bills found" : "No unpaid bills"}
+                            </p>
                           </div>
-                        ))
+                        ) : billType === "connection-fee" && filteredConnectionFeeBills.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Wrench className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-600">
+                              {searchTerm ? "No connection fees found" : "No unpaid connection fees"}
+                            </p>
+                          </div>
+                        ) : billType === "regular" ? (
+                          paginatedRegularBills.map((bill) => (
+                            <div
+                              key={bill.bill_id}
+                              onClick={() => handleBillSelect(bill)}
+                              className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                                selectedBill?.bill_id === bill.bill_id
+                                  ? "border-blue-500 bg-blue-50"
+                                  : "border-gray-200 hover:border-blue-300"
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <p className="font-semibold text-gray-900">{bill.full_name}</p>
+                                  <p className="text-sm text-gray-600">{bill.meter_no}</p>
+                                </div>
+                                {getStatusBadge(bill.status)}
+                              </div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Total Amount:</span>
+                                  <span className="font-semibold">{formatCurrency(bill.total_amount)}</span>
+                                </div>
+                                {bill.amount_paid > 0 && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Paid:</span>
+                                    <span className="text-green-600">{formatCurrency(bill.amount_paid)}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Balance:</span>
+                                  <span className="font-bold text-orange-600">
+                                    {formatCurrency(getRemainingBalance(bill))}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Due Date:</span>
+                                  <span>{formatDate(bill.due_date)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          paginatedConnectionFeeBills.map((bill) => (
+                            <div
+                              key={bill.bill_id}
+                              onClick={() => handleBillSelect(bill)}
+                              className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                                selectedBill?.bill_id === bill.bill_id
+                                  ? "border-orange-500 bg-orange-50"
+                                  : "border-gray-200 hover:border-orange-300"
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <p className="font-semibold text-gray-900">{bill.full_name}</p>
+                                  <p className="text-sm text-gray-600">{bill.meter_no}</p>
+                                </div>
+                                <Badge className="bg-orange-100 text-orange-800">Connection Fee</Badge>
+                              </div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Fee Amount:</span>
+                                  <span className="font-semibold text-orange-600">{formatCurrency(bill.total_amount)}</span>
+                                </div>
+                                {bill.amount_paid > 0 && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Paid:</span>
+                                    <span className="text-green-600">{formatCurrency(bill.amount_paid)}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Balance:</span>
+                                  <span className="font-bold text-orange-600">
+                                    {formatCurrency(getRemainingBalance(bill))}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Due Date:</span>
+                                  <span>{formatDate(bill.due_date)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Pagination Controls for Regular Bills */}
+                      {billType === "regular" && regularBillsTotalPages > 0 && (
+                        <div className="mt-4 flex items-center justify-end gap-2 pt-3 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setRegularBillsPage(prev => Math.max(prev - 1, 1))}
+                            disabled={regularBillsPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <div className="flex gap-1">
+                            {Array.from({ length: regularBillsTotalPages }, (_, i) => i + 1).map(pageNum => (
+                              <Button
+                                key={pageNum}
+                                variant={regularBillsPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setRegularBillsPage(pageNum)}
+                                className={regularBillsPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            ))}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setRegularBillsPage(prev => Math.min(prev + 1, regularBillsTotalPages))}
+                            disabled={regularBillsPage === regularBillsTotalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Pagination Controls for Connection Fee Bills */}
+                      {billType === "connection-fee" && connectionFeeBillsTotalPages > 0 && (
+                        <div className="mt-4 flex items-center justify-end gap-2 pt-3 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setConnectionFeeBillsPage(prev => Math.max(prev - 1, 1))}
+                            disabled={connectionFeeBillsPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <div className="flex gap-1">
+                            {Array.from({ length: connectionFeeBillsTotalPages }, (_, i) => i + 1).map(pageNum => (
+                              <Button
+                                key={pageNum}
+                                variant={connectionFeeBillsPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setConnectionFeeBillsPage(pageNum)}
+                                className={connectionFeeBillsPage === pageNum ? "bg-orange-600 hover:bg-orange-700" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            ))}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setConnectionFeeBillsPage(prev => Math.min(prev + 1, connectionFeeBillsTotalPages))}
+                            disabled={connectionFeeBillsPage === connectionFeeBillsTotalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </CardContent>

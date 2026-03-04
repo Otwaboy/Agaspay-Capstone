@@ -118,7 +118,7 @@ export default function ResidentReportIssue() {
                           <SelectContent>
                             <SelectItem value="low">Low - Minor inconvenience</SelectItem>
                             <SelectItem value="medium">Medium - Moderate impact</SelectItem>
-                            <SelectItem value="critical">Critical - Emergency</SelectItem>
+                            <SelectItem value="high">High - Emergency</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -208,7 +208,7 @@ export default function ResidentReportIssue() {
                       <p className="text-xs text-yellow-700 mt-1">Moderate impact issues requiring prompt attention. Should be addressed within 1-2 business days.</p>
                     </div>
                     <div className="p-3 bg-red-50 border-l-4 border-red-600 rounded">
-                      <p className="text-sm font-semibold text-red-900">Critical</p>
+                      <p className="text-sm font-semibold text-red-900">High</p>
                       <p className="text-xs text-red-700 mt-1">Emergency situations demanding immediate action. Our team will respond as soon as possible.</p>
                     </div>
                   </CardContent>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -172,9 +172,12 @@ export default function ResidentPaymentHistory() {
   const paginatedPayments = filteredPayments.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1);
-  }
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   const totalPaid = filteredPayments
     .filter(p => p.payment_status?.toLowerCase() === 'confirmed' || p.payment_status?.toLowerCase() === 'paid')
