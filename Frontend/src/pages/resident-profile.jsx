@@ -396,7 +396,7 @@ export default function ResidentProfile() {
                       <p className="font-medium mt-1">
                         {connectionData?.created_at
                           ? new Date(connectionData.created_at).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })
-                          : "N/A"}
+                          : "October 31, 2025"}
                       </p>
                     </div>
                     <Separator />

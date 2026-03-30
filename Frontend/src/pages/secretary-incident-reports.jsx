@@ -491,7 +491,7 @@ export default function SecretaryIncidentReports() {
 
       {/* View Details Dialog */}
       <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
           <DialogHeader>
             <DialogTitle>
               Incident Report Details

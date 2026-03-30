@@ -444,7 +444,7 @@ console.log(announcements);
 
       {/* View Details */}
       <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl [&>button]:hidden">
           <DialogHeader>
             <DialogTitle>Announcement Details</DialogTitle>
             <DialogDescription>Complete information about the announcement</DialogDescription>
